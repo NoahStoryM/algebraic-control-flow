@@ -7,7 +7,9 @@
     [(vector d c) (values d c)]
     [_ (values "art5-draft.md" "art5-code.rkt")]))
 (define (read-all-from-string str)
-  (with-input-from-string str (λ () (for/list ([e (in-port read)]) e))))
+  ;; 「完整代码参考」在正文里带 #lang；读作普通数据时先去掉模块声明。
+  (with-input-from-string (regexp-replace #px"^#lang[^\n]*\n" str "")
+    (λ () (for/list ([e (in-port read)]) e))))
 (define (norm x)
   (cond [(symbol? x)
          (if (regexp-match? #rx"^right-triangles[₀₁₂₃₄₅₆₇₈]$" (symbol->string x)) 'right-triangles x)]

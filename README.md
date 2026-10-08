@@ -25,10 +25,16 @@ A series on continuations, CPS, delimited control, relations, monads and algebra
 
 ```sh
 export LC_ALL=C.UTF-8   # 否则 Racket 读不了中文路径与参数
+racket tools/run-blocks.rkt zh/01-call-cc/article.md
+racket tools/run-blocks.rkt zh/02-cps/article.md
+racket tools/run-blocks.rkt zh/03-delimited/article.md
+racket tools/run-blocks.rkt zh/04-compiler/article.md
 racket tools/run-blocks.rkt zh/05-relations/article.md 描述关系的语言   # 照原样执行正文代码块，核对每处结果
 racket tools/cmp-forms.rkt zh/05-relations/article.md zh/05-relations/code.rkt   # 正文的定义是否都在代码文件里
-raco test zh/05-relations/code.rkt
+raco test zh/*/code.rkt
 ```
+
+第一至四篇的 `blocks.rktd` 按「节标题 + 代码块开头」唯一定位例子，逐项写明不能直接执行的块及原因；`prelude.rkt` 提供前文定义，`code.rkt` 对循环定义、无限输出和编译器做隔离测试。配置的 `stdout` 以原始打印（含换行）比较，`value` 比较结果，`exit` 捕获 `exit` 而不终止核对器。第四篇逐步构造的局部 `match` 分支和未组装的中间版本在配置中标出，最终编译器在 `code.rkt` 与 `check/` 中测试。
 
 参与方式见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
