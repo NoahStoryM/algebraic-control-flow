@@ -1,5 +1,15 @@
 #lang racket
-;; 用法：racket tools/run-blocks.rkt <某一节或几节拼起来的 .md>（路径含中文时先复制成英文文件名）
+;; 用法：LC_ALL=C.UTF-8 racket tools/run-blocks.rkt zh/0X-…/article.md [伪代码节标题片段 ...]
+;; 若文章旁有 blocks.rktd，则按节标题与代码块开头唯一定位配置项，自动加载 prelude.rkt：
+;;   (skip   (("# 节标题" "块的首行") "明确原因"))
+;;   (reset  (("# 节标题" "块的首行"))) ; 从该块起重新建立命名空间并加载前置定义
+;;   (stdout (("# 节标题" "块的首行") exact "打印\n")) ; 或 prefix，仅限截断输出
+;;   (value  (("# 节标题" "块的首行") equal 42))
+;;   (value  (("# 节标题" "块的首行") examples ("(f 1)" 2) ...))
+;;   (error  (("# 节标题" "块的首行") "错误正则"))
+;;   (exit   (("# 节标题" "块的首行") 0))
+;; 同一节中首行重复时，选择器可以继续包含后续行，直到唯一匹配。
+;; 不带 blocks.rktd 的第五篇沿用以下原有规则。
 ;; 照原样执行代码块；每个「表达式 / ;; => / 字面量」对，检查求值结果与写出的字面量 equal?
 ;;
 ;; 不执行的块：
@@ -27,6 +37,8 @@
 (define (blocks-of s) (regexp-match* #px"(?s:```racket\n(.*?)\n```)" s #:match-select cadr))
 (define (forms-of b)
   (for/list ([e (in-port read (open-input-string (regexp-replace* #rx";; =>" b " =>> ")))]) e))
+(define article-path (vector-ref (current-command-line-arguments) 0))
+(define config-path (build-path (path-only (path->complete-path article-path)) "blocks.rktd"))
 (define (subterm? x y) (or (equal? x y) (and (pair? y) (or (subterm? x (car y)) (subterm? x (cdr y))))))
 (define n-blocks 0) (define n-eq 0) (define n-ok 0) (define n-rerun 0) (define n-pseudo 0)
 (define def-heads '(define : define-type struct define-syntax-rule define-syntax))
@@ -72,23 +84,205 @@
     (error 'pseudo "用到了未定义的名字，本节后面也没有原样兑现：~s" pending))
   (values clean? ok pseudo))
 
-(parameterize ([current-namespace ns])
-  (eval '(require typed/racket/no-check racket/list racket/match racket/control))
-  (eval '(define ∘ compose))   ; 前文（第二篇）的定义
-  (eval '(define-syntax-rule (match-λ clause ...) (match-lambda clause ...)))   ; 第四篇用过；Racket 8.10 的 racket/match 还没有
-  (for ([sec sections])
-    (define bs (blocks-of sec))
-    (set! n-blocks (+ n-blocks (length bs)))
-    (set! n-eq (+ n-eq (count (λ (b) (memq '= (forms-of b))) bs)))
-    (define-values (clean? ok _p)
-      (if (pseudo-section? sec)
-          (begin (check-pseudo-section sec (remq sec sections)) (values #t 0 0))
-          (run-section sec #f)))
-    (cond [clean? (set! n-ok (+ n-ok ok))]
-          [else
-           (set! n-rerun (add1 n-rerun))
-           (define-values (_c ok2 _p2) (run-section sec #t))
-           (set! n-ok (+ n-ok ok2))])))
-(printf "代码块 ~a 个（其中等式块 ~a 个，不执行），核对的结果 ~a 处，全部一致；先用后定义、重跑了一遍的有 ~a 节~a\n"
-        n-blocks n-eq n-ok n-rerun
-        (if (zero? n-pseudo) "" (format "；伪代码节 ~a 节（不执行）" n-pseudo)))
+(define (setup-namespace [prelude #f])
+  (define new-ns (make-base-namespace))
+  (parameterize ([current-namespace new-ns])
+    (eval '(require typed/racket/no-check racket/list racket/match racket/control racket/contract))
+    (eval '(define ∘ compose))
+    (eval '(define-syntax-rule (match-λ clause ...) (match-lambda clause ...)))
+    (when prelude (load prelude)))
+  new-ns)
+
+;; 带配置的文章按「节标题 + 块首行」定位。一个选择器必须恰好指向一个块；
+;; 插入其他块不会改变配置的含义。
+(struct block (section first source) #:transparent)
+(define (configured-blocks)
+  (for/list ([sec sections])
+    (cons (title-of sec)
+          (for/list ([b (blocks-of sec)])
+            (block (title-of sec)
+                   (let ([ls (filter (λ (s) (not (string=? s ""))) (map string-trim (string-split b "\n")))])
+                     (if (null? ls) "" (car ls)))
+                   b)))))
+(define (run-configured)
+  (define all-sections (configured-blocks))
+  (define all-blocks (append* (map cdr all-sections)))
+  (define cfg (call-with-input-file config-path read))
+  (define entries (make-hash))
+  (for ([group cfg])
+    (match group
+      [(list (? symbol? kind) entry ...)
+       (unless (memq kind '(skip reset value stdout error exit))
+         (error 'config "未知配置项：~s" kind))
+       (for ([item entry])
+         (match item
+           [(list (list (? string? section) (? string? first)) arg ...)
+            (define found
+              (filter (λ (b)
+                        (define normalized
+                          (string-join (map string-trim (string-split (block-source b) "\n")) "\n"))
+                        (and (string=? section (block-section b))
+                             (or (string=? normalized first)
+                                 (string-prefix? normalized (string-append first "\n")))))
+                      all-blocks))
+            (unless (= (length found) 1)
+              (error 'config "~s / ~s 匹配到 ~a 个代码块，要求恰好一个" section first (length found)))
+            (define b (car found))
+            (when (hash-has-key? entries (cons kind b))
+              (error 'config "重复配置 ~s：~s" kind first))
+            (hash-set! entries (cons kind b) arg)]
+           [_ (error 'config "配置格式错误：~s" item)]))]
+      [_ (error 'config "配置格式错误：~s" group)]))
+  (define (setting kind b [default #f]) (hash-ref entries (cons kind b) default))
+  (define prelude (build-path (path-only config-path) "prelude.rkt"))
+  (define current-ns (setup-namespace (and (file-exists? prelude) prelude)))
+  (define checked 0)
+  (define skipped 0)
+  (define equations 0)
+  (define (evaluate b strict?)
+    (when (and strict? (getenv "TRACE_BLOCKS"))
+      (eprintf "rerun ~a / ~a\n" (block-section b) (block-first b)))
+    (define input (block-source b))
+    (define result (void))
+    (define output (open-output-string))
+    (define expected-error (setting 'error b))
+    (define expected-exit (setting 'exit b))
+    (define failed #f)
+    (define ok 0)
+    (define exit-status #f)
+    (parameterize ([current-namespace current-ns]
+                   [current-output-port output]
+                   [exit-handler (λ (status) (raise (list 'controlled-exit status)))])
+      (let loop ([fs (forms-of input)])
+        (match fs
+          ['() (void)]
+          [(list '=>> expected rest ...)
+           (cond
+             [failed (void)]
+             [(equal? result (eval expected)) (set! ok (add1 ok))]
+             [else (error 'mismatch "~a / ~a: ~s vs ~s"
+                          (block-section b) (block-first b) result expected)])
+           (loop rest)]
+          [(list e rest ...)
+           (with-handlers
+               ([(λ (x) (and (pair? x) (eq? (car x) 'controlled-exit)))
+                 (λ (x) (set! exit-status (cadr x)))]
+                [exn:fail:contract:variable?
+                 (λ (x) (if strict? (raise x) (set! failed #t)))]
+                [exn:fail?
+                 (λ (x)
+                   (cond
+                     [(and (not strict?)
+                           (regexp-match? #rx"(undefined|unbound identifier|cannot reference an identifier)"
+                                          (exn-message x)))
+                      (set! failed #t)]
+                     [expected-error
+                       (begin
+                         (unless (regexp-match? (regexp (car expected-error)) (exn-message x))
+                           (error 'mismatch "错误信息不符：~a / ~a: ~a"
+                                  (block-section b) (block-first b) (exn-message x)))
+                         (set! expected-error #f)
+                         (set! ok (add1 ok)))]
+                     [else (raise x)]))])
+             (set! result (eval e)))
+           (unless (or exit-status failed)
+             (loop rest))])))
+    (when (and (not failed) expected-error)
+      (error 'mismatch "预期的错误没有发生：~a / ~a" (block-section b) (block-first b)))
+    (when (and (not failed) expected-exit)
+      (unless (equal? exit-status (car expected-exit))
+        (error 'mismatch "退出状态不符：~a / ~a: ~s"
+               (block-section b) (block-first b) exit-status))
+      (set! ok (add1 ok)))
+    (when (and (not failed) exit-status (not expected-exit))
+      (error 'config "未配置的 exit：~a / ~a" (block-section b) (block-first b)))
+    (define expected-out (setting 'stdout b))
+    (when (and (not failed) expected-out)
+      (match expected-out
+        [(list 'exact s)
+         (unless (string=? (get-output-string output) s)
+           (error 'mismatch "打印不符：~a / ~a: ~s vs ~s"
+                  (block-section b) (block-first b) (get-output-string output) s))]
+        [(list 'prefix s)
+         (unless (string-prefix? (get-output-string output) s)
+           (error 'mismatch "打印前缀不符：~a / ~a" (block-section b) (block-first b)))]
+        [_ (error 'config "stdout 只接受 exact/prefix：~s" expected-out)])
+      (set! ok (add1 ok)))
+    (define expected-value (setting 'value b))
+    (when (and (not failed) expected-value)
+      (match expected-value
+        [(list 'equal v)
+         (unless (equal? result v)
+           (error 'mismatch "结果不符：~a / ~a: ~s vs ~s"
+                  (block-section b) (block-first b) result v))]
+        [(list 'examples checks ...)
+         (for ([check checks])
+           (match check
+             [(list (? string? expression) expected)
+              (define actual (parameterize ([current-namespace current-ns])
+                               (eval (read (open-input-string expression)))))
+              (unless (equal? actual expected)
+                (error 'mismatch "样例不符：~a / ~a: ~s => ~s vs ~s"
+                       (block-section b) (block-first b) expression actual expected))]
+             [_ (error 'config "examples 的每项应为 (表达式字符串 结果)：~s" check)]))]
+        [_ (error 'config "value 只接受 equal/examples：~s" expected-value)])
+      (set! ok (+ ok (if (eq? (car expected-value) 'examples)
+                         (sub1 (length expected-value))
+                         1))))
+    (when (and (not failed) (not expected-out)
+               (not (string=? (get-output-string output) "")))
+      (error 'config "有打印但未配置 stdout：~a / ~a: ~s"
+             (block-section b) (block-first b) (get-output-string output)))
+    (values failed ok))
+  (for ([section all-sections])
+    (define bs (cdr section))
+    (for ([b bs])
+      (define reset-to (setting 'reset b))
+      (when reset-to
+        (unless (null? reset-to) (error 'config "reset 不接受额外参数：~s" reset-to))
+        (set! current-ns (setup-namespace (and (file-exists? prelude) prelude))))
+      (cond
+        [(setting 'skip b)
+         (when (for/or ([kind '(value stdout error exit)]) (setting kind b))
+           (error 'config "跳过的块不能同时配置结果：~a / ~a"
+                  (block-section b) (block-first b)))
+         (unless (and (= (length (setting 'skip b)) 1)
+                      (non-empty-string? (car (setting 'skip b))))
+           (error 'config "skip 要写原因：~s" b))
+         (set! skipped (add1 skipped))]
+        [(and (not (regexp-match? #px"^#lang" (block-source b)))
+              (memq '= (forms-of (block-source b))))
+         (set! equations (add1 equations))]
+        [else
+         (define-values (_ ok)
+           (with-handlers ([exn:fail?
+                            (λ (x) (error 'run-blocks "~a / ~a: ~a"
+                                          (block-section b) (block-first b)
+                                          (exn-message x)))])
+             (evaluate b #t)))
+         (set! checked (+ checked ok))])))
+  (printf "代码块 ~a 个（等式块 ~a，配置跳过 ~a），核对 ~a 处\n"
+          (length all-blocks) equations skipped checked))
+
+(define (run-legacy)
+  (parameterize ([current-namespace ns])
+    (eval '(require typed/racket/no-check racket/list racket/match racket/control))
+    (eval '(define ∘ compose))
+    (eval '(define-syntax-rule (match-λ clause ...) (match-lambda clause ...)))
+    (for ([sec sections])
+      (define bs (blocks-of sec))
+      (set! n-blocks (+ n-blocks (length bs)))
+      (set! n-eq (+ n-eq (count (λ (b) (memq '= (forms-of b))) bs)))
+      (define-values (clean? ok _p)
+        (if (pseudo-section? sec)
+            (begin (check-pseudo-section sec (remq sec sections)) (values #t 0 0))
+            (run-section sec #f)))
+      (cond [clean? (set! n-ok (+ n-ok ok))]
+            [else
+             (set! n-rerun (add1 n-rerun))
+             (define-values (_c ok2 _p2) (run-section sec #t))
+             (set! n-ok (+ n-ok ok2))])))
+  (printf "代码块 ~a 个（其中等式块 ~a 个，不执行），核对的结果 ~a 处，全部一致；先用后定义、重跑了一遍的有 ~a 节~a\n"
+          n-blocks n-eq n-ok n-rerun
+          (if (zero? n-pseudo) "" (format "；伪代码节 ~a 节（不执行）" n-pseudo))))
+(if (file-exists? config-path) (run-configured) (run-legacy))
