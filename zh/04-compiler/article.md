@@ -1338,7 +1338,7 @@ Lambda 链的尾调用直接传递 `k.0`，999 例子的调用点延续是裸名
 <head>  ::= <var> | (<var> ...) | (<var> ... . <var>)
 ```
 
-产出这种代码的变换器，基于 Yin Wang 的 [`cps.ss`](https://github.com/yinwang0/historical/blob/master/cps.ss)：
+产出这种代码的变换器，基于王垠的 [`cps.ss`](https://github.com/yinwang0/historical/blob/master/cps.ss)：
 
 ```racket
 (require racket/control)
