@@ -1,0 +1,7 @@
+(((define (mul . r*)
+  (: real* (→ Real Real Realᵃ))
+  (define (real* a b) ...)
+  (: loop (→ (Listof Real) Realᵃ ⊥ᵃ))
+  (define (loop r* result) ...)
+  (⊥ᵃ->a (loop r* (*))))
+"real* 和 loop 的函数体用省略号回指上一段，无法作为独立版本运行"))
