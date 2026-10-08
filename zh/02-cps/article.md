@@ -689,16 +689,16 @@ $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常�
 
 ```racket
 > (anf:eval
- (anf:let/cc cps:return
-   (let cps:loop ([r* '(1 2 0 3 4)])
-     (anf:if (cps:null? r*)
-             (cps:*)
-             (anf:let* ([r (cps:car r*)])
-               (anf:if (cps:zero? r)
-                       (cps:return r)
-                       (anf:let* ([r* (cps:cdr r*)]
-                                  [res (cps:loop r*)])
-                         (cps:* res r))))))))
+   (anf:let/cc cps:return
+     (let cps:loop ([r* '(1 2 0 3 4)])
+       (anf:if (cps:null? r*)
+               (cps:*)
+               (anf:let* ([r (cps:car r*)])
+                 (anf:if (cps:zero? r)
+                         (cps:return r)
+                         (anf:let* ([r* (cps:cdr r*)]
+                                    [res (cps:loop r*)])
+                           (cps:* res r))))))))
 0
 ```
 
@@ -712,11 +712,11 @@ $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常�
 
 ```racket
 > (anf:eval
- (anf:let* ([cps:yin (cps:label)])
-   (cps:display #\@)
-   (anf:let* ([cps:yang (cps:label)])
-     (cps:display #\*)
-     (cps:yin cps:yang))))
+   (anf:let* ([cps:yin (cps:label)])
+     (cps:display #\@)
+     (anf:let* ([cps:yang (cps:label)])
+       (cps:display #\*)
+       (cps:yin cps:yang))))
 @*@**@***@****@...
 ```
 

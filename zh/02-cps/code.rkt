@@ -161,3 +161,216 @@
            (cps:display #\*)
            (cps:yin cps:yang)))))
     "@*@**@***@")))
+
+
+;; 正文推导中的独立版本，同名定义各有自己的作用域。
+
+(module stage-1 typed/racket/no-check
+
+  (: fact (→ Natural Natural))
+
+  (define (fact n)
+    (if (= n 0)
+        1
+        (* n (fact (- n 1)))))
+
+  (: fib (→ Natural Natural))
+
+  (define (fib n)
+    (if (< n 2)
+        n
+        (+ (fib (- n 1))
+           (fib (- n 2)))))
+  (provide (all-defined-out))
+)
+
+(module stage-2 typed/racket/no-check
+
+  (: fact (→ Natural Natural))
+
+  (define (fact n)
+    (if (= n 0) 1
+        (let* ([n-1 (- n 1)]
+               [v   (fact n-1)])
+          (* n v))))
+
+  (: fib (→ Natural Natural))
+
+  (define (fib n)
+    (if (< n 2) n
+        (let* ([n-1 (- n 1)]
+               [v   (fib n-1)]
+               [n-2 (- n 2)]
+               [w   (fib n-2)])
+          (+ v w))))
+  (provide (all-defined-out))
+)
+
+(module stage-5 typed/racket/no-check
+  (define-type ⊥ (∪))
+  (define-type (¬ p) (→ p ⊥))
+  (define-type (¬¬ p) (¬ (¬ p)))
+  (: fact/k (→ Natural (¬ Natural) ⊥))
+
+  (define (fact/k n k)
+    (if (= n 0)
+        (k 1)
+        (fact/k (- n 1)
+                (λ (v) (k (* n v))))))
+
+  (: fib/k (→ Natural (¬ Natural) ⊥))
+
+  (define (fib/k n k)
+    (if (< n 2)
+        (k n)
+        (fib/k (- n 1)
+               (λ (v)
+                 (fib/k (- n 2)
+                        (λ (w)
+                          (k (+ v w))))))))
+  (provide (all-defined-out))
+)
+
+(module stage-6 typed/racket/no-check
+
+  (: fact (→ Natural Natural))
+
+  (define (fact n)
+    (let loop ([n n] [acc 1])
+      (if (= n 0)
+          acc
+          (loop (- n 1) (* n acc)))))
+  (provide (all-defined-out))
+)
+
+(module stage-7 typed/racket/no-check
+  (define-type ⊥ (∪))
+  (define-type (¬ p) (→ p ⊥))
+  (define-type (¬¬ p) (¬ (¬ p)))
+  (: fact/k (→ Natural (¬ Natural) ⊥))
+
+  (define (fact/k n k)
+    (let loop/k ([n n] [acc 1] [k k])
+      (if (= n 0)
+          (k acc)
+          (loop/k (- n 1) (* n acc) k))))
+  (provide (all-defined-out))
+)
+
+(module stage-9 typed/racket/no-check
+  (provide ans? ans-a* a->⊥ list->values ⊥->a)
+  (struct (r) ans ([a* : (Listof r)]) #:type-name Ans)
+  (define (list->values v*) (apply values v*))
+  (define (a->⊥ . a*) (raise (ans a*)))
+  (define-syntax-rule (⊥->a exp)
+    (with-handlers ([ans? (compose list->values ans-a*)]) exp))
+  (provide (all-defined-out))
+)
+
+(module stage-11 typed/racket/no-check
+  (define-type ⊥ (∪))
+  (define-type (¬ p) (→ p ⊥))
+  (define-type (¬¬ p) (¬ (¬ p)))
+  (require (submod ".." stage-9))
+  (: mul (→ Real * Real))
+
+  (define (mul . r*)
+    (: loop/k (→ (Listof Real) (→ Real ⊥) ⊥))
+    (define (loop/k r* k)
+      (if (null? r*)
+          (k (*))
+          (let ([r (car r*)])
+            (if (zero? r)
+                (a->⊥ r)
+                (loop/k (cdr r*) (λ (v) (k (* v r))))))))
+    (⊥->a (loop/k r* a->⊥)))
+  (provide (all-defined-out))
+)
+
+(module stage-12 typed/racket/no-check
+
+  (define (zero?/k x k) (k (zero? x)))
+  (provide (all-defined-out))
+)
+
+(module stage-14 typed/racket/no-check
+
+  (define (((neg f) kq) . p*) (kq (apply f p*)))
+
+  (define (((cps f) . p*) kq) (kq (apply f p*)))
+  (provide (all-defined-out))
+)
+
+(module stage-15 typed/racket/no-check
+  (define-type ⊥ (∪))
+  (define-type (¬ p) (→ p ⊥))
+  (define-type (¬¬ p) (¬ (¬ p)))
+  (define (((neg f) kq) . p*) (kq (apply f p*)))
+  (define (((cps f) . p*) kq) (kq (apply f p*)))
+  (: neg (∀ (p q) (→ (→ p q) (→ (¬ q) (¬ p)))))
+
+  (: cps (∀ (p q) (→ (→ p q) (→    p (¬¬ q)))))
+  (provide (all-defined-out))
+)
+
+(module stage-16 typed/racket/no-check
+  (define (((flip f) . y*) . x*) (apply (apply f x*) y*))
+  (: flip (∀ (x y z) (→ (→ x (→ y z)) (→ y (→ x z)))))
+  (provide (all-defined-out))
+)
+
+(module stage-17 typed/racket/no-check
+  (define-type ⊥ (∪))
+  (define-type (¬ p) (→ p ⊥))
+  (define-type (¬¬ p) (¬ (¬ p)))
+  (define (((flip f) . y*) . x*) (apply (apply f x*) y*))
+  (define flip¹ flip)
+  (: flip  (∀ (p q) (→ (→ (¬ q) (¬ p)) (→ p (¬¬ q)))))
+
+  (: flip¹ (∀ (p q) (→ (→ p (¬¬ q)) (→ (¬ q) (¬ p)))))
+  (provide (all-defined-out))
+)
+
+(module stage-22 typed/racket/no-check
+  (define-type ⊥ (∪))
+  (define-type (¬ p) (→ p ⊥))
+  (define-type (¬¬ p) (¬ (¬ p)))
+  (define-type (→𝒰 p q) (→ (¬ q) (¬ p)))
+  (provide (all-defined-out))
+)
+
+(module stage-29 typed/racket/no-check
+  (define-type ⊥ (∪))
+  (define-type (¬ p) (→ p ⊥))
+  (define-type (¬¬ p) (¬ (¬ p)))
+  (define-type (→𝒞 p q) (→ p q))
+  (define-type (→𝒰 p q) (→ (¬ q) (¬ p)))
+  (define ∘ compose)
+  (define (((flip f) . y*) . x*) (apply (apply f x*) y*))
+  (define (uncps cps:f) (∘ call/cc cps:f))
+  (: unneg (∀ (p q) (→ (→𝒰 p q) (→𝒞 p q))))
+
+  (define unneg (∘ uncps flip))
+  (provide (all-defined-out))
+)
+
+(module+ test
+  (require (prefix-in direct: (submod ".." stage-1))
+           (prefix-in named: (submod ".." stage-2))
+           (prefix-in recursive: (submod ".." stage-5))
+           (prefix-in tail: (submod ".." stage-6))
+           (prefix-in tail/k: (submod ".." stage-7))
+           (prefix-in answer: (submod ".." stage-11))
+           (prefix-in lift: (submod ".." stage-14))
+           (prefix-in reverse: (submod ".." stage-29)))
+  (for ([fact (list direct:fact named:fact tail:fact)])
+    (check-equal? (fact 6) 720))
+  (for ([fib (list direct:fib named:fib)])
+    (check-equal? (fib 10) 55))
+  (check-equal? (recursive:fact/k 6 values) 720)
+  (check-equal? (recursive:fib/k 10 values) 55)
+  (check-equal? (tail/k:fact/k 6 values) 720)
+  (check-equal? (answer:mul 2 3 4) 24)
+  (check-equal? (answer:mul 2 0 4) 0)
+  (check-equal? (((lift:cps add1) 7) values) 8)
+  (check-equal? ((reverse:unneg (reverse:flip (λ (x) (λ (k) (k (add1 x)))))) 7) 8))

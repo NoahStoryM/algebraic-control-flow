@@ -11,7 +11,7 @@
 ;; 同一节中首行重复时，选择器可以继续包含后续行，直到唯一匹配。
 ;; 不带 blocks.rktd 的第五篇沿用以下原有规则。
 ;; 定义块照文件逐式执行；交互块以首个非空行的 > 提示符识别，
-;; 逐项核对打印、返回值和错误。纯推导等式仍放在 text 围栏里。
+;; 逐项核对打印、返回值和错误。纯推导等式保留 racket 围栏，必要时用配置跳过。
 ;; 无 blocks.rktd 的旧稿还接受「表达式 / ;; => / 字面量」结果对。
 ;;
 ;; 不执行的块：
@@ -219,12 +219,15 @@
   (define checked 0)
   (define skipped 0)
   (define equations 0)
+  ;; 延续会恢复定义时的输出端口；各块共用一个端口，每块开始时清空缓冲。
+  (define output (open-output-bytes))
+  (define (captured-output) (bytes->string/utf-8 (get-output-bytes output)))
   (define (evaluate b strict?)
     (when (and strict? (getenv "TRACE_BLOCKS"))
       (eprintf "rerun ~a / ~a\n" (block-section b) (block-first b)))
     (define input (block-source b))
     (define result (void))
-    (define output (open-output-string))
+    (get-output-bytes output #t)
     (define expected-error (setting 'error b))
     (define expected-exit (setting 'exit b))
     (define expected-out (setting 'stdout b))
@@ -300,11 +303,11 @@
                  (block-section b) (block-first b))))
       (match expected-out
         [(list 'exact s)
-         (unless (string=? (get-output-string output) s)
+         (unless (string=? (captured-output) s)
            (error 'mismatch "打印不符：~a / ~a: ~s vs ~s"
-                  (block-section b) (block-first b) (get-output-string output) s))]
+                  (block-section b) (block-first b) (captured-output) s))]
         [(list 'prefix s)
-         (unless (string-prefix? (get-output-string output) s)
+         (unless (string-prefix? (captured-output) s)
            (error 'mismatch "打印前缀不符：~a / ~a" (block-section b) (block-first b)))]
         [_ (error 'config "stdout 只接受 exact/prefix：~s" expected-out)])
       (set! ok (add1 ok)))
@@ -330,9 +333,9 @@
                          (sub1 (length expected-value))
                          1))))
     (when (and (not failed) (not expected-out)
-               (not (string=? (get-output-string output) "")))
+               (not (string=? (captured-output) "")))
       (error 'config "有打印但未配置 stdout：~a / ~a: ~s"
-             (block-section b) (block-first b) (get-output-string output)))
+             (block-section b) (block-first b) (captured-output)))
     (values failed ok))
   (for ([section all-sections])
     (define bs (cdr section))

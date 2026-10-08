@@ -188,9 +188,9 @@ CPS 版的 `mul` 用局部延续正常工作了。那 `anf:eval` 呢？把 `anf:
 
 ```racket
 > (anf:eval
- (anf:let* ([v (cps:+ 1 2)]
-            [w (cps:* v 3)])
-   (cps:+ w 100)))
+   (anf:let* ([v (cps:+ 1 2)]
+              [w (cps:* v 3)])
+     (cps:+ w 100)))
 109
 ```
 
@@ -198,18 +198,18 @@ CPS 版的 `mul` 用局部延续正常工作了。那 `anf:eval` 呢？把 `anf:
 
 ```racket
 > (anf:eval
- (cps:call/cc
-  (λ (cps:return)
-    (let cps:loop ([r* '(1 2 0 3 4)])
-      (anf:begin
-       (cps:displayln r*)
-       (anf:if (cps:null? r*)
-               (cps:*)
-               (anf:let* ([r (cps:car r*)]
-                          [r (anf:if (cps:zero? r) (cps:return r) (cps:id r))]
-                          [r* (cps:cdr r*)]
-                          [res (cps:loop r*)])
-                 (cps:* res r))))))))
+   (cps:call/cc
+    (λ (cps:return)
+      (let cps:loop ([r* '(1 2 0 3 4)])
+        (anf:begin
+         (cps:displayln r*)
+         (anf:if (cps:null? r*)
+                 (cps:*)
+                 (anf:let* ([r (cps:car r*)]
+                            [r (anf:if (cps:zero? r) (cps:return r) (cps:id r))]
+                            [r* (cps:cdr r*)]
+                            [res (cps:loop r*)])
+                   (cps:* res r))))))))
 (1 2 0 3 4)
 (2 0 3 4)
 (0 3 4)
@@ -373,13 +373,12 @@ CPS 代码中用不到 `⊥ᵃ?`。那么在整段局部计算中，和 `⊥ᵃ`
 先用 `reset` 和 `abort` 做一次普通的调用与返回。内层计算给 `3` 加上 `2`，把答案交出来；外层拿到结果，再加上 `10`：
 
 ```racket
-> ;; 例 1：reset 加 abort，没有 shift
-> (anf:eval
- (anf:let* ([v (anf:reset
-                (anf:let* ([x (cps:id 3)]
-                           [y (cps:+ 2 x)])
-                  (cps:abort y)))])
-   (cps:+ 10 v)))
+> (anf:eval  ;; 例 1：reset 加 abort，没有 shift
+   (anf:let* ([v (anf:reset
+                  (anf:let* ([x (cps:id 3)]
+                             [y (cps:+ 2 x)])
+                    (cps:abort y)))])
+     (cps:+ 10 v)))
 15
 ```
 
@@ -388,13 +387,12 @@ CPS 代码中用不到 `⊥ᵃ?`。那么在整段局部计算中，和 `⊥ᵃ`
 现在只改动产生 `x` 的位置，用 `shift` 捕获局部延续，但先不用它：
 
 ```racket
-> ;; 例 2：捕获后不使用
-> (anf:eval
- (anf:let* ([v (anf:reset
-                (anf:let* ([x (anf:shift cps:k (cps:id 3))]
-                           [y (cps:+ 2 x)])
-                  (cps:abort y)))])
-   (cps:+ 10 v)))
+> (anf:eval  ;; 例 2：捕获后不使用
+   (anf:let* ([v (anf:reset
+                  (anf:let* ([x (anf:shift cps:k (cps:id 3))]
+                             [y (cps:+ 2 x)])
+                    (cps:abort y)))])
+     (cps:+ 10 v)))
 13
 ```
 
@@ -405,13 +403,12 @@ CPS 代码中用不到 `⊥ᵃ?`。那么在整段局部计算中，和 `⊥ᵃ`
 如果把这个 `3` 交给刚刚捕获的延续呢？
 
 ```racket
-> ;; 例 3：调用被捕获的延续一次
-> (anf:eval
- (anf:let* ([v (anf:reset
-                (anf:let* ([x (anf:shift cps:k (cps:k 3))]
-                           [y (cps:+ 2 x)])
-                  (cps:abort y)))])
-   (cps:+ 10 v)))
+> (anf:eval  ;; 例 3：调用被捕获的延续一次
+   (anf:let* ([v (anf:reset
+                  (anf:let* ([x (anf:shift cps:k (cps:k 3))]
+                             [y (cps:+ 2 x)])
+                    (cps:abort y)))])
+     (cps:+ 10 v)))
 15
 ```
 
@@ -422,15 +419,14 @@ CPS 代码中用不到 `⊥ᵃ?`。那么在整段局部计算中，和 `⊥ᵃ`
 调用能够返回，就可以拿着返回值继续计算。把主体改成先调用一次，再把结果交给同一个 `cps:k`：
 
 ```racket
-> ;; 例 4：调用被捕获的延续两次
-> (anf:eval
- (anf:let* ([v (anf:reset
-                (anf:let* ([x (anf:shift cps:k
-                               (anf:let* ([r (cps:k 3)])
-                                 (cps:k r)))]
-                           [y (cps:+ 2 x)])
-                  (cps:abort y)))])
-   (cps:+ 10 v)))
+> (anf:eval  ;; 例 4：调用被捕获的延续两次
+   (anf:let* ([v (anf:reset
+                  (anf:let* ([x (anf:shift cps:k
+                                 (anf:let* ([r (cps:k 3)])
+                                   (cps:k r)))]
+                             [y (cps:+ 2 x)])
+                    (cps:abort y)))])
+     (cps:+ 10 v)))
 17
 ```
 
@@ -446,7 +442,7 @@ CPS 代码中用不到 `⊥ᵃ?`。那么在整段局部计算中，和 `⊥ᵃ`
 
 例一和例三是同一段计算。`(shift k (k e)) = (let/lc k e)`，其中 `e` 没用过 `k`，`let/lc` 表达式化简为 `e`；`e` 不含控制操作时，有 `(reset (abort e)) = e`。对例三逐步化简：
 
-```text
+```racket
 (let ([v (reset
            (let* ([x (shift k (k 3))]
                   [y (+ 2 x)])
@@ -459,7 +455,7 @@ CPS 代码中用不到 `⊥ᵃ?`。那么在整段局部计算中，和 `⊥ᵃ`
 
 化简后是普通的 ANF。内层 `(let ([x 3]) (+ 2 x))` 脱糖后就是 `((λ (x) (+ 2 x)) 3)`。`(λ (x) (+ 2 x))` 是等待 `x` 的那段工作，即局部延续。把它命名为 `k`：
 
-```text
+```racket
 ((λ (v) (+ 10 v))
  ((λ (k) (k 3))
   (λ (x) (+ 2 x))))
@@ -483,8 +479,8 @@ CPS 代码中用不到 `⊥ᵃ?`。那么在整段局部计算中，和 `⊥ᵃ`
 
 ```racket
 > ((λ (v) (+ 10 v))
- ((λ (_) 3)
-  (λ (x) (+ 2 x))))
+   ((λ (_) 3)
+    (λ (x) (+ 2 x))))
 13
 ```
 
@@ -512,8 +508,8 @@ CPS 代码中用不到 `⊥ᵃ?`。那么在整段局部计算中，和 `⊥ᵃ`
 
 ```racket
 > ((λ (v) (+ 10 v))
- ((λ (k) (k (k 3)))
-  (λ (x) (+ 2 x))))
+   ((λ (k) (k (k 3)))
+    (λ (x) (+ 2 x))))
 17
 ```
 
@@ -608,9 +604,9 @@ $$延续 = 元延续 ∘ 局部延续$$
 
 ```racket
 > (let ([k (reset
-          (let ([x (let/cc k (abort k))])
-            (+ x 2)))])
-  (+ (reset (k 3)) 100))
+            (let ([x (let/cc k (abort k))])
+              (+ x 2)))])
+    (+ (reset (k 3)) 100))
 105
 ```
 
@@ -630,11 +626,11 @@ $$延续 = 元延续 ∘ 局部延续$$
 
 ```racket
 > (reset
- (let ([kn (let/lc k0 k0)])
-   (display #\@)
-   (let ([k (let/lc kn+1 kn+1)])
-     (display #\*)
-     (kn k))))
+   (let ([kn (let/lc k0 k0)])
+     (display #\@)
+     (let ([k (let/lc kn+1 kn+1)])
+       (display #\*)
+       (kn k))))
 @*@**@***@****@...
 ```
 

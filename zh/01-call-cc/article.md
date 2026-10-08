@@ -32,10 +32,10 @@
 
 ```racket
 > (let ([x 0])
-  (define loop (label))
-  (set! x (add1 x))
-  (when (< x 7) (goto loop))
-  (displayln x))
+    (define loop (label))
+    (set! x (add1 x))
+    (when (< x 7) (goto loop))
+    (displayln x))
 7
 ```
 
@@ -359,14 +359,12 @@ $$\text{Label} → ⊥ = ¬\text{Label} = \text{Label}$$
 
 让标签直接作用于标签，就得到 David Madore 的阴阳谜题：
 
-输出：
-
 ```racket
 > (let ([yin (label)])
-  (display #\@)
-  (let ([yang (label)])
-    (display #\*)
-    (yin yang)))
+    (display #\@)
+    (let ([yang (label)])
+      (display #\*)
+      (yin yang)))
 @*@**@***@****@...
 ```
 
@@ -393,14 +391,12 @@ $$\text{Label} → ⊥ = ¬\text{Label} = \text{Label}$$
 
 这里的延续是函数和名字的 `cons` 对，不能再直接调用。「向延续传递一个值」也就不再只是函数调用：`apply-cont` 先拆开这个对，记下名字，再调用里面的函数。`cc` 构造延续，`apply-cont` 消费延续，谜题改用这两个函数来写：
 
-输出：
-
 ```racket
 > (let ([kn (cc)])
-  (displayln #\@)
-  (let ([kn+1 (cc)])
-    (displayln #\*)
-    (apply-cont kn kn+1)))
+    (displayln #\@)
+    (let ([kn+1 (cc)])
+      (displayln #\*)
+      (apply-cont kn kn+1)))
 (k0 k0)	@
 (k1 k1)	*
 (k0 k1)	@
@@ -526,9 +522,8 @@ $$¬q ∨ ¬¬q$$
 > (displayln (f))
 222
 > (parameterize ([a 2])
-  (displayln (f)))
+    (displayln (f)))
 444
-> ;; 不是 222！
 ```
 
 当我们在 `(parameterize ([a 2]) ...)` 内部调用 `(f)` 时，参数 `a` 是 `2`，所以我们得到 $2 × 222 = 444$。Thunk 记得的只有定义处的变量绑定：`b` 指的始终是同一个变量，读到的是它此刻存着的值，222 是 `set!` 改出来的。其余的，也就是求值上下文，全由调用点决定。
@@ -597,9 +592,8 @@ $$¬q ∨ ¬¬q$$
 > (displayln (call/cc f))
 222
 > (parameterize ([a 2])
-  (displayln (call/cc f)))
+    (displayln (call/cc f)))
 222
-> ;; 不是 444！
 ```
 
 每次 `(call/cc f)` 都是一次穿过曾经求值上下文的往返。调用点的 `parameterize` 是不可见的：`(a)` 总是 `1`，因为它在 `(cc)` 首次调用的地方求值。但 `b` 反映当前值，因为 `b` 属于变量环境，不属于求值上下文。
@@ -620,11 +614,9 @@ $$¬q ∨ ¬¬q$$
 
 初版 `wait/fc` 的类型是 $¬¬q → ¬¬q$：输入和输出同类型，一个 `wait/fc` 的输出可以直接作为另一个 `wait/fc` 的输入。嵌套之后，每一层冻结的上下文都有自己的边界，边界穿越可以用 `dynamic-wind` 观察。调用 `(dynamic-wind enter thunk exit)` 求值 `thunk`，但在进入前运行 `enter`，在退出后运行 `exit`。关键点：这些守卫不仅在正常求值时触发，在延续跳转穿越边界时（无论是跳入还是跳出）也会触发。每当一次跳转进入某个 `dynamic-wind` 的范围，它的 `enter` 守卫触发；每当一次跳转离开，它的 `exit` 守卫触发。
 
-输出：
-
 ```racket
-> ;; 时刻 1：在上下文 C1 中，冻结最内层计算
-> (define W1
+;; 时刻 1：在上下文 C1 中，冻结最内层计算
+(define W1
   (dynamic-wind
     (λ () (displayln "C1: enter"))
     (λ () (wait/fc
@@ -632,17 +624,16 @@ $$¬q ∨ ¬¬q$$
              (displayln "reached the frozen context C1")
              (fc 'hello))))
     (λ () (displayln "C1: exit"))))
-C1: enter
-C1: exit
-> ;; 时刻 2：在上下文 C2 中，把 W1 包裹进第二层冻结
-> (define W2
+;; 时刻 2：在上下文 C2 中，把 W1 包裹进第二层冻结
+(define W2
   (dynamic-wind
     (λ () (displayln "C2: enter"))
     (λ () (wait/fc W1))
     (λ () (displayln "C2: exit"))))
-C2: enter
-C2: exit
-> ;; 时刻 3：触发链条
+;; 时刻 3：触发链条
+```
+
+```racket
 > (displayln (call/cc W2))
 C2: enter
 C2: exit

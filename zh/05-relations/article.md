@@ -130,7 +130,7 @@ R = {((l, h), (a, b, c)) ∈ (ℕ⁺ × ℕ⁺) × (ℕ⁺ × ℕ⁺ × ℕ⁺) 
 
 ```racket
 > (for/list ([b '(0 1)])
-  (cons b (one? b)))
+    (cons b (one? b)))
 '((0 . #f)
   (1 . #t))
 ```
@@ -304,12 +304,12 @@ R = {((l, h), (a, b, c)) ∈ (ℕ⁺ × ℕ⁺) × (ℕ⁺ × ℕ⁺ × ℕ⁺) 
 > (in-amb (amb 1 2 3))
 '(1 2 3)
 > (in-amb (let* ([x (amb 1 2 3)]
-               [y (amb 10 20)])
-          (+ x y)))
+                 [y (amb 10 20)])
+            (+ x y)))
 '(11 21 12 22 13 23)
 > (in-amb (let ([n (amb 1 2 3 4 5)])
-          (unless (odd? n) (amb))
-          (* n n)))
+            (unless (odd? n) (amb))
+            (* n n)))
 '(1 9 25)
 ```
 

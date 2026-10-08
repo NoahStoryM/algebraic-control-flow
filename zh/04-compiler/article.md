@@ -249,7 +249,7 @@ ANF 需要给中间结果命名。如果函数调用的参数本身也是函数�
 
 考虑 `ctx` 以字面 lambda 出现的调用点。为了匹配表中的 CPS 形式，把 `anf1` 包在一个 lambda 里，使两参数结构显式化。结构吻合：一个表达式和一个延续，分别作为参数传递。ANF + reset/shift 一行给出了延续由 `shift` 取得、而非作为参数传递时的写法：
 
-```text
+```racket
 ;; 原始调用点：
 (anf1 sub (λ (w) body))
 
@@ -274,7 +274,7 @@ ANF 需要给中间结果命名。如果函数调用的参数本身也是函数�
 
 另一类调用点直接传递 `ctx`，没有包在 lambda 里。同样的包装技巧可用：`(anf1 sub (λ (w) (ctx w)))`。应用同一组表：
 
-```text
+```racket
 (anf1 sub ctx)
 ;; = (anf1 sub (λ (w) (ctx w)))    ; η-展开
 ;; =>
@@ -645,9 +645,9 @@ application 分支有两个 `reset`：
 
 ```racket
 > (anf '(reset
-       (let* ([kn (let/lc k0 k0)]
-              [k  (let/lc kn+1 kn+1)])
-         (kn k))))
+         (let* ([kn (let/lc k0 k0)]
+                [k  (let/lc kn+1 kn+1)])
+           (kn k))))
 '(let ([k0 (λ (v.0)
              (let ([kn v.0])
                (let ([kn+1 (λ (v.1)
@@ -702,12 +702,12 @@ application 分支有两个 `reset`：
 
 ```racket
 > (eval (anf '(reset
-       (let* ([label (λ () (let/lc k k))]
-              [yin   (label)]
-              [_     (display #\@)]
-              [yang  (label)]
-              [_     (display #\*)])
-         (yin yang))))
+         (let* ([label (λ () (let/lc k k))]
+                [yin   (label)]
+                [_     (display #\@)]
+                [yang  (label)]
+                [_     (display #\*)])
+           (yin yang)))))
 @*
 ```
 
@@ -1123,7 +1123,7 @@ Lambda 链的尾调用直接传递 `k.0`，999 例子的调用点延续是裸名
 
 ```racket
 > (cps '(let ([k (reset (let ([x (let/cc k (abort k))]) (+ x 2)))])
-        (+ (reset (k 3)) 100)))
+          (+ (reset (k 3)) 100)))
 '((λ (k) (+ ((k 3) values) 100))
   ((λ (k.0) (λ (v.0) (λ (k.1) (k.0 v.0)))) (λ (x) (+ x 2))))
 ```
@@ -1135,11 +1135,10 @@ Lambda 链的尾调用直接传递 `k.0`，999 例子的调用点延续是裸名
 第三篇「定界延续与 CPS」一节，把四个例子逐步化简成了 CPS。现在交给编译器。例一：
 
 ```racket
-> ;; 例 1：reset 加 abort，没有 shift
-> (cps '(let ([v (reset (let* ([x 3]
-                             [y (+ 2 x)])
-                        (abort y)))])
-        (+ 10 v)))
+> (cps '(let ([v (reset (let* ([x 3]  ;; 例 1：reset 加 abort，没有 shift
+                               [y (+ 2 x)])
+                          (abort y)))])
+          (+ 10 v)))
 '((λ (v) (+ 10 v)) ((λ (x) (+ 2 x)) 3))
 ```
 
@@ -1148,23 +1147,20 @@ Lambda 链的尾调用直接传递 `k.0`，999 例子的调用点延续是裸名
 例二到例四：
 
 ```racket
-> ;; 例 2：捕获后不使用
-> (cps '(let ([v (reset (let* ([x (shift k 3)]
-                             [y (+ 2 x)])
-                        (abort y)))])
-        (+ 10 v)))
+> (cps '(let ([v (reset (let* ([x (shift k 3)]  ;; 例 2：捕获后不使用
+                               [y (+ 2 x)])
+                          (abort y)))])
+          (+ 10 v)))
 '((λ (v) (+ 10 v)) ((λ (k) 3) (λ (x) (+ 2 x))))
-> ;; 例 3：调用被捕获的延续一次
-> (cps '(let ([v (reset (let* ([x (shift k (k 3))]
-                             [y (+ 2 x)])
-                        (abort y)))])
-        (+ 10 v)))
+> (cps '(let ([v (reset (let* ([x (shift k (k 3))]  ;; 例 3：调用被捕获的延续一次
+                               [y (+ 2 x)])
+                          (abort y)))])
+          (+ 10 v)))
 '((λ (v) (+ 10 v)) ((λ (k) (k 3)) (λ (x) (+ 2 x))))
-> ;; 例 4：调用被捕获的延续两次
-> (cps '(let ([v (reset (let* ([x (shift k (let ([r (k 3)]) (k r)))]
-                             [y (+ 2 x)])
-                        (abort y)))])
-        (+ 10 v)))
+> (cps '(let ([v (reset (let* ([x (shift k (let ([r (k 3)]) (k r)))]  ;; 例 4：调用被捕获的延续两次
+                               [y (+ 2 x)])
+                          (abort y)))])
+          (+ 10 v)))
 '((λ (v) (+ 10 v)) ((λ (k) (k (k 3))) (λ (x) (+ 2 x))))
 ```
 
@@ -1186,12 +1182,12 @@ Lambda 链的尾调用直接传递 `k.0`，999 例子的调用点延续是裸名
 
 ```racket
 > (cps '(reset
-       (let* ([label (λ () (let/lc k k))]
-              [yin   (label)]
-              [_     (display #\@)]
-              [yang  (label)]
-              [_     (display #\*)])
-         (yin yang))))
+         (let* ([label (λ () (let/lc k k))]
+                [yin   (label)]
+                [_     (display #\@)]
+                [yang  (label)]
+                [_     (display #\*)])
+           (yin yang))))
 '((λ (label)
     ((label)
      (λ (yin)
@@ -1204,12 +1200,12 @@ Lambda 链的尾调用直接传递 `k.0`，999 例子的调用点延续是裸名
 
 ```racket
 > (eval (cps '(reset
-       (let* ([label (λ () (let/lc k k))]
-              [yin   (label)]
-              [_     (display #\@)]
-              [yang  (label)]
-              [_     (display #\*)])
-         (yin yang))))
+         (let* ([label (λ () (let/lc k k))]
+                [yin   (label)]
+                [_     (display #\@)]
+                [yang  (label)]
+                [_     (display #\*)])
+           (yin yang)))))
 @*@**@***@****@...
 ```
 
@@ -1240,11 +1236,11 @@ Lambda 链的尾调用直接传递 `k.0`，999 例子的调用点延续是裸名
 
 ```racket
 > (cps '(reset
-       (let* ([kn (let/lc k0   (λ (v) (k0   v)))]
-              [_  (display #\@)]
-              [k  (let/lc kn+1 (λ (v) (kn+1 v)))]
-              [_  (display #\*)])
-         (kn k))))
+         (let* ([kn (let/lc k0   (λ (v) (k0   v)))]
+                [_  (display #\@)]
+                [k  (let/lc kn+1 (λ (v) (kn+1 v)))]
+                [_  (display #\*)])
+           (kn k))))
 '((λ (k0) (k0 (λ (v) (λ (k.0) (k.0 (k0 v))))))
   (λ (kn)
     ((λ (_)
