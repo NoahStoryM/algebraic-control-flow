@@ -1,0 +1,17 @@
+The prose of the articles in this repository (all .md files under zh/ and en/)
+is licensed under the Creative Commons Attribution 4.0 International License
+(CC BY 4.0).
+
+Copyright (c) 2026 Noah Ma
+
+You are free to share and adapt the material for any purpose, provided you
+give appropriate credit, provide a link to the license, and indicate if
+changes were made.
+
+Full legal code: https://creativecommons.org/licenses/by/4.0/legalcode
+
+Code (all .rkt and .py files, and code blocks inside the articles) is
+licensed separately under the MIT License; see LICENSE.
+
+本仓库文章正文（zh/ 与 en/ 下的 .md 文件）采用知识共享署名 4.0 国际许可协议
+（CC BY 4.0）。代码（.rkt、.py 文件以及文章中的代码块）采用 MIT 协议，见 LICENSE。
