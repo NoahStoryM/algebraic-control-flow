@@ -1,0 +1,78 @@
+原文例子的编译输出（按 ~s 打印逐字比较）
+if 顶层：不变
+if 在 add1 下：不变
+if 在 f 下：不变
+lambda 链：不变
+999：不变
+abort 一等值：不变
+let/cc：不变
+例1：不变
+例2：不变
+例3：不变
+例4：不变
+阴阳 label 版：不变
+id 裸延续：不变
+id 包装：不变
+阴阳 包装版：不变
+共 15 例
+
+==== a1
+源程序:  (let ((f add1)) (f 41))
+编译输出: ((λ (f) ((f 41) values)) (λ v.0 (λ (k.0) (k.0 (apply add1 v.0)))))
+目标运行: 打印 ""  结果 (value 42)
+直接运行: 打印 ""  结果 (value 42)
+
+==== a2
+源程序:  (let ((g add1)) (g 1))
+编译输出: ((λ (g) ((g 1) values)) (λ v.0 (λ (k.0) (k.0 (apply add1 v.0)))))
+目标运行: 打印 ""  结果 (value 2)
+直接运行: 打印 ""  结果 (value 2)
+
+==== a3
+源程序:  (reset (let ((f add1)) (+ 1 (f 41))))
+编译输出: ((λ (f) ((f 41) (λ (v.2) (+ 1 v.2)))) (λ v.0 (λ (k.0) (k.0 (apply add1 v.0)))))
+目标运行: 打印 ""  结果 (value 43)
+直接运行: 打印 ""  结果 (value 43)
+
+==== b1
+源程序:  ((λ (h) (h 1)) add1)
+编译输出: ((λ (h) ((h 1) values)) (λ v.0 (λ (k.0) (k.0 (apply add1 v.0)))))
+目标运行: 打印 ""  结果 (value 2)
+直接运行: 打印 ""  结果 (value 2)
+
+==== b2
+源程序:  ((λ (h x) (h x)) add1 1)
+编译输出: ((λ (h x) ((h x) values)) (λ v.1 (λ (k.0) (k.0 (apply add1 v.1)))) 1)
+目标运行: 打印 ""  结果 (value 2)
+直接运行: 打印 ""  结果 (value 2)
+
+==== b3
+源程序:  (let ((twice (λ (h x) (h (h x))))) (twice add1 1))
+编译输出: ((λ (twice) ((twice (λ v.3 (λ (k.1) (k.1 (apply add1 v.3)))) 1) values)) (λ (h x) (λ (k.0) ((h x) (λ (v.1) ((h v.1) k.0))))))
+目标运行: 打印 ""  结果 (value 3)
+直接运行: 打印 ""  结果 (value 3)
+
+已知代价（本次不修）
+==== 内建函数的对象身份
+源程序:  (eq? add1 add1)
+编译输出: (eq? (λ v.1 (λ (k.0) (k.0 (apply add1 v.1)))) (λ v.2 (λ (k.1) (k.1 (apply add1 v.2)))))
+目标运行: 打印 ""  结果 (value #f)
+直接运行: 打印 ""  结果 (value #t)
+
+==== 内建函数的打印名
+源程序:  (display add1)
+编译输出: (display (λ v.1 (λ (k.0) (k.0 (apply add1 v.1)))))
+目标运行: 打印 "#<procedure>"  结果 (value #<void>)
+直接运行: 打印 "#<procedure:add1>"  结果 (value #<void>)
+
+map 源程序: (map add1 xs)
+map 编译输出: ((map (λ v.1 (λ (k.0) (k.0 (apply add1 v.1)))) xs) values)
+map 直接运行: (2 3)
+map 目标运行: "application: not a procedure;\n expected a procedure that can be applied to arguments\n  given: '(#<procedure> #<procedure>)"
+
+#22 的 reset 求值顺序保持原样
+==== reset 在前
+源程序:  (eq? (reset (display 1)) (display 2))
+编译输出: ((λ (v.2) (eq? (display 1) v.2)) (display 2))
+目标运行: 打印 "21"  结果 (value #t)
+直接运行: 打印 "12"  结果 (value #t)

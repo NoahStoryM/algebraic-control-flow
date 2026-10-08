@@ -20,6 +20,7 @@
   (("# 完整的变换器" "[`(shift _ ,body)") "match 分支片段，须放进函数体")
   (("# 完整的变换器" "[`(if ,test ,conseq ,alt)") "match 分支片段，须放进函数体")
   (("# 完整的变换器" "[`(let ([,x* ,exp*] ...) ,body)") "match 分支片段，须放进函数体")
+  (("# 完整的变换器" "[(? builtin? x)") "match 分支片段，完整实现由 code.rkt 执行")
   (("# 完整的变换器" "['abort (cps0 '(λ (v) (shift _ v)))]") "match 分支片段，须放进函数体")
   (("# 完整的变换器" "[`(let/cc ,k ,body)") "match 分支片段，须放进函数体")
   (("# 完整代码参考" "(require racket/control)") "完整编译器由 code.rkt 执行，避免覆盖逐步定义")

@@ -765,16 +765,18 @@ Lambda 分支加上 `(λ (k) ...)`：
 调用点必须提供它。但不是每个函数都需要延续参数。`+` 和 `add1` 这样的内建函数直接计算并返回。只有用户定义的函数接受额外参数。我们把不需要的称为**平凡的**（trivial），初始集合包含内建原语：
 
 ```racket
-(define trivial* (mutable-seteq))
-(define (trivial? x) (set-member? trivial* x))
-(define (add-trivial! x) (set-add! trivial* x))
-(for-each add-trivial!
+(define builtin*
  '(identity values
    display displayln
    zero? add1 sub1
    + - * /
    = < <= > >=
    eq? eqv? equal?))
+(define (builtin? x) (and (memq x builtin*) #t))
+(define trivial* (mutable-seteq))
+(define (trivial? x) (set-member? trivial* x))
+(define (add-trivial! x) (set-add! trivial* x))
+(for-each add-trivial! builtin*)
 ```
 
 除了内建函数之外，`shift` 捕获的延续也是平凡的。第三篇已经看到，局部延续是普通函数：调用它就执行剩余的局部工作，正常返回结果，用不着另一个延续。由于源程序经过了 α-重命名，`k` 是全局唯一的；`fk` 生成的每个 `k.n` 也是如此。所以每个 `shift` 的绑定器和每个延续名字在创建时就加入平凡集合：
@@ -1072,6 +1074,30 @@ Lambda 分支加上 `(λ (k) ...)`：
 
 Lambda 链的尾调用直接传递 `k.0`，999 例子的调用点延续是裸名字 `add1`。两者都与我们在上一节手工推导的结果一致。
 
+## 作为值的内建函数
+
+```racket
+[(? builtin? x)
+ (define vn (fv))
+ (define kn (fk))
+ `(λ ,vn (λ (,kn) (,kn (apply ,x ,vn))))]
+```
+
+<!-- Claude 补 -->
+
+```racket
+> (cps '(let ([f add1]) (f 41)))
+'((λ (f) ((f 41) values)) (λ v.0 (λ (k.0) (k.0 (apply add1 v.0)))))
+```
+
+<!-- Claude 补 -->
+
+```racket
+> (cps '(let ([twice (λ (h x) (h (h x)))]) (twice add1 1)))
+'((λ (twice) ((twice (λ v.3 (λ (k.1) (k.1 (apply add1 v.3)))) 1) values))
+  (λ (h x) (λ (k.0) ((h x) (λ (v.1) ((h v.1) k.0))))))
+```
+
 ## 语法糖
 
 `let*` 和 `let/lc` 在「镜子破裂」一节已经加过。多绑定的 `let` 脱糖为 lambda 应用：
@@ -1281,16 +1307,18 @@ Lambda 链的尾调用直接传递 `k.0`，999 例子的调用点延续是裸名
 (require racket/control)
 
 (define (cps exp)
-  (define trivial* (mutable-seteq))
-  (define (trivial? x) (set-member? trivial* x))
-  (define (add-trivial! x) (set-add! trivial* x))
-  (for-each add-trivial!
+  (define builtin*
    '(identity values
      display displayln
      zero? add1 sub1
      + - * /
      = < <= > >=
      eq? eqv? equal?))
+  (define (builtin? x) (and (memq x builtin*) #t))
+  (define trivial* (mutable-seteq))
+  (define (trivial? x) (set-member? trivial* x))
+  (define (add-trivial! x) (set-add! trivial* x))
+  (for-each add-trivial! builtin*)
 
   (define (β? b v)
     (match b
@@ -1324,6 +1352,10 @@ Lambda 链的尾调用直接传递 `k.0`，999 例子的调用点延续是裸名
   (define cps0
     (match-λ
       ['abort (cps0 '(λ (v) (shift _ v)))]
+      [(? builtin? x)
+       (define vn (fv))
+       (define kn (fk))
+       `(λ ,vn (λ (,kn) (,kn (apply ,x ,vn))))]
       [(? (not/c pair?) x) x]
       [`(λ ,x* ,body)
        (define kn (fk))

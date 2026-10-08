@@ -5,16 +5,18 @@
 (require racket/control)
 
 (define (cps exp)
-  (define trivial* (mutable-seteq))
-  (define (trivial? x) (set-member? trivial* x))
-  (define (add-trivial! x) (set-add! trivial* x))
-  (for-each add-trivial!
+  (define builtin*
    '(identity values
      display displayln
      zero? add1 sub1
      + - * /
      = < <= > >=
      eq? eqv? equal?))
+  (define (builtin? x) (and (memq x builtin*) #t))
+  (define trivial* (mutable-seteq))
+  (define (trivial? x) (set-member? trivial* x))
+  (define (add-trivial! x) (set-add! trivial* x))
+  (for-each add-trivial! builtin*)
 
   (define (β? b v)
     (match b
@@ -48,6 +50,10 @@
   (define cps0
     (match-λ
       ['abort (cps0 '(λ (v) (shift _ v)))]
+      [(? builtin? x)
+       (define vn (fv))
+       (define kn (fk))
+       `(λ ,vn (λ (,kn) (,kn (apply ,x ,vn))))]
       [(? (not/c pair?) x) x]
       [`(λ ,x* ,body)
        (define kn (fk))
@@ -158,6 +164,44 @@
   (define (run compiled)
     (parameterize ([current-namespace (make-base-namespace)])
       (eval compiled)))
+  ;; compiler-claims.md 的 a1–a3、b1–b3：只应用 #21，不含 #22 的 reset 修法。
+  (define builtin-value-cases
+    '((a1 (let ([f add1]) (f 41))
+          ((λ (f) ((f 41) values))
+           (λ v.0 (λ (k.0) (k.0 (apply add1 v.0)))))
+          42)
+      (a2 (let ([g add1]) (g 1))
+          ((λ (g) ((g 1) values))
+           (λ v.0 (λ (k.0) (k.0 (apply add1 v.0)))))
+          2)
+      (a3 (reset (let ([f add1]) (+ 1 (f 41))))
+          ((λ (f) ((f 41) (λ (v.2) (+ 1 v.2))))
+           (λ v.0 (λ (k.0) (k.0 (apply add1 v.0)))))
+          43)
+      (b1 ((λ (h) (h 1)) add1)
+          ((λ (h) ((h 1) values))
+           (λ v.0 (λ (k.0) (k.0 (apply add1 v.0)))))
+          2)
+      (b2 ((λ (h x) (h x)) add1 1)
+          ((λ (h x) ((h x) values))
+           (λ v.1 (λ (k.0) (k.0 (apply add1 v.1)))) 1)
+          2)
+      (b3 (let ([twice (λ (h x) (h (h x)))]) (twice add1 1))
+          ((λ (twice)
+             ((twice (λ v.3 (λ (k.1) (k.1 (apply add1 v.3)))) 1) values))
+           (λ (h x) (λ (k.0) ((h x) (λ (v.1) ((h v.1) k.0))))))
+          3)))
+  (for ([case builtin-value-cases])
+    (match-define (list label source expected-code expected-value) case)
+    (test-case (symbol->string label)
+      (define compiled (cps source))
+      (check-equal? compiled expected-code)
+      (define direct
+        (parameterize ([current-namespace (make-base-namespace)])
+          (eval '(require racket/control))
+          (eval `(reset ,source))))
+      (check-equal? direct expected-value)
+      (check-equal? (run compiled) direct)))
   (for ([source '((reset (+ 10 (shift k (k 3))))
                   (reset (+ 10 (shift k 3)))
                   (let ([x (reset (shift k (k 3)))]) (+ x 100)))])
