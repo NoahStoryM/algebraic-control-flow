@@ -1,0 +1,97 @@
+######## a. 内建函数换名后调用
+==== a1
+源程序:  (let ((f add1)) (f 41))
+编译输出: ((λ (f) ((f 41) values)) add1)
+目标运行: 打印 ""  结果 (error "application: not a procedure;\n expected a procedure that can be applied to arguments\n  given: 42")
+直接运行: 打印 ""  结果 (value 42)
+
+==== a2
+源程序:  (let ((g add1)) (g 1))
+编译输出: ((λ (g) ((g 1) values)) add1)
+目标运行: 打印 ""  结果 (error "application: not a procedure;\n expected a procedure that can be applied to arguments\n  given: 2")
+直接运行: 打印 ""  结果 (value 2)
+
+==== a3 reset 内
+源程序:  (reset (let ((f add1)) (+ 1 (f 41))))
+编译输出: ((λ (f) ((f 41) (λ (v.1) (+ 1 v.1)))) add1)
+目标运行: 打印 ""  结果 (error "application: not a procedure;\n expected a procedure that can be applied to arguments\n  given: 42")
+直接运行: 打印 ""  结果 (value 43)
+
+==== a4 对照：用户函数换名
+源程序:  (let ((f (λ (x) (add1 x)))) (f 41))
+编译输出: ((λ (f) ((f 41) values)) (λ (x) (λ (k.0) (k.0 (add1 x)))))
+目标运行: 打印 ""  结果 (value 42)
+直接运行: 打印 ""  结果 (value 42)
+
+==== a5 对照：文中的绕法，手动包成 lambda
+源程序:  (let ((f (λ (x) (add1 x)))) (+ 1 (f 41)))
+编译输出: ((λ (f) ((f 41) (λ (v.2) (+ 1 v.2)))) (λ (x) (λ (k.0) (k.0 (add1 x)))))
+目标运行: 打印 ""  结果 (value 43)
+直接运行: 打印 ""  结果 (value 43)
+
+######## b. 高阶：内建函数作为值传给函数
+==== b1
+源程序:  ((λ (h) (h 1)) add1)
+编译输出: ((λ (h) ((h 1) values)) add1)
+目标运行: 打印 ""  结果 (error "application: not a procedure;\n expected a procedure that can be applied to arguments\n  given: 2")
+直接运行: 打印 ""  结果 (value 2)
+
+==== b2 多参 lambda
+源程序:  ((λ (h x) (h x)) add1 1)
+编译输出: ((λ (h x) ((h x) values)) add1 1)
+目标运行: 打印 ""  结果 (error "application: not a procedure;\n expected a procedure that can be applied to arguments\n  given: 2")
+直接运行: 打印 ""  结果 (value 2)
+
+==== b3 传给用户定义的高阶函数
+源程序:  (let ((twice (λ (h x) (h (h x))))) (twice add1 1))
+编译输出: ((λ (twice) ((twice add1 1) values)) (λ (h x) (λ (k.0) ((h x) (λ (v.1) ((h v.1) k.0))))))
+目标运行: 打印 ""  结果 (error "application: not a procedure;\n expected a procedure that can be applied to arguments\n  given: 2")
+直接运行: 打印 ""  结果 (value 3)
+
+==== b4 对照：传用户函数
+源程序:  (let ((twice (λ (h x) (h (h x))))) (twice (λ (y) (add1 y)) 1))
+编译输出: ((λ (twice) ((twice (λ (y) (λ (k.1) (k.1 (add1 y)))) 1) values)) (λ (h x) (λ (k.0) ((h x) (λ (v.1) ((h v.1) k.0))))))
+目标运行: 打印 ""  结果 (value 3)
+直接运行: 打印 ""  结果 (value 3)
+
+b5: (map add1 xs)，目标程序里 xs = '(1 2)
+编译输出: ((map add1 xs) values)
+目标运行: (error "application: not a procedure;\n expected a procedure that can be applied to arguments\n  given: '(2 3)")
+
+######## c. reset 作为参数时的求值顺序
+==== c1 trivial 调用，reset 在前
+源程序:  (eq? (reset (display 1)) (display 2))
+编译输出: ((λ (v.2) (eq? (display 1) v.2)) (display 2))
+目标运行: 打印 "21"  结果 (value #t)
+直接运行: 打印 "12"  结果 (value #t)
+
+==== c2 trivial 调用，reset 在后（对照）
+源程序:  (eq? (display 1) (reset (display 2)))
+编译输出: ((λ (v.1) (eq? v.1 (display 2))) (display 1))
+目标运行: 打印 "12"  结果 (value #t)
+直接运行: 打印 "12"  结果 (value #t)
+
+==== c3 用户函数调用
+源程序:  (let ((f (λ (a b) a))) (f (reset (display 1)) (display 2)))
+编译输出: ((λ (f) ((λ (v.2) ((f (display 1) v.2) values)) (display 2))) (λ (a b) (λ (k.0) (k.0 a))))
+目标运行: 打印 "21"  结果 (value #<void>)
+直接运行: 打印 "12"  结果 (value #<void>)
+
+==== c4 带值的版本
+源程序:  (+ (reset (let ((a (display 1))) 1)) (let ((b (display 2))) 2))
+编译输出: ((λ (b) (+ ((λ (a) 1) (display 1)) 2)) (display 2))
+目标运行: 打印 "21"  结果 (value 3)
+直接运行: 打印 "12"  结果 (value 3)
+
+==== c5 rator 位置
+源程序:  ((reset (let ((a (display 1))) add1)) (let ((b (display 2))) 2))
+编译输出: ((λ (b) ((((λ (a) add1) (display 1)) 2) values)) (display 2))
+目标运行: 打印 "21"  结果 (error "application: not a procedure;\n expected a procedure that can be applied to arguments\n  given: 3")
+直接运行: 打印 "12"  结果 (value 3)
+
+==== c6 reset 里有 shift
+源程序:  (+ (reset (+ 10 (shift k (let ((a (display 1))) (k 1))))) (let ((b (display 2))) 2))
+编译输出: ((λ (b) (+ ((λ (k) ((λ (a) (k 1)) (display 1))) (λ (v.4) (+ 10 v.4))) 2)) (display 2))
+目标运行: 打印 "21"  结果 (value 13)
+直接运行: 打印 "12"  结果 (value 13)
+
