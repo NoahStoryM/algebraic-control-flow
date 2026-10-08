@@ -910,7 +910,7 @@ Lambda 分支加上 `(λ (k) ...)`：
 
 读 `<cont>` 产生式：`(λ <head> <cps>) | <trivial>`。延续要么是编译器构造的 lambda，要么是平凡集合中的一个名字。平凡集合从内建原语开始；它增长到包含每个延续变量。文法不区分它们，因为 η-归约已经表明它们是同一种东西。
 
-`<apply-cont>` 有两种写法。`(<cont> <cps>)` 把一段计算的结果交给延续，对应此前文法里的 `(let ([<var> <anf>]) <anf>)`：`((λ (v) body) e)` 就是 `(let ([v e]) body)`。另一种 `(<cont> <val> ...)` 是参数都已经是值的调用。
+`<apply-cont>` 有两种写法。此前文法里的 `(let ([<var> <anf>]) <anf>)`，对应的正是 `(<cont> <cps>)`：`(let ([v e]) body)` 就是 `((λ (v) body) e)`，一段计算的结果交给了延续。另一种 `(<cont> <val> ...)` 是参数都已经是值的调用。
 
 `<cont²>` 产生式 `(λ (<trivial>) <cps>)` 是一个**二阶延续**：它以调用者的延续为参数，使它成为延续的延续。它的类型是 $(p → a) → a = ¬ₐ¬ₐp$，第三篇的局部编码。`<proc>` 的形状是 `(λ <head> <cont²>)`，接受参数后交出一个 $¬ₐ¬ₐ$，正是 `anf1` 那样的 $𝒦ₐ$ 箭头：编译器自己的写法，现在也成了目标程序的写法。而 `<apply-cont²>` 不过是一个 `let`，只是绑定的值碰巧是一个延续：`((λ (<trivial>) <cps>) <cont>)` = `(let ([<trivial> <cont>]) <cps>)`。绑定本身没有什么特别的；特别的是参数。
 
@@ -1318,7 +1318,7 @@ Lambda 链的尾调用直接传递 `k.0`，999 例子的调用点延续是裸名
 
 # 完整代码参考
 
-变换器基于 Yin Wang 的 [`cps.ss`](https://github.com/yinwang0/historical/blob/master/cps.ss)。它输出的文法：
+变换器输出的文法：
 
 ```BNF
 <cps> ::= <val> | <if> | <apply>
@@ -1337,6 +1337,8 @@ Lambda 链的尾调用直接传递 `k.0`，999 例子的调用点延续是裸名
 
 <head>  ::= <var> | (<var> ...) | (<var> ... . <var>)
 ```
+
+产出这种代码的变换器，基于 Yin Wang 的 [`cps.ss`](https://github.com/yinwang0/historical/blob/master/cps.ss)：
 
 ```racket
 (require racket/control)
