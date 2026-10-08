@@ -615,26 +615,24 @@ $$¬q ∨ ¬¬q$$
 初版 `wait/fc` 的类型是 $¬¬q → ¬¬q$：输入和输出同类型，一个 `wait/fc` 的输出可以直接作为另一个 `wait/fc` 的输入。嵌套之后，每一层冻结的上下文都有自己的边界，边界穿越可以用 `dynamic-wind` 观察。调用 `(dynamic-wind enter thunk exit)` 求值 `thunk`，但在进入前运行 `enter`，在退出后运行 `exit`。关键点：这些守卫不仅在正常求值时触发，在延续跳转穿越边界时（无论是跳入还是跳出）也会触发。每当一次跳转进入某个 `dynamic-wind` 的范围，它的 `enter` 守卫触发；每当一次跳转离开，它的 `exit` 守卫触发。
 
 ```racket
-;; 时刻 1：在上下文 C1 中，冻结最内层计算
-(define W1
-  (dynamic-wind
-    (λ () (displayln "C1: enter"))
-    (λ () (wait/fc
-           (λ (fc)
-             (displayln "reached the frozen context C1")
-             (fc 'hello))))
-    (λ () (displayln "C1: exit"))))
-;; 时刻 2：在上下文 C2 中，把 W1 包裹进第二层冻结
-(define W2
-  (dynamic-wind
-    (λ () (displayln "C2: enter"))
-    (λ () (wait/fc W1))
-    (λ () (displayln "C2: exit"))))
-;; 时刻 3：触发链条
-```
-
-```racket
-> (displayln (call/cc W2))
+> (define W1  ; 时刻 1：在上下文 C1 中，冻结最内层计算
+    (dynamic-wind
+      (λ () (displayln "C1: enter"))
+      (λ () (wait/fc
+             (λ (fc)
+               (displayln "reached the frozen context C1")
+               (fc 'hello))))
+      (λ () (displayln "C1: exit"))))
+C1: enter
+C1: exit
+> (define W2  ; 时刻 2：在上下文 C2 中，把 W1 包裹进第二层冻结
+    (dynamic-wind
+      (λ () (displayln "C2: enter"))
+      (λ () (wait/fc W1))
+      (λ () (displayln "C2: exit"))))
+C2: enter
+C2: exit
+> (displayln (call/cc W2))  ; 时刻 3：触发链条
 C2: enter
 C2: exit
 C1: enter

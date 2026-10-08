@@ -677,8 +677,6 @@ application 分支有两个 `reset`：
   (kn+1 kn+1))
 ```
 
-运行：
-
 ```racket
 > (k0 k0)
 @*@**@***@****@...
@@ -700,14 +698,7 @@ application 分支有两个 `reset`：
 
 和上一个版本相比，唯一的差别是 `let/lc` 被包进了一个 lambda。程序编译没有报错。运行它：
 
-```racket
-> (eval (anf '(reset
-         (let* ([label (λ () (let/lc k k))]
-                [yin   (label)]
-                [_     (display #\@)]
-                [yang  (label)]
-                [_     (display #\*)])
-           (yin yang)))))
+```
 @*
 ```
 
@@ -1135,7 +1126,7 @@ Lambda 链的尾调用直接传递 `k.0`，999 例子的调用点延续是裸名
 第三篇「定界延续与 CPS」一节，把四个例子逐步化简成了 CPS。现在交给编译器。例一：
 
 ```racket
-> (cps '(let ([v (reset (let* ([x 3]  ;; 例 1：reset 加 abort，没有 shift
+> (cps '(let ([v (reset (let* ([x 3]  ; 例 1：reset 加 abort，没有 shift
                                [y (+ 2 x)])
                           (abort y)))])
           (+ 10 v)))
@@ -1147,17 +1138,17 @@ Lambda 链的尾调用直接传递 `k.0`，999 例子的调用点延续是裸名
 例二到例四：
 
 ```racket
-> (cps '(let ([v (reset (let* ([x (shift k 3)]  ;; 例 2：捕获后不使用
+> (cps '(let ([v (reset (let* ([x (shift k 3)]  ; 例 2：捕获后不使用
                                [y (+ 2 x)])
                           (abort y)))])
           (+ 10 v)))
 '((λ (v) (+ 10 v)) ((λ (k) 3) (λ (x) (+ 2 x))))
-> (cps '(let ([v (reset (let* ([x (shift k (k 3))]  ;; 例 3：调用被捕获的延续一次
+> (cps '(let ([v (reset (let* ([x (shift k (k 3))]  ; 例 3：调用被捕获的延续一次
                                [y (+ 2 x)])
                           (abort y)))])
           (+ 10 v)))
 '((λ (v) (+ 10 v)) ((λ (k) (k 3)) (λ (x) (+ 2 x))))
-> (cps '(let ([v (reset (let* ([x (shift k (let ([r (k 3)]) (k r)))]  ;; 例 4：调用被捕获的延续两次
+> (cps '(let ([v (reset (let* ([x (shift k (let ([r (k 3)]) (k r)))]  ; 例 4：调用被捕获的延续两次
                                [y (+ 2 x)])
                           (abort y)))])
           (+ 10 v)))
@@ -1198,14 +1189,7 @@ Lambda 链的尾调用直接传递 `k.0`，999 例子的调用点延续是裸名
 
 运行，阶梯回来了：
 
-```racket
-> (eval (cps '(reset
-         (let* ([label (λ () (let/lc k k))]
-                [yin   (label)]
-                [_     (display #\@)]
-                [yang  (label)]
-                [_     (display #\*)])
-           (yin yang)))))
+```
 @*@**@***@****@...
 ```
 

@@ -373,7 +373,7 @@ CPS 代码中用不到 `⊥ᵃ?`。那么在整段局部计算中，和 `⊥ᵃ`
 先用 `reset` 和 `abort` 做一次普通的调用与返回。内层计算给 `3` 加上 `2`，把答案交出来；外层拿到结果，再加上 `10`：
 
 ```racket
-> (anf:eval  ;; 例 1：reset 加 abort，没有 shift
+> (anf:eval  ; 例 1：reset 加 abort，没有 shift
    (anf:let* ([v (anf:reset
                   (anf:let* ([x (cps:id 3)]
                              [y (cps:+ 2 x)])
@@ -387,7 +387,7 @@ CPS 代码中用不到 `⊥ᵃ?`。那么在整段局部计算中，和 `⊥ᵃ`
 现在只改动产生 `x` 的位置，用 `shift` 捕获局部延续，但先不用它：
 
 ```racket
-> (anf:eval  ;; 例 2：捕获后不使用
+> (anf:eval  ; 例 2：捕获后不使用
    (anf:let* ([v (anf:reset
                   (anf:let* ([x (anf:shift cps:k (cps:id 3))]
                              [y (cps:+ 2 x)])
@@ -403,7 +403,7 @@ CPS 代码中用不到 `⊥ᵃ?`。那么在整段局部计算中，和 `⊥ᵃ`
 如果把这个 `3` 交给刚刚捕获的延续呢？
 
 ```racket
-> (anf:eval  ;; 例 3：调用被捕获的延续一次
+> (anf:eval  ; 例 3：调用被捕获的延续一次
    (anf:let* ([v (anf:reset
                   (anf:let* ([x (anf:shift cps:k (cps:k 3))]
                              [y (cps:+ 2 x)])
@@ -419,7 +419,7 @@ CPS 代码中用不到 `⊥ᵃ?`。那么在整段局部计算中，和 `⊥ᵃ`
 调用能够返回，就可以拿着返回值继续计算。把主体改成先调用一次，再把结果交给同一个 `cps:k`：
 
 ```racket
-> (anf:eval  ;; 例 4：调用被捕获的延续两次
+> (anf:eval  ; 例 4：调用被捕获的延续两次
    (anf:let* ([v (anf:reset
                   (anf:let* ([x (anf:shift cps:k
                                  (anf:let* ([r (cps:k 3)])

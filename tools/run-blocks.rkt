@@ -67,9 +67,10 @@
     (cond [(string-prefix? line "> ")
            (finish)
            (define source (substring line 2))
-           (unless (regexp-match? #px"^\\s*;" source)
-             (set! input source)
-             (set! ready? (and (complete-form input) #t)))]
+           (when (regexp-match? #px"^\\s*;" source)
+             (error 'repl "注释不能单独作为 REPL 输入：~s" source))
+           (set! input source)
+           (set! ready? (and (complete-form input) #t))]
           [(not input)
            (unless (string=? (string-trim line) "")
              (error 'repl "交互块的首行应有 > 提示符：~s" line))]
