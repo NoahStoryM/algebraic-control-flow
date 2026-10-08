@@ -165,6 +165,17 @@
                   (parameterize ([current-namespace (make-base-namespace)])
                     (eval '(require racket/control))
                     (eval `(reset ,source)))))
+  ;; 「再看阴阳谜题」：平凡集合里的名字不是一等值，延续与内建函数都如此；包进 lambda 才是。
+  (check-exn #rx"not a procedure.*given: 3"
+             (λ () (run (cps '(let ([id (reset (shift k k))]) (id (id 3)))))))
+  (check-equal? (run (cps '(let ([id (reset (shift k (λ (v) (k v))))]) (id (id 3))))) 3)
+  (check-equal? (cps '(let ([f add1]) (f 41)))
+                '((λ (f) ((f 41) values)) add1))
+  (check-exn #rx"not a procedure.*given: 42"
+             (λ () (run (cps '(let ([f add1]) (f 41))))))
+  (check-equal? (cps '(let ([f (λ (x) (add1 x))]) (f 41)))
+                '((λ (f) ((f 41) values)) (λ (x) (λ (k.0) (k.0 (add1 x))))))
+  (check-equal? (run (cps '(let ([f (λ (x) (add1 x))]) (f 41)))) 42)
   (check-true
    (output-starts-with?
     (λ ()
