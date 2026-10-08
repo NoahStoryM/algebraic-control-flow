@@ -55,7 +55,13 @@
        `(λ ,x* (λ (,kn) ,(cps1 body ctx0)))]
 
       [`(reset ,body)
-       (cps1 body id)]
+       (shift ctx
+         (define vn (fv))
+         (define r* (cps1 body id))
+         (match `(λ (,vn) ,(ctx vn))
+           [`(λ (,vn) ,b)       #:when (β? b vn) r*]
+           [`(λ (,vn) (,k ,vn)) #:when (η? k vn) `(,k ,r*)]
+           [k                                    `(,k ,r*)]))]
       [`(shift _ ,body)
        (shift _ (cps1 body id))]
       [`(shift ,k ,body)
@@ -152,7 +158,7 @@
                   (λ (v.1) ((f v.1) values))))
   (check-equal?
    (cps '(reset (let ([f abort]) (+ 1 (f 5)))))
-   '((λ (f) ((f 5) (λ (v.1) (+ 1 v.1))))
+   '((λ (f) ((f 5) (λ (v.2) (+ 1 v.2))))
      (λ (v) (λ (k.0) v))))
   ;; 对具体程序同时核对编译输出的运行值与宿主定界计算的结果。
   (define (run compiled)
@@ -390,6 +396,137 @@
     (anf1 exp id))
 )
 
+;; 「镜子破裂」：含命名 if，函数主体仍从 id 开始。
+(module stage-delimited racket
+  (require racket/control (submod ".." stage-4))
+  (require (only-in racket/match [match-lambda match-λ]))
+  (provide (all-defined-out))
+  (define (anf exp)
+    (define fv (make-genvar 'v))
+    (define fk (make-genvar 'k))
+    (define id (reset (shift k k)))
+    (define (anf1 exp ctx) (reset (ctx (anf0 exp))))
+    (define anf0
+      (match-λ
+        [(? (not/c pair?) x) x]
+        [`(λ ,x* ,body)
+         `(λ ,x* ,(anf1 body id))]
+        [`(reset ,body)
+         (shift ctx
+           (define vn (fv))
+           `(let ([,vn ,(anf1 body id)])
+              ,(ctx vn)))]
+        [`(shift ,k ,body)
+         (shift ctx
+           (define vn (fv))
+           `(let ([,k (λ (,vn) ,(ctx vn))])
+              ,(anf1 body id)))]
+        [`(let/lc ,k ,body)
+         (anf0 `(shift ,k (,k ,body)))]
+        [`(let* () ,body)
+         (anf0 body)]
+        [`(let* ([,x ,e] . ,bind*) ,body)
+         (anf0 `(let ([,x ,e]) (let* ,bind* ,body)))]
+        [`(if ,test ,conseq ,alt)
+         (shift ctx
+           (define vn (fv))
+           (define kn (fk))
+           (define t (anf0 test))
+           (define ctx0 (reset `(,kn ,(shift k k))))
+           `(let ([,kn (λ (,vn) ,(ctx vn))])
+              (if ,t ,(anf1 conseq ctx0) ,(anf1 alt ctx0))))]
+        [`(let ([,x ,e]) ,body)
+         (anf0 `((λ (,x) ,body) ,e))]
+        [`((λ (,x) ,body) ,rand)
+         (shift ctx
+           (define d (anf0 rand))
+           `(let ([,x ,d]) ,(anf1 body ctx)))]
+        [`(,rator . ,rand*)
+         (shift ctx
+           (define vn (fv))
+           (define r (anf0 rator))
+           (define d* (map anf0 rand*))
+           `(let ([,vn (,r . ,d*)]) ,(ctx vn)))]))
+    (anf1 exp id))
+)
+
+;; 「调用者的延续」：含命名 if，用户函数显式接受调用者的延续。
+(module stage-caller racket
+  (require racket/control)
+  (require (only-in racket/match [match-lambda match-λ]))
+  (provide (all-defined-out))
+  (define (anf exp)
+    (define trivial* (mutable-seteq))
+    (define (trivial? x) (set-member? trivial* x))
+    (define (add-trivial! x) (set-add! trivial* x))
+    (for-each add-trivial!
+     '(identity values
+       display displayln
+       zero? add1 sub1
+       + - * /
+       = < <= > >=
+       eq? eqv? equal?))
+    (define ((make-genvar name [n 0]))
+      (define var (string->symbol (format "~a.~a" name n)))
+      (when (eq? name 'k) (add-trivial! var))
+      (set! n (add1 n))
+      var)
+    (define fv (make-genvar 'v))
+    (define fk (make-genvar 'k))
+    (define id (reset (shift k k)))
+    (define (anf1 exp ctx) (reset (ctx (anf0 exp))))
+    (define anf0
+      (match-λ
+        [(? (not/c pair?) x) x]
+        [`(λ ,x* ,body)
+         (define kn (fk))
+         (define ctx0 (reset `(,kn ,(shift k k))))
+         `(λ ,x* (λ (,kn) ,(anf1 body ctx0)))]
+        [`(reset ,body)
+         (shift ctx
+           (define vn (fv))
+           `(let ([,vn ,(anf1 body id)])
+              ,(ctx vn)))]
+        [`(shift ,k ,body)
+         (add-trivial! k)
+         (shift ctx
+           (define vn (fv))
+           `(let ([,k (λ (,vn) ,(ctx vn))])
+              ,(anf1 body id)))]
+        [`(let/lc ,k ,body)
+         (anf0 `(shift ,k (,k ,body)))]
+        [`(let* () ,body)
+         (anf0 body)]
+        [`(let* ([,x ,e] . ,bind*) ,body)
+         (anf0 `(let ([,x ,e]) (let* ,bind* ,body)))]
+        [`(if ,test ,conseq ,alt)
+         (shift ctx
+           (define vn (fv))
+           (define kn (fk))
+           (define t (anf0 test))
+           (define ctx0 (reset `(,kn ,(shift k k))))
+           `(let ([,kn (λ (,vn) ,(ctx vn))])
+              (if ,t ,(anf1 conseq ctx0) ,(anf1 alt ctx0))))]
+        [`(let ([,x ,e]) ,body)
+         (anf0 `((λ (,x) ,body) ,e))]
+        [`((λ (,x) ,body) ,rand)
+         (shift ctx
+           (define d (anf0 rand))
+           `(let ([,x ,d]) ,(anf1 body ctx)))]
+        [`(,(? trivial? r) . ,rand*)
+         (shift ctx
+           (define vn (fv))
+           (define d* (map anf0 rand*))
+           `(let ([,vn (,r . ,d*)]) ,(ctx vn)))]
+        [`(,rator . ,rand*)
+         (shift ctx
+           (define vn (fv))
+           (define r (anf0 rator))
+           (define d* (map anf0 rand*))
+           `((,r . ,d*) (λ (,vn) ,(ctx vn))))]))
+    (anf1 exp id))
+)
+
 (module stage-34 racket
 
   (provide (all-defined-out))
@@ -438,3 +575,233 @@
   (check-true (output-starts-with?
                (λ () (cps-yin:k0 (λ (v) (λ (k.0) (k.0 (cps-yin:k0 v))))))
                "@*@**@***@")))
+
+(module+ test
+  (require (prefix-in delimited: (submod ".." stage-delimited))
+           (prefix-in caller: (submod ".." stage-caller)))
+  ;; 每个展示的编译输出分别对其所属阶段断言，不能以最终版代替中间版。
+  (check-equal?
+   (delimited:anf '(reset (+ 1 (shift k (k 42)))))
+   '(let ([v.0 (let ([k (λ (v.2) (let ([v.1 (+ 1 v.2)]) v.1))]) (let ([v.3 (k 42)]) v.3))])
+      v.0))
+  (check-equal?
+   (delimited:anf '(+ 10 (reset (+ 1 (shift k 42)))))
+   '(let ([v.1 (let ([k (λ (v.3) (let ([v.2 (+ 1 v.3)]) v.2))]) 42)])
+      (let ([v.0 (+ 10 v.1)]) v.0)))
+  (check-equal?
+   (delimited:anf '(reset (let* ((kn (let/lc k0 k0)) (k (let/lc kn+1 kn+1))) (kn k))))
+   '(let ([v.0
+           (let ([k0
+                  (λ (v.1)
+                    (let ([kn v.1])
+                      (let ([kn+1 (λ (v.2) (let ([k v.2]) (let ([v.3 (kn k)]) v.3)))])
+                        (let ([v.4 (kn+1 kn+1)]) v.4))))])
+             (let ([v.5 (k0 k0)]) v.5))])
+      v.0))
+  (check-equal?
+   (delimited:anf '(reset (let ([f (λ (x) (shift k 999))]) (add1 (f 42)))))
+   '(let ([v.0
+           (let ([f (λ (x) (let ([k (λ (v.1) v.1)]) 999))])
+             (let ([v.3 (f 42)]) (let ([v.2 (add1 v.3)]) v.2)))])
+      v.0))
+  (check-equal?
+   (caller:anf '(reset (let ([f (λ (x) (shift k 999))]) (add1 (f 42)))))
+   '(let ([v.0
+           (let ([f (λ (x) (λ (k.0) (let ([k (λ (v.1) (k.0 v.1))]) 999)))])
+             ((f 42) (λ (v.3) (let ([v.2 (add1 v.3)]) v.2))))])
+      v.0))
+  (check-equal?
+   (caller:anf '(λ (n) (f (g n))))
+   '(λ (n) (λ (k.0) ((g n) (λ (v.1) ((f v.1) (λ (v.0) (k.0 v.0))))))))
+  (check-equal? (cps '(if a b c)) '(if a b c))
+  (check-equal? (cps '(add1 (if a b c))) '(if a (add1 b) (add1 c)))
+  (check-equal?
+   (cps '(f (if a b c)))
+   '((λ (k.0) (if a (k.0 b) (k.0 c))) (λ (v.1) ((f v.1) values))))
+  (check-equal? (cps '(λ (n) (f (g n)))) '(λ (n) (λ (k.0) ((g n) (λ (v.1) ((f v.1) k.0))))))
+  (check-equal?
+   (cps '(reset (let ([f (λ (x) (shift k 999))]) (add1 (f 42)))))
+   '((λ (f) ((f 42) add1)) (λ (x) (λ (k.0) ((λ (k) 999) k.0)))))
+  (check-equal?
+   (cps '(reset (let ([f abort]) (+ 1 (f 5)))))
+   '((λ (f) ((f 5) (λ (v.2) (+ 1 v.2)))) (λ (v) (λ (k.0) v))))
+  (check-equal?
+   (cps '(let ([k (reset (let ([x (let/cc k (abort k))]) (+ x 2)))]) (+ (reset (k 3)) 100)))
+   '((λ (k) ((λ (v.7) (+ v.7 100)) ((k 3) values)))
+     ((λ (k.0) (λ (v.1) (λ (k.1) (k.0 v.1)))) (λ (x) (+ x 2)))))
+  (check-equal?
+   (cps '(let ([v (reset (let* ((x 3) (y (+ 2 x))) (abort y)))]) (+ 10 v)))
+   '((λ (v) (+ 10 v)) ((λ (x) (+ 2 x)) 3)))
+  (check-equal?
+   (cps '(let ([v (reset (let* ((x (shift k 3)) (y (+ 2 x))) (abort y)))]) (+ 10 v)))
+   '((λ (v) (+ 10 v)) ((λ (k) 3) (λ (x) (+ 2 x)))))
+  (check-equal?
+   (cps '(let ([v (reset (let* ((x (shift k (k 3))) (y (+ 2 x))) (abort y)))]) (+ 10 v)))
+   '((λ (v) (+ 10 v)) ((λ (k) (k 3)) (λ (x) (+ 2 x)))))
+  (check-equal?
+   (cps
+    '(let ([v (reset (let* ((x (shift k (let ([r (k 3)]) (k r)))) (y (+ 2 x))) (abort y)))])
+       (+ 10 v)))
+   '((λ (v) (+ 10 v)) ((λ (k) (k (k 3))) (λ (x) (+ 2 x)))))
+  (check-equal?
+   (cps
+    '(reset
+      (let* ((label (λ () (let/lc k k)))
+             (yin (label))
+             (_ (display #\@))
+             (yang (label))
+             (_ (display #\*)))
+        (yin yang))))
+   '((λ (label)
+       ((label)
+        (λ (yin)
+          ((λ (_) ((label) (λ (yang) ((λ (_) ((yin yang) values)) (display #\*)))))
+           (display #\@)))))
+     (λ () (λ (k.0) ((λ (k) (k k)) k.0)))))
+  (check-equal?
+   (cps '(let ([id (reset (shift k k))]) (id (id 3))))
+   '((λ (id) ((id 3) (λ (v.3) ((id v.3) values)))) values))
+  (check-equal?
+   (cps '(let ([id (reset (shift k (λ (v) (k v))))]) (id (id 3))))
+   '((λ (id) ((id 3) (λ (v.4) ((id v.4) values))))
+     ((λ (k) (λ (v) (λ (k.0) (k.0 (k v))))) values)))
+  (check-equal? (cps '(let ([f add1]) (f 41))) '((λ (f) ((f 41) values)) add1))
+  (check-equal?
+   (cps '(let ([f (λ (x) (add1 x))]) (f 41)))
+   '((λ (f) ((f 41) values)) (λ (x) (λ (k.0) (k.0 (add1 x))))))
+  (check-equal?
+   (cps
+    '(reset
+      (let* ((kn (let/lc k0 (λ (v) (k0 v))))
+             (_ (display #\@))
+             (k (let/lc kn+1 (λ (v) (kn+1 v))))
+             (_ (display #\*)))
+        (kn k))))
+   '((λ (k0) (k0 (λ (v) (λ (k.0) (k.0 (k0 v))))))
+     (λ (kn)
+       ((λ (_)
+          ((λ (kn+1) (kn+1 (λ (v) (λ (k.1) (k.1 (kn+1 v))))))
+           (λ (k) ((λ (_) ((kn k) values)) (display #\*)))))
+        (display #\@)))))
+  ;; 命名 if 的实现沿用正文；调用者版中生成的 k.n 也必须是平凡名字。
+  (check-equal? (delimited:anf '(f (if a b c)))
+                '(let ([k.0 (λ (v.1) (let ([v.0 (f v.1)]) v.0))])
+                   (if a (k.0 b) (k.0 c))))
+  (check-equal? (caller:anf '(f (if a b c)))
+                '(let ([k.0 (λ (v.1) ((f v.1) (λ (v.0) v.0)))])
+                   (if a (k.0 b) (k.0 c))))
+  (define example-999 '(reset (let ([f (λ (x) (shift k 999))]) (add1 (f 42)))))
+  (check-equal? (run (delimited:anf example-999)) 1000)
+  (check-equal? (run (caller:anf example-999)) 999)
+  (check-equal? (run (cps example-999)) 999)
+  (check-equal? (run (delimited:anf '(reset (+ 1 (shift k (k 42)))))) 43)
+  (check-equal? (run (delimited:anf '(+ 10 (reset (+ 1 (shift k 42)))))) 52)
+  (define label-puzzle
+    '(reset (let* ([label (λ () (let/lc k k))]
+                   [yin (label)] [_ (display #\@)]
+                   [yang (label)] [_ (display #\*)])
+              (yin yang))))
+  (define label-result (delimited:anf label-puzzle))
+  (check-equal?
+   label-result
+   '(let ([v.0
+           (let ([label (λ () (let ([k (λ (v.1) v.1)]) (let ([v.2 (k k)]) v.2)))])
+             (let ([v.3 (label)])
+               (let ([yin v.3])
+                 (let ([v.4 (display #\@)])
+                   (let ([_ v.4])
+                     (let ([v.5 (label)])
+                       (let ([yang v.5])
+                         (let ([v.6 (display #\*)])
+                           (let ([_ v.6]) (let ([v.7 (yin yang)]) v.7))))))))))])
+      v.0))
+  ;; 「诊断」展示的 label 子式，使用完整编译过程中分配的编号。
+  (check-equal? (match label-result
+                  [`(let ([v.0 (let ([label ,compiled]) ,_)]) v.0) compiled])
+                '(λ () (let ([k (λ (v.1) v.1)]) (let ([v.2 (k k)]) v.2))))
+  (check-equal? (with-output-to-string (λ () (run label-result))) "@*")
+  (check-true (output-starts-with? (λ () (run (caller:anf label-puzzle))) "@*@**@***@"))
+  (define (desugar exp)
+    (match exp
+      [`(let ([,x ,e]) ,body) `((λ (,x) ,(desugar body)) ,(desugar e))]
+      [(? pair?) (map desugar exp)]
+      [_ exp]))
+  (define before-999
+    '((λ (v.0) v.0)
+      ((λ (f) ((f 42) (λ (v.3) ((λ (v.2) v.2) (add1 v.3)))))
+       (λ (x) (λ (k.0) ((λ (k) 999) (λ (v.1) (k.0 v.1))))))))
+  (define after-999
+    '((λ (f) ((f 42) add1)) (λ (x) (λ (k.0) ((λ (k) 999) k.0)))))
+  (check-equal? (desugar (caller:anf example-999)) before-999)
+  (check-equal? (cps example-999) after-999)
+  (define (lambda-count exp)
+    (if (pair? exp)
+        (+ (if (eq? (car exp) 'λ) 1 0) (apply + (map lambda-count exp)))
+        0))
+  (check-equal? (lambda-count before-999) 8)
+  (check-equal? (lambda-count after-999) 4)
+  (check-equal? (run before-999) 999)
+  ;; 「混合体」的手工 β/η 归约，按新版编号核对结果。
+  (for ([exp '((λ (v.3) (let ([v.2 (add1 v.3)]) v.2))
+                (λ (v.3) ((λ (v.2) v.2) (add1 v.3)))
+                (λ (v.3) (add1 v.3)) add1)])
+    (check-equal? ((run exp) 999) 1000))
+  (check-equal? (run '((λ (v.2) v.2) (add1 999))) (run '(add1 999)))
+  ;; 最终版文中提供了运行结果的有限例子。
+  (for ([source '((reset (let ([f abort]) (+ 1 (f 5))))
+                  (let ([k (reset (let ([x (let/cc k (abort k))]) (+ x 2)))])
+                    (+ (reset (k 3)) 100))
+                  (let ([v (reset (let* ([x 3] [y (+ 2 x)]) (abort y)))]) (+ 10 v))
+                  (let ([v (reset (let* ([x (shift k 3)] [y (+ 2 x)]) (abort y)))]) (+ 10 v))
+                  (let ([v (reset (let* ([x (shift k (k 3))] [y (+ 2 x)]) (abort y)))]) (+ 10 v))
+                  (let ([v (reset (let* ([x (shift k (let ([r (k 3)]) (k r)))]
+                                        [y (+ 2 x)]) (abort y)))]) (+ 10 v)))]
+        [expected '(5 105 15 13 15 17)])
+    (check-equal? (run (cps source)) expected))
+  (check-true
+   (output-starts-with?
+    (λ () (run (cps '(reset
+                      (let* ([kn (let/lc k0 (λ (v) (k0 v)))]
+                             [_ (display #\@)]
+                             [k (let/lc kn+1 (λ (v) (kn+1 v)))]
+                             [_ (display #\*)])
+                        (kn k))))))
+    "@*@**@***@"))
+  ;; compiler-claims.md c 节的六例：先独立运行源程序，再比对各阶段的打印。
+  (define order-cases
+    '((eq? (reset (display 1)) (display 2))
+      (eq? (display 1) (reset (display 2)))
+      (let ([f (λ (a b) a)]) (f (reset (display 1)) (display 2)))
+      (+ (reset (let ([a (display 1)]) 1)) (let ([b (display 2)]) 2))
+      ((reset (let ([a (display 1)]) add1)) (let ([b (display 2)]) 2))
+      (+ (reset (+ 10 (shift k (let ([a (display 1)]) (k 1)))))
+         (let ([b (display 2)]) 2))))
+  (define (direct source)
+    (parameterize ([current-namespace (make-base-namespace)])
+      (eval '(require racket/control))
+      (eval `(reset ,source))))
+  (define (observe thunk)
+    (define out (open-output-string))
+    (define result
+      (parameterize ([current-output-port out])
+        (with-handlers ([exn:fail? values]) (thunk))))
+    (values (get-output-string out) result))
+  (for ([source order-cases] [n (in-naturals)])
+    (define-values (printed expected) (observe (λ () (direct source))))
+    (check-equal? printed "12")
+    (for ([compiler (list delimited:anf caller:anf cps)] [stage (in-naturals)])
+      (define-values (actual result) (observe (λ () (run (compiler source)))))
+      (check-equal? actual printed (format "c~a 阶段 ~a" (add1 n) stage))
+      (if (and (= n 4) (> stage 0))
+          ;; #49 已定：内建函数名不是一等值。顺序修复仍须先打印 12 再报错。
+          (check-true (and (exn:fail? result)
+                           (regexp-match? #rx"not a procedure.*given: 3" (exn-message result))))
+          (check-equal? result expected))))
+  ;; 支持的用户函数作 rator 值，顺序与最终返回值都一致。
+  (define wrapped-rator
+    '((reset (let ([a (display 1)]) (λ (x) (add1 x))))
+      (let ([b (display 2)]) 2)))
+  (for ([compiler (list delimited:anf caller:anf cps)])
+    (define-values (printed result) (observe (λ () (run (compiler wrapped-rator)))))
+    (check-equal? printed "12")
+    (check-equal? result 3)))
