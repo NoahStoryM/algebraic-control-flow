@@ -132,8 +132,7 @@ ANF 需要给中间结果命名。如果函数调用的参数本身也是函数�
 以 `(h (f (g a)))` 为例：
 
 ```racket
-(anf '(h (f (g a))))
-;; =>
+> (anf '(h (f (g a))))
 '(h (f (g a)))
 ```
 
@@ -220,8 +219,7 @@ ANF 需要给中间结果命名。如果函数调用的参数本身也是函数�
 字面量、变量和 lambda 本身已经是 `<val>`，所以直接传给 `ctx`。Lambda 体用 `id` 编译：每次函数调用分配一个全新的栈。`if` 的测试条件必须是 `<val>`，所以先编译它，然后发射 `if`，两个分支都用 `ctx` 继续。`let`/lambda-application 分支做脱糖并发射 `let`，体部用 `ctx` 继续。
 
 ```racket
-(anf '(h (f (g a))))
-;; =>
+> (anf '(h (f (g a))))
 '(let ([v.2 (g a)]) (let ([v.1 (f v.2)]) (let ([v.0 (h v.1)]) v.0)))
 ```
 
@@ -251,7 +249,7 @@ ANF 需要给中间结果命名。如果函数调用的参数本身也是函数�
 
 考虑 `ctx` 以字面 lambda 出现的调用点。为了匹配表中的 CPS 形式，把 `anf1` 包在一个 lambda 里，使两参数结构显式化。结构吻合：一个表达式和一个延续，分别作为参数传递。ANF + reset/shift 一行给出了延续由 `shift` 取得、而非作为参数传递时的写法：
 
-```racket
+```text
 ;; 原始调用点：
 (anf1 sub (λ (w) body))
 
@@ -276,7 +274,7 @@ ANF 需要给中间结果命名。如果函数调用的参数本身也是函数�
 
 另一类调用点直接传递 `ctx`，没有包在 lambda 里。同样的包装技巧可用：`(anf1 sub (λ (w) (ctx w)))`。应用同一组表：
 
-```racket
+```text
 (anf1 sub ctx)
 ;; = (anf1 sub (λ (w) (ctx w)))    ; η-展开
 ;; =>
@@ -460,16 +458,11 @@ application 分支有两个 `reset`：
 三个例子，分别覆盖多参数调用、lambda 和 `if`：
 
 ```racket
-(anf '(f (g a) (h b)))
-;; =>
+> (anf '(f (g a) (h b)))
 '(let ([v.1 (g a)]) (let ([v.2 (h b)]) (let ([v.0 (f v.1 v.2)]) v.0)))
-
-(anf '(λ (x) (f (g x))))
-;; =>
+> (anf '(λ (x) (f (g x))))
 '(λ (x) (let ([v.1 (g x)]) (let ([v.0 (f v.1)]) v.0)))
-
-(anf '(if (f x) (g a) (h b)))
-;; =>
+> (anf '(if (f x) (g a) (h b)))
 '(let ([v.0 (f x)]) (if v.0 (let ([v.1 (g a)]) v.1) (let ([v.2 (h b)]) v.2)))
 ```
 
@@ -495,8 +488,7 @@ application 分支有两个 `reset`：
 整个剩余上下文被复制进了每个分支。试着把一个 `if` 放进一个更大的表达式：
 
 ```racket
-(anf '(f (if a b c)))
-;; =>
+> (anf '(f (if a b c)))
 '(if a (let ([v.0 (f b)]) v.0) (let ([v.0 (f c)]) v.0))
 ```
 
@@ -538,8 +530,7 @@ application 分支有两个 `reset`：
 用之前让代码膨胀的那个例子测试：
 
 ```racket
-(anf '(f (if a b c)))
-;; =>
+> (anf '(f (if a b c)))
 '(let ([k.0 (λ (v.1) (let ([v.0 (f v.1)]) v.0))])
    (if a (k.0 b) (k.0 c)))
 ```
@@ -609,12 +600,9 @@ application 分支有两个 `reset`：
 先试两个简单的例子：
 
 ```racket
-(anf '(reset (+ 1 (shift k (k 42)))))
-;; =>
+> (anf '(reset (+ 1 (shift k (k 42)))))
 '(let ([k (λ (v.1) (let ([v.0 (+ 1 v.1)]) v.0))]) (let ([v.2 (k 42)]) v.2))
-
-(anf '(+ 10 (reset (+ 1 (shift k 42)))))
-;; =>
+> (anf '(+ 10 (reset (+ 1 (shift k 42)))))
 '(let ([v.0 (+ 10 (let ([k (λ (v.2) (let ([v.1 (+ 1 v.2)]) v.1))]) 42))]) v.0)
 ```
 
@@ -656,11 +644,10 @@ application 分支有两个 `reset`：
 先去掉 `display`，只看控制结构：
 
 ```racket
-(anf '(reset
+> (anf '(reset
        (let* ([kn (let/lc k0 k0)]
               [k  (let/lc kn+1 kn+1)])
          (kn k))))
-;; =>
 '(let ([k0 (λ (v.0)
              (let ([kn v.0])
                (let ([kn+1 (λ (v.1)
@@ -688,7 +675,13 @@ application 分支有两个 `reset`：
     (display #\*)
     (kn k))
   (kn+1 kn+1))
-(k0 k0)
+```
+
+运行：
+
+```racket
+> (k0 k0)
+@*@**@***@****@...
 ```
 
 第一篇的互递归，逐行对应。那里我们读着追踪输出写出了它；这里编译器从源代码推导出了它。
@@ -707,7 +700,14 @@ application 分支有两个 `reset`：
 
 和上一个版本相比，唯一的差别是 `let/lc` 被包进了一个 lambda。程序编译没有报错。运行它：
 
-```
+```racket
+> (eval (anf '(reset
+       (let* ([label (λ () (let/lc k k))]
+              [yin   (label)]
+              [_     (display #\@)]
+              [yang  (label)]
+              [_     (display #\*)])
+         (yin yang))))
 @*
 ```
 
@@ -734,8 +734,7 @@ application 分支有两个 `reset`：
 再用一个更小的例子确认。一个函数，主体包含 `shift`，在 `reset` 内部、一个还有剩余工作的调用处被调用：
 
 ```racket
-(anf '(reset (let ([f (λ (x) (shift k 999))]) (add1 (f 42)))))
-;; =>
+> (anf '(reset (let ([f (λ (x) (shift k 999))]) (add1 (f 42)))))
 '(let ([f (λ (x) (let ([k (λ (v.0) v.0)]) 999))])
    (let ([v.2 (f 42)]) (let ([v.1 (add1 v.2)]) v.1)))
 ```
@@ -825,8 +824,7 @@ Lambda 分支加上 `(λ (k) ...)`：
 再编译那个出错的例子：
 
 ```racket
-(anf '(reset (let ([f (λ (x) (shift k 999))]) (add1 (f 42)))))
-;; =>
+> (anf '(reset (let ([f (λ (x) (shift k 999))]) (add1 (f 42)))))
 '(let ([f (λ (x) (λ (k.0) (let ([k (λ (v.0) (k.0 v.0))]) 999)))])
    ((f 42) (λ (v.2) (let ([v.1 (add1 v.2)]) v.1))))
 ```
@@ -842,8 +840,7 @@ Lambda 分支加上 `(λ (k) ...)`：
 考虑：
 
 ```racket
-(anf '(λ (n) (f (g n))))
-;; =>
+> (anf '(λ (n) (f (g n))))
 '(λ (n) (λ (k.0) ((g n) (λ (v.1) ((f v.1) (λ (v.0) (k.0 v.0)))))))
 ```
 
@@ -1063,16 +1060,11 @@ Lambda 分支加上 `(λ (k) ...)`：
 每个分支一个输入：
 
 ```racket
-(cps '(if a b c))
-;; =>
+> (cps '(if a b c))
 '(if a b c)
-
-(cps '(add1 (if a b c)))
-;; =>
+> (cps '(add1 (if a b c)))
 '(if a (add1 b) (add1 c))
-
-(cps '(f (if a b c)))
-;; =>
+> (cps '(f (if a b c)))
 '((λ (k.0) (if a (k.0 b) (k.0 c))) (λ (v.1) ((f v.1) values)))
 ```
 
@@ -1081,12 +1073,9 @@ Lambda 分支加上 `(λ (k) ...)`：
 前面手工归约过的两个例子：
 
 ```racket
-(cps '(λ (n) (f (g n))))
-;; =>
+> (cps '(λ (n) (f (g n))))
 '(λ (n) (λ (k.0) ((g n) (λ (v.1) ((f v.1) k.0)))))
-
-(cps '(reset (let ([f (λ (x) (shift k 999))]) (add1 (f 42)))))
-;; =>
+> (cps '(reset (let ([f (λ (x) (shift k 999))]) (add1 (f 42)))))
 '((λ (f) ((f 42) add1)) (λ (x) (λ (k.0) ((λ (k) 999) k.0))))
 ```
 
@@ -1124,8 +1113,7 @@ Lambda 链的尾调用直接传递 `k.0`，999 例子的调用点延续是裸名
 `abort` 作为一等值，编译出来是什么？
 
 ```racket
-(cps '(reset (let ([f abort]) (+ 1 (f 5)))))
-;; =>
+> (cps '(reset (let ([f abort]) (+ 1 (f 5)))))
 '((λ (f) ((f 5) (λ (v.1) (+ 1 v.1)))) (λ (v) (λ (k.0) v)))
 ```
 
@@ -1134,9 +1122,8 @@ Lambda 链的尾调用直接传递 `k.0`，999 例子的调用点延续是裸名
 `let/cc` 也是如此。第三篇「元延续」一节的例子：
 
 ```racket
-(cps '(let ([k (reset (let ([x (let/cc k (abort k))]) (+ x 2)))])
+> (cps '(let ([k (reset (let ([x (let/cc k (abort k))]) (+ x 2)))])
         (+ (reset (k 3)) 100)))
-;; =>
 '((λ (k) (+ ((k 3) values) 100))
   ((λ (k.0) (λ (v.0) (λ (k.1) (k.0 v.0)))) (λ (x) (+ x 2))))
 ```
@@ -1148,12 +1135,11 @@ Lambda 链的尾调用直接传递 `k.0`，999 例子的调用点延续是裸名
 第三篇「定界延续与 CPS」一节，把四个例子逐步化简成了 CPS。现在交给编译器。例一：
 
 ```racket
-;; 例 1：reset 加 abort，没有 shift
-(cps '(let ([v (reset (let* ([x 3]
+> ;; 例 1：reset 加 abort，没有 shift
+> (cps '(let ([v (reset (let* ([x 3]
                              [y (+ 2 x)])
                         (abort y)))])
         (+ 10 v)))
-;; =>
 '((λ (v) (+ 10 v)) ((λ (x) (+ 2 x)) 3))
 ```
 
@@ -1162,28 +1148,23 @@ Lambda 链的尾调用直接传递 `k.0`，999 例子的调用点延续是裸名
 例二到例四：
 
 ```racket
-;; 例 2：捕获后不使用
-(cps '(let ([v (reset (let* ([x (shift k 3)]
+> ;; 例 2：捕获后不使用
+> (cps '(let ([v (reset (let* ([x (shift k 3)]
                              [y (+ 2 x)])
                         (abort y)))])
         (+ 10 v)))
-;; =>
 '((λ (v) (+ 10 v)) ((λ (k) 3) (λ (x) (+ 2 x))))
-
-;; 例 3：调用被捕获的延续一次
-(cps '(let ([v (reset (let* ([x (shift k (k 3))]
+> ;; 例 3：调用被捕获的延续一次
+> (cps '(let ([v (reset (let* ([x (shift k (k 3))]
                              [y (+ 2 x)])
                         (abort y)))])
         (+ 10 v)))
-;; =>
 '((λ (v) (+ 10 v)) ((λ (k) (k 3)) (λ (x) (+ 2 x))))
-
-;; 例 4：调用被捕获的延续两次
-(cps '(let ([v (reset (let* ([x (shift k (let ([r (k 3)]) (k r)))]
+> ;; 例 4：调用被捕获的延续两次
+> (cps '(let ([v (reset (let* ([x (shift k (let ([r (k 3)]) (k r)))]
                              [y (+ 2 x)])
                         (abort y)))])
         (+ 10 v)))
-;; =>
 '((λ (v) (+ 10 v)) ((λ (k) (k (k 3))) (λ (x) (+ 2 x))))
 ```
 
@@ -1204,14 +1185,13 @@ Lambda 链的尾调用直接传递 `k.0`，999 例子的调用点延续是裸名
 「镜子破裂」一节，函数形式的谜题只打印出 `@*`。修复之后再编译它：
 
 ```racket
-(cps '(reset
+> (cps '(reset
        (let* ([label (λ () (let/lc k k))]
               [yin   (label)]
               [_     (display #\@)]
               [yang  (label)]
               [_     (display #\*)])
          (yin yang))))
-;; =>
 '((λ (label)
     ((label)
      (λ (yin)
@@ -1222,7 +1202,14 @@ Lambda 链的尾调用直接传递 `k.0`，999 例子的调用点延续是裸名
 
 运行，阶梯回来了：
 
-```
+```racket
+> (eval (cps '(reset
+       (let* ([label (λ () (let/lc k k))]
+              [yin   (label)]
+              [_     (display #\@)]
+              [yang  (label)]
+              [_     (display #\*)])
+         (yin yang))))
 @*@**@***@****@...
 ```
 
@@ -1231,8 +1218,7 @@ Lambda 链的尾调用直接传递 `k.0`，999 例子的调用点延续是裸名
 程序照样能跑，只因为 `(yin yang)` 永远不会返回，多传的那个 `values` 从来没有机会被用上。换一个会返回的程序，问题就露出来了：
 
 ```racket
-(cps '(let ([id (reset (shift k k))]) (id (id 3))))
-;; =>
+> (cps '(let ([id (reset (shift k k))]) (id (id 3))))
 '((λ (id) ((id 3) (λ (v.2) ((id v.2) values)))) values)
 ```
 
@@ -1243,8 +1229,7 @@ Lambda 链的尾调用直接传递 `k.0`，999 例子的调用点延续是裸名
 第三篇其实处理过这件事。`call/lc` 交给程序的不是裸的 `kₐp`，而是 `(cps kₐp)`：局部延续在宿主里是普通函数，要交给 CPS 世界里的程序，先得用 `cps` 提升成 $𝒦ₐ$ 的箭头。在源程序里做同样的事，就是把延续包进一个 lambda：
 
 ```racket
-(cps '(let ([id (reset (shift k (λ (v) (k v))))]) (id (id 3))))
-;; =>
+> (cps '(let ([id (reset (shift k (λ (v) (k v))))]) (id (id 3))))
 '((λ (id) ((id 3) (λ (v.3) ((id v.3) values))))
   ((λ (k) (λ (v) (λ (k.0) (k.0 (k v))))) values))
 ```
@@ -1254,13 +1239,12 @@ Lambda 链的尾调用直接传递 `k.0`，999 例子的调用点延续是裸名
 包装就位后，编译完整的谜题，内联定义以保持输出可读：
 
 ```racket
-(cps '(reset
+> (cps '(reset
        (let* ([kn (let/lc k0   (λ (v) (k0   v)))]
               [_  (display #\@)]
               [k  (let/lc kn+1 (λ (v) (kn+1 v)))]
               [_  (display #\*)])
          (kn k))))
-;; =>
 '((λ (k0) (k0 (λ (v) (λ (k.0) (k.0 (k0 v))))))
   (λ (kn)
     ((λ (_)
@@ -1278,12 +1262,10 @@ Lambda 链的尾调用直接传递 `k.0`，999 例子的调用点延续是裸名
     (display #\*)
     ((kn k) values))
   (kn+1 (λ (v) (λ (k.1) (k.1 (kn+1 v))))))
-(k0 (λ (v) (λ (k.0) (k.0 (k0 v)))))
 ```
 
-运行：
-
-```
+```racket
+> (k0 (λ (v) (λ (k.0) (k.0 (k0 v)))))
 @*@**@***@****@...
 ```
 

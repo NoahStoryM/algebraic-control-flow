@@ -23,6 +23,8 @@ A series on continuations, CPS, delimited control, relations, monads and algebra
 
 代码在 `#lang typed/racket/no-check` 下运行，针对最新版 Racket 编写。
 
+代码块分为定义块和交互块：定义块照文件写；交互块仍用 `racket` 围栏，首个非空行以 `> ` 开始。每个输入的第一行带 `> `，多行输入的后续行照 REPL 原样接续；其后写打印和返回值，再用 `> ` 开始下一个输入。核对器把交互块的输入求值，并核对显示的结果；无限输出用 `...` 表示截断前缀。纯粹的推导等式用 `text` 围栏，不当作可执行代码。
+
 ```sh
 export LC_ALL=C.UTF-8   # 否则 Racket 读不了中文路径与参数
 racket tools/run-blocks.rkt zh/01-call-cc/article.md
@@ -35,6 +37,7 @@ raco test zh/*/code.rkt
 ```
 
 第一至四篇的 `blocks.rktd` 按「节标题 + 代码块开头」唯一定位例子，逐项写明不能直接执行的块及原因；`prelude.rkt` 提供前文定义，`code.rkt` 对循环定义、无限输出和编译器做隔离测试。配置的 `stdout` 以原始打印（含换行）比较，`value` 比较结果，`exit` 捕获 `exit` 而不终止核对器。第四篇逐步构造的局部 `match` 分支和未组装的中间版本在配置中标出，最终编译器在 `code.rkt` 与 `check/` 中测试。
+
 
 参与方式见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 

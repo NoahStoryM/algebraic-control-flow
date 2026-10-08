@@ -13,20 +13,13 @@
 )
 
 
- (error
-  (("# 逃逸与丢弃" "(anf:eval\n(cps:call/cc") "\\*: contract violation")
-)
- (stdout
-  (("# 逃逸与丢弃" "(anf:eval\n(cps:call/cc") exact "(1 2 0 3 4)\n(2 0 3 4)\n(0 3 4)\n(3 4)\n(4)\n()\n")
-)
-
  (skip
   (("# 定界延续" "(shift k (k 3))     ; 主体对应 (λ (k) (k 3))") "单独的 shift 会逃出核对器；作为规约式由 code.rkt 验证")
 )
 
  (skip
   (("# 定界延续" "(reset val)") "reset/shift 规约元规则，val 和 E 是占位符")
-  (("# 元延续" "(reset") "阴阳谜题无限输出，由 code.rkt 限时核对前缀")
+  (("# 元延续" "> (reset") "阴阳谜题无限输出，由 code.rkt 限时核对前缀")
 )
  (value
   (("# 返回答案" "(: mul (→ Real * Real))")

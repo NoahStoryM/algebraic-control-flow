@@ -28,9 +28,10 @@
               [c (inclusive-range b h)]
               #:when (pyth? a b c))
     (list a b c)))
+```
 
-(right-triangles 1 20)
-;; =>
+```racket
+> (right-triangles 1 20)
 '((3 4 5) (5 12 13) (6 8 10) (8 15 17) (9 12 15) (12 16 20))
 ```
 
@@ -56,15 +57,13 @@
 `cache` 是一张关联列表，每个元素是一个序对，记着一组边界和它的答案列表。Racket 把这样的列表当作字典：`dict-has-key?` 看某个键在不在，`dict-set` 添上一项，`dict-ref` 按键取值。`right-triangles/cached` 先看这组边界算过没有，没算过就跑一遍循环，把结果记进 `cache`，最后按边界取出。从外面看，它和 `right-triangles` 是同一个函数：
 
 ```racket
-(right-triangles/cached 1 4)
-;; => '()
-(right-triangles/cached 1 5)
-;; => '((3 4 5))
-(right-triangles/cached 1 20)
-;; => '((3 4 5) (5 12 13) (6 8 10) (8 15 17) (9 12 15) (12 16 20))
-
-cache
-;; =>
+> (right-triangles/cached 1 4)
+'()
+> (right-triangles/cached 1 5)
+'((3 4 5))
+> (right-triangles/cached 1 20)
+'((3 4 5) (5 12 13) (6 8 10) (8 15 17) (9 12 15) (12 16 20))
+> cache
 '(((1 4)  . ())
   ((1 5)  . ((3 4 5)))
   ((1 20) . ((3 4 5) (5 12 13) (6 8 10) (8 15 17) (9 12 15) (12 16 20))))
@@ -93,9 +92,10 @@ cache
   (for*/list ([(l×h t*) (in-dict cache)]
               [t t*])
     (cons l×h t)))
+```
 
-rows
-;; =>
+```racket
+> rows
 '(((1 5)  . (3 4 5))
   ((1 20) . (3 4 5))
   ((1 20) . (5 12 13))
@@ -126,10 +126,11 @@ R = {((l, h), (a, b, c)) ∈ (ℕ⁺ × ℕ⁺) × (ℕ⁺ × ℕ⁺ × ℕ⁺) 
 
 (: one? (→ Bit Boolean : #:+ One #:- Zero))
 (define (one? b) (eqv? b 1))
+```
 
-(for/list ([b '(0 1)])
+```racket
+> (for/list ([b '(0 1)])
   (cons b (one? b)))
-;; =>
 '((0 . #f)
   (1 . #t))
 ```
@@ -157,12 +158,9 @@ R = {((l, h), (a, b, c)) ∈ (ℕ⁺ × ℕ⁺) × (ℕ⁺ × ℕ⁺ × ℕ⁺) 
 两种查法只差在 `for/first` 与 `for/list`。在 `rows` 上试一试：
 
 ```racket
-((table->relation rows) 1 20)
-;; =>
+> ((table->relation rows) 1 20)
 '((3 4 5) (5 12 13) (6 8 10) (8 15 17) (9 12 15) (12 16 20))
-
-((table->relation rows) 1 4)
-;; =>
+> ((table->relation rows) 1 4)
 '()
 ```
 
@@ -224,9 +222,10 @@ R = {((l, h), (a, b, c)) ∈ (ℕ⁺ × ℕ⁺) × (ℕ⁺ × ℕ⁺ × ℕ⁺) 
         ((choose/k (inclusive-range b h))
          (λ (c)
            (if (pyth? a b c) (list (list a b c)) '()))))))))
+```
 
-(right-triangles 1 20)
-;; =>
+```racket
+> (right-triangles 1 20)
 '((3 4 5) (5 12 13) (6 8 10) (8 15 17) (9 12 15) (12 16 20))
 ```
 
@@ -274,9 +273,10 @@ R = {((l, h), (a, b, c)) ∈ (ℕ⁺ × ℕ⁺) × (ℕ⁺ × ℕ⁺ × ℕ⁺) 
           [b (choose (inclusive-range a h))]
           [c (choose (inclusive-range b h))])
      (if (pyth? a b c) (list (list a b c)) '()))))
+```
 
-(right-triangles 1 20)
-;; =>
+```racket
+> (right-triangles 1 20)
 '((3 4 5) (5 12 13) (6 8 10) (8 15 17) (9 12 15) (12 16 20))
 ```
 
@@ -301,20 +301,15 @@ R = {((l, h), (a, b, c)) ∈ (ℕ⁺ × ℕ⁺) × (ℕ⁺ × ℕ⁺ × ℕ⁺) 
 一次调用可以返回许多次，也可以不返回，这样的计算叫**不确定计算**（nondeterministic computation）。McCarthy 的**不确定运算符**（ambiguous operator）`amb` 就是为它准备的：`(amb 1 2 3)` 返回三次，每次交出一个备选，后面的计算各走一遍；一个备选也不写的 `(amb)` 不返回，这条时间线到此为止。再用 `in-amb` 圈出一次不确定计算，把走通的结果收成一张列表：
 
 ```racket
-(in-amb (amb 1 2 3))
-;; =>
+> (in-amb (amb 1 2 3))
 '(1 2 3)
-
-(in-amb (let* ([x (amb 1 2 3)]
+> (in-amb (let* ([x (amb 1 2 3)]
                [y (amb 10 20)])
           (+ x y)))
-;; =>
 '(11 21 12 22 13 23)
-
-(in-amb (let ([n (amb 1 2 3 4 5)])
+> (in-amb (let ([n (amb 1 2 3 4 5)])
           (unless (odd? n) (amb))
           (* n n)))
-;; =>
 '(1 9 25)
 ```
 
@@ -334,9 +329,10 @@ R = {((l, h), (a, b, c)) ∈ (ℕ⁺ × ℕ⁺) × (ℕ⁺ × ℕ⁺ × ℕ⁺) 
           [c (between b h)])
      (check (pyth? a b c))
      (list a b c))))
+```
 
-(right-triangles 1 20)
-;; =>
+```racket
+> (right-triangles 1 20)
 '((3 4 5) (5 12 13) (6 8 10) (8 15 17) (9 12 15) (12 16 20))
 ```
 
