@@ -10,7 +10,9 @@
 ;;   (exit   (("# 节标题" "块的首行") 0))
 ;; 同一节中首行重复时，选择器可以继续包含后续行，直到唯一匹配。
 ;; 不带 blocks.rktd 的第五篇沿用以下原有规则。
-;; 照原样执行代码块；每个「表达式 / ;; => / 字面量」对，检查求值结果与写出的字面量 equal?
+;; 定义块照文件逐式执行；交互块以首个非空行的 > 提示符识别，
+;; 逐项核对打印、返回值和错误。纯推导等式保留 racket 围栏，必要时用配置跳过。
+;; 无 blocks.rktd 的旧稿还接受「表达式 / ;; => / 字面量」结果对。
 ;;
 ;; 不执行的块：
 ;;   等式块：顶层出现单独的 = （「左边 = 右边」，带 e、body 这样的占位名字）。
@@ -34,9 +36,81 @@
 (for ([t pseudo-titles])
   (unless (for/or ([sec sections]) (string-contains? (title-of sec) t))
     (error 'run-blocks "没有哪一节的标题含有「~a」（中文参数要在 LC_ALL=C.UTF-8 下运行）" t)))
-(define (blocks-of s) (regexp-match* #px"(?s:```racket\n(.*?)\n```)" s #:match-select cadr))
+(define (blocks-of s)
+  (regexp-match* #px"(?s:```racket\n(.*?)\n```)" s #:match-select cadr))
+(define (interactive? b)
+  (regexp-match? #px"^\\s*> " b))
+(struct repl (input output) #:transparent)
+(define (complete-form s)
+  (with-handlers ([exn:fail:read:eof? (λ (_) #f)])
+    (with-input-from-string s
+      (λ ()
+        (define value (read))
+        (and (not (eof-object? value))
+             (eof-object? (read))
+             (cons value #t))))))
+(define (repl-forms b)
+  (define commands '())
+  (define input #f)
+  (define printed '())
+  (define ready? #f)
+  (define (finish)
+    (when input
+      (define form (complete-form input))
+      (unless form (error 'repl "输入不是完整的单个表达式：~s" input))
+      (set! commands
+            (cons (repl (car form) (string-join (reverse printed) "\n")) commands)))
+    (set! input #f)
+    (set! printed '())
+    (set! ready? #f))
+  (for ([line (string-split b "\n" #:trim? #f)])
+    (cond [(string-prefix? line "> ")
+           (finish)
+           (define source (substring line 2))
+           (when (regexp-match? #px"^\\s*;" source)
+             (error 'repl "注释不能单独作为 REPL 输入：~s" source))
+           (set! input source)
+           (set! ready? (and (complete-form input) #t))]
+          [(not input)
+           (unless (string=? (string-trim line) "")
+             (error 'repl "交互块的首行应有 > 提示符：~s" line))]
+          [ready? (set! printed (cons line printed))]
+          [else
+           (set! input (string-append input "\n" line))
+           (set! ready? (and (complete-form input) #t))]))
+  (finish)
+  (reverse commands))
 (define (forms-of b)
-  (for/list ([e (in-port read (open-input-string (regexp-replace* #rx";; =>" b " =>> ")))]) e))
+  (if (interactive? b)
+      (repl-forms b)
+      (for/list ([e (in-port read (open-input-string (regexp-replace* #rx";; =>" b " =>> ")))]) e)))
+(define (evaluate-repl form)
+  (define out (open-output-string))
+  (define err #f)
+  (parameterize ([current-output-port out])
+    (with-handlers ([exn:fail? (λ (e) (set! err (exn-message e)))])
+      (call-with-values (λ () (eval form))
+        (λ vs
+          (for ([v vs] #:unless (void? v))
+            (print v out)
+            (newline out))))))
+  (values (get-output-string out) err))
+(define (check-repl command)
+  (define-values (actual err) (evaluate-repl (repl-input command)))
+  (define expected (repl-output command))
+  (define comparable
+    (if err
+        (string-append actual "; " (regexp-replace* #rx"\n" err "\n; ") "\n")
+        actual))
+  (define prefix? (string-suffix? expected "..."))
+  (define target (if prefix? (substring expected 0 (- (string-length expected) 3)) expected))
+  (define expected-datum (and (not prefix?) (complete-form target)))
+  (define actual-datum (and (not err) expected-datum (complete-form comparable)))
+  (unless (or (and prefix? (string-prefix? comparable target))
+              (and actual-datum (equal? (car actual-datum) (car expected-datum)))
+              (and (not prefix?)
+                   (string=? comparable (if (string=? target "") "" (string-append target "\n")))))
+    (error 'repl "~s: ~s vs ~s" (repl-input command) comparable expected)))
 (define article-path (vector-ref (current-command-line-arguments) 0))
 (define config-path (build-path (path-only (path->complete-path article-path)) "blocks.rktd"))
 (define (subterm? x y) (or (equal? x y) (and (pair? y) (or (subterm? x (car y)) (subterm? x (cdr y))))))
@@ -65,6 +139,13 @@
       (let loop ([fs forms] [last (void)])
         (match fs
           ['() (void)]
+          [(list (? repl? command) rest ...)
+           (with-handlers ([exn:fail?
+                            (λ (x) (if strict? (raise x)
+                                       (set! clean? #f)))])
+             (check-repl command)
+             (set! ok (add1 ok)))
+           (loop rest last)]
           [(list '=>> expected rest ...)
            (cond [(eq? last failed)
                   (when strict? (error 'pseudo "带结果的式子用到了未定义的名字：~s" expected))
@@ -139,14 +220,18 @@
   (define checked 0)
   (define skipped 0)
   (define equations 0)
+  ;; 延续会恢复定义时的输出端口；各块共用一个端口，每块开始时清空缓冲。
+  (define output (open-output-bytes))
+  (define (captured-output) (bytes->string/utf-8 (get-output-bytes output)))
   (define (evaluate b strict?)
     (when (and strict? (getenv "TRACE_BLOCKS"))
       (eprintf "rerun ~a / ~a\n" (block-section b) (block-first b)))
     (define input (block-source b))
     (define result (void))
-    (define output (open-output-string))
+    (get-output-bytes output #t)
     (define expected-error (setting 'error b))
     (define expected-exit (setting 'exit b))
+    (define expected-out (setting 'stdout b))
     (define failed #f)
     (define ok 0)
     (define exit-status #f)
@@ -156,6 +241,16 @@
       (let loop ([fs (forms-of input)])
         (match fs
           ['() (void)]
+          [(list (? repl? command) rest ...)
+           (if (or expected-out expected-exit)
+               (with-handlers
+                   ([(λ (x) (and (pair? x) (eq? (car x) 'controlled-exit)))
+                     (λ (x) (set! exit-status (cadr x)))]
+                    [exn:fail:contract:variable?
+                     (λ (x) (if strict? (raise x) (set! failed #t)))])
+                 (set! result (eval (repl-input command))))
+               (begin (check-repl command) (set! ok (add1 ok))))
+           (unless (or failed exit-status) (loop rest))]
           [(list '=>> expected rest ...)
            (cond
              [failed (void)]
@@ -196,15 +291,24 @@
       (set! ok (add1 ok)))
     (when (and (not failed) exit-status (not expected-exit))
       (error 'config "未配置的 exit：~a / ~a" (block-section b) (block-first b)))
-    (define expected-out (setting 'stdout b))
     (when (and (not failed) expected-out)
+      (when (interactive? input)
+        (define shown
+          (apply string-append
+                 (for/list ([command (repl-forms input)]
+                            #:unless (string=? (repl-output command) ""))
+                   (string-append (repl-output command) "\n"))))
+        (when (and (eq? (car expected-out) 'exact)
+                   (not (string=? shown (cadr expected-out))))
+          (error 'config "交互块展示与 stdout 配置不符：~a / ~a"
+                 (block-section b) (block-first b))))
       (match expected-out
         [(list 'exact s)
-         (unless (string=? (get-output-string output) s)
+         (unless (string=? (captured-output) s)
            (error 'mismatch "打印不符：~a / ~a: ~s vs ~s"
-                  (block-section b) (block-first b) (get-output-string output) s))]
+                  (block-section b) (block-first b) (captured-output) s))]
         [(list 'prefix s)
-         (unless (string-prefix? (get-output-string output) s)
+         (unless (string-prefix? (captured-output) s)
            (error 'mismatch "打印前缀不符：~a / ~a" (block-section b) (block-first b)))]
         [_ (error 'config "stdout 只接受 exact/prefix：~s" expected-out)])
       (set! ok (add1 ok)))
@@ -230,9 +334,9 @@
                          (sub1 (length expected-value))
                          1))))
     (when (and (not failed) (not expected-out)
-               (not (string=? (get-output-string output) "")))
+               (not (string=? (captured-output) "")))
       (error 'config "有打印但未配置 stdout：~a / ~a: ~s"
-             (block-section b) (block-first b) (get-output-string output)))
+             (block-section b) (block-first b) (captured-output)))
     (values failed ok))
   (for ([section all-sections])
     (define bs (cdr section))

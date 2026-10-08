@@ -1,6 +1,7 @@
 #lang racket
 ;; 用法：racket tools/cmp-forms.rkt <草稿或几节拼起来的 .md> art5-code.rkt（两个参数都要给；只给一个会退回默认的 art5-draft.md）
-;; 取出草稿里所有 ```racket 代码块中的定义（define、:、define-type、struct、define-syntax-rule），
+;; 取出草稿里所有 ```racket 定义块中的定义（define、:、define-type、struct、define-syntax-rule）；
+;; 首个非空行以 > 开始的交互块只由 run-blocks.rkt 核对，
 ;; 逐个检查它是否（读成 S 表达式后）出现在代码文件里。right-triangles₀…₈ 视同 right-triangles。
 (define-values (draft code)
   (match (current-command-line-arguments)
@@ -8,8 +9,10 @@
     [_ (values "art5-draft.md" "art5-code.rkt")]))
 (define (read-all-from-string str)
   ;; 「完整代码参考」在正文里带 #lang；读作普通数据时先去掉模块声明。
-  (with-input-from-string (regexp-replace #px"^#lang[^\n]*\n" str "")
-    (λ () (for/list ([e (in-port read)]) e))))
+  (if (regexp-match? #px"^\\s*> " str)
+      '() ; 交互块里的输入与打印结果不属于定义块
+      (with-input-from-string (regexp-replace #px"^#lang[^\n]*\n" str "")
+        (λ () (for/list ([e (in-port read)]) e)))))
 (define (norm x)
   (cond [(symbol? x)
          (if (regexp-match? #rx"^right-triangles[₀₁₂₃₄₅₆₇₈]$" (symbol->string x)) 'right-triangles x)]

@@ -149,8 +149,8 @@ CPS 函数需要一个延续才能启动。用什么作为初始延续？
 许多语言有一个内置的延续：`exit`，类型为 $¬\text{Byte}$。可以包装一下得到 $¬\text{Natural}$：
 
 ```racket
-(fact/k 5 (λ (ans) (displayln ans) (exit 0)))
-;; 打印 120，然后终止
+> (fact/k 5 (λ (ans) (displayln ans) (exit 0)))
+120
 ```
 
 结果打印出来了，进程也随之终止，没法拿着结果继续工作。
@@ -168,8 +168,10 @@ CPS 函数需要一个延续才能启动。用什么作为初始延续？
 `a->⊥` 把值包进 `ans` struct 并抛出。`⊥->a` 安装一个 handler 来捕获这个 struct 并提取内容。命名反映了类型层面的操作：`a->⊥` 把值送入 $⊥$（抛出），`⊥->a` 把值取回（捕获）。
 
 ```racket
-(⊥->a (fact/k 5 a->⊥))   ; => 120
-(⊥->a (fib/k 10 a->⊥))   ; => 55
+> (⊥->a (fact/k 5 a->⊥))
+120
+> (⊥->a (fib/k 10 a->⊥))
+55
 ```
 
 CPS 函数运行起来，`a->⊥` 充当初始延续构建出闭包链，`⊥->a` 在外面接住答案。计算在 raise/handler 的边界内执行，结果穿过边界传出来。
@@ -192,9 +194,13 @@ CPS 真正的力量不在于尾递归，而在于延续成为了**一等值**。
               (a->⊥ r)
               (loop/k (cdr r*) (λ (v) (k (* v r))))))))
   (⊥->a (loop/k r* a->⊥)))
+```
 
-(mul 1 2 3 4)    ; => 24
-(mul 1 2 0 3 4)  ; => 0
+```racket
+> (mul 1 2 3 4)
+24
+> (mul 1 2 0 3 4)
+0
 ```
 
 正常路径沿着 `k` 返回累积的乘积。遇到零时，跳过 `k`，直接调用 `a->⊥`。`k` 代表「继续乘下去然后返回结果」的延续；`a->⊥` 代表「直接跳出整个循环，把值交给 handler」的延续。选择调用哪一个，就是选择走哪条控制流。不需要 `call/cc`，不需要任何特殊操作符。延续是普通的函数，切换延续是普通的函数调用。
@@ -682,18 +688,18 @@ $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常�
 它们都是 𝒦 的箭头，可以直接放进 `anf:let*` 和 `anf:if`：
 
 ```racket
-(anf:eval
- (anf:let/cc cps:return
-   (let cps:loop ([r* '(1 2 0 3 4)])
-     (anf:if (cps:null? r*)
-             (cps:*)
-             (anf:let* ([r (cps:car r*)])
-               (anf:if (cps:zero? r)
-                       (cps:return r)
-                       (anf:let* ([r* (cps:cdr r*)]
-                                  [res (cps:loop r*)])
-                         (cps:* res r))))))))
-;; => 0
+> (anf:eval
+   (anf:let/cc cps:return
+     (let cps:loop ([r* '(1 2 0 3 4)])
+       (anf:if (cps:null? r*)
+               (cps:*)
+               (anf:let* ([r (cps:car r*)])
+                 (anf:if (cps:zero? r)
+                         (cps:return r)
+                         (anf:let* ([r* (cps:cdr r*)]
+                                    [res (cps:loop r*)])
+                           (cps:* res r))))))))
+0
 ```
 
 `anf:let/cc` 捕获的 `cps:return` 是 CPS 世界的逃逸通道：遇零时调用它，直接跳出循环。其余每一步的延续都由 `anf:let*` 接好，程序员不需要触碰。
@@ -702,14 +708,16 @@ $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常�
 
 ```racket
 (define (cps:label) (cps:call/cc cps:id))
+```
 
-(anf:eval
- (anf:let* ([cps:yin (cps:label)])
-   (cps:display #\@)
-   (anf:let* ([cps:yang (cps:label)])
-     (cps:display #\*)
-     (cps:yin cps:yang))))
-;; => @*@**@***@****@...
+```racket
+> (anf:eval
+   (anf:let* ([cps:yin (cps:label)])
+     (cps:display #\@)
+     (anf:let* ([cps:yang (cps:label)])
+       (cps:display #\*)
+       (cps:yin cps:yang))))
+@*@**@***@****@...
 ```
 
 `(cps:yin cps:yang)` 中，`cps:yin` 是一个捕获的延续。它可以直接作为 CPS 箭头调用，因为 `cps:call/cc` 在交给用户函数之前已经用 `(cps kp)` 把裸的延续提升到了 CPS 世界的箭头类型。

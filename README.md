@@ -21,7 +21,7 @@ A series on continuations, CPS, delimited control, relations, monads and algebra
 
 ## 核对
 
-代码在 `#lang typed/racket/no-check` 下运行，针对最新版 Racket 编写。
+代码在 `#lang typed/racket/no-check` 下运行，针对最新版 Racket 编写。正文的定义块与交互块格式见 [代码块写法](tools/REPL.md)。
 
 ```sh
 export LC_ALL=C.UTF-8   # 否则 Racket 读不了中文路径与参数
