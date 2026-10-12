@@ -175,6 +175,15 @@
   (check-exn #rx"not a procedure.*given: 3"
              (λ () (run (cps '(let ([id (reset (shift k k))]) (id (id 3)))))))
   (check-equal? (run (cps '(let ([id (reset (shift k (λ (v) (k v))))]) (id (id 3))))) 3)
+  ;; 「教编译器做规范化」：两个守卫的例子，有守卫时保留 (display 7) 与 x 的绑定。
+  (check-equal? (cps '(let ([x 2]) (let ([_ (display 7)]) x)))
+                '((λ (x) ((λ (_) x) (display 7))) 2))
+  (check-equal? (with-output-to-string
+                  (λ () (check-equal? (run (cps '(let ([x 2]) (let ([_ (display 7)]) x)))) 2)))
+                "7")
+  (check-equal? (cps '(let ([x (add1 3)]) (let ([y x]) (add1 x))))
+                '((λ (x) ((λ (y) (add1 x)) x)) (add1 3)))
+  (check-equal? (run (cps '(let ([x (add1 3)]) (let ([y x]) (add1 x))))) 5)
   (check-equal? (cps '(let ([f add1]) (f 41)))
                 '((λ (f) ((f 41) values)) add1))
   (check-exn #rx"not a procedure.*given: 42"
@@ -609,6 +618,7 @@
     (check-equal? (anf 'x) 'x))
   (check-equal? (naive:anf0 '(if t a b)) '(if t a b))
   (check-equal? (final:anf '(f x)) '(let ([v.0 (f x)]) v.0))
+  (check-equal? (branch:anf '(f (g a))) '(let ([v.1 (g a)]) (let ([v.0 (f v.1)]) v.0)))
   (check-true (output-starts-with? (λ () (yin:k0 yin:k0)) "@*@**@***@"))
   (check-true (output-starts-with?
                (λ () (cps-yin:k0 (λ (v) (λ (k.0) (k.0 (cps-yin:k0 v))))))
