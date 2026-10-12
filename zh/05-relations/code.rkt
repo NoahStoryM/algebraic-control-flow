@@ -614,8 +614,10 @@
 (: ℒ:id (∀ (p) (→ℒ p p)))
 (: ∘ℒ   (∀ (p ...) (→ (→ℒ pn-1 pn) ... (→ℒ p1 p2) (→ℒ p1 pn))))
 (define (ℒ:id v) (list v))
-(define ((∘ℒ . f*) x) (foldr append-map (list x) f*))   ; 从最右边的箭头起，逐个用 append-map 接上
-;; 9/30 改为变参（与第二篇的 ∘𝒦 一致）；一个箭头也不给时就是 ℒ:id。规则仍按二元陈述，结合律保证变参无歧义。
+(define ((∘ℒ . f*) . x*)
+  (define-values (g* h*) (split-at-right f* 1))   ; h* 只有最右边的一个箭头
+  (foldr append-map (apply (car h*) x*) g*))       ; 它收下全部参数，其余逐个用 append-map 接上
+;; 9/30 改为变参（与第二篇的 ∘𝒦 一致）；10/12 起最右边的箭头收下全部参数，至少要给一个箭头。规则仍按二元陈述，结合律保证变参无歧义。
 
 ;;; §5-d′〔验证〕 两段的 ∘ℒ 就是 §5-c 那次 append-map
 (check-equal? ((∘ℒ pick-bᵒ pick-aᵒ) '(1 2)) (append-map pick-bᵒ (pick-aᵒ '(1 2))))
@@ -662,7 +664,6 @@
 ;; 结合方式不影响结果（逐字相等）：变参与两种二元结合方式一致；零个箭头即单位
 (check-equal? ((∘ℒ rightᵒ (∘ℒ pick-cᵒ (∘ℒ pick-bᵒ pick-aᵒ))) '(1 20)) (right-triangleᵒ '(1 20)))
 (check-equal? ((∘ℒ (∘ℒ (∘ℒ rightᵒ pick-cᵒ) pick-bᵒ) pick-aᵒ) '(1 20)) (right-triangleᵒ '(1 20)))
-(for ([x '(0 5 (1 2))]) (check-equal? ((∘ℒ) x) (ℒ:id x)))
 (for* ([x '(1 4 6 12)])
   (check-equal? ((∘ℒ divisors) x) (divisors x)))
 ;; 函数的逆不一定是函数：平方的逆关系交出零个或一个（正文可选的旁证）
@@ -1339,7 +1340,6 @@
 (let ([∘ℒ₀ ∘ℒ])                                              ; 外面那一版：foldr append-map
   (define (∘ℒ . f*) (gather (apply ∘ℬ (map scatter f*))))     ; 正文 08 先给的定义（Noah 10/5 20:05），用到 amb
   (for ([t '((1 5) (2 2) (1 20))])
-    (check-equal? ((∘ℒ) t) ((∘ℒ₀) t))
     (check-equal? ((∘ℒ pick-aᵒ) t) ((∘ℒ₀ pick-aᵒ) t))
     (check-equal? ((∘ℒ pick-bᵒ pick-aᵒ) t) ((∘ℒ₀ pick-bᵒ pick-aᵒ) t))
     (check-equal? ((∘ℒ rightᵒ pick-cᵒ pick-bᵒ pick-aᵒ) t) ((∘ℒ₀ rightᵒ pick-cᵒ pick-bᵒ pick-aᵒ) t))
@@ -1365,10 +1365,9 @@
   ;; 两行说的是同一件事：把 ℒ 的箭头搬到 ℬ，第一行收回来就是第二行
   (check-equal? (in-amb (let* ([y ((scatter f) x)] [z ((scatter g) y)]) z))
                 (for*/list ([y (f x)] [z (g y)]) z)))
-;; inj 不改变函数；纯函数经 inj、gather 搬到 ℒ，就是把结果包成一项的列表；零步的 ∘ℒ 是 list
+;; inj 不改变函数；纯函数经 inj、gather 搬到 ℒ，就是把结果包成一项的列表
 (check-eq? (inj add1) add1)
 (check-equal? ((gather (inj add1)) 41) '(42))
-(check-equal? ((∘ℒ) 7) '(7))
 (check-equal? (in-amb ((∘ℬ pick-b pick-a) '(1 3))) (in-amb ((∘ pick-b pick-a) '(1 3))))
 
 ;;; ─── §7-i〔正文〕 amb：同一组操作的 Racket 式写法（v5.2，Noah 10/2 晚提出） ───
