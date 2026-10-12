@@ -587,25 +587,28 @@ $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常�
         (define (cps:kz z) (cps:id z))
         ((∘𝒦 cps:kz id) kkz)))
     ((∘𝒦 cps:ky id) kky))
+= (let ()
+    (define (cps:ky y)
+      (let ()
+        (define (cps:kz z) (cps:id z))
+        ((∘𝒦 cps:kz id) (cps:g y))))
+    ((∘𝒦 cps:ky id) (cps:f x)))
+= (let ()
+    (define (cps:ky y)
+      (let ()
+        (define (cps:kz z) (cps:id z))
+        ((∘𝒦 cps:kz cps:g) y)))
+    ((∘𝒦 cps:ky cps:f) x))
+= (let ()
+    (define (cps:ky y) ((∘𝒦 cps:id cps:g) y))
+    ((∘𝒦 cps:ky cps:f) x))
+= (let ()
+    (define (cps:ky y) (cps:g y))
+    ((∘𝒦 cps:ky cps:f) x))
+= ((∘𝒦 cps:g cps:f) x)
 ```
 
-两层 λ 同样是语法写的，名字是宏起的：`cps:ky` 等着 `y`，`cps:kz` 等着 `z`，各自前面接一个 `id`，再用 `∘𝒦` 接上。里面那层的 `cps:kz` 只把 `z` 交给 `cps:id`，它就是 `cps:id`。`(∘𝒦 cps:id id)` 照「三种箭头」一节展开：交给它一个 `kk` 和一个延续 `k`，得到 `(kk (λ (z) ((cps:id z) k)))`，也就是 `(kk k)`。它什么也不做，`cps:ky` 收到 `y` 就只是交出 `(cps:g y)`，也就是 `cps:g`。外面那层于是成了：
-
-```racket
-  ((∘𝒦 cps:ky id) (cps:f x))
-= ((∘𝒦 cps:g  id) (cps:f x))
-```
-
-这一行和 `((∘𝒦 cps:g cps:f) x)` 交给同一个延续 `k`，展开到同一处：
-
-```racket
-  (((∘𝒦 cps:g id) (cps:f x)) k)
-= ((id (cps:f x)) (λ (y) ((cps:g y) k)))
-= ((cps:f x) (λ (y) ((cps:g y) k)))
-= (((∘𝒦 cps:g cps:f) x) k)
-```
-
-中间那一行，正是「三种箭头」一节 `∘𝒦` 展开的样子。两边并排：
+两层 λ 同样是语法写的，名字是宏起的：`cps:ky` 等着 `y`，`cps:kz` 等着 `z`。第二步把 `kky`、`kkz` 代回去。第三步换掉了 `id`：`id` 只把收到的值原样交给后面一支，交给它的既然是 `(cps:g y)`，就等于把 `cps:kz` 直接接在 `cps:g` 后面。两种写法交给同一个延续 `k`，照「三种箭头」一节展开，都是 `((cps:g y) (λ (z) ((cps:kz z) k)))`；外层同理。接下来 `cps:kz` 只把 `z` 交给 `cps:id`，它就是 `cps:id`。`cps:id` 是 𝒦 自己的恒等，接在 `cps:g` 后面，展开是 `((cps:g y) (λ (z) ((cps:id z) k)))`，也就是 `((cps:g y) k)`，什么也没有改变，于是 `cps:ky` 就是 `cps:g`。两边并排：
 
 ```racket
 (let*     ([y     (f x)] [z     (g y)])         z)   =  ((∘      g     f) x)
