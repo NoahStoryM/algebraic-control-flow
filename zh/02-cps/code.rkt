@@ -42,8 +42,11 @@
 (define ((neg f) kq) (∘ kq f))
 (define neg¹ neg)
 
+(: ⨾ (∀ (p ...) (→ (← pn-1 pn) ... (← p1 p2) (← p1 pn))))
+(define (⨾ . f*) (apply ∘ (reverse f*)))
+
 (: ∘𝒰 (∀ (p ...) (→ (→𝒰 pn-1 pn) ... (→𝒰 p1 p2) (→𝒰 p1 pn))))
-(define (∘𝒰 . neg:f*) (apply ∘ (reverse neg:f*)))
+(define ∘𝒰 ⨾)
 
 
 ;;; CPS 世界

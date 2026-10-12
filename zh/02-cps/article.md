@@ -489,6 +489,19 @@ neg          uncps
 
 $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常成立；箭头却指向 $¬p$。𝒰 的箭头，就是两个否定之间的一支反向箭头。
 
+反向箭头也有自己的复合。把 `∘𝒰` 类型里的 `→𝒰` 换成 `←`，就是反向复合 `⨾`：
+
+```racket
+(: ⨾ (∀ (p ...) (→ (← pn-1 pn) ... (← p1 p2) (← p1 pn))))
+(define (⨾ . f*) (apply ∘ (reverse f*)))
+```
+
+`(⨾ f g)` 先调用 `f`，再调用 `g`，次序和 `∘` 相反。前面 `∘𝒰` 里的 `reverse` 原来属于 `⨾`：𝒰 的复合，就是反向箭头的复合。
+
+```racket
+(define ∘𝒰 ⨾)
+```
+
 方向反了一次，再反一次就正了。再用一次 `neg`：
 
 ```racket
@@ -833,8 +846,11 @@ kp  =  ((neg f) kq)  =  (∘ kq f)
 (define ((neg f) kq) (∘ kq f))
 (define neg¹ neg)
 
+(: ⨾ (∀ (p ...) (→ (← pn-1 pn) ... (← p1 p2) (← p1 pn))))
+(define (⨾ . f*) (apply ∘ (reverse f*)))
+
 (: ∘𝒰 (∀ (p ...) (→ (→𝒰 pn-1 pn) ... (→𝒰 p1 p2) (→𝒰 p1 pn))))
-(define (∘𝒰 . neg:f*) (apply ∘ (reverse neg:f*)))
+(define ∘𝒰 ⨾)
 
 
 ;;; CPS 世界
