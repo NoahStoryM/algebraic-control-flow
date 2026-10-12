@@ -396,6 +396,44 @@
     (anf1 exp id))
 )
 
+;; 「命名延续」：stage-20 的 if 分支改为共享命名的上下文。
+(module stage-named racket
+  (require racket/control (submod ".." stage-4))
+  (require (only-in racket/match [match-lambda match-λ]))
+  (provide (all-defined-out))
+  (define (anf exp)
+    (define fv (make-genvar 'v))
+    (define fk (make-genvar 'k))
+    (define id (reset (shift k k)))
+    (define (anf1 exp ctx) (reset (ctx (anf0 exp))))
+    (define anf0
+      (match-λ
+        [(? (not/c pair?) x) x]
+        [`(λ ,x* ,body)
+         `(λ ,x* ,(anf1 body id))]
+        [`(if ,test ,conseq ,alt)
+         (shift ctx
+           (define vn (fv))
+           (define kn (fk))
+           (define t (anf0 test))
+           (define ctx0 (reset `(,kn ,(shift k k))))
+           `(let ([,kn (λ (,vn) ,(ctx vn))])
+              (if ,t ,(anf1 conseq ctx0) ,(anf1 alt ctx0))))]
+        [`(let ([,x ,e]) ,body)
+         (anf0 `((λ (,x) ,body) ,e))]
+        [`((λ (,x) ,body) ,rand)
+         (shift ctx
+           (define d (anf0 rand))
+           `(let ([,x ,d]) ,(anf1 body ctx)))]
+        [`(,rator . ,rand*)
+         (shift ctx
+           (define vn (fv))
+           (define r (anf0 rator))
+           (define d* (map anf0 rand*))
+           `(let ([,vn (,r . ,d*)]) ,(ctx vn)))]))
+    (anf1 exp id))
+)
+
 ;; 「镜子破裂」：含命名 if，函数主体仍从 id 开始。
 (module stage-delimited racket
   (require racket/control (submod ".." stage-4))
@@ -805,3 +843,294 @@
     (define-values (printed result) (observe (λ () (run (compiler wrapped-rator)))))
     (check-equal? printed "12")
     (check-equal? result 3)))
+
+;; 文法核对独立于编译器；延续的身份由绑定位置给出，不按 k.n 的拼写猜测。
+(module grammar racket
+  (provide named-anf? delimited-anf? cps?)
+  (define (name? x)
+    (and (symbol? x) (not (memq x '(λ if let)))))
+  (define (literal? x)
+    (or (number? x) (char? x) (boolean? x) (string? x)))
+  (define (head? h variable?)
+    (cond [(null? h) #t]
+          [(pair? h) (and (variable? (car h)) (head? (cdr h) variable?))]
+          [else (variable? h)]))
+  (define (head-names h)
+    (cond [(null? h) '()]
+          [(pair? h) (cons (car h) (head-names (cdr h)))]
+          [else (list h)]))
+  (define (without names bindings)
+    (for/fold ([names names]) ([x bindings]) (set-remove names x)))
+
+  ;; 「命名延续」按 #25：(<k> <val> ...) 属于 <anf>，不属于 <atom>。
+  ;; 「镜子破裂」：let 的右侧改为 <anf>，调用改为 (<val> <val> ...)。
+  ;; ANF 的延续仍可作为普通函数值传递；命名版把它的调用识别为尾位置的 <k> 调用。
+  ;; CPS 才把 <cont> 与 <val> 分开。
+  (define (anf-grammar? exp delimited? continuations)
+    (define (val? e ks)
+      (or (name? e) (literal? e) (proc? e ks)))
+    (define (proc? e ks)
+      (match e
+        [`(λ ,h ,body)
+         (and (head? h name?) (anf? body (without ks (head-names h))))]
+        [_ #f]))
+    (define (anf-if? e ks)
+      (match e
+        [`(if ,t ,c ,a) (and (val? t ks) (anf? c ks) (anf? a ks))]
+        [_ #f]))
+    (define (atom? e ks)
+      (or (val? e ks)
+          (match e
+            [`(,r . ,args)
+             (and (name? r) (not (set-member? ks r))
+                  (list? args) (andmap (λ (d) (val? d ks)) args))]
+            [_ #f])))
+    (define (anf? e ks)
+      (or (val? e ks) (anf-if? e ks)
+          (match e
+            [`(let ([,x ,rhs]) ,body)
+             (and (name? x)
+                  (or
+                   (and (if delimited? (anf? rhs ks) (atom? rhs ks))
+                        (anf? body (set-remove ks x)))
+                   ;; <if> 的第二种形式为局部延续起名。
+                   (and (proc? rhs ks) (anf-if? body (set-add ks x)))))]
+            [`(,r . ,args)
+             (and (list? args)
+                  (if delimited?
+                      (val? r ks)
+                      (and (name? r) (set-member? ks r)))
+                  (andmap (λ (d) (val? d ks)) args))]
+            [_ #f])))
+    (anf? exp continuations))
+  (define (named-anf? exp [continuations (seteq)])
+    (anf-grammar? exp #f continuations))
+  (define (delimited-anf? exp [continuations (seteq)])
+    (anf-grammar? exp #t continuations))
+
+  ;; 最终文法：初始平凡集合与 cps 相同；<cont²> 的形参在自己的主体中为平凡名字。
+  (define initial-trivial
+    (seteq 'identity 'values 'display 'displayln 'zero? 'add1 'sub1
+           '+ '- '* '/ '= '< '<= '> '>= 'eq? 'eqv? 'equal?))
+  (define (cps? exp [trivial initial-trivial])
+    (define (variable? x ts) (and (name? x) (not (set-member? ts x))))
+    (define (val? e ts)
+      (or (variable? e ts) (literal? e)
+          (match e
+            [`(λ ,h ,body)
+             (and (head? h (λ (x) (variable? x ts))) (cont2? body ts))]
+            [_ #f])))
+    (define (cont? e ts)
+      (or (and (name? e) (set-member? ts e))
+          (match e
+            [`(λ ,h ,body)
+             (and (head? h (λ (x) (variable? x ts))) (cps0? body ts))]
+            [_ #f])))
+    (define (cont2? e ts)
+      (match e
+        [`(λ (,k) ,body)
+         (and (name? k) (cps0? body (set-add ts k)))]
+        [_ #f]))
+    (define (cps0? e ts)
+      (or (val? e ts)
+          (match e
+            [`(if ,t ,c ,a) (and (val? t ts) (cps0? c ts) (cps0? a ts))]
+            [_ #f])
+          ;; <apply-proc> ::= ((<val> <val> ...) <cont>)
+          (match e
+            [`((,r . ,args) ,k)
+             (and (list? args) (val? r ts)
+                  (andmap (λ (d) (val? d ts)) args) (cont? k ts))]
+            [_ #f])
+          ;; <apply-cont> ::= (<cont> <cps>) | (<cont> <val> ...)
+          (match e
+            [`(,k . ,args)
+             (and (list? args) (cont? k ts)
+                  (or (and (= (length args) 1) (cps0? (car args) ts))
+                      (andmap (λ (d) (val? d ts)) args)))]
+            [_ #f])
+          ;; <apply-cont²> ::= (<cont²> <cont>)
+          (match e
+            [`(,k2 ,k) (and (cont2? k2 ts) (cont? k ts))]
+            [_ #f])))
+    (cps0? exp trivial)))
+
+(module+ test
+  (require (prefix-in grammar: (submod ".." grammar))
+           (prefix-in named: (submod ".." stage-named)))
+  ;; (a) #51 临时脚本的 36 个输入原样保留；四个已展示的反例单列预期。
+  (define grammar-programs
+    '((if a b c) (add1 (if a b c)) (f (if a b c)) (λ (n) (f (g n)))
+      (reset (let ([f (λ (x) (shift k 999))]) (add1 (f 42))))
+      (reset (let ([f abort]) (+ 1 (f 5))))
+      (let ([k (reset (let ([x (let/cc k (abort k))]) (+ x 2)))]) (+ (reset (k 3)) 100))
+      (let ([v (reset (let* ([x 3] [y (+ 2 x)]) (abort y)))]) (+ 10 v))
+      (let ([v (reset (let* ([x (shift k 3)] [y (+ 2 x)]) (abort y)))]) (+ 10 v))
+      (let ([v (reset (let* ([x (shift k (k 3))] [y (+ 2 x)]) (abort y)))]) (+ 10 v))
+      (let ([v (reset (let* ([x (shift k (let ([r (k 3)]) (k r)))] [y (+ 2 x)]) (abort y)))]) (+ 10 v))
+      (reset (let* ([label (λ () (let/lc k k))] [yin (label)] [_ (display #\@)] [yang (label)] [_ (display #\*)]) (yin yang)))
+      (let ([id (reset (shift k k))]) (id (id 3)))
+      (let ([id (reset (shift k (λ (v) (k v))))]) (id (id 3)))
+      (reset (let* ([kn (let/lc k0 (λ (v) (k0 v)))] [_ (display #\@)] [k (let/lc kn+1 (λ (v) (kn+1 v)))] [_ (display #\*)]) (kn k)))
+      (let ([f add1]) (f 41)) (let ([f (λ (x) (add1 x))]) (f 41))
+      (eq? (reset (display 1)) (display 2)) (eq? (display 1) (reset (display 2)))
+      (let ([f (λ (a b) a)]) (f (reset (display 1)) (display 2)))
+      (+ (reset (let ([a (display 1)]) 1)) (let ([b (display 2)]) 2))
+      ((reset (let ([a (display 1)]) add1)) (let ([b (display 2)]) 2))
+      (+ (reset (+ 10 (shift k (let ([a (display 1)]) (k 1))))) (let ([b (display 2)]) 2))
+      ;; 另加的压力例子
+      (+ 10 (add1 x)) (add1 (add1 x)) (f (g x) (h y)) ((f x) (g y)) (if (zero? n) (f n) (g n))
+      (if (reset (f x)) (g 1) 2) (if (f x) (if (g y) a b) c) (let ([x (f 1)] [y (g 2)]) (h x y))
+      (+ (f 1) (g 2) (* 3 (h 4))) (λ (x y) (if (f x) (shift k (k (g y))) (+ x y)))
+      (reset (+ (shift k (k (k 1))) (f (reset (g 2))))) ((λ (x y) (+ x y)) (f 1) (reset 2))
+      (f (reset (if a (g 1) 2)) (let/cc k (k 3)))))
+  (define rejected-programs
+    (list label-puzzle
+          '(let ([id (reset (shift k k))]) (id (id 3)))
+          '(let ([f add1]) (f 41))
+          '((reset (let ([a (display 1)]) add1)) (let ([b (display 2)]) 2))))
+  (check-equal? (length grammar-programs) 36)
+  (check-equal? (length rejected-programs) 4)
+  (for ([source grammar-programs])
+    (check-equal? (grammar:cps? (cps source))
+                  (not (and (member source rejected-programs) #t))
+                  (format "最终文法：~s" source)))
+
+  ;; 对中间版只使用当时已实现的源语言；不把未知关键字误编译为普通函数。
+  (define (intermediate-source? e delimited?)
+    (match e
+      ['abort #f]
+      [(? (not/c pair?)) #t]
+      [`(λ ,_ ,body) (intermediate-source? body delimited?)]
+      [`(if ,t ,c ,a) (andmap (λ (x) (intermediate-source? x delimited?)) (list t c a))]
+      [`(let ([,_ ,rhs]) ,body)
+       (and (intermediate-source? rhs delimited?) (intermediate-source? body delimited?))]
+      [`(let . ,_) #f] ; 多绑定 let 在最终版才引入。
+      [`(reset ,body) (and delimited? (intermediate-source? body delimited?))]
+      [`(shift ,_ ,body) (and delimited? (intermediate-source? body delimited?))]
+      [`(let/lc ,_ ,body) (and delimited? (intermediate-source? body delimited?))]
+      [`(let/cc . ,_) #f]
+      [`(let* ([,_ ,rhs] ...) ,body)
+       (and delimited? (andmap (λ (x) (intermediate-source? x delimited?)) rhs)
+            (intermediate-source? body delimited?))]
+      [(? list?) (andmap (λ (x) (intermediate-source? x delimited?)) e)]
+      [_ #f]))
+  ;; 补足各阶段的正例，覆盖字面量、head 三种形式、调用、嵌套 if 与 let。
+  (define common-programs
+    '(x 0 #t #\a "text"
+      (λ () 1) (λ (x) x) (λ (x y) (+ x y)) (λ args args) (λ (x . rest) rest)
+      (f) (f x) (+ x y) (f (g x)) (f (g x) (h y)) ((f x) (g y))
+      (if a b c) (f (if a b c)) (if a (if b c d) e)
+      (+ 1 (if (zero? n) (add1 n) (sub1 n)))
+      (f (if a (if b c d) e)) (if (f x) (g x) (h x))
+      (let ([x 1]) x) (let ([x (f 1)]) (g x))
+      (let ([x (if a b c)]) (f x))
+      (let ([f (λ (x) (add1 x))]) (f 41))
+      (λ (n) (f (g n))) (λ (x) (if (f x) (g x) (h x)))
+      ((λ (x) (+ x 1)) (f 2))
+      (+ 10 (add1 x)) (add1 (add1 x)) (+ (f 1) (g 2) (* 3 (h 4)))
+      (let ([x (f a)]) (let ([y (g b)]) (h x y)))))
+  (define delimited-programs
+    '((reset 42) (reset (+ 1 (shift k (k 42))))
+      (+ 10 (reset (+ 1 (shift k 42))))
+      (reset (let/lc saved 3))
+      (reset (let* ([a (f 1)] [b (g 2)]) (h a b)))
+      (reset (if a (shift saved (saved b)) c))
+      (let ([x (reset (if a b c))]) (f x))
+      (reset (reset (shift saved (saved 1))))))
+  (define named-programs
+    (remove-duplicates
+     (append (filter (λ (p) (intermediate-source? p #f)) grammar-programs) common-programs)))
+  (define mirror-programs
+    (remove-duplicates
+     (append (filter (λ (p) (intermediate-source? p #t)) grammar-programs)
+             common-programs delimited-programs)))
+  (check-true (>= (length named-programs) 36))
+  (check-true (>= (length mirror-programs) 36))
+  (for ([source named-programs])
+    (check-true (grammar:named-anf? (named:anf source))
+                (format "命名延续文法：~s" source)))
+  (for ([source mirror-programs])
+    (check-true (grammar:delimited-anf? (delimited:anf source))
+                (format "镜子破裂文法：~s" source)))
+  ;; 最终版补充同一批已支持的正例，避免只覆盖会失败的案例。
+  (for ([source (remove-duplicates (append common-programs delimited-programs))])
+    (check-true (grammar:cps? (cps source)) (format "补充最终文法：~s" source)))
+
+  ;; (b) 文中两个刻意不合最终文法的输出，连同内建值反例一起拒绝。
+  (for ([source rejected-programs])
+    (check-false (grammar:cps? (cps source)) (format "反例：~s" source)))
+  ;; 反例对应的包装版应接受。λ (v) … 的 v 是值，λ (k) … 的 k 是延续。
+  (for ([source
+         (list '(let ([id (reset (shift saved (λ (v) (saved v))))]) (id (id 3)))
+               '(let ([f (λ (x) (add1 x))]) (f 41))
+               wrapped-rator)])
+    (check-true (grammar:cps? (cps source))))
+
+  ;; (c) 改写为 define 之前的完整表达式照样合文法，不扩充文法来容纳 define。
+  (check-true
+   (grammar:delimited-anf?
+    '(let ([k0 (λ (kn) (let ([kn+1 (λ (k) (kn k))]) (kn+1 kn+1)))]) (k0 k0))))
+  (check-true (grammar:delimited-anf? label-result))
+  (check-true
+   (grammar:cps?
+    '((λ (k0) (k0 (λ (v) (λ (k.0) (k.0 (k0 v))))))
+      (λ (kn)
+        ((λ (_)
+           ((λ (kn+1) (kn+1 (λ (v) (λ (k.1) (k.1 (kn+1 v))))))
+            (λ (k) ((λ (_) ((kn k) values)) (display #\*)))))
+         (display #\@))))))
+  (check-true (grammar:cps? before-999))
+  (check-true (grammar:cps? after-999))
+
+  ;; 产生式的边界：不能把“是符号”当成所有角色，也不能接受旧的宽松调用文法。
+  (define named-cont '(let ([resume (λ (v) (let ([r (f v)]) r))])
+                       (if a (resume b) (resume c))))
+  (check-true (grammar:named-anf? named-cont))
+  (check-false (grammar:named-anf? '(f x))) ; 普通调用应在 atom/let 中。
+  (check-false (grammar:named-anf? '(resume x))) ; 自由名字不会自动成为延续。
+  (check-true (grammar:named-anf? '(resume x) (seteq 'resume)))
+  (check-false (grammar:named-anf? '(let ([r (resume x)]) r) (seteq 'resume)))
+  (check-false (grammar:named-anf? '(let ([r (if a b c)]) r)))
+  (check-true (grammar:delimited-anf? '(let ([r (if a b c)]) r)))
+  (check-false (grammar:delimited-anf? '(if (f x) a b)))
+  (check-false (grammar:delimited-anf? '(f (g x))))
+  (check-true (grammar:delimited-anf? '(f (λ (x) x))))
+  (check-true (grammar:cps? '(λ (x) (λ (resume) (resume x)))))
+  (check-false (grammar:cps? '(λ (x) (λ (resume) (resume resume)))))
+  (check-true (grammar:cps? '((λ (resume) (resume x)) values)))
+  (check-false (grammar:cps? '((λ (resume) (resume resume)) values)))
+  (check-false (grammar:cps? 'values))
+  (check-false (grammar:cps? 'add1))
+  (check-true (grammar:cps? '(values)))
+  (check-true (grammar:cps? '(values x y)))
+  (check-true (grammar:cps? '(values (add1 x))))
+  (check-false (grammar:cps? '(values (add1 x) y)))
+  (check-false (grammar:cps? '(if (zero? n) a b)))
+  (check-true (grammar:cps? '(if n (add1 x) (sub1 y))))
+  (check-true (grammar:cps? '((f x y) values)))
+  (check-false (grammar:cps? '((f (add1 x)) values)))
+  (check-false (grammar:cps? '(((g x) values) values)))
+  (check-false (grammar:cps? '((f x) g)))
+  (check-true (grammar:cps? '(λ (args) (λ (done) (done args)))))
+  (check-true (grammar:cps? '(λ args (λ (done) (done args)))))
+  (check-true (grammar:cps? '(λ (x . rest) (λ (done) (done rest)))))
+  (check-true (grammar:cps? '(λ () (λ (done) (done 42)))))
+  (check-false (grammar:cps? '(λ (x (y)) (λ (done) (done x)))))
+  (check-false (grammar:cps? '(λ (x . 1) (λ (done) (done x)))))
+  (check-false (grammar:cps? '(f . x)))
+  (check-false (grammar:cps? '((f . x) values)))
+  (check-false (grammar:cps? '(values . x)))
+  (check-false (grammar:cps? '(if x y)))
+  (check-false (grammar:cps? '(let ([x y]) x)))
+  (check-false (grammar:cps? '(define (f x) x)))
+  (check-false (grammar:cps? '(resume x)))
+  (check-true (grammar:cps? '(resume x) (seteq 'resume)))
+  (check-false (grammar:cps? '((f resume) resume) (seteq 'resume)))
+  ;; 即使拼成 k.0，未绑定/未登记也只是普通值名字。
+  (check-true (grammar:cps? 'k.0))
+  (check-false (grammar:cps? '(k.0 x)))
+  (check-true (grammar:cps? '(λ (x) (λ (done) ((f x) done)))))
+  (check-false (grammar:cps? '((f x) done))) ; done 的身份不泄漏到绑定之外。
+  (check-false (grammar:cps? '((λ (x y) (values x)) values)))
+  (check-false (grammar:cps? '(λ (x) (λ (done) done)))))
