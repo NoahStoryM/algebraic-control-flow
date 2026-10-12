@@ -556,13 +556,17 @@ $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常�
 照 `let` 的办法，函数体包成 `(λ (v) (cps:* v 3))`，再用在 `(cps:+ 1 2)` 上。可是用不上去：`(cps:+ 1 2)` 是一个 $¬¬\text{Nat}$，这个 λ 要的是普通的 `v`。它是一支 $\text{Nat} →_𝒦 \text{Nat}$ 的箭头，接 𝒦 的箭头该用 `∘𝒦`；可 `(cps:+ 1 2)` 已经算出来了，是一个值，不是箭头。在它前面补一支什么也不做的箭头：$¬¬\text{Nat} →_𝒦 \text{Nat}$ 展开就是 $¬¬\text{Nat} → ¬¬\text{Nat}$，`id` 正好是这样一支。宏照这样展开：
 
 ```racket
-(let ([kkv : (¬¬ Nat) (cps:+ 1 2)])
-  (: cps:kv (→𝒦 Nat Nat))
+(let ([kkv (cps:+ 1 2)])
+  (: id      (→𝒦 (¬¬ Nat) Nat))
+  (: cps:kv  (→𝒦      Nat  Nat))
+  (: cps:kkv (→𝒦 (¬¬ Nat) Nat))
+  (define (id kk) kk)
   (define (cps:kv v) (cps:* v 3))
-  ((∘𝒦 cps:kv (ann id (→𝒦 (¬¬ Nat) Nat))) kkv))
+  (define cps:kkv (∘𝒦 cps:kv id))
+  (cps:kkv kkv))
 ```
 
-`ann` 给 `id` 标上它在这里的读法。三支箭头的类型都写出来了：`cps:kv` 从 Nat 到 Nat，`id` 从 ¬¬Nat 到 Nat，`∘𝒦` 把它们接成一支从 ¬¬Nat 到 Nat 的箭头，正好收下 `kkv`。
+三支箭头的类型都写在前面。`id` 还是那个什么也不做的函数，在这里按 $¬¬\text{Nat} →_𝒦 \text{Nat}$ 来读；`∘𝒦` 把它和 `cps:kv` 接成 `cps:kkv`，一支从 $¬¬\text{Nat}$ 出发的 𝒦 箭头，正好收下 `kkv`。
 
 宿主的 `let` 也可以照这个样子写：把等待结果的 `(λ (v) b)` 起名 `kv`，`let` 脱糖成 `(kv e)`；在 `kv` 前面接一个什么也不做的 `id`，结果不变。两边并排，只换了复合：
 
@@ -610,7 +614,7 @@ $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常�
 
 `let*` 是 `∘` 的另一种写法，`anf:let*` 是 `∘𝒦` 的另一种写法，多出来的是中间结果的名字。展开到底，手写 CPS 时的那个 λ `(λ (y) ((cps:g y) k))` 还在，只是不用我们写了。
 
-把这些写成宏。类型照上面的例子写，`Nat` 换成类型变量 `a`、`b`：每个绑定都是 $a →_𝒦 b$ 的 `cps:kv` 接在 $¬¬a →_𝒦 a$ 的 `id` 后面。`anf:let` 就是只有一个绑定的 `anf:let*`，定义省去：
+把这些写成宏，照上面的例子，`Nat` 换成类型变量 `a`、`b`。宏里局部定义的 `id`、`cps:kv`、`cps:kkv` 只在展开出的代码里可见，不会和程序员自己用的名字相混。`anf:let` 就是只有一个绑定的 `anf:let*`，定义省去：
 
 ```racket
 (define-syntax anf:let*-values
@@ -618,10 +622,14 @@ $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常�
     [(_ () b* ...)
      (anf:begin b* ...)]
     [(_ ([v* e]) b* ...)
-     (let ([kkv : (¬¬ a) e])
-       (: cps:kv (→𝒦 a b))
+     (let ([kkv e])
+       (: id      (→𝒦 (¬¬ a) a))
+       (: cps:kv  (→𝒦      a  b))
+       (: cps:kkv (→𝒦 (¬¬ a) b))
+       (define (id kk) kk)
        (define (cps:kv . v*) (anf:begin b* ...))
-       ((∘𝒦 cps:kv (ann id (→𝒦 (¬¬ a) a))) kkv))]
+       (define cps:kkv (∘𝒦 cps:kv id))
+       (cps:kkv kkv))]
     [(_ ([v* e] [v** e*] ...) b* ...)
      (anf:let*-values ([v* e])
        (anf:let*-values ([v** e*] ...)
@@ -636,10 +644,14 @@ $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常�
   (anf:let*-values ([(v) e] ...) b* ...))
 
 (define-syntax-rule (anf:if test conseq alt)
-  (let ([kkb : (¬¬ Boolean) test])
-    (: cps:kb (→𝒦 Boolean a))
+  (let ([kkb test])
+    (: id      (→𝒦 (¬¬ Boolean) Boolean))
+    (: cps:kb  (→𝒦      Boolean  a))
+    (: cps:kkb (→𝒦 (¬¬ Boolean) a))
+    (define (id kk) kk)
     (define (cps:kb . b*) (if (equal? b* '(#f)) alt conseq))
-    ((∘𝒦 cps:kb (ann id (→𝒦 (¬¬ Boolean) Boolean))) kkb)))
+    (define cps:kkb (∘𝒦 cps:kb id))
+    (cps:kkb kkb)))
 
 (define-syntax-rule (anf:let/cc cps:k b* ...)
   (cps:call/cc (λ (cps:k) b* ...)))
@@ -854,10 +866,14 @@ kp  =  ((neg f) kq)  =  (∘ kq f)
     [(_ () b* ...)
      (anf:begin b* ...)]
     [(_ ([v* e]) b* ...)
-     (let ([kkv : (¬¬ a) e])
-       (: cps:kv (→𝒦 a b))
+     (let ([kkv e])
+       (: id      (→𝒦 (¬¬ a) a))
+       (: cps:kv  (→𝒦      a  b))
+       (: cps:kkv (→𝒦 (¬¬ a) b))
+       (define (id kk) kk)
        (define (cps:kv . v*) (anf:begin b* ...))
-       ((∘𝒦 cps:kv (ann id (→𝒦 (¬¬ a) a))) kkv))]
+       (define cps:kkv (∘𝒦 cps:kv id))
+       (cps:kkv kkv))]
     [(_ ([v* e] [v** e*] ...) b* ...)
      (anf:let*-values ([v* e])
        (anf:let*-values ([v** e*] ...)
@@ -872,10 +888,14 @@ kp  =  ((neg f) kq)  =  (∘ kq f)
   (anf:let*-values ([(v) e] ...) b* ...))
 
 (define-syntax-rule (anf:if test conseq alt)
-  (let ([kkb : (¬¬ Boolean) test])
-    (: cps:kb (→𝒦 Boolean a))
+  (let ([kkb test])
+    (: id      (→𝒦 (¬¬ Boolean) Boolean))
+    (: cps:kb  (→𝒦      Boolean  a))
+    (: cps:kkb (→𝒦 (¬¬ Boolean) a))
+    (define (id kk) kk)
     (define (cps:kb . b*) (if (equal? b* '(#f)) alt conseq))
-    ((∘𝒦 cps:kb (ann id (→𝒦 (¬¬ Boolean) Boolean))) kkb)))
+    (define cps:kkb (∘𝒦 cps:kb id))
+    (cps:kkb kkb)))
 
 (define-syntax-rule (anf:let/cc cps:k b* ...)
   (cps:call/cc (λ (cps:k) b* ...)))

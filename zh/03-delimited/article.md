@@ -1010,10 +1010,14 @@ $$(p ∨ a) → ⊥ᵃ \quad=\quad (p → ⊥ᵃ) ∧ (a → ⊥ᵃ)$$
     [(_ () b* ...)
      (anf:begin b* ...)]
     [(_ ([v* e]) b* ...)
-     (let ([kkv : (¬¬ a) e])
-       (: cps:kv (→𝒦 a b))
+     (let ([kkv e])
+       (: id      (→𝒦 (¬¬ a) a))
+       (: cps:kv  (→𝒦      a  b))
+       (: cps:kkv (→𝒦 (¬¬ a) b))
+       (define (id kk) kk)
        (define (cps:kv . v*) (anf:begin b* ...))
-       ((∘𝒦 cps:kv (ann id (→𝒦 (¬¬ a) a))) kkv))]
+       (define cps:kkv (∘𝒦 cps:kv id))
+       (cps:kkv kkv))]
     [(_ ([v* e] [v** e*] ...) b* ...)
      (anf:let*-values ([v* e])
        (anf:let*-values ([v** e*] ...)
@@ -1028,10 +1032,14 @@ $$(p ∨ a) → ⊥ᵃ \quad=\quad (p → ⊥ᵃ) ∧ (a → ⊥ᵃ)$$
   (anf:let*-values ([(v) e] ...) b* ...))
 
 (define-syntax-rule (anf:if test conseq alt)
-  (let ([kkb : (¬¬ Boolean) test])
-    (: cps:kb (→𝒦 Boolean a))
+  (let ([kkb test])
+    (: id      (→𝒦 (¬¬ Boolean) Boolean))
+    (: cps:kb  (→𝒦      Boolean  a))
+    (: cps:kkb (→𝒦 (¬¬ Boolean) a))
+    (define (id kk) kk)
     (define (cps:kb . b*) (if (equal? b* '(#f)) alt conseq))
-    ((∘𝒦 cps:kb (ann id (→𝒦 (¬¬ Boolean) Boolean))) kkb)))
+    (define cps:kkb (∘𝒦 cps:kb id))
+    (cps:kkb kkb)))
 
 (define-syntax-rule (anf:let/lc cps:k b* ...)
   (cps:call/lc (λ (cps:k) b* ...)))
