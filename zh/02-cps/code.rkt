@@ -160,6 +160,36 @@
       (anf:let* ([r (cps:id 0)])
         (cps:return r))))
    0)
+  ;; 「嵌入语言」：循环用 define 定义，遇零经 cps:return 跳出。
+  (check-equal?
+   (anf:eval
+    (anf:let/cc cps:return
+      (: cps:loop (→𝒦 (Listof Real) Real))
+      (define (cps:loop r*)
+        (anf:if (cps:null? r*)
+                (cps:*)
+                (anf:let* ([r (cps:car r*)])
+                  (anf:if (cps:zero? r)
+                          (cps:return r)
+                          (anf:let* ([r* (cps:cdr r*)]
+                                     [res (cps:loop r*)])
+                            (cps:* res r))))))
+      (cps:loop '(1 2 0 3 4))))
+   0)
+  (check-equal?
+   (anf:eval
+    (anf:let/cc cps:return
+      (define (cps:loop r*)
+        (anf:if (cps:null? r*)
+                (cps:*)
+                (anf:let* ([r (cps:car r*)])
+                  (anf:if (cps:zero? r)
+                          (cps:return r)
+                          (anf:let* ([r* (cps:cdr r*)]
+                                     [res (cps:loop r*)])
+                            (cps:* res r))))))
+      (cps:loop '(1 2 3 4))))
+   24)
   (define (cps:label) (cps:call/cc cps:id))
   (check-true
    (output-starts-with?

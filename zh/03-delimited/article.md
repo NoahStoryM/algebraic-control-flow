@@ -204,7 +204,8 @@ CPS 版的 `mul` 用局部延续正常工作了。那 `anf:eval` 呢？把 `anf:
 > (anf:eval
    (cps:call/cc
     (λ (cps:return)
-      (let cps:loop ([r* '(1 2 0 3 4)])
+      (: cps:loop (→𝒦ₐ (Listof Real) Real))
+      (define (cps:loop r*)
         (anf:begin
          (cps:displayln r*)
          (anf:if (cps:null? r*)
@@ -213,7 +214,8 @@ CPS 版的 `mul` 用局部延续正常工作了。那 `anf:eval` 呢？把 `anf:
                             [r (anf:if (cps:zero? r) (cps:return r) (cps:id r))]
                             [r* (cps:cdr r*)]
                             [res (cps:loop r*)])
-                   (cps:* res r))))))))
+                   (cps:* res r)))))
+      (cps:loop '(1 2 0 3 4)))))
 (1 2 0 3 4)
 (2 0 3 4)
 (0 3 4)
