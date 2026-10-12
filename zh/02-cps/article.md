@@ -557,16 +557,16 @@ $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常�
 
 ```racket
 (let ([kkv (cps:+ 1 2)])
-  (: id      (→𝒦 (¬¬ Nat) Nat))
-  (: cps:kv  (→𝒦      Nat  Nat))
-  (: cps:kkv (→𝒦 (¬¬ Nat) Nat))
-  (define (id kk) kk)
+  (: id       (→𝒦 (¬¬ Nat) Nat))
+  (: cps:kv   (→𝒦      Nat  Nat))
+  (: cps:kkkv (→𝒦 (¬¬ Nat) Nat))
+  (define (id kkv) kkv)
   (define (cps:kv v) (cps:* v 3))
-  (define cps:kkv (∘𝒦 cps:kv id))
-  (cps:kkv kkv))
+  (define cps:kkkv (∘𝒦 cps:kv id))
+  (cps:kkkv kkv))
 ```
 
-三支箭头的类型都写在前面。`id` 还是那个什么也不做的函数，在这里按 $¬¬\text{Nat} →_𝒦 \text{Nat}$ 来读；`∘𝒦` 把它和 `cps:kv` 接成 `cps:kkv`，一支从 $¬¬\text{Nat}$ 出发的 𝒦 箭头，正好收下 `kkv`。
+三支箭头的类型都写在前面。`id` 还是那个什么也不做的函数，在这里按 $¬¬\text{Nat} →_𝒦 \text{Nat}$ 来读；`∘𝒦` 把它和 `cps:kv` 接成一支从 $¬¬\text{Nat}$ 出发的 𝒦 箭头，正好收下 `kkv`。`kv` 收 `v`、`kkv` 收 `kv`，照这个规矩，收 `kkv` 的这一支叫 `cps:kkkv`。
 
 宿主的 `let` 也可以照这个样子写：把等待结果的 `(λ (v) b)` 起名 `kv`，`let` 脱糖成 `(kv e)`；在 `kv` 前面接一个什么也不做的 `id`，结果不变。两边并排，只换了复合：
 
@@ -614,7 +614,7 @@ $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常�
 
 `let*` 是 `∘` 的另一种写法，`anf:let*` 是 `∘𝒦` 的另一种写法，多出来的是中间结果的名字。展开到底，手写 CPS 时的那个 λ `(λ (y) ((cps:g y) k))` 还在，只是不用我们写了。
 
-把这些写成宏，照上面的例子，`Nat` 换成类型变量 `a`、`b`。宏里局部定义的 `id`、`cps:kv`、`cps:kkv` 只在展开出的代码里可见，不会和程序员自己用的名字相混。`anf:let` 就是只有一个绑定的 `anf:let*`，定义省去：
+把这些写成宏，照上面的例子，`Nat` 换成类型变量 `a`、`b`。宏里局部定义的 `id`、`cps:kv`、`cps:kkkv` 只在展开出的代码里可见，不会和程序员自己用的名字相混。`anf:let` 就是只有一个绑定的 `anf:let*`，定义省去：
 
 ```racket
 (define-syntax anf:let*-values
@@ -623,13 +623,13 @@ $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常�
      (anf:begin b* ...)]
     [(_ ([v* e]) b* ...)
      (let ([kkv e])
-       (: id      (→𝒦 (¬¬ a) a))
-       (: cps:kv  (→𝒦      a  b))
-       (: cps:kkv (→𝒦 (¬¬ a) b))
-       (define (id kk) kk)
+       (: id       (→𝒦 (¬¬ a) a))
+       (: cps:kv   (→𝒦      a  b))
+       (: cps:kkkv (→𝒦 (¬¬ a) b))
+       (define (id kkv) kkv)
        (define (cps:kv . v*) (anf:begin b* ...))
-       (define cps:kkv (∘𝒦 cps:kv id))
-       (cps:kkv kkv))]
+       (define cps:kkkv (∘𝒦 cps:kv id))
+       (cps:kkkv kkv))]
     [(_ ([v* e] [v** e*] ...) b* ...)
      (anf:let*-values ([v* e])
        (anf:let*-values ([v** e*] ...)
@@ -645,13 +645,13 @@ $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常�
 
 (define-syntax-rule (anf:if test conseq alt)
   (let ([kkb test])
-    (: id      (→𝒦 (¬¬ Boolean) Boolean))
-    (: cps:kb  (→𝒦      Boolean  a))
-    (: cps:kkb (→𝒦 (¬¬ Boolean) a))
-    (define (id kk) kk)
+    (: id       (→𝒦 (¬¬ Boolean) Boolean))
+    (: cps:kb   (→𝒦      Boolean  a))
+    (: cps:kkkb (→𝒦 (¬¬ Boolean) a))
+    (define (id kkb) kkb)
     (define (cps:kb . b*) (if (equal? b* '(#f)) alt conseq))
-    (define cps:kkb (∘𝒦 cps:kb id))
-    (cps:kkb kkb)))
+    (define cps:kkkb (∘𝒦 cps:kb id))
+    (cps:kkkb kkb)))
 
 (define-syntax-rule (anf:let/cc cps:k b* ...)
   (cps:call/cc (λ (cps:k) b* ...)))
@@ -867,13 +867,13 @@ kp  =  ((neg f) kq)  =  (∘ kq f)
      (anf:begin b* ...)]
     [(_ ([v* e]) b* ...)
      (let ([kkv e])
-       (: id      (→𝒦 (¬¬ a) a))
-       (: cps:kv  (→𝒦      a  b))
-       (: cps:kkv (→𝒦 (¬¬ a) b))
-       (define (id kk) kk)
+       (: id       (→𝒦 (¬¬ a) a))
+       (: cps:kv   (→𝒦      a  b))
+       (: cps:kkkv (→𝒦 (¬¬ a) b))
+       (define (id kkv) kkv)
        (define (cps:kv . v*) (anf:begin b* ...))
-       (define cps:kkv (∘𝒦 cps:kv id))
-       (cps:kkv kkv))]
+       (define cps:kkkv (∘𝒦 cps:kv id))
+       (cps:kkkv kkv))]
     [(_ ([v* e] [v** e*] ...) b* ...)
      (anf:let*-values ([v* e])
        (anf:let*-values ([v** e*] ...)
@@ -889,13 +889,13 @@ kp  =  ((neg f) kq)  =  (∘ kq f)
 
 (define-syntax-rule (anf:if test conseq alt)
   (let ([kkb test])
-    (: id      (→𝒦 (¬¬ Boolean) Boolean))
-    (: cps:kb  (→𝒦      Boolean  a))
-    (: cps:kkb (→𝒦 (¬¬ Boolean) a))
-    (define (id kk) kk)
+    (: id       (→𝒦 (¬¬ Boolean) Boolean))
+    (: cps:kb   (→𝒦      Boolean  a))
+    (: cps:kkkb (→𝒦 (¬¬ Boolean) a))
+    (define (id kkb) kkb)
     (define (cps:kb . b*) (if (equal? b* '(#f)) alt conseq))
-    (define cps:kkb (∘𝒦 cps:kb id))
-    (cps:kkb kkb)))
+    (define cps:kkkb (∘𝒦 cps:kb id))
+    (cps:kkkb kkb)))
 
 (define-syntax-rule (anf:let/cc cps:k b* ...)
   (cps:call/cc (λ (cps:k) b* ...)))
