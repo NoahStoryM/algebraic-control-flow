@@ -30,6 +30,8 @@
     (list a b c)))
 ```
 
+上下界取 1 和 20，交出的每一项是一组边长 `(list a b c)`：
+
 ```racket
 > (right-triangles 1 20)
 '((3 4 5) (5 12 13) (6 8 10) (8 15 17) (9 12 15) (12 16 20))
@@ -94,6 +96,8 @@
     (cons l×h t)))
 ```
 
+`cache` 的三条记录，按每组边一行摊开：
+
 ```racket
 > rows
 '(((1 5)  . (3 4 5))
@@ -127,6 +131,8 @@ R = {((l, h), (a, b, c)) ∈ (ℕ⁺ × ℕ⁺) × (ℕ⁺ × ℕ⁺ × ℕ⁺) 
 (: one? (→ Bit Boolean : #:+ One #:- Zero))
 (define (one? b) (eqv? b 1))
 ```
+
+`Bit` 只有两个元素，把 `one?` 在每个元素上的结果都列出来：
 
 ```racket
 > (for/list ([b '(0 1)])
@@ -224,6 +230,8 @@ R = {((l, h), (a, b, c)) ∈ (ℕ⁺ × ℕ⁺) × (ℕ⁺ × ℕ⁺ × ℕ⁺) 
            (if (pyth? a b c) (list (list a b c)) '()))))))))
 ```
 
+和开头的 `for*/list` 版本比一比：
+
 ```racket
 > (right-triangles 1 20)
 '((3 4 5) (5 12 13) (6 8 10) (8 15 17) (9 12 15) (12 16 20))
@@ -274,6 +282,8 @@ R = {((l, h), (a, b, c)) ∈ (ℕ⁺ × ℕ⁺) × (ℕ⁺ × ℕ⁺ × ℕ⁺) 
           [c (choose (inclusive-range b h))])
      (if (pyth? a b c) (list (list a b c)) '()))))
 ```
+
+只剩一层 `reset` 以后，再算一遍：
 
 ```racket
 > (right-triangles 1 20)
@@ -330,6 +340,8 @@ R = {((l, h), (a, b, c)) ∈ (ℕ⁺ × ℕ⁺) × (ℕ⁺ × ℕ⁺ × ℕ⁺) 
      (check (pyth? a b c))
      (list a b c))))
 ```
+
+走到末尾的 `(list a b c)` 由 `in-amb` 收下：
 
 ```racket
 > (right-triangles 1 20)

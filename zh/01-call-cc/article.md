@@ -488,12 +488,9 @@ $$¬q ∨ ¬¬q$$
 不完全是。在纯函数式语言中，thunk 和类型为 $q$ 的普通值无法区分。但一旦我们允许副作用，thunk 就变得必要了：它们**推迟**计算，使得结果反映调用时而非定义时的状态。
 
 ```racket
-(define b 111)
-(: f (→ Real))
-(define (f) (* 1 b))
-```
-
-```racket
+> (define b 111)
+> (: f (→ Real))
+> (define (f) (* 1 b))
 > (displayln (f))
 111
 > (set! b 222)
@@ -509,13 +506,10 @@ $$¬q ∨ ¬¬q$$
 但 thunk 适应的不只是变量的当前值。它还运行在调用者的**求值上下文**中：`parameterize` 绑定、`dynamic-wind` 的进出守卫、异常处理器，以及其他属于延续而非变量环境的一切。
 
 ```racket
-(define a (make-parameter 1))
-(define b 111)
-(: f (→ Real))
-(define (f) (* (a) b))
-```
-
-```racket
+> (define a (make-parameter 1))
+> (define b 111)
+> (: f (→ Real))
+> (define (f) (* (a) b))
 > (displayln (f))
 111
 > (set! b 222)
@@ -579,13 +573,10 @@ $$¬q ∨ ¬¬q$$
 把 thunk 例子里的 `f` 换成 `wait/fc` 做出的 $¬¬\text{Real}$：
 
 ```racket
-(define a (make-parameter 1))
-(define b 111)
-(: f (¬ (¬ Real)))
-(define f (wait/fc (λ (_) (* (a) b))))
-```
-
-```racket
+> (define a (make-parameter 1))
+> (define b 111)
+> (: f (¬ (¬ Real)))
+> (define f (wait/fc (λ (_) (* (a) b))))
 > (displayln (call/cc f))
 111
 > (set! b 222)

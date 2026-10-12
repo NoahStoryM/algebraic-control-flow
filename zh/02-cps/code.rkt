@@ -3,6 +3,7 @@
 (provide (all-defined-out))
 
 (define ∘ compose)
+(define id (∘))
 (define (list->values v*) (apply values v*))
 
 
@@ -14,7 +15,7 @@
 (define-type (← q p) (→ p q))
 
 
-;;; 答案类型（通过 raise 实现初始延续）
+;;; 答案类型（通过 raise 实现终结延续）
 
 (struct (r) ans ([a* : (Listof r)]) #:type-name Ans)
 (: a->⊥ (∀ (a) (¬ a)))
@@ -124,7 +125,7 @@
 
 ;;; CPS 提升的基本操作
 
-(define cps:id        (cps values))
+(define cps:id        (cps id))
 (define cps:+         (cps +))
 (define cps:*         (cps *))
 (define cps:zero?     (cps zero?))
