@@ -493,7 +493,8 @@ between  =  (scatter inclusive-range)
 
 ```racket
 (define ((∘ℒ . f*) . x*)
-  (foldr append-map (apply (last f*) x*) (drop-right f* 1)))
+  (define-values (g* h*) (split-at-right f* 1))
+  (foldr append-map (apply (car h*) x*) g*))
 ```
 
 纯的宿主里没有 `amb`，二元关系在那里就是这个样子：交出列表的函数，用 `append-map` 接起来。
