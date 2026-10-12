@@ -70,8 +70,6 @@
 (: neg² (∀ (p q) (→ (→𝒟 p q) (→𝒟 (¬ₐ¬ₐ p) (¬ₐ¬ₐ q)))))
 (define neg² (∘ neg¹ neg))
 
-(: cps->neg² (∀ (p q) (→ (→𝒦ₐ p q) (→𝒟 (¬ₐ¬ₐ p) (¬ₐ¬ₐ q)))))
-(define cps->neg² (∘ neg¹ flip¹))
 
 
 ;;; 控制运算符
@@ -100,7 +98,6 @@
 
 (: cps:abort (∀ (a) (¬𝒦ₐ a)))
 (define cps:abort (cps* a->⊥ᵃ))
-(define neg²:abort (cps->neg² cps:abort))
 
 
 ;;; anf: 宏
@@ -111,9 +108,13 @@
      (anf:begin b* ...)]
     [(_ ([v* e]) b* ...)
      (let ([kkv e])
+       (: id       (→𝒦 (¬¬ a) a))
+       (: cps:kv   (→𝒦     a  b))
+       (: cps:kkkv (→𝒦 (¬¬ a) b))
+       (define (id kkv) kkv)
        (define (cps:kv . v*) (anf:begin b* ...))
-       (define neg²:kv (cps->neg² cps:kv))
-       (neg²:kv kkv))]
+       (define cps:kkkv (∘𝒦 cps:kv id))
+       (cps:kkkv kkv))]
     [(_ ([v* e] [v** e*] ...) b* ...)
      (anf:let*-values ([v* e])
        (anf:let*-values ([v** e*] ...)
@@ -129,9 +130,13 @@
 
 (define-syntax-rule (anf:if test conseq alt)
   (let ([kkb test])
+    (: id       (→𝒦 (¬¬ Boolean) Boolean))
+    (: cps:kb   (→𝒦     Boolean  a))
+    (: cps:kkkb (→𝒦 (¬¬ Boolean) a))
+    (define (id kkb) kkb)
     (define (cps:kb . b*) (if (equal? b* '(#f)) alt conseq))
-    (define neg²:kb (cps->neg² cps:kb))
-    (neg²:kb kkb)))
+    (define cps:kkkb (∘𝒦 cps:kb id))
+    (cps:kkkb kkb)))
 
 (define-syntax-rule (anf:let/lc cps:k b* ...)
   (cps:call/lc (λ (cps:k) b* ...)))
@@ -140,7 +145,9 @@
   (cps:call/cc (λ (cps:k) b* ...)))
 
 (define-syntax-rule (anf:shift cps:k e)
-  (anf:let/lc cps:k (neg²:abort e)))
+  (anf:let/lc cps:k
+    (anf:let* ([v e])
+      (cps:abort v))))
 
 
 ;;; CPS 提升的基本操作

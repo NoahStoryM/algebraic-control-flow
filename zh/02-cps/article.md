@@ -530,31 +530,11 @@ $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常�
 
 出发时 $p →_𝒞 q$，落地时 $¬¬p →_𝒟 ¬¬q$。经典世界的箭头类型，变成了构造性世界的箭头类型，代价是每个类型裹上 $¬¬$。两层不是凑出来的：第一层（`neg`）把延续变成参数，这是全部经典能力的来源；第二层（`neg¹`）什么也没添，只是把翻过去的方向翻回来。
 
-不过 `neg²` 翻译的只是箭头的类型，不是箭头里的程序：`(neg² f)` 运行时仍然原样调用 `f`，`f` 若用了 `call/cc`，包装之后照样依赖它。要让程序本身落在 𝒟 里，每一步都得写成 𝒦 的箭头，`call/cc` 也换成 𝒦 世界自己的 `cps:call/cc`。图表上正好还有一条从 𝒦 经 𝒰 到 𝒟 的路径：
+不过 `neg²` 翻译的只是箭头的类型，不是箭头里的程序：`(neg² f)` 运行时仍然原样调用 `f`，`f` 若用了 `call/cc`，包装之后照样依赖它。
 
-```racket
-(: cps->neg² (∀ (p q) (→ (→𝒦 p q) (→𝒟 (¬¬ p) (¬¬ q)))))
-(define cps->neg² (∘ neg¹ flip¹))
-```
+要让程序本身落在 𝒟 里，每一步都得写成 𝒦 的箭头，`call/cc` 换成 𝒦 世界自己的 `cps:call/cc`，箭头之间用 `∘𝒦` 接。`∘𝒦` 由 `flip¹`、`∘𝒰`、`flip` 拼成，和 `cps:call/cc` 一样全是纯 lambda。𝒦 的箭头连同它们的复合，就这样整个落在了 𝒟 里。
 
-落到 𝒟 以后，箭头用宿主的 `∘` 就能接。`cps:f` 的类型是 $p → ¬¬q$，`cps:g` 的类型是 $q → ¬¬r$，「三种箭头」一节里它们接不上，中间差一个 $¬¬$。只搬后一支就够了：`(cps->neg² cps:g)` 的类型是 $¬¬q → ¬¬r$，补上的正是这一层，`cps:f` 交出的 $¬¬q$ 它直接收下。把它记作 `neg²:g`，`(∘ neg²:g cps:f)` 就是一支 $p → ¬¬r$ 的箭头。
-
-它和绕道 𝒰 接出来的 `(∘𝒦 cps:g cps:f)` 是同一支吗？那里的化简经过 `((cps:f x) (neg:g k))` 这一行。从它出发，换一个方向：
-
-```racket
-  ((cps:f x) (neg:g k))
-= (((neg¹ neg:g) (cps:f x)) k)
-= ((neg²:g (cps:f x)) k)
-= (((∘ neg²:g cps:f) x) k)
-```
-
-`neg¹` 就是 `neg`，`((neg¹ neg:g) kk)` 是 `(∘ kk neg:g)`：交给 `kk` 的延续，先由 `neg:g` 在前面接上一段。取 `kk` 为 `(cps:f x)`，就是第一行。而 `neg:g` 是 `(flip¹ cps:g)`，`(neg¹ neg:g)` 按定义正是 `neg²:g`。两种接法是一回事：
-
-```racket
-(∘𝒦 cps:g cps:f)  =  (∘ neg²:g cps:f)
-```
-
-两段化简都没有用到 `cps:f`、`cps:g` 的来历，用了 `cps:call/cc` 的箭头也一样。𝒦 的箭头连同它们的复合，就这样整个落在了 𝒟 里。
+> **练习：** 图表上从 𝒦 经 𝒰 到 𝒟 还有一条路径。照着它写出一个运算，把 $p →_𝒦 q$ 的箭头变成 $¬¬p →_𝒟 ¬¬q$ 的箭头，再说说它对一支 𝒦 箭头做了什么。
 
 经典逻辑并非偷渡到 𝒟，走进 𝒟 的是它裹了 $¬¬$ 的样子。这就是第一篇结尾提到的**否定翻译**，也叫双重否定翻译。
 
@@ -575,64 +555,79 @@ $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常�
   (cps:* v 3))
 ```
 
-照 `let` 的办法，函数体包成 `(λ (v) (cps:* v 3))`，再用在 `(cps:+ 1 2)` 上。可是用不上去：`(cps:+ 1 2)` 是一个 $¬¬\text{Nat}$，这个 λ 要的是普通的 `v`。「否定翻译」一节里 `cps:g` 接不到 `(cps:f x)` 后面，是同一个情形，补一个 `cps->neg²` 就接上了。宏照这样展开：
+照 `let` 的办法，函数体包成 `(λ (v) (cps:* v 3))`，再用在 `(cps:+ 1 2)` 上。可是用不上去：这个 λ 要的是一个数，`(cps:+ 1 2)` 交出的却是 $¬¬\text{Nat}$。
+
+这个 λ 收一个数、交出 $¬¬\text{Nat}$，是一支 𝒦 的箭头。𝒦 的箭头用 `∘𝒦` 来接，可 `(cps:+ 1 2)` 不是箭头，是已经算好的值。办法是在 λ 前面接一支什么也不做的 `id`，由它收下这个值。宏照这样展开：
 
 ```racket
-(let ([kkv (cps:+ 1 2)])              ; kkv : ¬¬Nat
-  (define (cps:kv v)                  ; cps:kv : Nat →𝒦 Nat
-    (cps:* v 3))
-  (define neg²:kv (cps->neg² cps:kv)) ; neg²:kv : ¬¬Nat → ¬¬Nat
-  (neg²:kv kkv))                      ; 连接
+(let ([kkv (cps:+ 1 2)])
+  (: id       (→𝒦 (¬¬ Nat) Nat))
+  (: cps:kv   (→𝒦     Nat  Nat))
+  (: cps:kkkv (→𝒦 (¬¬ Nat) Nat))
+  (define (id kkv) kkv)
+  (define (cps:kv v) (cps:* v 3))
+  (define cps:kkkv (∘𝒦 cps:kv id))
+  (cps:kkkv kkv))
 ```
 
-把三个名字代回去，与 `let` 的脱糖并排，只多一个 `cps->neg²`：
+`id` 的类型写作 $¬¬\text{Nat} →_𝒦 \text{Nat}$，展开就是 $¬¬\text{Nat} → ¬¬\text{Nat}$：收到什么就交出什么，所以 `id` 能当这支箭头用。它和 `cps:kv` 接成的 `cps:kkkv`，正好收下 `kkv`。
+
+宿主的 `let` 也能写成这样。把等着结果的 `(λ (v) b)` 记作 `kv`，`(let ([v e]) b)` 就是 `(kv e)`，前面多接一个 `id` 也不变。两边并排，只差在用哪个复合：
 
 ```racket
-(let     ([v e]) b)  =  ((λ (v) b) e)
-(anf:let ([v e]) b)  =  ((cps->neg² (λ (v) b)) e)
+(let     ([v e]) b)  =  ((∘  kv     id) e)    ; kv     = (λ (v) b)
+(anf:let ([v e]) b)  =  ((∘𝒦 cps:kv id) e)    ; cps:kv = (λ (v) b)
 ```
 
-多个绑定 `anf:let*` 是嵌套的单个绑定，和 `let*` 一样。开头看过宿主里接连两个绑定的展开：两层 λ，拿掉只把 `z` 原样交出的那一层，剩下 `((∘ g f) x)`。`anf:let*` 走的是同样的几步。只把 `z` 交出去的那一步，在 𝒦 里是 `(cps id)`，前面认出它的类型是 DNI，下面记作 `cps:id`：
+多个绑定的 `anf:let*` 是嵌套的单个绑定，和 `let*` 一样。开头看过宿主里两个绑定的展开，最后剩下 `((∘ g f) x)`；`anf:let*` 走的是同样的几步。
+
+最后一步只把 `z` 原样交出，在 𝒦 里写作 `(cps id)`，前面认出它的类型是 DNI，下面记作 `cps:id`。它和宏里的 `id` 不同：`cps:id` 的类型是 $q →_𝒦 q$，是 𝒦 自己的恒等。
 
 ```racket
   (anf:let* ([y (cps:f x)]
              [z (cps:g y)])
     (cps:id z))
-= ((cps->neg²
-    (λ (y)
-      ((cps->neg²
-        (λ (z)
-          (cps:id z)))
-       (cps:g y))))
-   (cps:f x))
-= ((cps->neg²
-    (λ (y)
-      ((cps->neg² cps:id)
-       (cps:g y))))
-   (cps:f x))
-= ((cps->neg²
-    (λ (y) (neg²:id (cps:g y))))
-   (cps:f x))
-= ((cps->neg²
-    (λ (y) (cps:g y)))
-   (cps:f x))
-= ((cps->neg² cps:g)
-   (cps:f x))
-= (neg²:g (cps:f x))
-= ((∘ neg²:g cps:f) x)
+= (let ([kky (cps:f x)])
+    (define (cps:ky y)
+      (let ([kkz (cps:g y)])
+        (define (cps:kz z) (cps:id z))
+        ((∘𝒦 cps:kz id) kkz)))
+    ((∘𝒦 cps:ky id) kky))
+= (let ()
+    (define (cps:ky y)
+      (let ()
+        (define (cps:kz z) (cps:id z))
+        ((∘𝒦 cps:kz id) (cps:g y))))
+    ((∘𝒦 cps:ky id) (cps:f x)))
+= (let ()
+    (define (cps:ky y)
+      (let ()
+        (define (cps:kz z) (cps:id z))
+        ((∘𝒦 cps:kz cps:g) y)))
+    ((∘𝒦 cps:ky cps:f) x))
+= (let ()
+    (define (cps:ky y) ((∘𝒦 cps:id cps:g) y))
+    ((∘𝒦 cps:ky cps:f) x))
+= (let ()
+    (define (cps:ky y) (cps:g y))
+    ((∘𝒦 cps:ky cps:f) x))
 = ((∘𝒦 cps:g cps:f) x)
 ```
 
-两层 λ 同样是语法写的，每层多一个 `cps->neg²`。`cps:id` 是 `(cps id)`，`cps` 里的 `flip` 被 `cps->neg²` 里的 `flip¹` 抵消，`(cps->neg² cps:id)` 就是 `(neg² id)`，记作 `neg²:id`：什么也不做的函数搬过去，还是什么也不做，这一层可以拿掉。最后一步是「否定翻译」一节的等式。两边并排：
+第一步照宏展开，名字是宏起的：`cps:ky` 等着 `y`，`cps:kz` 等着 `z`。第二步把 `kky`、`kkz` 代回去。
+
+第三步拿掉了 `id`。`id` 只把收到的值原样往后交；交给它的既然是 `(cps:g y)`，不如直接把 `cps:kz` 接在 `cps:g` 后面。要确认两种写法相同，交给它们同一个延续 `k`，照「三种箭头」一节展开：两边都是 `(cps:g y)` 收到延续 `(λ (z) ((cps:kz z) k))`。外层同理。
+
+最后两步拿掉的是 `cps:id`。`cps:kz` 只把 `z` 交给 `cps:id`，它就是 `cps:id`；`cps:id` 把值原样交给延续，接在 `cps:g` 后面不改变什么，所以 `cps:ky` 就是 `cps:g`。两边并排：
 
 ```racket
 (let*     ([y     (f x)] [z     (g y)])         z)   =  ((∘      g     f) x)
 (anf:let* ([y (cps:f x)] [z (cps:g y)]) (cps:id z))  =  ((∘𝒦 cps:g cps:f) x)
 ```
 
-`let*` 是 `∘` 的另一种写法，`anf:let*` 是 `∘𝒦` 的另一种写法，多出来的是中间结果的名字。「三种箭头」一节看过 `∘𝒦` 展开的样子，`((cps:f x) (λ (y) ((cps:g y) k)))`：手写 CPS 时的那个 λ 还在，只是不用我们写了。
+`let*` 是 `∘` 的另一种写法，`anf:let*` 是 `∘𝒦` 的另一种写法，多出来的是中间结果的名字。展开到底，手写 CPS 时的那个 λ 还在，只是不用我们写了。
 
-把这些写成宏。`anf:let` 就是只有一个绑定的 `anf:let*`，定义省去：
+把这些写成宏，`Nat` 换成类型变量 `a`、`b`。宏里定义的 `id`、`cps:kv`、`cps:kkkv` 只在展开出的代码里可见，不会和程序员自己的名字相混。`anf:let` 就是只有一个绑定的 `anf:let*`，定义省去：
 
 ```racket
 (define-syntax anf:let*-values
@@ -641,9 +636,13 @@ $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常�
      (anf:begin b* ...)]
     [(_ ([v* e]) b* ...)
      (let ([kkv e])
+       (: id       (→𝒦 (¬¬ a) a))
+       (: cps:kv   (→𝒦     a  b))
+       (: cps:kkkv (→𝒦 (¬¬ a) b))
+       (define (id kkv) kkv)
        (define (cps:kv . v*) (anf:begin b* ...))
-       (define neg²:kv (cps->neg² cps:kv))
-       (neg²:kv kkv))]
+       (define cps:kkkv (∘𝒦 cps:kv id))
+       (cps:kkkv kkv))]
     [(_ ([v* e] [v** e*] ...) b* ...)
      (anf:let*-values ([v* e])
        (anf:let*-values ([v** e*] ...)
@@ -659,15 +658,19 @@ $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常�
 
 (define-syntax-rule (anf:if test conseq alt)
   (let ([kkb test])
+    (: id       (→𝒦 (¬¬ Boolean) Boolean))
+    (: cps:kb   (→𝒦     Boolean  a))
+    (: cps:kkkb (→𝒦 (¬¬ Boolean) a))
+    (define (id kkb) kkb)
     (define (cps:kb . b*) (if (equal? b* '(#f)) alt conseq))
-    (define neg²:kb (cps->neg² cps:kb))
-    (neg²:kb kkb)))
+    (define cps:kkkb (∘𝒦 cps:kb id))
+    (cps:kkkb kkb)))
 
 (define-syntax-rule (anf:let/cc cps:k b* ...)
   (cps:call/cc (λ (cps:k) b* ...)))
 ```
 
-`anf:if` 中 `cps:kb` 是可变参数的：测试值作为列表 `b*` 到达。在 Racket 中只有 `#f` 是假值，所以 `(equal? b* '(#f))` 恰好检测单值为假的情况。
+`anf:if` 中那个 λ 是可变参数的：测试值作为列表 `b*` 到达。在 Racket 中只有 `#f` 是假值，所以 `(equal? b* '(#f))` 恰好检测单值为假的情况。
 
 宏充当编译器，把类似 ANF 的语法翻译成 $¬¬$ 编码的 CPS。还缺一个解释器，把编码后的程序运行出结果：
 
@@ -769,7 +772,7 @@ kp  =  ((neg f) kq)  =  (∘ kq f)
 
 ## 未解的线索
 
-`neg`、`cps`、`flip`、`neg²`、`cps:call/cc`，一直到 `anf:` 宏，全部是纯 lambda，全部住在 𝒟 里。经典嵌入语言的每一步计算，经过这条流水线，变成宿主 𝒟 里一个 $¬¬a$ 类型的值。*编码*完成了。编码之后的 $¬¬a$ 值可以继续复合和变换：`neg²:f` 把 $¬¬a$ 映射为 $¬¬b$，`anf:let*` 把多步计算串成一条链，`cps:call/cc` 在编码内部提供经典控制，每一步都在 𝒟 内部完成。
+`neg`、`cps`、`flip`、`∘𝒦`、`neg²`、`cps:call/cc`，一直到 `anf:` 宏，全部是纯 lambda，全部住在 𝒟 里。经典嵌入语言的每一步计算，经过这条流水线，变成宿主 𝒟 里一个 $¬¬a$ 类型的值。*编码*完成了。编码之后的 $¬¬a$ 值可以继续复合和变换：`(neg² f)` 把 $¬¬a$ 映射为 $¬¬b$，`anf:let*` 把多步计算串成一条链，`cps:call/cc` 在编码内部提供经典控制，每一步都在 𝒟 内部完成。
 
 但 $¬¬a$ 不是 $a$。展开别名：$¬¬a = (a → ⊥) → ⊥$，它是一个等待延续的函数。要从中取出 $a$ 类型的结果，必须向它提供一个 $a → ⊥$ 类型的终结延续。第一篇论证过：对任何非空的 $a$，$a → ⊥$ 是空的，构造性的 𝒟 无法交出这个参数。`anf:eval` 做的恰恰是这件事：它的类型 $¬¬a → a$ 对应 DNE，要求对任意 $a$ 都能提供终结延续并交出结果。𝒟 能够编码经典计算，能够在编码之间复合和变换，但无法构造一个对任意类型都成立的解释器来提取最终结果。
 
@@ -867,8 +870,6 @@ kp  =  ((neg f) kq)  =  (∘ kq f)
 (: neg² (∀ (p q) (→ (→𝒞 p q) (→𝒟 (¬¬ p) (¬¬ q)))))
 (define neg² (∘ neg¹ neg))
 
-(: cps->neg² (∀ (p q) (→ (→𝒦 p q) (→𝒟 (¬¬ p) (¬¬ q)))))
-(define cps->neg² (∘ neg¹ flip¹))
 
 
 ;;; anf: 宏
@@ -879,9 +880,13 @@ kp  =  ((neg f) kq)  =  (∘ kq f)
      (anf:begin b* ...)]
     [(_ ([v* e]) b* ...)
      (let ([kkv e])
+       (: id       (→𝒦 (¬¬ a) a))
+       (: cps:kv   (→𝒦     a  b))
+       (: cps:kkkv (→𝒦 (¬¬ a) b))
+       (define (id kkv) kkv)
        (define (cps:kv . v*) (anf:begin b* ...))
-       (define neg²:kv (cps->neg² cps:kv))
-       (neg²:kv kkv))]
+       (define cps:kkkv (∘𝒦 cps:kv id))
+       (cps:kkkv kkv))]
     [(_ ([v* e] [v** e*] ...) b* ...)
      (anf:let*-values ([v* e])
        (anf:let*-values ([v** e*] ...)
@@ -897,9 +902,13 @@ kp  =  ((neg f) kq)  =  (∘ kq f)
 
 (define-syntax-rule (anf:if test conseq alt)
   (let ([kkb test])
+    (: id       (→𝒦 (¬¬ Boolean) Boolean))
+    (: cps:kb   (→𝒦     Boolean  a))
+    (: cps:kkkb (→𝒦 (¬¬ Boolean) a))
+    (define (id kkb) kkb)
     (define (cps:kb . b*) (if (equal? b* '(#f)) alt conseq))
-    (define neg²:kb (cps->neg² cps:kb))
-    (neg²:kb kkb)))
+    (define cps:kkkb (∘𝒦 cps:kb id))
+    (cps:kkkb kkb)))
 
 (define-syntax-rule (anf:let/cc cps:k b* ...)
   (cps:call/cc (λ (cps:k) b* ...)))

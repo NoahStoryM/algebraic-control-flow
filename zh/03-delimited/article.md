@@ -352,16 +352,16 @@ CPS 代码中用不到 `⊥ᵃ?`。那么在整段局部计算中，和 `⊥ᵃ`
 前面 `cps:call/lc` 已经表明，被 `return` 丢弃的局部延续其实是一个普通函数：调用它就执行剩余局部工作，正常返回结果。如果主体既能取得这个函数，又能交出答案，它就可以选择调用、保存或丢弃局部延续。`cps:call/lc` 取得函数，`cps:abort` 交出答案，两者组合就是 `shift`：
 
 ```racket
-(define neg²:abort (cps->neg² cps:abort))
-
 (define-syntax-rule (anf:let/lc cps:k b* ...)
   (cps:call/lc (λ (cps:k) b* ...)))
 
 (define-syntax-rule (anf:shift cps:k e)
-  (anf:let/lc cps:k (neg²:abort e)))
+  (anf:let/lc cps:k
+    (anf:let* ([v e])
+      (cps:abort v))))
 ```
 
-`anf:shift` 的最后一步是 `neg²:abort`：和 `return` 一样，丢弃剩余的局部工作，把主体的结果作为局部计算的答案交出。不同的是，丢弃之前，`anf:let/lc` 先把那段工作命名为 `cps:k`，交给了主体。`shift` 就是命名了局部延续的 `return`。
+`anf:shift` 的最后一步把主体的结果 `v` 交给 `cps:abort`：和 `return` 一样，丢弃剩余的局部工作，把它作为局部计算的答案交出。不同的是，丢弃之前，`anf:let/lc` 先把那段工作命名为 `cps:k`，交给了主体。`shift` 就是命名了局部延续的 `return`。
 
 前面一直称为「局部延续」的对象，由 `reset` 的边界限定范围，通常称为**定界延续**（delimited continuation）。`reset` 和 `shift` 是操作定界延续的一组接口。
 
@@ -973,8 +973,6 @@ $$(p ∨ a) → ⊥ᵃ \quad=\quad (p → ⊥ᵃ) ∧ (a → ⊥ᵃ)$$
 (: neg² (∀ (p q) (→ (→𝒟 p q) (→𝒟 (¬ₐ¬ₐ p) (¬ₐ¬ₐ q)))))
 (define neg² (∘ neg¹ neg))
 
-(: cps->neg² (∀ (p q) (→ (→𝒦ₐ p q) (→𝒟 (¬ₐ¬ₐ p) (¬ₐ¬ₐ q)))))
-(define cps->neg² (∘ neg¹ flip¹))
 
 
 ;;; 控制运算符
@@ -1003,7 +1001,6 @@ $$(p ∨ a) → ⊥ᵃ \quad=\quad (p → ⊥ᵃ) ∧ (a → ⊥ᵃ)$$
 
 (: cps:abort (∀ (a) (¬𝒦ₐ a)))
 (define cps:abort (cps* a->⊥ᵃ))
-(define neg²:abort (cps->neg² cps:abort))
 
 
 ;;; anf: 宏
@@ -1014,9 +1011,13 @@ $$(p ∨ a) → ⊥ᵃ \quad=\quad (p → ⊥ᵃ) ∧ (a → ⊥ᵃ)$$
      (anf:begin b* ...)]
     [(_ ([v* e]) b* ...)
      (let ([kkv e])
+       (: id       (→𝒦 (¬¬ a) a))
+       (: cps:kv   (→𝒦     a  b))
+       (: cps:kkkv (→𝒦 (¬¬ a) b))
+       (define (id kkv) kkv)
        (define (cps:kv . v*) (anf:begin b* ...))
-       (define neg²:kv (cps->neg² cps:kv))
-       (neg²:kv kkv))]
+       (define cps:kkkv (∘𝒦 cps:kv id))
+       (cps:kkkv kkv))]
     [(_ ([v* e] [v** e*] ...) b* ...)
      (anf:let*-values ([v* e])
        (anf:let*-values ([v** e*] ...)
@@ -1032,9 +1033,13 @@ $$(p ∨ a) → ⊥ᵃ \quad=\quad (p → ⊥ᵃ) ∧ (a → ⊥ᵃ)$$
 
 (define-syntax-rule (anf:if test conseq alt)
   (let ([kkb test])
+    (: id       (→𝒦 (¬¬ Boolean) Boolean))
+    (: cps:kb   (→𝒦     Boolean  a))
+    (: cps:kkkb (→𝒦 (¬¬ Boolean) a))
+    (define (id kkb) kkb)
     (define (cps:kb . b*) (if (equal? b* '(#f)) alt conseq))
-    (define neg²:kb (cps->neg² cps:kb))
-    (neg²:kb kkb)))
+    (define cps:kkkb (∘𝒦 cps:kb id))
+    (cps:kkkb kkb)))
 
 (define-syntax-rule (anf:let/lc cps:k b* ...)
   (cps:call/lc (λ (cps:k) b* ...)))
@@ -1043,7 +1048,9 @@ $$(p ∨ a) → ⊥ᵃ \quad=\quad (p → ⊥ᵃ) ∧ (a → ⊥ᵃ)$$
   (cps:call/cc (λ (cps:k) b* ...)))
 
 (define-syntax-rule (anf:shift cps:k e)
-  (anf:let/lc cps:k (neg²:abort e)))
+  (anf:let/lc cps:k
+    (anf:let* ([v e])
+      (cps:abort v))))
 
 
 ;;; CPS 提升的基本操作
