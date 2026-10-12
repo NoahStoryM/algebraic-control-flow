@@ -3,6 +3,7 @@
 (provide (all-defined-out))
 
 (define ∘ compose)
+(define id (∘))
 
 
 ;;; 类型
@@ -42,7 +43,7 @@
 (define flip¹ flip)
 
 (: a->⊥ᵃ (∀ (a) (¬ₐ a)))
-(define a->⊥ᵃ values)
+(define a->⊥ᵃ id)
 
 (: neg* (∀ (p a) (→ (¬ₐ p) (¬𝒰ₐ p))))
 (define ((neg* kₐp) _k) kₐp)
@@ -89,7 +90,7 @@
 ;;; 求值与定界
 
 (: cps:id (∀ (p a) (→𝒦ₐ p p)))
-(define cps:id (cps values))
+(define cps:id (cps id))
 
 (: anf:eval (∀ (a) (¬ₐ¬ₐ¬ₐ a)))
 (define anf:eval (cps:id a->⊥ᵃ))
@@ -301,17 +302,19 @@
 )
 
 (module stage-17 typed/racket/no-check
+  (define id values)
 
   (define-type ⊥ᵃ Real)
 
   (define-type (¬ₐ p) (→ p ⊥ᵃ))
 
-  (define ⊥ᵃ->a values)
+  (define ⊥ᵃ->a id)
   (provide (all-defined-out))
 )
 
 (module stage-21 typed/racket/no-check
-  (define ⊥ᵃ->a values)
+  (define id values)
+  (define ⊥ᵃ->a id)
   (define (((cps f) . p*) kₐq) (kₐq (apply f p*)))
   (define ((cps:call/lc cps:proc) kₐp)
     (define (kp p) (⊥ᵃ->a (kₐp p)))
@@ -320,8 +323,9 @@
 )
 
 (module stage-22 typed/racket/no-check
-  (define ⊥ᵃ->a values)
-  (define a->⊥ᵃ values)
+  (define id values)
+  (define ⊥ᵃ->a id)
+  (define a->⊥ᵃ id)
   (define (anf:eval kₐkₐa) (⊥ᵃ->a (kₐkₐa a->⊥ᵃ)))
   (provide (all-defined-out))
 )
@@ -415,6 +419,7 @@
 )
 
 (module stage-56 typed/racket/no-check
+  (define id values)
   (define-type ⊥ᵃ Real)
   (define-type (¬ₐ p) (→ p ⊥ᵃ))
   (define-type (¬ₐ¬ₐ p) (¬ₐ (¬ₐ p)))
@@ -424,7 +429,7 @@
   (define-type (→𝒦ₐ p q) (→𝒟 p (¬ₐ¬ₐ q)))
   (define-type (¬ₐ𝒰ₓ p) (→𝒰ₐ p ⊥ᵃ))
   (define-type (¬ₐ𝒦ₓ p) (→𝒦ₐ p ⊥ᵃ))
-  (define a->⊥ᵃ values)
+  (define a->⊥ᵃ id)
   (: anf:eval (∀ (a) (→ (¬ₐ¬ₐ a) a)))
 
   (define (anf:eval kₐkₐa) (kₐkₐa a->⊥ᵃ))
@@ -432,6 +437,7 @@
 )
 
 (module stage-57 typed/racket/no-check
+  (define id values)
   (define-type ⊥ᵃ Real)
   (define-type (¬ₐ p) (→ p ⊥ᵃ))
   (define-type (¬ₐ¬ₐ p) (¬ₐ (¬ₐ p)))
@@ -447,8 +453,9 @@
 )
 
 (module stage-59 typed/racket/no-check
-  (define ⊥ᵃ->a values)
-  (define a->⊥ᵃ values)
+  (define id values)
+  (define ⊥ᵃ->a id)
+  (define a->⊥ᵃ id)
   (define (anf:eval kₐkₐa) (kₐkₐa a->⊥ᵃ))
   (define ((anf:reset kₐkₐa) kₓa)
     (kₓa (anf:eval kₐkₐa)))
@@ -456,9 +463,10 @@
 )
 
 (module stage-60 typed/racket/no-check
+  (define id values)
   (define-type ⊥ᵃ Real)
   (define-type (¬ₐ p) (→ p ⊥ᵃ))
-  (define a->⊥ᵃ values)
+  (define a->⊥ᵃ id)
   (: mul (→ Real * Real))
 
   (define (mul . r*)
