@@ -489,10 +489,13 @@ between  =  (scatter inclusive-range)
 = (append-map g (f x))
 ```
 
-展开之后原路往回走，依次是这一篇出现过的四种写法：`in-amb` 里的 `let*`，`reset` 里的 `choose`，交给 `choose/k` 的延续，`for*/list` 的循环。循环摊开就是 `append-map`；`(append-map list v*)` 把每一项各包成一张列表再接起来，还是 `v*`，里面那一层就化掉了。`amb` 不见了，剩下的是纯函数：对前一步交出的每一项调用后一步，把结果接成一张。多于两步时也一样，从最右边的一步起，逐个用 `append-map` 接上。于是 `∘ℒ` 可以不经过 ℬ，直接在 𝒟 里定义：
+展开之后原路往回走，依次是这一篇出现过的四种写法：`in-amb` 里的 `let*`，`reset` 里的 `choose`，交给 `choose/k` 的延续，`for*/list` 的循环。循环摊开就是 `append-map`；`(append-map list v*)` 把每一项各包成一张列表再接起来，还是 `v*`，里面那一层就化掉了。`amb` 不见了，剩下的是纯函数：对前一步交出的每一项调用后一步，把结果接成一张。多于两步时也一样，从最右边的一步起，逐个用 `append-map` 接上。最右边那一步收下全部参数；一步也没有时，就把参数包成一张列表交出。于是 `∘ℒ` 可以不经过 ℬ，直接在 𝒟 里定义：
 
 ```racket
-(define ((∘ℒ . f*) x) (foldr append-map (list x) f*))
+(define (∘ℒ . f*)
+  (match f*
+    ['()           list]
+    [`(,g* ... ,f) (λ x* (foldr append-map (apply f x*) g*))]))
 ```
 
 纯的宿主里没有 `amb`，二元关系在那里就是这个样子：交出列表的函数，用 `append-map` 接起来。

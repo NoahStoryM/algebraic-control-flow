@@ -614,7 +614,10 @@
 (: ℒ:id (∀ (p) (→ℒ p p)))
 (: ∘ℒ   (∀ (p ...) (→ (→ℒ pn-1 pn) ... (→ℒ p1 p2) (→ℒ p1 pn))))
 (define (ℒ:id v) (list v))
-(define ((∘ℒ . f*) x) (foldr append-map (list x) f*))   ; 从最右边的箭头起，逐个用 append-map 接上
+(define (∘ℒ . f*)
+  (match f*
+    ['()           list]
+    [`(,g* ... ,f) (λ x* (foldr append-map (apply f x*) g*))]))   ; 最右边的箭头收下全部参数，其余逐个用 append-map 接上
 ;; 9/30 改为变参（与第二篇的 ∘𝒦 一致）；一个箭头也不给时就是 ℒ:id。规则仍按二元陈述，结合律保证变参无歧义。
 
 ;;; §5-d′〔验证〕 两段的 ∘ℒ 就是 §5-c 那次 append-map
