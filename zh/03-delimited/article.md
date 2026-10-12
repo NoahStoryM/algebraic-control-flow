@@ -1010,7 +1010,9 @@ $$(p ∨ a) → ⊥ᵃ \quad=\quad (p → ⊥ᵃ) ∧ (a → ⊥ᵃ)$$
     [(_ () b* ...)
      (anf:begin b* ...)]
     [(_ ([v* e]) b* ...)
-     ((∘𝒦 (λ v* (anf:begin b* ...)) id) e)]
+     (let ([kkv e])
+       (define (cps:kv . v*) (anf:begin b* ...))
+       ((∘𝒦 cps:kv id) kkv))]
     [(_ ([v* e] [v** e*] ...) b* ...)
      (anf:let*-values ([v* e])
        (anf:let*-values ([v** e*] ...)
@@ -1025,7 +1027,9 @@ $$(p ∨ a) → ⊥ᵃ \quad=\quad (p → ⊥ᵃ) ∧ (a → ⊥ᵃ)$$
   (anf:let*-values ([(v) e] ...) b* ...))
 
 (define-syntax-rule (anf:if test conseq alt)
-  ((∘𝒦 (λ b* (if (equal? b* '(#f)) alt conseq)) id) test))
+  (let ([kkb test])
+    (define (cps:kb . b*) (if (equal? b* '(#f)) alt conseq))
+    ((∘𝒦 cps:kb id) kkb)))
 
 (define-syntax-rule (anf:let/lc cps:k b* ...)
   (cps:call/lc (λ (cps:k) b* ...)))

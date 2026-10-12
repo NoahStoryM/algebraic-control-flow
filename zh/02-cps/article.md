@@ -562,11 +562,11 @@ $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常�
   ((∘𝒦 cps:kv id) kkv))              ; id : ¬¬Nat →𝒦 Nat
 ```
 
-`let` 脱糖成 `((λ (v) b) e)`；在 `(λ (v) b)` 前面接一个什么也不做的 `id`，结果不变。两边并排，只换了复合：
+宿主的 `let` 也可以照这个样子写：把等待结果的 `(λ (v) b)` 起名 `kv`，`let` 脱糖成 `(kv e)`；在 `kv` 前面接一个什么也不做的 `id`，结果不变。两边并排，只换了复合：
 
 ```racket
-(let     ([v e]) b)  =  ((∘  (λ (v) b) id) e)
-(anf:let ([v e]) b)  =  ((∘𝒦 (λ (v) b) id) e)
+(let     ([v e]) b)  =  ((∘  kv     id) e)    ; kv     = (λ (v) b)
+(anf:let ([v e]) b)  =  ((∘𝒦 cps:kv id) e)    ; cps:kv = (λ (v) b)
 ```
 
 多个绑定 `anf:let*` 是嵌套的单个绑定，和 `let*` 一样。开头看过宿主里接连两个绑定的展开：两层 λ，拿掉只把 `z` 原样交出的那一层，剩下 `((∘ g f) x)`。`anf:let*` 走的是同样的几步。只把 `z` 交出去的那一步，在 𝒦 里是 `(cps id)`，前面认出它的类型是 DNI，下面记作 `cps:id`。它和宏里的 `id` 不是一回事：宏里的 `id` 读作 $¬¬q →_𝒦 q$，`cps:id` 是 $q →_𝒦 q$，𝒦 自己的恒等：
@@ -575,23 +575,22 @@ $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常�
   (anf:let* ([y (cps:f x)]
              [z (cps:g y)])
     (cps:id z))
-= ((∘𝒦 (λ (y)
-         ((∘𝒦 (λ (z) (cps:id z)) id)
-          (cps:g y)))
-       id)
-   (cps:f x))
-= ((∘𝒦 (λ (y)
-         ((∘𝒦 cps:id id)
-          (cps:g y)))
-       id)
-   (cps:f x))
-= ((∘𝒦 (λ (y) (id (cps:g y))) id)
-   (cps:f x))
-= ((∘𝒦 cps:g id)
-   (cps:f x))
+= (let ([kky (cps:f x)])
+    (define (cps:ky y)
+      (let ([kkz (cps:g y)])
+        (define (cps:kz z) (cps:id z))
+        ((∘𝒦 cps:kz id) kkz)))
+    ((∘𝒦 cps:ky id) kky))
 ```
 
-两层 λ 同样是语法写的，每层多一个 `∘𝒦` 和一个 `id`。里面那层 `(∘𝒦 cps:id id)` 照「三种箭头」一节展开：交给它一个 `kk` 和一个延续 `k`，得到 `(kk (λ (z) ((cps:id z) k)))`，也就是 `(kk k)`。它什么也不做，可以拿掉。剩下的一行和 `((∘𝒦 cps:g cps:f) x)` 交给同一个延续 `k`，展开到同一处：
+两层 λ 同样是语法写的，名字是宏起的：`cps:ky` 等着 `y`，`cps:kz` 等着 `z`，各自前面接一个 `id`，再用 `∘𝒦` 接上。里面那层的 `cps:kz` 只把 `z` 交给 `cps:id`，它就是 `cps:id`。`(∘𝒦 cps:id id)` 照「三种箭头」一节展开：交给它一个 `kk` 和一个延续 `k`，得到 `(kk (λ (z) ((cps:id z) k)))`，也就是 `(kk k)`。它什么也不做，`cps:ky` 收到 `y` 就只是交出 `(cps:g y)`，也就是 `cps:g`。外面那层于是成了：
+
+```racket
+  ((∘𝒦 cps:ky id) (cps:f x))
+= ((∘𝒦 cps:g  id) (cps:f x))
+```
+
+这一行和 `((∘𝒦 cps:g cps:f) x)` 交给同一个延续 `k`，展开到同一处：
 
 ```racket
   (((∘𝒦 cps:g id) (cps:f x)) k)
@@ -607,7 +606,7 @@ $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常�
 (anf:let* ([y (cps:f x)] [z (cps:g y)]) (cps:id z))  =  ((∘𝒦 cps:g cps:f) x)
 ```
 
-`let*` 是 `∘` 的另一种写法，`anf:let*` 是 `∘𝒦` 的另一种写法，多出来的是中间结果的名字。「三种箭头」一节看过 `∘𝒦` 展开的样子，`((cps:f x) (λ (y) ((cps:g y) k)))`：手写 CPS 时的那个 λ 还在，只是不用我们写了。
+`let*` 是 `∘` 的另一种写法，`anf:let*` 是 `∘𝒦` 的另一种写法，多出来的是中间结果的名字。展开到底，手写 CPS 时的那个 λ `(λ (y) ((cps:g y) k))` 还在，只是不用我们写了。
 
 把这些写成宏。`anf:let` 就是只有一个绑定的 `anf:let*`，定义省去：
 
@@ -617,7 +616,9 @@ $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常�
     [(_ () b* ...)
      (anf:begin b* ...)]
     [(_ ([v* e]) b* ...)
-     ((∘𝒦 (λ v* (anf:begin b* ...)) id) e)]
+     (let ([kkv e])
+       (define (cps:kv . v*) (anf:begin b* ...))
+       ((∘𝒦 cps:kv id) kkv))]
     [(_ ([v* e] [v** e*] ...) b* ...)
      (anf:let*-values ([v* e])
        (anf:let*-values ([v** e*] ...)
@@ -632,7 +633,9 @@ $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常�
   (anf:let*-values ([(v) e] ...) b* ...))
 
 (define-syntax-rule (anf:if test conseq alt)
-  ((∘𝒦 (λ b* (if (equal? b* '(#f)) alt conseq)) id) test))
+  (let ([kkb test])
+    (define (cps:kb . b*) (if (equal? b* '(#f)) alt conseq))
+    ((∘𝒦 cps:kb id) kkb)))
 
 (define-syntax-rule (anf:let/cc cps:k b* ...)
   (cps:call/cc (λ (cps:k) b* ...)))
@@ -847,7 +850,9 @@ kp  =  ((neg f) kq)  =  (∘ kq f)
     [(_ () b* ...)
      (anf:begin b* ...)]
     [(_ ([v* e]) b* ...)
-     ((∘𝒦 (λ v* (anf:begin b* ...)) id) e)]
+     (let ([kkv e])
+       (define (cps:kv . v*) (anf:begin b* ...))
+       ((∘𝒦 cps:kv id) kkv))]
     [(_ ([v* e] [v** e*] ...) b* ...)
      (anf:let*-values ([v* e])
        (anf:let*-values ([v** e*] ...)
@@ -862,7 +867,9 @@ kp  =  ((neg f) kq)  =  (∘ kq f)
   (anf:let*-values ([(v) e] ...) b* ...))
 
 (define-syntax-rule (anf:if test conseq alt)
-  ((∘𝒦 (λ b* (if (equal? b* '(#f)) alt conseq)) id) test))
+  (let ([kkb test])
+    (define (cps:kb . b*) (if (equal? b* '(#f)) alt conseq))
+    ((∘𝒦 cps:kb id) kkb)))
 
 (define-syntax-rule (anf:let/cc cps:k b* ...)
   (cps:call/cc (λ (cps:k) b* ...)))
