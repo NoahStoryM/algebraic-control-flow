@@ -4,7 +4,7 @@
   (("# 逃逸与丢弃" "(1 2 0 3 4)") "参数列表的示意数据，不是调用")
   (("# 边界中的边界" "(1 2 0 3 4)") "参数列表的示意数据，不是调用")
   (("# 定界延续" "(anf:eval") "尚未实现的调用示意")
-  (("# 定界延续" "(define neg²:abort (cps->neg² cps:abort))") "带省略号的类型草图")
+  (("# 定界延续" "(define-syntax-rule (anf:let/lc cps:k b* ...)") "与 code.rkt 相同的宏定义，已由 prelude 提供")
   (("# 定界延续" "(define-syntax-rule (let/lc k body ...)") "带省略号的宏签名")
   (("# 完整代码参考" "#lang typed/racket/no-check") "完整模块引用块含 #lang；code.rkt 原样运行")
 )
