@@ -956,8 +956,11 @@ $$(p ∨ a) → ⊥ᵃ \quad=\quad (p → ⊥ᵃ) ∧ (a → ⊥ᵃ)$$
 
 ;;; 复合
 
+(: ⨾ (∀ (p ...) (→ (←𝒟 pn-1 pn) ... (←𝒟 p1 p2) (←𝒟 p1 pn))))
+(define (⨾ . f*) (apply ∘ (reverse f*)))
+
 (: ∘𝒰 (∀ (p ...) (→ (→𝒰ₐ pn-1 pn) ... (→𝒰ₐ p1 p2) (→𝒰ₐ p1 pn))))
-(define (∘𝒰 . neg:f*) (apply ∘ (reverse neg:f*)))
+(define ∘𝒰 ⨾)
 
 (: cps  (∀ (p q) (→ (→𝒟 p q) (→𝒦ₐ p q))))
 (: cps* (∀ (p a) (→ (¬ₐ p) (¬𝒦ₐ p))))
