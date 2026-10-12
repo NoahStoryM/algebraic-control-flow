@@ -107,9 +107,10 @@
     [(_ () b* ...)
      (anf:begin b* ...)]
     [(_ ([v* e]) b* ...)
-     (let ([kkv e])
+     (let ([kkv : (¬¬ a) e])
+       (: cps:kv (→𝒦 a b))
        (define (cps:kv . v*) (anf:begin b* ...))
-       ((∘𝒦 cps:kv id) kkv))]
+       ((∘𝒦 cps:kv (ann id (→𝒦 (¬¬ a) a))) kkv))]
     [(_ ([v* e] [v** e*] ...) b* ...)
      (anf:let*-values ([v* e])
        (anf:let*-values ([v** e*] ...)
@@ -124,9 +125,10 @@
   (anf:let*-values ([(v) e] ...) b* ...))
 
 (define-syntax-rule (anf:if test conseq alt)
-  (let ([kkb test])
+  (let ([kkb : (¬¬ Boolean) test])
+    (: cps:kb (→𝒦 Boolean a))
     (define (cps:kb . b*) (if (equal? b* '(#f)) alt conseq))
-    ((∘𝒦 cps:kb id) kkb)))
+    ((∘𝒦 cps:kb (ann id (→𝒦 (¬¬ Boolean) Boolean))) kkb)))
 
 (define-syntax-rule (anf:let/lc cps:k b* ...)
   (cps:call/lc (λ (cps:k) b* ...)))
