@@ -493,6 +493,8 @@ $$¬q ∨ ¬¬q$$
 (define (f) (* 1 b))
 ```
 
+`f` 不接受参数，函数体里读的是 `b`。在两次调用之间给 `b` 赋新值：
+
 ```racket
 > (displayln (f))
 111
@@ -514,6 +516,8 @@ $$¬q ∨ ¬¬q$$
 (: f (→ Real))
 (define (f) (* (a) b))
 ```
+
+这次 `f` 还读了一个参数 `a`。先照旧改 `b`，再到 `parameterize` 里调用一次：
 
 ```racket
 > (displayln (f))
@@ -584,6 +588,8 @@ $$¬q ∨ ¬¬q$$
 (: f (¬ (¬ Real)))
 (define f (wait/fc (λ (_) (* (a) b))))
 ```
+
+现在 `f` 不能直接调用，要交给 `call/cc` 才取得出结果。照前面的顺序再试一遍：
 
 ```racket
 > (displayln (call/cc f))
