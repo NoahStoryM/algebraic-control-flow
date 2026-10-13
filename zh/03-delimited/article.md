@@ -933,6 +933,7 @@ $a → a$ 有一个现成的元素：恒等函数。它就能充当局部终结�
 
 (define-type (→𝒰ₐ p q) (←𝒟 (¬ₐ p) (¬ₐ q)))  ; 局部逆否世界
 (define-type (→𝒦ₐ p q) (→𝒟 p (¬ₐ¬ₐ q)))    ; 局部 CPS 世界
+;; 下标换成 x（¬ₓ、¬ₓ¬ₓ、→𝒰ₓ），就是以 x 为基的同一组类型
 
 
 ;;; 预复合、交换参数、恒等、丢弃
@@ -1012,9 +1013,9 @@ $a → a$ 有一个现成的元素：恒等函数。它就能充当局部终结�
      (anf:begin b* ...)]
     [(_ ([v* e]) b* ...)
      (let ([kkv e])
-       (: id       (→𝒦 (¬¬ a) a))
-       (: cps:kv   (→𝒦     a  b))
-       (: cps:kkkv (→𝒦 (¬¬ a) b))
+       (: id       (→𝒦ₐ (¬ₐ¬ₐ p) p))
+       (: cps:kv   (→𝒦ₐ       p  q))
+       (: cps:kkkv (→𝒦ₐ (¬ₐ¬ₐ p) q))
        (define (id kkv) kkv)
        (define (cps:kv . v*) (anf:begin b* ...))
        (define cps:kkkv (∘𝒦 cps:kv id))
@@ -1034,9 +1035,9 @@ $a → a$ 有一个现成的元素：恒等函数。它就能充当局部终结�
 
 (define-syntax-rule (anf:if test conseq alt)
   (let ([kkb test])
-    (: id       (→𝒦 (¬¬ Boolean) Boolean))
-    (: cps:kb   (→𝒦     Boolean  a))
-    (: cps:kkkb (→𝒦 (¬¬ Boolean) a))
+    (: id       (→𝒦ₐ (¬ₐ¬ₐ Boolean) Boolean))
+    (: cps:kb   (→𝒦ₐ       Boolean  q))
+    (: cps:kkkb (→𝒦ₐ (¬ₐ¬ₐ Boolean) q))
     (define (id kkb) kkb)
     (define (cps:kb . b*) (if (equal? b* '(#f)) alt conseq))
     (define cps:kkkb (∘𝒦 cps:kb id))
