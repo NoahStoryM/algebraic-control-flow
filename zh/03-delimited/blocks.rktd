@@ -19,6 +19,7 @@
 
  (skip
   (("# 定界延续" "(reset val)") "reset/shift 规约元规则，val 和 E 是占位符")
+  (("# 定界延续" "(reset (reset E[(shift k expr)]))") "规约示意，E、expr 是占位符")
   (("# 元延续" "> (reset") "阴阳谜题无限输出，由 code.rkt 限时核对前缀")
 )
  (value

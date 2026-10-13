@@ -435,18 +435,7 @@ application 分支有两个 `reset`：
 
 外层 `reset` 被等式 2 吸收，和其他分支一样。内层 `reset` 在语法上不直接与上方的定界符相邻，所以等式 2 不能直接使用。
 
-但考虑动态行为。`(anf0 rator)` 运行时，它执行的每个 `shift` 都会发射 `let` 绑定，包裹剩余部分。等 `r` 绑定好，剩下的工作是 `(reset (let ([d ...]) ...))`，紧挨在它外面的就是来自 `anf1` 的那层 `reset`，两层定界符之间什么也没有了。
-
-剩下要说明的是 `(reset (reset e))` = `(reset e)`。用第三篇的两条规约规则比较两边。`e` 是值时，两边都规约成这个值。`e` 执行 `shift` 时，`shift` 只取到最近的一层 `reset`，两边取到的上下文 `E` 相同：
-
-```racket
-(reset (reset E[(shift k expr)]))
-  => (reset (reset (let ([k (λ (v) (reset E[v]))]) expr)))
-(reset E[(shift k expr)])
-  => (reset (let ([k (λ (v) (reset E[v]))]) expr))
-```
-
-`k` 绑定的是同一个函数，规约之后两边仍然只差最外面的一层 `reset`。每一步都是这样，直到里面算出值，多出的那层也随第一条规则消失。所以内层 `reset` 可以坍缩。
+但考虑动态行为。`(anf0 rator)` 运行时，它执行的每个 `shift` 都会发射 `let` 绑定，包裹剩余部分。等 `r` 绑定好，剩下的工作是 `(reset (let ([d ...]) ...))`，紧挨在它外面的就是来自 `anf1` 的那层 `reset`，两层定界符之间什么也没有了。第三篇由两条规约规则得出过 `(reset (reset e))` = `(reset e)`，两层等于一层，内层 `reset` 于是坍缩。
 
 把嵌套的 `let` 改写为内部 `define`，并把 application 推广到任意数量参数（用 `map`），整个变换器变成：
 
