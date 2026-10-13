@@ -637,7 +637,11 @@ $$延续 = 元延续 ∘ 局部延续$$
   (reset ((∘ abort k) v))
 = (reset (abort (k v)))
 = (reset (k v))
+= (reset (reset E[v]))
+= (reset E[v])
 ```
+
+后两步展开 `k`：`let/lc` 取得的 `k` 与 `shift` 取得的一样，是 `(λ (v) (reset E[v]))`，再用「规约规则」一节的 `(reset (reset e))` = `(reset e)`。在 `reset` 的尾位置，跳转和普通调用落到同一个地方：在这层边界里，把 `v` 放回捕获时的上下文 `E`。
 
 因此，如果 `let/cc` 捕获的延续只在 `reset` 的尾位置调用，就可以改用 `let/lc` 只捕获局部延续。第一篇的 `(label)` 可以写成 `(let/cc k k)`；阴阳谜题中的延续恰好只在这样的尾位置调用。把它们换成局部延续：
 
