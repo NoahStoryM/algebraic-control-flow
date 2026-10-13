@@ -4,4 +4,6 @@
   (: loop (→ (Listof Real) Realᵃ ⊥ᵃ))
   (define (loop r* result) ...)
   (⊥ᵃ->a (loop r* (*))))
-"real* 和 loop 的函数体用省略号回指上一段，无法作为独立版本运行"))
+"real* 和 loop 的函数体用省略号回指上一段，无法作为独立版本运行")
+((: cps (∀ (p q) (→ (→𝒟 p q) (→𝒦ₐ p q))))
+"「局部否定下的世界」只写 cps 的正向读法；完整代码用两行的 case→"))

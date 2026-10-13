@@ -24,15 +24,13 @@
 
 ;;; 预复合、交换参数、恒等、丢弃
 
-(: neg  (∀ (p q) (→ (→𝒟 p q) (←𝒟 (¬ₐ p) (¬ₐ q)))))
-(: neg¹ (∀ (p q) (→ (←𝒟 q p) (→𝒟 (¬ₐ q) (¬ₐ p)))))
+(: neg  (∀ (p q) (case→ (→ (→𝒟 p q) (←𝒟 (¬ₐ p) (¬ₐ q)))
+                        (→ (←𝒟 q p) (→𝒟 (¬ₐ q) (¬ₐ p))))))
 (define ((neg f) kₐq) (∘ kₐq f))
-(define neg¹ neg)
 
-(: flip  (∀ (p q) (→ (←𝒟 (¬ₐ p) q) (→𝒟 p (¬ₐ q)))))
-(: flip¹ (∀ (p q) (→ (→𝒟 p (¬ₐ q)) (←𝒟 (¬ₐ p) q))))
+(: flip (∀ (p q) (case→ (→ (←𝒟 (¬ₐ p) q) (→𝒟 p (¬ₐ q)))
+                        (→ (→𝒟 p (¬ₐ q)) (←𝒟 (¬ₐ p) q)))))
 (define (((flip f) . y*) . x*) (apply (apply f x*) y*))
-(define flip¹ flip)
 
 (: a->⊥ᵃ (∀ (a) (¬ₐ a)))
 (define a->⊥ᵃ id)
@@ -51,19 +49,17 @@
 (: ∘𝒰 (∀ (p ...) (→ (→𝒰ₐ pn-1 pn) ... (→𝒰ₐ p1 p2) (→𝒰ₐ p1 pn))))
 (define ∘𝒰 ⨾)
 
-(: cps  (∀ (p q) (→ (→𝒟 p q) (→𝒦ₐ p q))))
+(: cps  (∀ (p q) (case→ (→ (→𝒟 p q) (→𝒟 p (¬ₐ¬ₐ q)))
+                        (→ (←𝒟 q p) (←𝒟 (¬ₐ¬ₐ q) p)))))
 (: cps* (∀ (p a) (→ (¬ₐ p) (→𝒦ₐ p ⊥))))
 (define cps  (∘ flip neg))
 (define cps* (∘ flip neg*))
 
-(: cps¹ (∀ (q p) (→ (←𝒟 q p) (←𝒟 (¬ₐ¬ₐ q) p))))
-(define cps¹ cps)
-
 (: ∘𝒦 (∀ (p ...) (→ (→𝒦ₐ pn-1 pn) ... (→𝒦ₐ p1 p2) (→𝒦ₐ p1 pn))))
-(define (∘𝒦 . cps:f*) (flip (apply ∘𝒰 (map flip¹ cps:f*))))
+(define (∘𝒦 . cps:f*) (flip (apply ∘𝒰 (map flip cps:f*))))
 
 (: neg² (∀ (p q) (→ (→𝒟 p q) (→𝒟 (¬ₐ¬ₐ p) (¬ₐ¬ₐ q)))))
-(define neg² (∘ neg¹ neg))
+(define neg² (∘ neg neg))
 
 
 
@@ -392,10 +388,8 @@
   (define-type (→𝒰ₐ p q) (←𝒟 (¬ₐ p) (¬ₐ q)))
   (define-type (→𝒦ₐ p q) (→𝒟 p (¬ₐ¬ₐ q)))
   (define (((flip f) . y*) . x*) (apply (apply f x*) y*))
-  (define flip¹ flip)
-  (: flip  (∀ (p q) (→ (→𝒰ₐ p q) (→𝒦ₐ p q))))
-
-  (: flip¹ (∀ (p q) (→ (→𝒦ₐ p q) (→𝒰ₐ p q))))
+  (: flip (∀ (p q) (case→ (→ (→𝒰ₐ p q) (→𝒦ₐ p q))
+                          (→ (→𝒦ₐ p q) (→𝒰ₐ p q)))))
   (provide (all-defined-out))
 )
 
@@ -480,11 +474,15 @@
   (define-type (←𝒟 q p) (→𝒟 p q))
   (define-type (→𝒰ₐ p q) (←𝒟 (¬ₐ p) (¬ₐ q)))
   (define-type (→𝒦ₐ p q) (→𝒟 p (¬ₐ¬ₐ q)))
-  (define ((neg¹ f) kₐq) (compose kₐq f))
+  (define ((neg f) kₐq) (compose kₐq f))
   (define (((cps f) . p*) kₐq) (kₐq (apply f p*)))
-  (: neg¹  (∀ (q p) (→ (←𝒟 q p) (→𝒟 (¬ₐ q) (¬ₐ p)))))
-
-  (: cps   (∀ (p q) (→ (→𝒟 p q) (→𝒟 p (¬ₐ¬ₐ q)))))
+  (define (((flip f) . y*) . x*) (apply (apply f x*) y*))
+  (: neg  (∀ (p q) (case→ (→ (→𝒟 p q) (←𝒟 (¬ₐ p) (¬ₐ q)))
+                          (→ (←𝒟 q p) (→𝒟 (¬ₐ q) (¬ₐ p))))))
+  (: cps  (∀ (p q) (case→ (→ (→𝒟 p q) (→𝒟 p (¬ₐ¬ₐ q)))
+                          (→ (←𝒟 q p) (←𝒟 (¬ₐ¬ₐ q) p)))))
+  (: flip (∀ (p q) (case→ (→ (←𝒟 (¬ₐ p) q) (→𝒟 p (¬ₐ q)))
+                          (→ (→𝒟 p (¬ₐ q)) (←𝒟 (¬ₐ p) q)))))
   (provide (all-defined-out))
 )
 
