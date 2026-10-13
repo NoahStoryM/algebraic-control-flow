@@ -37,10 +37,9 @@
 (define-type (→𝒰 p q) (← (¬ p) (¬ q)))
 (define-type (¬𝒰 p)   (→𝒰 p ⊥))
 
-(: neg (∀ (p q) (→ (→𝒞 p q) (→𝒰 p q))))
-(: neg¹ (∀ (p q) (→ (→𝒰 p q) (→𝒟 (¬¬ p) (¬¬ q)))))
+(: neg (∀ (p q) (case→ (→ (→𝒞 p q) (→𝒰 p q))
+                       (→ (→𝒰 p q) (→𝒟 (¬¬ p) (¬¬ q))))))
 (define ((neg f) kq) (∘ kq f))
-(define neg¹ neg)
 
 (: ⨾ (∀ (p ...) (→ (← pn-1 pn) ... (← p1 p2) (← p1 pn))))
 (define (⨾ . f*) (apply ∘ (reverse f*)))
@@ -54,10 +53,9 @@
 (define-type (→𝒦 p q) (→ p (¬¬ q)))
 (define-type (¬𝒦 p)   (→𝒦 p ⊥))
 
-(: flip  (∀ (p q) (→ (→𝒰 p q) (→𝒦 p q))))
-(: flip¹ (∀ (p q) (→ (→𝒦 p q) (→𝒰 p q))))
+(: flip (∀ (p q) (case→ (→ (→𝒰 p q) (→𝒦 p q))
+                        (→ (→𝒦 p q) (→𝒰 p q)))))
 (define (((flip f) . y*) . x*) (apply (apply f x*) y*))
-(define flip¹ flip)
 
 (: cps   (∀ (p q) (→ (→𝒞 p q) (→𝒦 p q))))
 (: uncps (∀ (p q) (→ (→𝒦 p q) (→𝒞 p q))))
@@ -65,7 +63,7 @@
 (define (uncps cps:f) (∘ call/cc cps:f))
 
 (: ∘𝒦 (∀ (p ...) (→ (→𝒦 pn-1 pn) ... (→𝒦 p1 p2) (→𝒦 p1 pn))))
-(define (∘𝒦 . cps:f*) (flip (apply ∘𝒰 (map flip¹ cps:f*))))
+(define (∘𝒦 . cps:f*) (flip (apply ∘𝒰 (map flip cps:f*))))
 
 
 ;;; Clavius 律
@@ -80,7 +78,7 @@
 ;;; 否定翻译
 
 (: neg² (∀ (p q) (→ (→𝒞 p q) (→𝒟 (¬¬ p) (¬¬ q)))))
-(define neg² (∘ neg¹ neg))
+(define neg² (∘ neg neg))
 
 
 
@@ -364,10 +362,8 @@
   (define-type (¬ p) (→ p ⊥))
   (define-type (¬¬ p) (¬ (¬ p)))
   (define (((flip f) . y*) . x*) (apply (apply f x*) y*))
-  (define flip¹ flip)
-  (: flip  (∀ (p q) (→ (→ (¬ q) (¬ p)) (→ p (¬¬ q)))))
-
-  (: flip¹ (∀ (p q) (→ (→ p (¬¬ q)) (→ (¬ q) (¬ p)))))
+  (: flip (∀ (p q) (case→ (→ (→ (¬ q) (¬ p)) (→ p (¬¬ q)))
+                          (→ (→ p (¬¬ q)) (→ (¬ q) (¬ p))))))
   (provide (all-defined-out))
 )
 
