@@ -14,20 +14,12 @@
 
 (define-type ⊥ (∪))
 (define-type ⊥ᵃ a)                          ; 局部空：平凡表示
-(define-type ⊥ˣ x)
 (define-type (¬ₐ p) (→𝒟 p ⊥ᵃ))
 (define-type (¬ₐ¬ₐ p) (¬ₐ (¬ₐ p)))
 (define-type (¬ₐ¬ₐ¬ₐ p) (¬ₐ (¬ₐ¬ₐ p)))
 
-;; 局部否定：左下标是否定的基，右下标是世界的基
-
 (define-type (→𝒰ₐ p q) (←𝒟 (¬ₐ p) (¬ₐ q)))  ; 局部逆否世界
-(define-type (¬ₓ𝒰ₐ p)  (→𝒰ₐ p ⊥ˣ))
-(define-type (¬𝒰ₐ p)   (→𝒰ₐ p ⊥))
-
 (define-type (→𝒦ₐ p q) (→𝒟 p (¬ₐ¬ₐ q)))    ; 局部 CPS 世界
-(define-type (¬ₓ𝒦ₐ p)  (→𝒦ₐ p ⊥ˣ))
-(define-type (¬𝒦ₐ p)   (→𝒦ₐ p ⊥))
 
 
 ;;; 预复合、交换参数、恒等、丢弃
@@ -45,7 +37,7 @@
 (: a->⊥ᵃ (∀ (a) (¬ₐ a)))
 (define a->⊥ᵃ id)
 
-(: neg* (∀ (p a) (→ (¬ₐ p) (¬𝒰ₐ p))))
+(: neg* (∀ (p a) (→ (¬ₐ p) (→𝒰ₐ p ⊥))))
 (define ((neg* kₐp) _k) kₐp)
 
 
@@ -60,7 +52,7 @@
 (define ∘𝒰 ⨾)
 
 (: cps  (∀ (p q) (→ (→𝒟 p q) (→𝒦ₐ p q))))
-(: cps* (∀ (p a) (→ (¬ₐ p) (¬𝒦ₐ p))))
+(: cps* (∀ (p a) (→ (¬ₐ p) (→𝒦ₐ p ⊥))))
 (define cps  (∘ flip neg))
 (define cps* (∘ flip neg*))
 
@@ -77,13 +69,13 @@
 
 ;;; 控制运算符
 
-(: neg:call/lc (∀ (p a) (→𝒰ₐ (→𝒰ₐ (¬ₐ𝒰ₐ p) p) p)))
-(: neg:call/cc (∀ (p a) (→𝒰ₐ (→𝒰ₐ (¬𝒰ₐ  p) p) p)))
+(: neg:call/lc (∀ (p a) (→𝒰ₐ (→𝒰ₐ (→𝒰ₐ p ⊥ᵃ) p) p)))
+(: neg:call/cc (∀ (p a) (→𝒰ₐ (→𝒰ₐ (→𝒰ₐ p ⊥)  p) p)))
 (define ((neg:call/lc kₐp) neg:proc) ((neg:proc kₐp) (neg  kₐp)))
 (define ((neg:call/cc kₐp) neg:proc) ((neg:proc kₐp) (neg* kₐp)))
 
-(: cps:call/lc (∀ (p a) (→𝒦ₐ (→𝒦ₐ (¬ₐ𝒦ₐ p) p) p)))
-(: cps:call/cc (∀ (p a) (→𝒦ₐ (→𝒦ₐ (¬𝒦ₐ  p) p) p)))
+(: cps:call/lc (∀ (p a) (→𝒦ₐ (→𝒦ₐ (→𝒦ₐ p ⊥ᵃ) p) p)))
+(: cps:call/cc (∀ (p a) (→𝒦ₐ (→𝒦ₐ (→𝒦ₐ p ⊥)  p) p)))
 (define ((cps:call/lc cps:proc) kₐp) ((cps:proc (cps  kₐp)) kₐp))
 (define ((cps:call/cc cps:proc) kₐp) ((cps:proc (cps* kₐp)) kₐp))
 
@@ -99,7 +91,7 @@
 (: anf:reset (∀ (a) (→ (¬ₐ¬ₐ a) (∀ (x) (¬ₓ¬ₓ a)))))
 (define anf:reset (cps anf:eval))
 
-(: cps:abort (∀ (a) (¬𝒦ₐ a)))
+(: cps:abort (∀ (a) (→𝒦ₐ a ⊥)))
 (define cps:abort (cps* a->⊥ᵃ))
 
 
@@ -373,8 +365,6 @@
   (define-type (←𝒟 q p) (→𝒟 p q))
   (define-type (→𝒰ₐ p q) (←𝒟 (¬ₐ p) (¬ₐ q)))
   (define-type (→𝒦ₐ p q) (→𝒟 p (¬ₐ¬ₐ q)))
-  (define-type (¬ₐ𝒰ₓ p) (→𝒰ₐ p ⊥ᵃ))
-  (define-type (¬ₐ𝒦ₓ p) (→𝒦ₐ p ⊥ᵃ))
   (define ((neg f) kₐq) (compose kₐq f))
   (: neg (∀ (p q) (→ (→𝒟 p q) (∀ (a) (→𝒰ₐ p q)))))
   (provide (all-defined-out))
@@ -388,10 +378,8 @@
   (define-type (←𝒟 q p) (→𝒟 p q))
   (define-type (→𝒰ₐ p q) (←𝒟 (¬ₐ p) (¬ₐ q)))
   (define-type (→𝒦ₐ p q) (→𝒟 p (¬ₐ¬ₐ q)))
-  (define-type (¬ₐ𝒰ₓ p) (→𝒰ₐ p ⊥ᵃ))
-  (define-type (¬ₐ𝒦ₓ p) (→𝒦ₐ p ⊥ᵃ))
   (define ((neg f) kₐq) (compose kₐq f))
-  (: neg (∀ (p a) (→ (¬ₐ p) (∀ (x) (¬ₐ𝒰ₓ p)))))
+  (: neg (∀ (p a) (→ (¬ₐ p) (∀ (x) (→𝒰ₓ p ⊥ᵃ)))))
   (provide (all-defined-out))
 )
 
@@ -403,8 +391,6 @@
   (define-type (←𝒟 q p) (→𝒟 p q))
   (define-type (→𝒰ₐ p q) (←𝒟 (¬ₐ p) (¬ₐ q)))
   (define-type (→𝒦ₐ p q) (→𝒟 p (¬ₐ¬ₐ q)))
-  (define-type (¬ₐ𝒰ₓ p) (→𝒰ₐ p ⊥ᵃ))
-  (define-type (¬ₐ𝒦ₓ p) (→𝒦ₐ p ⊥ᵃ))
   (define (((flip f) . y*) . x*) (apply (apply f x*) y*))
   (define flip¹ flip)
   (: flip  (∀ (p q) (→ (→𝒰ₐ p q) (→𝒦ₐ p q))))
@@ -421,10 +407,8 @@
   (define-type (←𝒟 q p) (→𝒟 p q))
   (define-type (→𝒰ₐ p q) (←𝒟 (¬ₐ p) (¬ₐ q)))
   (define-type (→𝒦ₐ p q) (→𝒟 p (¬ₐ¬ₐ q)))
-  (define-type (¬ₐ𝒰ₓ p) (→𝒰ₐ p ⊥ᵃ))
-  (define-type (¬ₐ𝒦ₓ p) (→𝒦ₐ p ⊥ᵃ))
   (define cps (compose (λ (f) (λ (v) (λ (k) (k (f v))))) values))
-  (: cps  (∀ (p a) (→ (¬ₐ p) (∀ (x) (¬ₐ𝒦ₓ p)))))
+  (: cps  (∀ (p a) (→ (¬ₐ p) (∀ (x) (→𝒦ₓ p ⊥ᵃ)))))
   (provide (all-defined-out))
 )
 
@@ -437,8 +421,6 @@
   (define-type (←𝒟 q p) (→𝒟 p q))
   (define-type (→𝒰ₐ p q) (←𝒟 (¬ₐ p) (¬ₐ q)))
   (define-type (→𝒦ₐ p q) (→𝒟 p (¬ₐ¬ₐ q)))
-  (define-type (¬ₐ𝒰ₓ p) (→𝒰ₐ p ⊥ᵃ))
-  (define-type (¬ₐ𝒦ₓ p) (→𝒦ₐ p ⊥ᵃ))
   (define a->⊥ᵃ id)
   (: anf:eval (∀ (a) (→ (¬ₐ¬ₐ a) a)))
 
@@ -455,8 +437,6 @@
   (define-type (←𝒟 q p) (→𝒟 p q))
   (define-type (→𝒰ₐ p q) (←𝒟 (¬ₐ p) (¬ₐ q)))
   (define-type (→𝒦ₐ p q) (→𝒟 p (¬ₐ¬ₐ q)))
-  (define-type (¬ₐ𝒰ₓ p) (→𝒰ₐ p ⊥ᵃ))
-  (define-type (¬ₐ𝒦ₓ p) (→𝒦ₐ p ⊥ᵃ))
   (define cps:id (λ (p) (λ (k) (k p))))
   (: cps:id (∀ (p a) (→ p (¬ₐ¬ₐ p))))
   (provide (all-defined-out))
@@ -500,8 +480,6 @@
   (define-type (←𝒟 q p) (→𝒟 p q))
   (define-type (→𝒰ₐ p q) (←𝒟 (¬ₐ p) (¬ₐ q)))
   (define-type (→𝒦ₐ p q) (→𝒟 p (¬ₐ¬ₐ q)))
-  (define-type (¬ₐ𝒰ₓ p) (→𝒰ₐ p ⊥ᵃ))
-  (define-type (¬ₐ𝒦ₓ p) (→𝒦ₐ p ⊥ᵃ))
   (define ((neg¹ f) kₐq) (compose kₐq f))
   (define (((cps f) . p*) kₐq) (kₐq (apply f p*)))
   (: neg¹  (∀ (q p) (→ (←𝒟 q p) (→𝒟 (¬ₐ q) (¬ₐ p)))))

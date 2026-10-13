@@ -717,7 +717,8 @@ $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常�
 ```racket
 > (anf:eval
    (anf:let/cc cps:return
-     (let cps:loop ([r* '(1 2 0 3 4)])
+     (: cps:loop (→𝒦 (Listof Real) Real))
+     (define (cps:loop r*)
        (anf:if (cps:null? r*)
                (cps:*)
                (anf:let* ([r (cps:car r*)])
@@ -725,11 +726,12 @@ $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常�
                          (cps:return r)
                          (anf:let* ([r* (cps:cdr r*)]
                                     [res (cps:loop r*)])
-                           (cps:* res r))))))))
+                           (cps:* res r))))))
+     (cps:loop '(1 2 0 3 4))))
 0
 ```
 
-`anf:let/cc` 捕获的 `cps:return` 是 CPS 世界的逃逸通道：遇零时调用它，直接跳出循环。其余每一步的延续都由 `anf:let*` 接好，程序员不需要触碰。
+`cps:loop` 和 `cps:car` 一样是 𝒦 的箭头，所以它的递归调用也写在 `anf:let*` 里。`anf:let/cc` 捕获的 `cps:return` 是 CPS 世界的逃逸通道：遇零时调用它，直接跳出循环。其余每一步的延续都由 `anf:let*` 接好，程序员不需要触碰。
 
 `cps:return` 只用来跳出循环。第一篇的阴阳谜题对延续要求更多：被捕获的延续要作为值传来传去，再被调用。`label` 和整个谜题在嵌入语言里写作：
 
