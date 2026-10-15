@@ -65,6 +65,9 @@
 (: ∘𝒦 (∀ (p ...) (→ (→𝒦 pn-1 pn) ... (→𝒦 p1 p2) (→𝒦 p1 pn))))
 (define (∘𝒦 . cps:f*) (flip (apply ∘𝒰 (map flip cps:f*))))
 
+(: cps:id (∀ (q) (→𝒦 q q)))
+(define cps:id (flip id))
+
 
 ;;; Clavius 律
 
@@ -132,7 +135,6 @@
 
 ;;; CPS 提升的基本操作
 
-(define cps:id        (cps id))
 (define cps:+         (cps +))
 (define cps:*         (cps *))
 (define cps:zero?     (cps zero?))
