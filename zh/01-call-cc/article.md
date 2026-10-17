@@ -357,7 +357,7 @@ $$\text{Label} → ⊥ = ¬\text{Label} = \text{Label}$$
 
 ### 阴阳谜题
 
-让标签直接作用于标签，就得到 David Madore 的阴阳谜题：
+把标签直接交给标签，就得到 David Madore 的阴阳谜题：
 
 ```racket
 > (let ([yin (label)])
