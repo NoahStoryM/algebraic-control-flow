@@ -47,6 +47,9 @@
 (: ∘𝒰 (∀ (p ...) (→ (→𝒰 pn-1 pn) ... (→𝒰 p1 p2) (→𝒰 p1 pn))))
 (define ∘𝒰 ⨾)
 
+(: neg:id (∀ (q) (→𝒰 q q)))
+(define neg:id (∘𝒰))
+
 
 ;;; CPS 世界
 
@@ -64,6 +67,9 @@
 
 (: ∘𝒦 (∀ (p ...) (→ (→𝒦 pn-1 pn) ... (→𝒦 p1 p2) (→𝒦 p1 pn))))
 (define (∘𝒦 . cps:f*) (flip (apply ∘𝒰 (map flip cps:f*))))
+
+(: cps:id (∀ (q) (→𝒦 q q)))
+(define cps:id (∘𝒦))
 
 
 ;;; Clavius 律
@@ -90,12 +96,12 @@
      (anf:begin b* ...)]
     [(_ ([v* e]) b* ...)
      (let ([kkv e])
-       (: id       (→𝒦 (¬¬ a) a))
+       (: neg²:id  (→𝒦 (¬¬ a) a))
        (: cps:kv   (→𝒦     a  b))
        (: cps:kkkv (→𝒦 (¬¬ a) b))
-       (define (id kkv) kkv)
+       (define (neg²:id kkv) kkv)
        (define (cps:kv . v*) (anf:begin b* ...))
-       (define cps:kkkv (∘𝒦 cps:kv id))
+       (define cps:kkkv (∘𝒦 cps:kv neg²:id))
        (cps:kkkv kkv))]
     [(_ ([v* e] [v** e*] ...) b* ...)
      (anf:let*-values ([v* e])
@@ -112,12 +118,12 @@
 
 (define-syntax-rule (anf:if test conseq alt)
   (let ([kkb test])
-    (: id       (→𝒦 (¬¬ Boolean) Boolean))
+    (: neg²:id  (→𝒦 (¬¬ Boolean) Boolean))
     (: cps:kb   (→𝒦     Boolean  a))
     (: cps:kkkb (→𝒦 (¬¬ Boolean) a))
-    (define (id kkb) kkb)
+    (define (neg²:id kkb) kkb)
     (define (cps:kb . b*) (if (equal? b* '(#f)) alt conseq))
-    (define cps:kkkb (∘𝒦 cps:kb id))
+    (define cps:kkkb (∘𝒦 cps:kb neg²:id))
     (cps:kkkb kkb)))
 
 (define-syntax-rule (anf:let/cc cps:k b* ...)
@@ -132,7 +138,6 @@
 
 ;;; CPS 提升的基本操作
 
-(define cps:id        (cps id))
 (define cps:+         (cps +))
 (define cps:*         (cps *))
 (define cps:zero?     (cps zero?))
