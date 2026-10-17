@@ -679,17 +679,15 @@ $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常�
 = (((∘𝒦 cps:mul3 cps:+) 1 2) k)
 ```
 
-第二行正是手写 CPS 时的样子：`kk3` 收到的延续拿到 `v`，交给函数体，函数体的结果再交给 `k`。宏只要替我们写出第一行，这个 λ 就不用我们写了。宏不知道函数体是什么，把它统一叫作 `cps:kv`。上面的程序展开成：
+第二行正是手写 CPS 时的样子：`kk3` 收到的延续拿到 `v`，交给函数体，函数体的结果再交给 `k`。宏只要替我们写出第一行，这个 λ 就不用我们写了。上面的程序展开成：
 
 ```racket
-(let ([kkv (cps:+ 1 2)])
+(let ([kk3 (cps:+ 1 2)])
   (: neg²:id  (→𝒦 (¬¬ Nat) Nat))
-  (: cps:kv   (→𝒦     Nat  Nat))
-  (: cps:kkkv (→𝒦 (¬¬ Nat) Nat))
+  (: cps:mul3 (→𝒦     Nat  Nat))
   (define (neg²:id kkv) kkv)
-  (define (cps:kv v) (cps:* v 3))
-  (define cps:kkkv (∘𝒦 cps:kv neg²:id))
-  (cps:kkkv kkv))
+  (define (cps:mul3 v) (cps:* v 3))
+  ((∘𝒦 cps:mul3 neg²:id) kk3))
 ```
 
 回头看宿主，`let` 其实也是这样。把等着结果的 `(λ (v) b)` 记作 `kv`，`(let ([v e]) b)` 就是 `(kv e)`；按开头的单位律，前面多接一个 `id` 也不变。两边并排，只差在用哪个复合，以及 𝒦 这边绑定的右边和函数体都已编码成 $¬¬$：
