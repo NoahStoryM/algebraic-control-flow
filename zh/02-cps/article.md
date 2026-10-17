@@ -658,28 +658,28 @@ $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常�
   (cps:* v 3))
 ```
 
-把 `(cps:+ 1 2)` 算出的值记作 `kk3`：它还在等延续，延续拿到的会是 `3`。照 `let` 的办法，函数体包成 `(λ (v) (cps:* v 3))`，记作 `cps:kv`，再用在 `kk3` 上：
+把 `(cps:+ 1 2)` 算出的值记作 `kk3`：它还在等延续，延续拿到的会是 `3`。照 `let` 的办法，函数体包成 `(λ (v) (cps:* v 3))`。它就是前面 `mul3` 的 CPS 版本 `(cps mul3)`，记作 `cps:mul3`，再用在 `kk3` 上：
 
 ```racket
-(cps:kv kk3)
+(cps:mul3 kk3)
 ```
 
-可是用不上去：`cps:kv` 要的是一个数，`kk3` 却是 $¬¬\text{Nat}$。
+可是用不上去：`cps:mul3` 要的是一个数，`kk3` 却是 $¬¬\text{Nat}$。
 
-手里有两样东西：`cps:kv` 的类型是 $\text{Nat} →_𝒦 \text{Nat}$，展开是 $\text{Nat} → ¬¬\text{Nat}$；`kk3` 的类型是 $¬¬\text{Nat}$。想要的是一个 $¬¬\text{Nat}$。换个思路：造一个 $¬¬\text{Nat} → ¬¬\text{Nat}$ 的函数，用在 `kk3` 上。这个类型读作 𝒦 的箭头，就是 $¬¬\text{Nat} →_𝒦 \text{Nat}$。𝒦 的箭头能用 `∘𝒦` 接，只要在 `cps:kv` 前面接一支 $¬¬\text{Nat} →_𝒦 \text{Nat}$ 的箭头。
+手里有两样东西：`cps:mul3` 的类型是 $\text{Nat} →_𝒦 \text{Nat}$，展开是 $\text{Nat} → ¬¬\text{Nat}$；`kk3` 的类型是 $¬¬\text{Nat}$。想要的是一个 $¬¬\text{Nat}$。换个思路：造一个 $¬¬\text{Nat} → ¬¬\text{Nat}$ 的函数，用在 `kk3` 上。这个类型读作 𝒦 的箭头，就是 $¬¬\text{Nat} →_𝒦 \text{Nat}$。𝒦 的箭头能用 `∘𝒦` 接，只要在 `cps:mul3` 前面接一支 $¬¬\text{Nat} →_𝒦 \text{Nat}$ 的箭头。
 
-这支箭头读起来，是从 $¬¬\text{Nat}$ 取出一个 $\text{Nat}$，正是 DNE；在 𝒦 里展开，却只是 $¬¬\text{Nat} → ¬¬\text{Nat}$，原样交出就行，用不着 `call/cc`。它就是 `(neg² id)`：`neg²` 把 `id` 落到 $¬¬\text{Nat} → ¬¬\text{Nat}$ 上，仍然什么也不做。记作 `neg²:id`，解法就出来了：`((∘𝒦 cps:kv neg²:id) kk3)`。它和 `cps:id` 不是一回事：`cps:id` 的类型是 $q →_𝒦 q$，收到一个普通的值，交给延续，是 `∘𝒦` 的单位元。
+这支箭头读起来，是从 $¬¬\text{Nat}$ 取出一个 $\text{Nat}$，正是 DNE；在 𝒦 里展开，却只是 $¬¬\text{Nat} → ¬¬\text{Nat}$，原样交出就行，用不着 `call/cc`。它就是 `(neg² id)`：`neg²` 把 `id` 落到 $¬¬\text{Nat} → ¬¬\text{Nat}$ 上，仍然什么也不做。记作 `neg²:id`，解法就出来了：`((∘𝒦 cps:mul3 neg²:id) kk3)`。它和 `cps:id` 不是一回事：`cps:id` 的类型是 $q →_𝒦 q$，收到一个普通的值，交给延续，是 `∘𝒦` 的单位元。
 
 交给它一个延续 `k`，照 `∘𝒦` 展开：
 
 ```racket
-  (((∘𝒦 cps:kv neg²:id) kk3) k)
-= (kk3 (λ (v) ((cps:kv v) k)))
-= ((cps:+ 1 2) (λ (v) ((cps:kv v) k)))
-= (((∘𝒦 cps:kv cps:+) 1 2) k)
+  (((∘𝒦 cps:mul3 neg²:id) kk3) k)
+= (kk3 (λ (v) ((cps:mul3 v) k)))
+= ((cps:+ 1 2) (λ (v) ((cps:mul3 v) k)))
+= (((∘𝒦 cps:mul3 cps:+) 1 2) k)
 ```
 
-第二行正是手写 CPS 时的样子：`kk3` 收到的延续拿到 `v`，交给函数体，函数体的结果再交给 `k`。宏只要替我们写出第一行，这个 λ 就不用我们写了。上面的程序展开成：
+第二行正是手写 CPS 时的样子：`kk3` 收到的延续拿到 `v`，交给函数体，函数体的结果再交给 `k`。宏只要替我们写出第一行，这个 λ 就不用我们写了。宏不知道函数体是什么，把它统一叫作 `cps:kv`。上面的程序展开成：
 
 ```racket
 (let ([kkv (cps:+ 1 2)])
@@ -696,7 +696,7 @@ $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常�
 
 ```racket
 (let     ([v   e])   b)  =  ((∘      kv      id)   e)    ;     kv = (λ (v)   b)
-(anf:let ([v kkv]) kkb)  =  ((∘𝒦 cps:kv neg²:id) kkv)    ; cps:kv = (λ (v) kkb)
+(anf:let ([v kkv]) kkw)  =  ((∘𝒦 cps:kv neg²:id) kkv)    ; cps:kv = (λ (v) kkw)
 ```
 
 展开式最后一行把 `kk3` 换回 `(cps:+ 1 2)`，再照 `∘𝒦` 倒着收回去，`neg²:id` 不见了：宿主里 `(let ([v (+ 1 2)]) b)` 就是 `((∘ kv +) 1 2)`，𝒦 里也一样。一般地：
