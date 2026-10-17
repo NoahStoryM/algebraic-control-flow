@@ -658,50 +658,58 @@ $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常�
   (cps:* v 3))
 ```
 
-宏把它展开成：
+照 `let` 的办法，函数体包成延续 `(λ (v) (cps:* v 3))`，记作 `cps:kv`，再用在 `(cps:+ 1 2)` 上：
 
 ```racket
-(let ([kkv (cps:+ 1 2)])
-  (: id       (→𝒦 (¬¬ Nat) Nat))
-  (: cps:kv   (→𝒦     Nat  Nat))
-  (: cps:kkkv (→𝒦 (¬¬ Nat) Nat))
-  (define (id kkv) kkv)
-  (define (cps:kv v) (cps:* v 3))
-  (define cps:kkkv (∘𝒦 cps:kv id))
-  (cps:kkkv kkv))
+(cps:kv (cps:+ 1 2))
 ```
 
-函数体照 `let` 的办法包成 `cps:kv`，它收一个数，是一支 𝒦 的箭头。`(cps:+ 1 2)` 却是已经算好的 $¬¬\text{Nat}$，不能直接交给 `cps:kv`；前面接上的 `id` 收下这个现成的值，原样交出，让它接进箭头链。这个 `id` 当 𝒦 的箭头用，类型 $¬¬\text{Nat} →_𝒦 \text{Nat}$ 展开就是 $¬¬\text{Nat} → ¬¬\text{Nat}$。它和「三种箭头」里的 `cps:id` 不是一回事：`cps:id` 的类型是 $q →_𝒦 q$，收到一个普通的值，交给延续，是 `∘𝒦` 的单位元。
+可是用不上去：`cps:kv` 要的是一个数，`(cps:+ 1 2)` 交出的却是 $¬¬\text{Nat}$。
 
-宿主的 `let` 也能写成这样。把等着结果的 `(λ (v) b)` 记作 `kv`，`(let ([v e]) b)` 就是 `(kv e)`，前面多接一个 `id` 也不变。两边并排，只差在用哪个复合：
+开头的单位律给了另一种写法。宿主里，把 `kv` 用在 `e` 上，等于先接一个 `id` 再用，也就是开头换名的那种 `let`。用在值上，𝒦 做不到；复合，𝒦 却有 `∘𝒦`。把 `∘` 换成 `∘𝒦`，两边并排：
 
 ```racket
-(let     ([v e]) b)  =  ((∘  kv     id) e)    ; kv     = (λ (v) b)
-(anf:let ([v e]) b)  =  ((∘𝒦 cps:kv id) e)    ; cps:kv = (λ (v) b)
+(let     ([v e]) b)  =  ((∘  kv     id)     e)    ; kv     = (λ (v) b)
+(anf:let ([v e]) b)  =  ((∘𝒦 cps:kv neg²:id) e)    ; cps:kv = (λ (v) b)
 ```
 
-交给展开的结果一个延续 `k`，照 `∘𝒦` 展开：
+𝒦 这边接在 `cps:kv` 前面的，是一支收下 $¬¬\text{Nat}$ 的箭头，类型 $¬¬\text{Nat} →_𝒦 \text{Nat}$。读起来，它从 $¬¬\text{Nat}$ 取出一个 $\text{Nat}$，正是 DNE；在 𝒦 里展开，却只是 $¬¬\text{Nat} → ¬¬\text{Nat}$，原样交出就行，用不着 `call/cc`。它也就是 `(neg² id)`：`neg²` 把 `id` 落到 $¬¬\text{Nat} → ¬¬\text{Nat}$ 上，仍然什么也不做。所以记作 `neg²:id`。它和 `cps:id` 不是一回事：`cps:id` 的类型是 $q →_𝒦 q$，收到一个普通的值，交给延续，是 `∘𝒦` 的单位元。
+
+交给它一个延续 `k`，照 `∘𝒦` 展开：
 
 ```racket
-  (((∘𝒦 cps:kv id) (cps:+ 1 2)) k)
+  (((∘𝒦 cps:kv neg²:id) (cps:+ 1 2)) k)
 = ((cps:+ 1 2) (λ (v) ((cps:kv v) k)))
 = (((∘𝒦 cps:kv cps:+) 1 2) k)
 ```
 
-第二行正是手写 CPS 时的样子：`(cps:+ 1 2)` 收到的延续拿到 `v`，交给函数体，函数体的结果再交给 `k`。这个 λ 现在由宏替我们写了。第三行再照 `∘𝒦` 倒着收回去，`id` 不见了：宿主里 `(let ([v (+ 1 2)]) b)` 就是 `((∘ kv +) 1 2)`，𝒦 里也一样。一般地：
+第二行正是手写 CPS 时的样子：`(cps:+ 1 2)` 收到的延续拿到 `v`，交给函数体，函数体的结果再交给 `k`。宏只要把第一行起好名字写出来，这个 λ 就不用我们写了。上面的程序展开成：
 
 ```racket
-((∘𝒦 cps:kv id) (cps:g y))  =  ((∘𝒦 cps:kv cps:g) y)
+(let ([kkv (cps:+ 1 2)])
+  (: neg²:id  (→𝒦 (¬¬ Nat) Nat))
+  (: cps:kv   (→𝒦     Nat  Nat))
+  (: cps:kkkv (→𝒦 (¬¬ Nat) Nat))
+  (define (neg²:id kkv) kkv)
+  (define (cps:kv v) (cps:* v 3))
+  (define cps:kkkv (∘𝒦 cps:kv neg²:id))
+  (cps:kkkv kkv))
 ```
 
-这条等式和单位律不同：拿掉的不是 `cps:id`，而是宏为了接住现成的值临时放进去的 `id`。左边先算出 `(cps:g y)`，右边要等收到 `k` 才调用 `cps:g`；两者相同，靠的是「三种箭头」末尾注意框里那条假定。
+展开式的第三行再照 `∘𝒦` 倒着收回去，`neg²:id` 不见了：宿主里 `(let ([v (+ 1 2)]) b)` 就是 `((∘ kv +) 1 2)`，𝒦 里也一样。一般地：
+
+```racket
+((∘𝒦 cps:kv neg²:id) (cps:g y))  =  ((∘𝒦 cps:kv cps:g) y)
+```
+
+这条等式和单位律不同：拿掉的不是 `cps:id`，而是宏为了接住现成的值放进去的 `neg²:id`。左边先算出 `(cps:g y)`，右边要等收到 `k` 才调用 `cps:g`；两者相同，靠的是「三种箭头」末尾注意框里那条假定。
 
 开头看过，`(let ([y (f x)]) (g y))` 就是 `((∘ g f) x)`。`anf:let` 照宏展开，再用这条等式，也落到复合上：
 
 ```racket
   (anf:let ([y (cps:f x)])
     (cps:g y))
-= ((∘𝒦 (λ (y) (cps:g y)) id) (cps:f x))
+= ((∘𝒦 (λ (y) (cps:g y)) neg²:id) (cps:f x))
 = ((∘𝒦 cps:g cps:f) x)
 ```
 
@@ -728,7 +736,7 @@ $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常�
 = ((∘𝒦 (∘𝒦 cps:h cps:g) cps:f) x)
 ```
 
-也可以把前两步写成一段，嵌进第三步被求值的那一段。里层是 `((∘𝒦 cps:g cps:f) x)`，外层照宏展开以后，用一次上面那条拿掉 `id` 的等式：
+也可以把前两步写成一段，嵌进第三步被求值的那一段。里层是 `((∘𝒦 cps:g cps:f) x)`，外层照宏展开以后，用一次上面那条拿掉 `neg²:id` 的等式：
 
 ```racket
   (anf:let ([z (anf:let ([y (cps:f x)])
@@ -736,7 +744,7 @@ $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常�
     (cps:h z))
 = (anf:let ([z ((∘𝒦 cps:g cps:f) x)])
     (cps:h z))
-= ((∘𝒦 cps:h id) ((∘𝒦 cps:g cps:f) x))
+= ((∘𝒦 cps:h neg²:id) ((∘𝒦 cps:g cps:f) x))
 = ((∘𝒦 cps:h (∘𝒦 cps:g cps:f)) x)
 ```
 
@@ -757,7 +765,7 @@ $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常�
 
 绑定之后原样交出，等于不绑定；绑定一个只交出 `x`、什么也不做的计算，等于直接把 `x` 交给后面。
 
-把这些写成宏，`Nat` 换成类型变量 `a`、`b`。宏里定义的 `id`、`cps:kv`、`cps:kkkv` 只在展开出的代码里可见，不会和程序员自己的名字相混。`anf:let` 就是只有一个绑定的 `anf:let*`，定义省去：
+把这些写成宏，`Nat` 换成类型变量 `a`、`b`。宏里定义的 `neg²:id`、`cps:kv`、`cps:kkkv` 只在展开出的代码里可见，不会和程序员自己的名字相混。`anf:let` 就是只有一个绑定的 `anf:let*`，定义省去：
 
 ```racket
 (define-syntax anf:let*-values
@@ -766,12 +774,12 @@ $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常�
      (anf:begin b* ...)]
     [(_ ([v* e]) b* ...)
      (let ([kkv e])
-       (: id       (→𝒦 (¬¬ a) a))
+       (: neg²:id  (→𝒦 (¬¬ a) a))
        (: cps:kv   (→𝒦     a  b))
        (: cps:kkkv (→𝒦 (¬¬ a) b))
-       (define (id kkv) kkv)
+       (define (neg²:id kkv) kkv)
        (define (cps:kv . v*) (anf:begin b* ...))
-       (define cps:kkkv (∘𝒦 cps:kv id))
+       (define cps:kkkv (∘𝒦 cps:kv neg²:id))
        (cps:kkkv kkv))]
     [(_ ([v* e] [v** e*] ...) b* ...)
      (anf:let*-values ([v* e])
@@ -788,12 +796,12 @@ $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常�
 
 (define-syntax-rule (anf:if test conseq alt)
   (let ([kkb test])
-    (: id       (→𝒦 (¬¬ Boolean) Boolean))
+    (: neg²:id  (→𝒦 (¬¬ Boolean) Boolean))
     (: cps:kb   (→𝒦     Boolean  a))
     (: cps:kkkb (→𝒦 (¬¬ Boolean) a))
-    (define (id kkb) kkb)
+    (define (neg²:id kkb) kkb)
     (define (cps:kb . b*) (if (equal? b* '(#f)) alt conseq))
-    (define cps:kkkb (∘𝒦 cps:kb id))
+    (define cps:kkkb (∘𝒦 cps:kb neg²:id))
     (cps:kkkb kkb)))
 
 (define-syntax-rule (anf:let/cc cps:k b* ...)
@@ -1023,12 +1031,12 @@ kp  =  ((neg f) kq)  =  (∘ kq f)
      (anf:begin b* ...)]
     [(_ ([v* e]) b* ...)
      (let ([kkv e])
-       (: id       (→𝒦 (¬¬ a) a))
+       (: neg²:id  (→𝒦 (¬¬ a) a))
        (: cps:kv   (→𝒦     a  b))
        (: cps:kkkv (→𝒦 (¬¬ a) b))
-       (define (id kkv) kkv)
+       (define (neg²:id kkv) kkv)
        (define (cps:kv . v*) (anf:begin b* ...))
-       (define cps:kkkv (∘𝒦 cps:kv id))
+       (define cps:kkkv (∘𝒦 cps:kv neg²:id))
        (cps:kkkv kkv))]
     [(_ ([v* e] [v** e*] ...) b* ...)
      (anf:let*-values ([v* e])
@@ -1045,12 +1053,12 @@ kp  =  ((neg f) kq)  =  (∘ kq f)
 
 (define-syntax-rule (anf:if test conseq alt)
   (let ([kkb test])
-    (: id       (→𝒦 (¬¬ Boolean) Boolean))
+    (: neg²:id  (→𝒦 (¬¬ Boolean) Boolean))
     (: cps:kb   (→𝒦     Boolean  a))
     (: cps:kkkb (→𝒦 (¬¬ Boolean) a))
-    (define (id kkb) kkb)
+    (define (neg²:id kkb) kkb)
     (define (cps:kb . b*) (if (equal? b* '(#f)) alt conseq))
-    (define cps:kkkb (∘𝒦 cps:kb id))
+    (define cps:kkkb (∘𝒦 cps:kb neg²:id))
     (cps:kkkb kkb)))
 
 (define-syntax-rule (anf:let/cc cps:k b* ...)

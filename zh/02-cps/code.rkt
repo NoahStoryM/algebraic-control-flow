@@ -96,12 +96,12 @@
      (anf:begin b* ...)]
     [(_ ([v* e]) b* ...)
      (let ([kkv e])
-       (: id       (→𝒦 (¬¬ a) a))
+       (: neg²:id  (→𝒦 (¬¬ a) a))
        (: cps:kv   (→𝒦     a  b))
        (: cps:kkkv (→𝒦 (¬¬ a) b))
-       (define (id kkv) kkv)
+       (define (neg²:id kkv) kkv)
        (define (cps:kv . v*) (anf:begin b* ...))
-       (define cps:kkkv (∘𝒦 cps:kv id))
+       (define cps:kkkv (∘𝒦 cps:kv neg²:id))
        (cps:kkkv kkv))]
     [(_ ([v* e] [v** e*] ...) b* ...)
      (anf:let*-values ([v* e])
@@ -118,12 +118,12 @@
 
 (define-syntax-rule (anf:if test conseq alt)
   (let ([kkb test])
-    (: id       (→𝒦 (¬¬ Boolean) Boolean))
+    (: neg²:id  (→𝒦 (¬¬ Boolean) Boolean))
     (: cps:kb   (→𝒦     Boolean  a))
     (: cps:kkkb (→𝒦 (¬¬ Boolean) a))
-    (define (id kkb) kkb)
+    (define (neg²:id kkb) kkb)
     (define (cps:kb . b*) (if (equal? b* '(#f)) alt conseq))
-    (define cps:kkkb (∘𝒦 cps:kb id))
+    (define cps:kkkb (∘𝒦 cps:kb neg²:id))
     (cps:kkkb kkb)))
 
 (define-syntax-rule (anf:let/cc cps:k b* ...)
