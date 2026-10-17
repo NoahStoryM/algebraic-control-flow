@@ -85,11 +85,11 @@
    (output-starts-with?
     (λ ()
       (let ([yin (a:label)])
-        (display #\@)
+        (displayln #\@)
         (let ([yang (a:label)])
           (display #\*)
           (yin yang))))
-    "@*@**@***@")))
+    "@\n*@\n**@\n***@")))
 
 
 ;; 正文推导中的独立版本，同名定义各有自己的作用域。
@@ -203,7 +203,7 @@
 (module stage-20 racket
 
   (define (k0 kn)
-    (display #\@)
+    (displayln #\@)
     (define (kn+1 k)
       (display #\*)
       (kn k))
@@ -362,7 +362,7 @@
                          (displayln #\*)
                          (trace:apply-cont kn kn+1))))
                "(k0 k0)\t@\n(k1 k1)\t*\n(k0 k1)\t@\n"))
-  (check-true (output-starts-with? (λ () (yin:k0 yin:k0)) "@*@**@***@"))
+  (check-true (output-starts-with? (λ () (yin:k0 yin:k0)) "@\n*@\n**@\n***@"))
   (check-equal? (let () (thunk:set-b! 111) (define a (thunk:f))
                  (thunk:set-b! 222) (list a (thunk:f))) '(111 222))
   (check-equal? (parameterize ([param:a 2]) (param:f)) 222)

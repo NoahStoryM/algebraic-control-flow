@@ -197,11 +197,11 @@
       (run (cps '(reset
                   (let* ([label (λ () (let/lc k k))]
                          [yin   (label)]
-                         [_     (display #\@)]
+                         [_     (displayln #\@)]
                          [yang  (label)]
                          [_     (display #\*)])
                     (yin yang))))))
-    "@*@**@***@")))
+    "@\n*@\n**@\n***@")))
 
 
 ;; 正文推导中的独立版本，同名定义各有自己的作用域。
@@ -578,7 +578,7 @@
 
   (provide (all-defined-out))
   (define (k0 kn)
-    (display #\@)
+    (displayln #\@)
     (define (kn+1 k)
       (display #\*)
       (kn k))
@@ -589,7 +589,7 @@
 
   (provide (all-defined-out))
   (define (k0 kn)
-    (display #\@)
+    (displayln #\@)
     (define (kn+1 k)
       (display #\*)
       ((kn k) values))
@@ -619,10 +619,10 @@
   (check-equal? (naive:anf0 '(if t a b)) '(if t a b))
   (check-equal? (final:anf '(f x)) '(let ([v.0 (f x)]) v.0))
   (check-equal? (branch:anf '(f (g a))) '(let ([v.1 (g a)]) (let ([v.0 (f v.1)]) v.0)))
-  (check-true (output-starts-with? (λ () (yin:k0 yin:k0)) "@*@**@***@"))
+  (check-true (output-starts-with? (λ () (yin:k0 yin:k0)) "@\n*@\n**@\n***@"))
   (check-true (output-starts-with?
                (λ () (cps-yin:k0 (λ (v) (λ (k.0) (k.0 (cps-yin:k0 v))))))
-               "@*@**@***@")))
+               "@\n*@\n**@\n***@")))
 
 (module+ test
   (require (prefix-in delimited: (submod ".." stage-delimited))
@@ -696,7 +696,7 @@
     '(reset
       (let* ((label (λ () (let/lc k k)))
              (yin (label))
-             (_ (display #\@))
+             (_ (displayln #\@))
              (yang (label))
              (_ (display #\*)))
         (yin yang))))
@@ -704,7 +704,7 @@
        ((label)
         (λ (yin)
           ((λ (_) ((label) (λ (yang) ((λ (_) ((yin yang) values)) (display #\*)))))
-           (display #\@)))))
+           (displayln #\@)))))
      (λ () (λ (k.0) ((λ (k) (k k)) k.0)))))
   (check-equal?
    (cps '(let ([id (reset (shift k k))]) (id (id 3))))
@@ -721,7 +721,7 @@
    (cps
     '(reset
       (let* ((kn (let/lc k0 (λ (v) (k0 v))))
-             (_ (display #\@))
+             (_ (displayln #\@))
              (k (let/lc kn+1 (λ (v) (kn+1 v))))
              (_ (display #\*)))
         (kn k))))
@@ -730,7 +730,7 @@
        ((λ (_)
           ((λ (kn+1) (kn+1 (λ (v) (λ (k.1) (k.1 (kn+1 v))))))
            (λ (k) ((λ (_) ((kn k) values)) (display #\*)))))
-        (display #\@)))))
+        (displayln #\@)))))
   ;; 命名 if 的实现沿用正文；调用者版中生成的 k.n 也必须是平凡名字。
   (check-equal? (delimited:anf '(f (if a b c)))
                 '(let ([k.0 (λ (v.1) (let ([v.0 (f v.1)]) v.0))])
@@ -746,7 +746,7 @@
   (check-equal? (run (delimited:anf '(+ 10 (reset (+ 1 (shift k 42)))))) 52)
   (define label-puzzle
     '(reset (let* ([label (λ () (let/lc k k))]
-                   [yin (label)] [_ (display #\@)]
+                   [yin (label)] [_ (displayln #\@)]
                    [yang (label)] [_ (display #\*)])
               (yin yang))))
   (define label-result (delimited:anf label-puzzle))
@@ -756,7 +756,7 @@
            (let ([label (λ () (let ([k (λ (v.1) v.1)]) (let ([v.2 (k k)]) v.2)))])
              (let ([v.3 (label)])
                (let ([yin v.3])
-                 (let ([v.4 (display #\@)])
+                 (let ([v.4 (displayln #\@)])
                    (let ([_ v.4])
                      (let ([v.5 (label)])
                        (let ([yang v.5])
@@ -767,8 +767,8 @@
   (check-equal? (match label-result
                   [`(let ([v.0 (let ([label ,compiled]) ,_)]) v.0) compiled])
                 '(λ () (let ([k (λ (v.1) v.1)]) (let ([v.2 (k k)]) v.2))))
-  (check-equal? (with-output-to-string (λ () (run label-result))) "@*")
-  (check-true (output-starts-with? (λ () (run (caller:anf label-puzzle))) "@*@**@***@"))
+  (check-equal? (with-output-to-string (λ () (run label-result))) "@\n*")
+  (check-true (output-starts-with? (λ () (run (caller:anf label-puzzle))) "@\n*@\n**@\n***@"))
   (define (desugar exp)
     (match exp
       [`(let ([,x ,e]) ,body) `((λ (,x) ,(desugar body)) ,(desugar e))]
@@ -810,11 +810,11 @@
    (output-starts-with?
     (λ () (run (cps '(reset
                       (let* ([kn (let/lc k0 (λ (v) (k0 v)))]
-                             [_ (display #\@)]
+                             [_ (displayln #\@)]
                              [k (let/lc kn+1 (λ (v) (kn+1 v)))]
                              [_ (display #\*)])
                         (kn k))))))
-    "@*@**@***@"))
+    "@\n*@\n**@\n***@"))
   ;; compiler-claims.md c 节的六例：先独立运行源程序，再比对各阶段的打印。
   (define order-cases
     '((eq? (reset (display 1)) (display 2))
@@ -978,10 +978,10 @@
       (let ([v (reset (let* ([x (shift k 3)] [y (+ 2 x)]) (abort y)))]) (+ 10 v))
       (let ([v (reset (let* ([x (shift k (k 3))] [y (+ 2 x)]) (abort y)))]) (+ 10 v))
       (let ([v (reset (let* ([x (shift k (let ([r (k 3)]) (k r)))] [y (+ 2 x)]) (abort y)))]) (+ 10 v))
-      (reset (let* ([label (λ () (let/lc k k))] [yin (label)] [_ (display #\@)] [yang (label)] [_ (display #\*)]) (yin yang)))
+      (reset (let* ([label (λ () (let/lc k k))] [yin (label)] [_ (displayln #\@)] [yang (label)] [_ (display #\*)]) (yin yang)))
       (let ([id (reset (shift k k))]) (id (id 3)))
       (let ([id (reset (shift k (λ (v) (k v))))]) (id (id 3)))
-      (reset (let* ([kn (let/lc k0 (λ (v) (k0 v)))] [_ (display #\@)] [k (let/lc kn+1 (λ (v) (kn+1 v)))] [_ (display #\*)]) (kn k)))
+      (reset (let* ([kn (let/lc k0 (λ (v) (k0 v)))] [_ (displayln #\@)] [k (let/lc kn+1 (λ (v) (kn+1 v)))] [_ (display #\*)]) (kn k)))
       (let ([f add1]) (f 41)) (let ([f (λ (x) (add1 x))]) (f 41))
       (eq? (reset (display 1)) (display 2)) (eq? (display 1) (reset (display 2)))
       (let ([f (λ (a b) a)]) (f (reset (display 1)) (display 2)))
@@ -1089,7 +1089,7 @@
         ((λ (_)
            ((λ (kn+1) (kn+1 (λ (v) (λ (k.1) (k.1 (kn+1 v))))))
             (λ (k) ((λ (_) ((kn k) values)) (display #\*)))))
-         (display #\@))))))
+         (displayln #\@))))))
   (check-true (grammar:cps? before-999))
   (check-true (grammar:cps? after-999))
 

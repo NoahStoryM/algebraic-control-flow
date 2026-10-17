@@ -745,11 +745,16 @@ $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常�
 ```racket
 > (anf:eval
    (anf:let* ([cps:yin (cps:label)])
-     (cps:display #\@)
+     (cps:displayln #\@)
      (anf:let* ([cps:yang (cps:label)])
        (cps:display #\*)
        (cps:yin cps:yang))))
-@*@**@***@****@...
+@
+*@
+**@
+***@
+****@
+...
 ```
 
 `(cps:yin cps:yang)` 中，`cps:yin` 是一个捕获的延续。它可以直接作为 CPS 箭头调用，因为 `cps:call/cc` 在交给用户函数之前已经用 `(cps kp)` 把裸的延续提升到了 CPS 世界的箭头类型。
