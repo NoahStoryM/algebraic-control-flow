@@ -47,6 +47,9 @@
 (: ∘𝒰 (∀ (p ...) (→ (→𝒰 pn-1 pn) ... (→𝒰 p1 p2) (→𝒰 p1 pn))))
 (define ∘𝒰 ⨾)
 
+(: neg:id (∀ (q) (→𝒰 q q)))
+(define neg:id id)
+
 
 ;;; CPS 世界
 
@@ -66,7 +69,7 @@
 (define (∘𝒦 . cps:f*) (flip (apply ∘𝒰 (map flip cps:f*))))
 
 (: cps:id (∀ (q) (→𝒦 q q)))
-(define cps:id (flip id))
+(define cps:id (flip neg:id))
 
 
 ;;; Clavius 律
