@@ -669,11 +669,11 @@ $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常�
 开头的单位律给了另一种写法。宿主里，把 `kv` 用在 `e` 上，等于先接一个 `id` 再用，也就是开头换名的那种 `let`。用在值上，𝒦 做不到；复合，𝒦 却有 `∘𝒦`。把 `∘` 换成 `∘𝒦`，两边并排：
 
 ```racket
-(let     ([v e]) b)  =  ((∘  kv     id)     e)    ; kv     = (λ (v) b)
-(anf:let ([v e]) b)  =  ((∘𝒦 cps:kv neg²:id) e)    ; cps:kv = (λ (v) b)
+(let     ([v   e])   b)  =  ((∘      kv      id)   e)    ;     kv = (λ (v)   b)
+(anf:let ([v kkv]) kkb)  =  ((∘𝒦 cps:kv neg²:id) kkv)    ; cps:kv = (λ (v) kkb)
 ```
 
-𝒦 这边接在 `cps:kv` 前面的，是一支收下 $¬¬\text{Nat}$ 的箭头，类型 $¬¬\text{Nat} →_𝒦 \text{Nat}$。读起来，它从 $¬¬\text{Nat}$ 取出一个 $\text{Nat}$，正是 DNE；在 𝒦 里展开，却只是 $¬¬\text{Nat} → ¬¬\text{Nat}$，原样交出就行，用不着 `call/cc`。它也就是 `(neg² id)`：`neg²` 把 `id` 落到 $¬¬\text{Nat} → ¬¬\text{Nat}$ 上，仍然什么也不做。所以记作 `neg²:id`。它和 `cps:id` 不是一回事：`cps:id` 的类型是 $q →_𝒦 q$，收到一个普通的值，交给延续，是 `∘𝒦` 的单位元。
+𝒦 这边，绑定的右边和函数体都已编码成 $¬¬$，分别记作 `kkv`、`kkb`。接在 `cps:kv` 前面的，是一支收下 `kkv` 的箭头，类型 $¬¬\text{Nat} →_𝒦 \text{Nat}$。读起来，它从 $¬¬\text{Nat}$ 取出一个 $\text{Nat}$，正是 DNE；在 𝒦 里展开，却只是 $¬¬\text{Nat} → ¬¬\text{Nat}$，原样交出就行，用不着 `call/cc`。它也就是 `(neg² id)`：`neg²` 把 `id` 落到 $¬¬\text{Nat} → ¬¬\text{Nat}$ 上，仍然什么也不做。所以记作 `neg²:id`。它和 `cps:id` 不是一回事：`cps:id` 的类型是 $q →_𝒦 q$，收到一个普通的值，交给延续，是 `∘𝒦` 的单位元。
 
 交给它一个延续 `k`，照 `∘𝒦` 展开：
 
