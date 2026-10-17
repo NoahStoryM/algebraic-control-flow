@@ -660,7 +660,7 @@ $p$、$q$ 的先后依次对应 $¬p$、$¬q$，首尾相连在书写上照常�
 
 那怎么办？先数数手上有什么：`cps:mul3` 的类型是 $\text{Nat} →_𝒦 \text{Nat}$，展开是 $\text{Nat} → ¬¬\text{Nat}$；`kk3` 的类型是 $¬¬\text{Nat}$。想要的是一个 $¬¬\text{Nat}$。思路是：造一个 $¬¬\text{Nat} → ¬¬\text{Nat}$ 的函数，用在 `kk3` 上。这个类型读作 𝒦 的箭头，就是 $¬¬\text{Nat} →_𝒦 \text{Nat}$。𝒦 的箭头能用 `∘𝒦` 接，只要在 `cps:mul3` 前面接一支 $¬¬\text{Nat} →_𝒦 \text{Nat}$ 的箭头。
 
-这支箭头读起来，是从 $¬¬\text{Nat}$ 取出一个 $\text{Nat}$，正是 DNE；在 𝒦 里展开，却只是 $¬¬\text{Nat} → ¬¬\text{Nat}$，原样交出就行，用不着 `call/cc`。它就是 `(neg² id)`：`neg²` 把 `id` 落到 $¬¬\text{Nat} → ¬¬\text{Nat}$ 上，仍然什么也不做。记作 `neg²:id`，解法就出来了：`((∘𝒦 cps:mul3 neg²:id) kk3)`。
+这支箭头的类型和 DNE 只差一处：宿主的 $→$ 换成了 $→_𝒦$。读起来像是从 $¬¬\text{Nat}$ 取出一个 $\text{Nat}$；在 𝒦 里展开，却只是 $¬¬\text{Nat} → ¬¬\text{Nat}$，原样交出就行，用不着 `call/cc`。它就是 `(neg² id)`：`neg²` 把 `id` 落到 $¬¬\text{Nat} → ¬¬\text{Nat}$ 上，仍然什么也不做。记作 `neg²:id`，解法就出来了：`((∘𝒦 cps:mul3 neg²:id) kk3)`。
 
 交给它一个延续 `k`，照 `∘𝒦` 展开：
 
