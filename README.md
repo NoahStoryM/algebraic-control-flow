@@ -1,6 +1,6 @@
 # 控制流的代数本质 / The Algebraic Essence of Control Flow
 
-用 Racket 与 Typed Racket，从 `goto` 与 `label` 出发，一步步造出延续、CPS、定界延续、关系、单子与代数效应。中文先写，在[知乎](https://zhuanlan.zhihu.com/p/2019516690904401803)连载；英文版等中文定稿后再译。
+用 Racket 与 Typed Racket，从 `goto` 与 `label` 出发，一步步造出延续、CPS、定界延续、关系、单子与代数作用。中文先写，在[知乎](https://zhuanlan.zhihu.com/p/2019516690904401803)连载；英文版等中文定稿后再译。
 
 A series on continuations, CPS, delimited control, relations, monads and algebraic effects, built step by step in Racket. The Chinese edition comes first; an English translation will follow once it is frozen.
 
