@@ -176,11 +176,11 @@
     (λ ()
       (reset
        (let ([kn (let/lc k0 k0)])
-         (display #\@)
+         (displayln #\@)
          (let ([k (let/lc kn+1 kn+1)])
            (display #\*)
            (kn k)))))
-    "@*@**@***@")))
+    "@\n*@\n**@\n***@")))
 
 
 ;; 正文推导中的独立版本，同名定义各有自己的作用域。

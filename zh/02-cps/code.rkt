@@ -194,11 +194,11 @@
     (λ ()
       (anf:eval
        (anf:let* ([cps:yin (cps:label)])
-         (cps:display #\@)
+         (cps:displayln #\@)
          (anf:let* ([cps:yang (cps:label)])
            (cps:display #\*)
            (cps:yin cps:yang)))))
-    "@*@**@***@")))
+    "@\n*@\n**@\n***@")))
 
 
 ;; 正文推导中的独立版本，同名定义各有自己的作用域。

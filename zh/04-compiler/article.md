@@ -646,7 +646,7 @@ application 分支有两个 `reset`：
 ```racket
 (reset
  (let ([kn (let/lc k0 k0)])
-   (display #\@)
+   (displayln #\@)
    (let ([k (let/lc kn+1 kn+1)])
      (display #\*)
      (kn k))))
@@ -693,7 +693,7 @@ application 分支有两个 `reset`：
 
 ```racket
 (define (k0 kn)
-  (display #\@)
+  (displayln #\@)
   (define (kn+1 k)
     (display #\*)
     (kn k))
@@ -704,7 +704,12 @@ application 分支有两个 `reset`：
 
 ```racket
 > (k0 k0)
-@*@**@***@****@...
+@
+*@
+**@
+***@
+****@
+...
 ```
 
 第一篇的互递归，逐行对应。那里我们读着追踪输出写出了它；这里编译器从源代码推导出了它。
@@ -715,7 +720,7 @@ application 分支有两个 `reset`：
 (anf '(reset
        (let* ([label (λ () (let/lc k k))]
               [yin   (label)]
-              [_     (display #\@)]
+              [_     (displayln #\@)]
               [yang  (label)]
               [_     (display #\*)])
          (yin yang))))
@@ -724,7 +729,8 @@ application 分支有两个 `reset`：
 和上一个版本相比，唯一的差别是 `let/lc` 被包进了一个 lambda。程序编译没有报错。运行它：
 
 ```
-@*
+@
+*
 ```
 
 两个字符，然后程序就结束了。无穷阶梯在第一步之后就停了。
@@ -1236,13 +1242,13 @@ Lambda 链的尾调用直接传递 `k.0`，999 例子的调用点延续是裸名
 
 # 再看阴阳谜题
 
-「镜子破裂」一节，函数形式的谜题只打印出 `@*`。修复之后再编译它：
+「镜子破裂」一节，函数形式的谜题只打印出一个 `@` 和一个 `*`。修复之后再编译它：
 
 ```racket
 > (cps '(reset
          (let* ([label (λ () (let/lc k k))]
                 [yin   (label)]
-                [_     (display #\@)]
+                [_     (displayln #\@)]
                 [yang  (label)]
                 [_     (display #\*)])
            (yin yang))))
@@ -1250,14 +1256,19 @@ Lambda 链的尾调用直接传递 `k.0`，999 例子的调用点延续是裸名
     ((label)
      (λ (yin)
        ((λ (_) ((label) (λ (yang) ((λ (_) ((yin yang) values)) (display #\*)))))
-        (display #\@)))))
+        (displayln #\@)))))
   (λ () (λ (k.0) ((λ (k) (k k)) k.0))))
 ```
 
 运行，阶梯回来了：
 
 ```
-@*@**@***@****@...
+@
+*@
+**@
+***@
+****@
+...
 ```
 
 但对照文法读一读输出。`label` 编译成 `(λ () (λ (k.0) ((λ (k) (k k)) k.0)))`，化简一步就是 `(k.0 k.0)`：调用处的延续 `k.0` 被当作值，交给了它自己。于是 `yin` 和 `yang` 拿到的都是延续。而 `(yin yang)` 编译成了 `((yin yang) values)`：`yin` 不在平凡集合里，编译器把它当作用户定义的函数，额外传了一个延续参数 `values`。文法说延续通过 `<apply-cont>` 调用，写作 `(<cont> <val> ...)`，不带自己的延续参数；这里却是 `<apply-proc>`，一个延续被用在了文法期望过程的位置。
@@ -1308,7 +1319,7 @@ Lambda 链的尾调用直接传递 `k.0`，999 例子的调用点延续是裸名
 ```racket
 > (cps '(reset
          (let* ([kn (let/lc k0   (λ (v) (k0   v)))]
-                [_  (display #\@)]
+                [_  (displayln #\@)]
                 [k  (let/lc kn+1 (λ (v) (kn+1 v)))]
                 [_  (display #\*)])
            (kn k))))
@@ -1317,14 +1328,14 @@ Lambda 链的尾调用直接传递 `k.0`，999 例子的调用点延续是裸名
     ((λ (_)
        ((λ (kn+1) (kn+1 (λ (v) (λ (k.1) (k.1 (kn+1 v))))))
         (λ (k) ((λ (_) ((kn k) values)) (display #\*)))))
-     (display #\@))))
+     (displayln #\@))))
 ```
 
 把形如 `((λ (_) …) (display …))` 的应用还原成先打印、再往下做，改写为 `define` 形式：
 
 ```racket
 (define (k0 kn)
-  (display #\@)
+  (displayln #\@)
   (define (kn+1 k)
     (display #\*)
     ((kn k) values))
@@ -1335,7 +1346,12 @@ Lambda 链的尾调用直接传递 `k.0`，999 例子的调用点延续是裸名
 
 ```racket
 > (k0 (λ (v) (λ (k.0) (k.0 (k0 v)))))
-@*@**@***@****@...
+@
+*@
+**@
+***@
+****@
+...
 ```
 
 这次每个延续都待在文法给它的位置上，代码也说明了阶梯为什么永不停止。每个延续参数（`k.0`、`k.1`）都使用过了：`(k.0 (k0 v))` 和 `(k.1 (kn+1 v))`。但在运行时，每次调用传递的延续参数都是 `values`，即局部终结延续，所以 `k.0` 和 `k.1` 总是绑定到 `values`，从不做事。递归调用 `(k0 v)` 和 `(kn+1 v)` 语法上处在非尾位置，外面包着 `(k.0 ...)` 和 `(k.1 ...)`；但因为 `values` 是恒等，等着它们的帧不做任何工作，只是接收递归调用的结果，原样传回。帧在宿主栈上累积，而谜题永不返回，它们永远不会被回卷。递归永远旋转。

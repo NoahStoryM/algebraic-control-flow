@@ -46,7 +46,7 @@
   (("# 镜子破裂" "(reset") "直接运行的阴阳谜题无穷输出，且 k0/kn+1 是示意名")
   (("# 镜子破裂" "> (anf '(reset\n(let* ([kn (let/lc k0 k0)]") "由 code.rkt 的 stage-delimited 核对编译输出")
   (("# 镜子破裂" "> (k0 k0)") "阴阳谜题无限输出，限时测试覆盖")
-  (("# 镜子破裂" "(anf '(reset\n(let* ([label (λ () (let/lc k k))]") "由 code.rkt 的 stage-delimited 核对编译输出与运行打印 @*")
+  (("# 镜子破裂" "(anf '(reset\n(let* ([label (λ () (let/lc k k))]") "由 code.rkt 的 stage-delimited 核对编译输出与运行打印 @ 与 *")
   (("# 镜子破裂" "> (anf '(reset (let ([f (λ (x) (shift k 999))]) (add1 (f 42)))))") "由 code.rkt 的 stage-delimited 核对编译输出与运行结果 1000")
   (("# 调用者的延续" "> (anf '(reset (let ([f (λ (x) (shift k 999))]) (add1 (f 42)))))") "由 code.rkt 的 stage-caller 核对编译输出；999 例同时核对运行结果 999")
   (("# 调用者的延续" "> (anf '(λ (n) (f (g n))))") "由 code.rkt 的 stage-caller 核对编译输出")
