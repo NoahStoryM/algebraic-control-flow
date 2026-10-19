@@ -191,7 +191,7 @@
   ;; neg:call/cc：先收延续 kp，再收 neg:proc；调用 (neg kp) 也改走 kp。
   (check-equal? (⊥->a ((neg:call/cc (∘ a->⊥ add1)) (λ (kp) (λ (neg:k) (kp 99))))) 100)
   (check-equal? (⊥->a ((neg:call/cc (∘ a->⊥ add1)) (λ (kp) (λ (neg:k) ((neg:k id) 10) (kp 99))))) 11)
-  ;; 「手中的延续」练习：𝒦 自己的 DNE 只用 λ 写得出。
+  ;; 「新世界下的 Clavius 律」练习：𝒦 自己的 DNE 只用 λ 写得出。
   (let ([cps:dne (λ (cps:kkp) (λ (kp) ((cps:kkp (cps kp)) id)))])
     (check-equal? (anf:eval (cps:dne (λ (cps:k) ((cps:k 5) id)))) 5))
   ;; 「再次隐藏延续」：(neg² id) 什么也不做，就是宏里的 neg²:id。
@@ -418,7 +418,7 @@
 )
 
 (module stage-clavius typed/racket/no-check
-  ;; 「手中的延续」：回顾第一篇 call/cc 的类型，用 𝒞 的写法。
+  ;; 「新世界下的 Clavius 律」：回顾第一篇 call/cc 的类型，用 𝒞 的写法。
   (define-type ⊥ (∪))
   (define-type (→𝒞 p q) (→ p q))
   (define-type (¬𝒞 p) (→𝒞 p ⊥))
