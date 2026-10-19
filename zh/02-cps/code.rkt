@@ -148,25 +148,23 @@
 (define cps:displayln (cps displayln))
 
 
-;;; 嵌入语言版 mul
-
-(: cps:mul (→ Real * (¬¬ Real)))
-(define (cps:mul . r*)
-  (anf:let/cc cps:return
-    (: cps:loop (→𝒦 (Listof Real) Real))
-    (define (cps:loop r*)
-      (anf:if (cps:null? r*)
-              (cps:*)
-              (anf:let* ([r (cps:car r*)])
-                (anf:if (cps:zero? r)
-                        (cps:return r)
-                        (anf:let* ([r* (cps:cdr r*)]
-                                   [res (cps:loop r*)])
-                          (cps:* res r))))))
-    (cps:loop r*)))
-
 (module+ test
   (require rackunit "../../tools/check-output-prefix.rkt")
+  ;; 「嵌入语言」的例子：cps:mul 是一支 𝒦 的箭头，不进完整代码参考。
+  (: cps:mul (→ Real * (¬¬ Real)))
+  (define (cps:mul . r*)
+    (anf:let/cc cps:return
+      (: cps:loop (→𝒦 (Listof Real) Real))
+      (define (cps:loop r*)
+        (anf:if (cps:null? r*)
+                (cps:*)
+                (anf:let* ([r (cps:car r*)])
+                  (anf:if (cps:zero? r)
+                          (cps:return r)
+                          (anf:let* ([r* (cps:cdr r*)]
+                                     [res (cps:loop r*)])
+                            (cps:* res r))))))
+      (cps:loop r*)))
   ;; 普通箭头经 CPS 提升后交给答案通道；组合不应改变结果。
   (check-equal? (anf:eval ((cps +) 2 3)) 5)
   (check-equal? (anf:eval ((∘𝒦 (cps add1) (cps (λ (x) (* 2 x)))) 3)) 7)
@@ -184,7 +182,7 @@
   ;; 「嵌入语言」：cps:mul 是 𝒦 的箭头，遇零经 cps:return 跳出。
   (check-equal? (anf:eval (cps:mul 1 2 3 4)) 24)
   (check-equal? (anf:eval (cps:mul 1 2 0 3 4)) 0)
-  ;; 「两个 call/cc」的运行例：正常交回，与调用交出去的延续后改走 kp。
+  ;; 「手中的延续」的运行例：正常交回，与调用交出去的延续后改走 kp。
   (let* ([cps:add1 (cps add1)]
          [cps:proc1 (λ (cps:k) ((cps *) 2 3))]
          [cps:proc2 (λ (cps:k) ((∘𝒦 cps:add1 cps:k) 10))])
@@ -193,7 +191,7 @@
   ;; neg:call/cc：先收延续 kp，再收 neg:proc；调用 (neg kp) 也改走 kp。
   (check-equal? (⊥->a ((neg:call/cc (∘ a->⊥ add1)) (λ (kp) (λ (neg:k) (kp 99))))) 100)
   (check-equal? (⊥->a ((neg:call/cc (∘ a->⊥ add1)) (λ (kp) (λ (neg:k) ((neg:k id) 10) (kp 99))))) 11)
-  ;; 「两个 call/cc」练习：𝒦 自己的 DNE 只用 λ 写得出。
+  ;; 「手中的延续」练习：𝒦 自己的 DNE 只用 λ 写得出。
   (let ([cps:dne (λ (cps:kkp) (λ (kp) ((cps:kkp (cps kp)) id)))])
     (check-equal? (anf:eval (cps:dne (λ (cps:k) ((cps:k 5) id)))) 5))
   ;; 「再次隐藏延续」：(neg² id) 什么也不做，就是宏里的 neg²:id。
