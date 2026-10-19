@@ -579,7 +579,7 @@ $¬p$ 在箭头左边，是参数，就是 `kp`。宿主的 Clavius 律只收 `p
 (define (neg²:id kkv) kkv)
 ```
 
-它就是 `id`，只是收的是 $¬¬\text{Nat}$。类型写成 $¬¬\text{Nat} →_𝒦 \text{Nat}$ 时，它看上去像 DNE，要从 $¬¬\text{Nat}$ 取出一个 $\text{Nat}$；展开却只是原样交出，用不着 `call/cc`。
+它就是 `id`，只是收的是 $¬¬\text{Nat}$。类型写成 $¬¬\text{Nat} →_𝒦 \text{Nat}$ 时，它看上去像 DNE，要从 $¬¬\text{Nat}$ 取出一个 $\text{Nat}$；展开一看，却只是原样交出。
 
 名字里的 `neg²` 说的是它从哪里来：`id` 取一次逆否，`(neg id)` 的类型是 $¬\text{Nat} → ¬\text{Nat}$；再交给 `neg` 一次，就是 $¬¬\text{Nat} → ¬¬\text{Nat}$。第二次 `neg` 收到的是 𝒰 的箭头，这是 `neg` 的第二种读法，类型 $(¬q → ¬p) → (¬¬p → ¬¬q)$ 仍然是一条逆否律。两次 `neg` 接起来，记作 `neg²`：
 
