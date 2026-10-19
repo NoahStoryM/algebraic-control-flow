@@ -610,35 +610,7 @@ $¬p$ 在箭头左边，是参数，就是 `kp`。宿主的 Clavius 律只收 `p
 
 ## 绑定就是复合
 
-宏只要替我们写出 `((∘𝒦 cps:mul3 neg²:id) kk3)`，那个 λ 就不用我们写了。上面的程序展开成：
-
-```racket
-(let ([kk3 (cps:+ 1 2)])
-  (: neg²:id  (→𝒦 (¬¬ Nat) Nat))
-  (: cps:mul3 (→𝒦     Nat  Nat))
-  (define (neg²:id kkv) kkv)
-  (define (cps:mul3 v) (cps:* v 3))
-  ((∘𝒦 cps:mul3 neg²:id) kk3))
-```
-
-一般地，宏把 `(anf:let ([v kkv]) kkw)` 展开成 `((∘𝒦 cps:kv neg²:id) kkv)`，其中 `cps:kv` 是 `(λ (v) kkw)`。绑定的右边是一次调用时，`neg²:id` 可以拿掉，由那次调用的函数接在它原来的位置，上面的 `cps:+` 就是一例。一般地：
-
-```racket
-((∘𝒦 cps:kv neg²:id) (cps:g y))  =  ((∘𝒦 cps:kv cps:g) y)
-```
-
-> **练习：** 左边先算出 `(cps:g y)`，右边要等收到 `k` 才调用 `cps:g`。两边为什么仍然相同？要是 `cps:g` 一收到参数就打印一行，两边还相同吗？
-
-`anf:let` 照宏展开，再用拿掉 `neg²:id` 的那条等式，就落到复合上：
-
-```racket
-  (anf:let ([y (cps:f x)])
-    (cps:g y))
-= ((∘𝒦 (λ (y) (cps:g y)) neg²:id) (cps:f x))
-= ((∘𝒦 cps:g cps:f) x)
-```
-
-第一步照宏展开，把 `kkv` 代回去；第二步用上面的等式，`(λ (y) (cps:g y))` 就是 `cps:g`。两边并排：
+一般地，宏把 `(anf:let ([v kkv]) kkw)` 写成 `((∘𝒦 cps:kv neg²:id) kkv)`，其中 `cps:kv` 是 `(λ (v) kkw)`。右边是一次调用 `(cps:f x)` 时，上一节的推导照样走得通，`neg²:id` 的位置换成 `cps:f`。和开头宿主的那条等式并排：
 
 ```racket
 (let     ([y     (f x)])     (g y))  =  ((∘      g     f) x)
@@ -646,6 +618,8 @@ $¬p$ 在箭头左边，是参数，就是 `kp`。宿主的 Clavius 律只收 `p
 ```
 
 `let` 是 `∘` 的另一种写法，`anf:let` 是 `∘𝒦` 的另一种写法，多出来的是中间结果的名字。
+
+> **练习：** 上一节的等式，左边先算出 `(cps:+ 1 2)`，右边要等收到延续才调用 `cps:+`。两边为什么仍然相同？要是 `cps:+` 一收到参数就打印一行，两边还相同吗？
 
 开头的两条运算律，`anf:let` 也有。三步计算照 `anf:let*` 写，是一层层嵌在函数体里的 `anf:let`；也可以把前两步写成一段，嵌进第三步被求值的那一段。两种写法计算顺序相同，对应 `∘𝒦` 的两种分组：
 
@@ -663,9 +637,20 @@ $¬p$ 在箭头左边，是参数，就是 `kp`。宿主的 Clavius 律只收 `p
 (anf:let ([y (cps:id x)]) (cps:f y))  =  ((∘𝒦 cps:f cps:id) x)  =  (cps:f x)
 ```
 
-> **练习：** 用上面单个绑定的结果和拿掉 `neg²:id` 的那条等式，推出这四条等式。
+> **练习：** 用上面并排的第二行和 `∘𝒦` 的两条运算律，推出这四条等式。
 
 ## 宏与解释器
+
+宏只要替我们写出 `((∘𝒦 cps:mul3 neg²:id) kk3)`，那个 λ 就不用我们写了。上面的例子展开成：
+
+```racket
+(let ([kk3 (cps:+ 1 2)])
+  (: neg²:id  (→𝒦 (¬¬ Nat) Nat))
+  (: cps:mul3 (→𝒦     Nat  Nat))
+  (define (neg²:id kkv) kkv)
+  (define (cps:mul3 v) (cps:* v 3))
+  ((∘𝒦 cps:mul3 neg²:id) kk3))
+```
 
 把这些写成宏，`Nat` 换成类型变量 `a`、`b`。宏里的类型标注只是示意：本文的代码在 `no-check` 下运行，标注不经检查，`a`、`b` 也就不必绑定。宏里定义的 `neg²:id`、`cps:kv`、`cps:kkkv` 只在展开出的代码里可见，不会和程序员自己的名字相混。`anf:let` 就是只有一个绑定的 `anf:let*`，定义省去：
 

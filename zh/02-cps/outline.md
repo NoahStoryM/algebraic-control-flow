@@ -86,12 +86,12 @@
 
 ### 4.2 绑定就是复合（标题候选）
 
-- 认：宏替我们写出的具体样子；一般形式 `((∘𝒦 cps:kv neg²:id) kkv)`；右边是一次调用时拿掉 `neg²:id` 的等式（只说一次）；`anf:let` 落到 `∘𝒦`，与 `let` 并排的两行 `(let ([y (f x)]) (g y)) = ((∘ g f) x)`、`(anf:let ([y (cps:f x)]) (cps:g y)) = ((∘𝒦 cps:g cps:f) x)`；两条运算律的绑定形状。
-- 练习：拿掉 `neg²:id` 的前提；推出四条运算律等式。
+- 认：宏的一般形式 `((∘𝒦 cps:kv neg²:id) kkv)`；右边是一次调用时，4.1 的推导照样走得通，于是与宿主并排：`(let ([y (f x)]) (g y)) = ((∘ g f) x)`、`(anf:let ([y (cps:f x)]) (cps:g y)) = ((∘𝒦 cps:g cps:f) x)`；两条运算律的绑定形状。
+- 练习：4.1 那条等式的前提（收到参数就打印时）；推出四条运算律等式。
 
 ### 4.3 宏与解释器（标题候选）
 
-- 造：宏 `anf:let*-values`、`anf:begin`、`anf:let*`、`anf:if`、`anf:let/cc`，保留 `(∘𝒦 cps:kv neg²:id)` 的形状；宏只用 `∘𝒦` 与 `neg²:id` 接箭头，不改写箭头本身做的事；解释器 `anf:eval`，类型 $¬¬a → a$，扮演第一篇的操作系统。
+- 造：例子展开出的具体代码；宏 `anf:let*-values`、`anf:begin`、`anf:let*`、`anf:if`、`anf:let/cc`，保留 `(∘𝒦 cps:kv neg²:id)` 的形状；宏只用 `∘𝒦` 与 `neg²:id` 接箭头，不改写箭头本身做的事；解释器 `anf:eval`，类型 $¬¬a → a$，扮演第一篇的操作系统。
 - 名字：`anf:` 系列、`anf:eval`。
 
 ## 5. 嵌入语言
