@@ -417,6 +417,14 @@
   (provide (all-defined-out))
 )
 
+(module stage-clavius typed/racket/no-check
+  ;; 「手中的延续」：回顾第一篇 call/cc 的类型，用 𝒞 的写法。
+  (define-type ⊥ (∪))
+  (define-type (→𝒞 p q) (→ p q))
+  (define-type (¬𝒞 p) (→𝒞 p ⊥))
+  (: call/cc (∀ (p) (→𝒞 (→𝒞 (¬𝒞 p) p) p)))
+)
+
 (module+ test
   (require (prefix-in direct: (submod ".." stage-1))
            (prefix-in named: (submod ".." stage-2))
