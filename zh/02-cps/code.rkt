@@ -407,18 +407,6 @@
   (provide (all-defined-out))
 )
 
-(module stage-33 typed/racket/no-check
-  ;; 「再次隐藏延续」：neg² 第一次出现，𝒟 还没有名字，交给它的是纯函数。
-  (define-type ⊥ (∪))
-  (define-type (¬ p) (→ p ⊥))
-  (define-type (¬¬ p) (¬ (¬ p)))
-  (define ∘ compose)
-  (define ((neg f) kq) (∘ kq f))
-  (: neg² (∀ (p q) (→ (→ p q) (→ (¬¬ p) (¬¬ q)))))
-  (define neg² (∘ neg neg))
-  (provide (all-defined-out))
-)
-
 (module stage-clavius typed/racket/no-check
   ;; 「新世界下的 Clavius 律」：回顾第一篇 call/cc 的类型，用 𝒞 的写法。
   (define-type ⊥ (∪))
@@ -434,8 +422,7 @@
            (prefix-in tail: (submod ".." stage-6))
            (prefix-in tail/k: (submod ".." stage-7))
            (prefix-in answer: (submod ".." stage-11))
-           (prefix-in lift: (submod ".." stage-14))
-           (prefix-in pure: (submod ".." stage-33)))
+           (prefix-in lift: (submod ".." stage-14)))
   (for ([fact (list direct:fact named:fact tail:fact)])
     (check-equal? (fact 6) 720))
   (for ([fib (list direct:fib named:fib)])
@@ -445,5 +432,4 @@
   (check-equal? (tail/k:fact/k 6 values) 720)
   (check-equal? (answer:mul 2 3 4) 24)
   (check-equal? (answer:mul 2 0 4) 0)
-  (check-equal? (((lift:cps add1) 7) values) 8)
-  (check-equal? (((pure:neg² add1) (λ (k) (k 6))) values) 7))
+  (check-equal? (((lift:cps add1) 7) values) 8))

@@ -3,7 +3,7 @@
 ((define (∘𝒰 . neg:f*) (apply ∘ (reverse neg:f*)))
 "「三种箭头」先照 reverse 写出，随即认出它就是反向复合 ⨾，改写成 (define ∘𝒰 ⨾)；完整代码用后一种")
 ((: neg (∀ (p q) (→ (→𝒞 p q) (→𝒰 p q))))
-"「三种箭头」只写 neg 的第一种读法；「再次隐藏延续」用文字补上第二种，完整代码用两行的 case→")
+"「三种箭头」只写 neg 的第一种读法；「否定翻译」用文字补上第二种，完整代码用两行的 case→")
 ((define ((cps:call/cc cps:proc) kp) ...)
 "「手中的延续」先写出 cps:call/cc 收到什么，函数体留作省略号，随后填上")
 ((define ((neg:call/cc kp) neg:proc) ...)
