@@ -188,6 +188,12 @@
          [cps:proc2 (λ (cps:k) ((∘𝒦 cps:add1 cps:k) 10))])
     (check-equal? (⊥->a (((∘𝒦 cps:add1 cps:call/cc) cps:proc1) a->⊥)) 7)
     (check-equal? (⊥->a (((∘𝒦 cps:add1 cps:call/cc) cps:proc2) a->⊥)) 11))
+  ;; 练习：两个例子在 𝒰 里用 neg:call/cc 再跑一遍。
+  (let* ([neg:add1  (neg add1)]
+         [neg:proc1 (λ (kp) (λ (neg:k) (((neg *) kp) 2 3)))]
+         [neg:proc2 (λ (kp) (λ (neg:k) (((∘𝒰 neg:add1 neg:k) kp) 10)))])
+    (check-equal? (⊥->a (((∘𝒰 neg:add1 neg:call/cc) a->⊥) neg:proc1)) 7)
+    (check-equal? (⊥->a (((∘𝒰 neg:add1 neg:call/cc) a->⊥) neg:proc2)) 11))
   ;; neg:call/cc：先收延续 kp，再收 neg:proc；调用 (neg kp) 也改走 kp。
   (check-equal? (⊥->a ((neg:call/cc (∘ a->⊥ add1)) (λ (kp) (λ (neg:k) (kp 99))))) 100)
   (check-equal? (⊥->a ((neg:call/cc (∘ a->⊥ add1)) (λ (kp) (λ (neg:k) ((neg:k id) 10) (kp 99))))) 11)
