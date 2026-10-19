@@ -150,7 +150,7 @@
 
 ;;; 嵌入语言版 mul
 
-(: cps:mul (→𝒦 Real * Real))
+(: cps:mul (→ Real * (¬¬ Real)))
 (define (cps:mul . r*)
   (anf:let/cc cps:return
     (: cps:loop (→𝒦 (Listof Real) Real))
