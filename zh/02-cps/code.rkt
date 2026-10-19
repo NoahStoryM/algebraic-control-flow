@@ -38,7 +38,7 @@
 (define-type (¬𝒰 p)   (→𝒰 p ⊥))
 
 (: neg (∀ (p q) (case→ (→ (→𝒞 p q) (→𝒰 p q))
-                       (→ (→𝒰 p q) (→𝒟 (¬¬ p) (¬¬ q))))))
+                       (→ (→𝒰 p q) (→ (¬¬ p) (¬¬ q))))))
 (define ((neg f) kq) (∘ kq f))
 
 (: ⨾ (∀ (p ...) (→ (← pn-1 pn) ... (← p1 p2) (← p1 pn))))
@@ -60,10 +60,8 @@
                         (→ (→𝒦 p q) (→𝒰 p q)))))
 (define (((flip f) . y*) . x*) (apply (apply f x*) y*))
 
-(: cps   (∀ (p q) (→ (→𝒞 p q) (→𝒦 p q))))
-(: uncps (∀ (p q) (→ (→𝒦 p q) (→𝒞 p q))))
+(: cps (∀ (p q) (→ (→𝒞 p q) (→𝒦 p q))))
 (define cps (∘ flip neg))
-(define (uncps cps:f) (∘ call/cc cps:f))
 
 (: ∘𝒦 (∀ (p ...) (→ (→𝒦 pn-1 pn) ... (→𝒦 p1 p2) (→𝒦 p1 pn))))
 (define (∘𝒦 . cps:f*) (flip (apply ∘𝒰 (map flip cps:f*))))
@@ -81,11 +79,10 @@
 (define ((cps:call/cc cps:proc) kp) ((cps:proc (cps kp)) kp))
 
 
-;;; 否定翻译
+;;; 两次逆否
 
-(: neg² (∀ (p q) (→ (→𝒞 p q) (→𝒟 (¬¬ p) (¬¬ q)))))
+(: neg² (∀ (p q) (→ (→𝒟 p q) (→𝒟 (¬¬ p) (¬¬ q)))))
 (define neg² (∘ neg neg))
-
 
 
 ;;; anf: 宏
@@ -130,10 +127,13 @@
   (cps:call/cc (λ (cps:k) b* ...)))
 
 
-;;; 解释器
+;;; 填上延续参数
 
 (: anf:eval (∀ (a) (→ (¬¬ a) a)))
 (define (anf:eval kka) (⊥->a (kka a->⊥)))
+
+(: uncps (∀ (p q) (→ (→𝒦 p q) (→𝒞 p q))))
+(define (uncps cps:f) (∘ call/cc cps:f))
 
 
 ;;; CPS 提升的基本操作
@@ -146,6 +146,24 @@
 (define cps:null?     (cps null?))
 (define cps:display   (cps display))
 (define cps:displayln (cps displayln))
+
+
+;;; 嵌入语言版 mul
+
+(: cps:mul (→𝒦 Real * Real))
+(define (cps:mul . r*)
+  (anf:let/cc cps:return
+    (: cps:loop (→𝒦 (Listof Real) Real))
+    (define (cps:loop r*)
+      (anf:if (cps:null? r*)
+              (cps:*)
+              (anf:let* ([r (cps:car r*)])
+                (anf:if (cps:zero? r)
+                        (cps:return r)
+                        (anf:let* ([r* (cps:cdr r*)]
+                                   [res (cps:loop r*)])
+                          (cps:* res r))))))
+    (cps:loop r*)))
 
 (module+ test
   (require rackunit "../../tools/check-output-prefix.rkt")
@@ -163,36 +181,45 @@
       (anf:let* ([r (cps:id 0)])
         (cps:return r))))
    0)
-  ;; 「嵌入语言」：循环用 define 定义，遇零经 cps:return 跳出。
-  (check-equal?
-   (anf:eval
-    (anf:let/cc cps:return
-      (: cps:loop (→𝒦 (Listof Real) Real))
-      (define (cps:loop r*)
-        (anf:if (cps:null? r*)
-                (cps:*)
-                (anf:let* ([r (cps:car r*)])
-                  (anf:if (cps:zero? r)
-                          (cps:return r)
-                          (anf:let* ([r* (cps:cdr r*)]
-                                     [res (cps:loop r*)])
-                            (cps:* res r))))))
-      (cps:loop '(1 2 0 3 4))))
-   0)
-  (check-equal?
-   (anf:eval
-    (anf:let/cc cps:return
-      (define (cps:loop r*)
-        (anf:if (cps:null? r*)
-                (cps:*)
-                (anf:let* ([r (cps:car r*)])
-                  (anf:if (cps:zero? r)
-                          (cps:return r)
-                          (anf:let* ([r* (cps:cdr r*)]
-                                     [res (cps:loop r*)])
-                            (cps:* res r))))))
-      (cps:loop '(1 2 3 4))))
-   24)
+  ;; 「嵌入语言」：cps:mul 是 𝒦 的箭头，遇零经 cps:return 跳出。
+  (check-equal? (anf:eval (cps:mul 1 2 3 4)) 24)
+  (check-equal? (anf:eval (cps:mul 1 2 0 3 4)) 0)
+  ;; 「两个 call/cc」的运行例：正常交回，与调用交出去的延续后改走 kp。
+  (let* ([cps:add1 (cps add1)]
+         [cps:proc1 (λ (cps:k) ((cps *) 2 3))]
+         [cps:proc2 (λ (cps:k) ((∘𝒦 cps:add1 cps:k) 10))])
+    (check-equal? (⊥->a (((∘𝒦 cps:add1 cps:call/cc) cps:proc1) a->⊥)) 7)
+    (check-equal? (⊥->a (((∘𝒦 cps:add1 cps:call/cc) cps:proc2) a->⊥)) 11))
+  ;; neg:call/cc：先收延续 kp，再收 neg:proc；调用 (neg kp) 也改走 kp。
+  (check-equal? (⊥->a ((neg:call/cc (∘ a->⊥ add1)) (λ (kp) (λ (neg:k) (kp 99))))) 100)
+  (check-equal? (⊥->a ((neg:call/cc (∘ a->⊥ add1)) (λ (kp) (λ (neg:k) ((neg:k id) 10) (kp 99))))) 11)
+  ;; 「两个 call/cc」练习：𝒦 自己的 DNE 只用 λ 写得出。
+  (let ([cps:dne (λ (cps:kkp) (λ (kp) ((cps:kkp (cps kp)) id)))])
+    (check-equal? (anf:eval (cps:dne (λ (cps:k) ((cps:k 5) id)))) 5))
+  ;; 「再次隐藏延续」：(neg² id) 什么也不做，就是宏里的 neg²:id。
+  (let* ([neg²:id (neg² id)]
+         [macro:id (λ (kkv) kkv)]
+         [cps:mul3 (cps (λ (v) (* v 3)))]
+         [cps:g (cps (λ (v) (+ v 1)))])
+    (check-equal? (anf:eval ((neg² id) (cps:+ 1 2))) 3)
+    (check-equal? (anf:eval ((∘𝒦 cps:mul3 neg²:id) (cps:+ 1 2)))
+                  (anf:eval ((∘𝒦 cps:mul3 macro:id) (cps:+ 1 2))))
+    (check-equal? (anf:eval ((∘𝒦 cps:mul3 neg²:id) (cps:+ 1 2))) 9)
+    ;; 拿掉 neg²:id：((∘𝒦 cps:kv neg²:id) (cps:g y)) = ((∘𝒦 cps:kv cps:g) y)
+    (check-equal? (anf:eval ((∘𝒦 cps:mul3 neg²:id) (cps:g 4)))
+                  (anf:eval ((∘𝒦 cps:mul3 cps:g) 4)))
+    ;; 「否定翻译」：(∘𝒦 cps:kv neg²:id) = (neg (flip cps:kv))，含控制的 cps:kv 也成立。
+    (define (cps:kv v) (anf:let/cc k (anf:if (cps:zero? v) (k 'zero) (cps:* v 10))))
+    (for ([x '(0 4)])
+      (check-equal? (anf:eval ((∘𝒦 cps:kv neg²:id) (cps:id x)))
+                    (anf:eval ((neg (flip cps:kv)) (cps:id x)))))
+    ;; 纯函数特例：(∘𝒦 (cps f) neg²:id) = (neg² f)
+    (check-equal? (anf:eval ((∘𝒦 (cps add1) neg²:id) (cps:+ 1 2)))
+                  (anf:eval ((neg² add1) (cps:+ 1 2)))))
+  ;; 「填上延续参数」：uncps 交入当前延续，两条路都回到调用处。
+  (check-equal? (+ 1 ((uncps cps:mul) 1 2 3 4)) 25)
+  (check-equal? (+ 1 ((uncps cps:mul) 1 2 0 3 4)) 1)
+  (check-equal? ((uncps (cps add1)) 41) 42)
   (define (cps:label) (cps:call/cc cps:id))
   (check-true
    (output-starts-with?
@@ -380,18 +407,15 @@
   (provide (all-defined-out))
 )
 
-(module stage-29 typed/racket/no-check
+(module stage-33 typed/racket/no-check
+  ;; 「再次隐藏延续」：neg² 第一次出现，𝒟 还没有名字，交给它的是纯函数。
   (define-type ⊥ (∪))
   (define-type (¬ p) (→ p ⊥))
   (define-type (¬¬ p) (¬ (¬ p)))
-  (define-type (→𝒞 p q) (→ p q))
-  (define-type (→𝒰 p q) (→ (¬ q) (¬ p)))
   (define ∘ compose)
-  (define (((flip f) . y*) . x*) (apply (apply f x*) y*))
-  (define (uncps cps:f) (∘ call/cc cps:f))
-  (: unneg (∀ (p q) (→ (→𝒰 p q) (→𝒞 p q))))
-
-  (define unneg (∘ uncps flip))
+  (define ((neg f) kq) (∘ kq f))
+  (: neg² (∀ (p q) (→ (→ p q) (→ (¬¬ p) (¬¬ q)))))
+  (define neg² (∘ neg neg))
   (provide (all-defined-out))
 )
 
@@ -403,7 +427,7 @@
            (prefix-in tail/k: (submod ".." stage-7))
            (prefix-in answer: (submod ".." stage-11))
            (prefix-in lift: (submod ".." stage-14))
-           (prefix-in reverse: (submod ".." stage-29)))
+           (prefix-in pure: (submod ".." stage-33)))
   (for ([fact (list direct:fact named:fact tail:fact)])
     (check-equal? (fact 6) 720))
   (for ([fib (list direct:fib named:fib)])
@@ -414,4 +438,4 @@
   (check-equal? (answer:mul 2 3 4) 24)
   (check-equal? (answer:mul 2 0 4) 0)
   (check-equal? (((lift:cps add1) 7) values) 8)
-  (check-equal? ((reverse:unneg (reverse:flip (λ (x) (λ (k) (k (add1 x)))))) 7) 8))
+  (check-equal? (((pure:neg² add1) (λ (k) (k 6))) values) 7))
