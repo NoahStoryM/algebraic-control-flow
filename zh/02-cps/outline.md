@@ -89,16 +89,16 @@
 - 认：一般形式 `((∘𝒦 cps:kv neg²:id) kkv)`；右边是一次调用时，4.1 的推导照样走得通：`((∘𝒦 cps:kv neg²:id) (cps:f x)) = ((∘𝒦 cps:kv cps:f) x)`，正是 4.1 想要的 `∘𝒦`；与宿主并排：`(let ([y (f x)]) (g y)) = ((∘ g f) x)`、`(anf:let ([y (cps:f x)]) (cps:g y)) = ((∘𝒦 cps:g cps:f) x)`；两条运算律的绑定形状。
 - 练习：上面那条等式的前提（收到参数就打印时）；推出四条运算律等式。
 
-### 4.3 宏与解释器（标题候选）
+### 4.3 写成宏（标题候选）
 
-- 造：例子展开出的具体代码；宏 `anf:let*-values`、`anf:begin`、`anf:let*`、`anf:if`、`anf:let/cc`，保留 `(∘𝒦 cps:kv neg²:id)` 的形状；宏只用 `∘𝒦` 与 `neg²:id` 接箭头，不改写箭头本身做的事；解释器 `anf:eval`，类型 $¬¬a → a$，扮演第一篇的操作系统。
-- 名字：`anf:` 系列、`anf:eval`。
+- 造：例子展开出的具体代码；宏 `anf:let*-values`、`anf:begin`、`anf:let*`、`anf:if`、`anf:let/cc`，保留 `(∘𝒦 cps:kv neg²:id)` 的形状；宏只用 `∘𝒦` 与 `neg²:id` 接箭头，不改写箭头本身做的事；宏充当编译器。
+- 名字：`anf:` 系列。
 
 ## 5. 嵌入语言
 
-- 造：用 `cps` 提升宿主函数；嵌入语言版 `cps:mul`，本身是一支 𝒦 的箭头，交给 `anf:eval` 运行；`anf:let/cc` 交出的 `cps:return` 逃逸，与 3.2 的 `cps:proc2` 对照；阴阳谜题与 `cps:label`。
+- 造：用 `cps` 提升宿主函数；嵌入语言版 `cps:mul`，本身是一支 𝒦 的箭头；要运行它，引入解释器 `anf:eval`，类型 $¬¬a → a$，扮演第一篇的操作系统；`anf:let/cc` 交出的 `cps:return` 逃逸，与 3.2 的 `cps:proc2` 对照；阴阳谜题与 `cps:label`。
 - 认：`cps:mul` 最后一步同时用到 `res` 与 `r`，宏的嵌套让它照样能写，只是不再是一串首尾相接的 `∘𝒦`。
-- 名字：`cps:mul`。
+- 名字：`cps:mul`、`anf:eval`。
 
 ### 5.1 计算的位置
 
