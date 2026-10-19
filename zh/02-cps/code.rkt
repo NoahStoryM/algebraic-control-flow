@@ -2,9 +2,14 @@
 
 (provide (all-defined-out))
 
+(: ∘ (∀ (p ...) (→ (→ pn-1 pn) ... (→ p1 p2) (→ p1 pn))))
 (define ∘ compose)
 (define id (∘))
 (define (list->values v*) (apply values v*))
+
+(define-type (← q p) (→ p q))
+(: ⨾ (∀ (p ...) (→ (← pn-1 pn) ... (← p1 p2) (← p1 pn))))
+(define (⨾ . f*) (apply ∘ (reverse f*)))
 
 
 ;;; 类型别名
@@ -12,7 +17,6 @@
 (define-type ⊥ (∪))
 (define-type (¬  a) (→ a ⊥))
 (define-type (¬¬ a) (¬ (¬ a)))
-(define-type (← q p) (→ p q))
 
 
 ;;; 答案类型（通过 raise 实现终结延续）
@@ -40,9 +44,6 @@
 (: neg (∀ (p q) (case→ (→ (→𝒞 p q) (→𝒰 p q))
                        (→ (→𝒰 p q) (→ (¬¬ p) (¬¬ q))))))
 (define ((neg f) kq) (∘ kq f))
-
-(: ⨾ (∀ (p ...) (→ (← pn-1 pn) ... (← p1 p2) (← p1 pn))))
-(define (⨾ . f*) (apply ∘ (reverse f*)))
 
 (: ∘𝒰 (∀ (p ...) (→ (→𝒰 pn-1 pn) ... (→𝒰 p1 p2) (→𝒰 p1 pn))))
 (define ∘𝒰 ⨾)
@@ -153,6 +154,11 @@
 
 (module+ test
   (require rackunit "../../tools/check-output-prefix.rkt")
+  ;; 「求值顺序与 ANF」：⨾ 照算的顺序写，和 let*、∘ 一致；(⨾) 也是 id。
+  (let ([f add1] [g (λ (y) (* y 2))] [h number->string])
+    (check-equal? ((⨾ f g h) 3) ((∘ h g f) 3))
+    (check-equal? (let* ([y (f 3)] [z (g y)]) (h z)) ((⨾ f g h) 3))
+    (check-equal? ((⨾) 5) 5))
   ;; 「嵌入语言」的例子：cps:mul 是一支 𝒦 的箭头，不进完整代码参考。
   (: cps:mul (→ Real * (¬¬ Real)))
   (define (cps:mul . r*)
