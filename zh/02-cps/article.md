@@ -598,7 +598,13 @@ $¬p$ 在箭头左边，是参数，就是 `kp`。宿主的 Clavius 律只收 `p
 (define (neg²:id kkv) kkv)
 ```
 
-它就是 `id`，只是收的是 $¬¬\text{Nat}$。类型写成 $¬¬\text{Nat} →_𝒦 \text{Nat}$ 时，它看上去像 DNE，要从 $¬¬\text{Nat}$ 取出一个 $\text{Nat}$；展开一看，却只是原样交出。`((∘𝒦 cps:mul3 neg²:id) kk3)` 与复合的那一种、手写的那一种是同一个计算，三种写法在这里合上。
+它就是 `id`，只是收的是 $¬¬\text{Nat}$。类型写成 $¬¬\text{Nat} →_𝒦 \text{Nat}$ 时，它看上去像 DNE，要从 $¬¬\text{Nat}$ 取出一个 $\text{Nat}$；展开一看，却只是原样交出。`kk3` 就是 `(cps:+ 1 2)`，于是：
+
+```racket
+((∘𝒦 cps:mul3 neg²:id) (cps:+ 1 2))  =  ((∘𝒦 cps:mul3 cps:+) 1 2)
+```
+
+左边是 `anf:let` 要写成的样子，右边是复合的那一种，两边展开出来都是手写的那一种：三种写法在这里合上。
 
 > **练习：** 名字里的 `neg²` 是怎么来的？只用 `neg` 和 `id`，写出一个与 `neg²:id` 行为相同的函数。提示：先看 `(neg id)` 的类型。
 
@@ -615,7 +621,7 @@ $¬p$ 在箭头左边，是参数，就是 `kp`。宿主的 Clavius 律只收 `p
   ((∘𝒦 cps:mul3 neg²:id) kk3))
 ```
 
-一般地，宏把 `(anf:let ([v kkv]) kkw)` 展开成 `((∘𝒦 cps:kv neg²:id) kkv)`，其中 `cps:kv` 是 `(λ (v) kkw)`。绑定的右边是一次调用时，`neg²:id` 可以拿掉，由那次调用的函数接在它原来的位置，就像上面 `cps:+` 那样：
+一般地，宏把 `(anf:let ([v kkv]) kkw)` 展开成 `((∘𝒦 cps:kv neg²:id) kkv)`，其中 `cps:kv` 是 `(λ (v) kkw)`。绑定的右边是一次调用时，`neg²:id` 可以拿掉，由那次调用的函数接在它原来的位置，上面的 `cps:+` 就是一例。一般地：
 
 ```racket
 ((∘𝒦 cps:kv neg²:id) (cps:g y))  =  ((∘𝒦 cps:kv cps:g) y)
