@@ -113,6 +113,9 @@
 (define-syntax-rule (anf:let* ([v e] ...) b* ...)
   (anf:let*-values ([(v) e] ...) b* ...))
 
+(define-syntax-rule (anf:let ([v e]) b* ...)
+  (anf:let* ([v e]) b* ...))
+
 (define-syntax-rule (anf:if test conseq alt)
   (let ([kkb test])
     (: neg²:id  (→𝒦 (¬¬ Boolean) Boolean))
@@ -201,7 +204,8 @@
   (let ([cps:mul3 (cps (λ (v) (* 3 v)))])
     (check-equal? ((λ (k) ((cps:+ 1 2) (λ (v) ((cps:* v 3) k)))) values) 9)
     (check-equal? (((∘𝒦 cps:mul3 cps:+) 1 2) values) 9)
-    (check-equal? (anf:eval (anf:let* ([v (cps:+ 1 2)]) (cps:* v 3))) 9))
+    (check-equal? (anf:eval (anf:let* ([v (cps:+ 1 2)]) (cps:* v 3))) 9)
+    (check-equal? (anf:eval (anf:let ([v (cps:+ 1 2)]) (cps:* v 3))) 9))
   ;; 「再次隐藏延续」：(neg² id) 什么也不做，就是宏里的 neg²:id。
   (let* ([neg²:id (neg² id)]
          [macro:id (λ (kkv) kkv)]
