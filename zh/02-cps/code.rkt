@@ -191,6 +191,11 @@
   ;; neg:call/cc：先收延续 kp，再收 neg:proc；调用 (neg kp) 也改走 kp。
   (check-equal? (⊥->a ((neg:call/cc (∘ a->⊥ add1)) (λ (kp) (λ (neg:k) (kp 99))))) 100)
   (check-equal? (⊥->a ((neg:call/cc (∘ a->⊥ add1)) (λ (kp) (λ (neg:k) ((neg:k id) 10) (kp 99))))) 11)
+  ;; 「再次隐藏延续」开头：手写 CPS、∘𝒦 复合、anf:let 三种写法算出同一个结果。
+  (let ([cps:mul3 (cps (λ (v) (* 3 v)))])
+    (check-equal? ((λ (k) ((cps:+ 1 2) (λ (v) ((cps:* v 3) k)))) values) 9)
+    (check-equal? (((∘𝒦 cps:mul3 cps:+) 1 2) values) 9)
+    (check-equal? (anf:eval (anf:let* ([v (cps:+ 1 2)]) (cps:* v 3))) 9))
   ;; 「再次隐藏延续」：(neg² id) 什么也不做，就是宏里的 neg²:id。
   (let* ([neg²:id (neg² id)]
          [macro:id (λ (kkv) kkv)]
