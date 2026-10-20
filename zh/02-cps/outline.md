@@ -85,7 +85,7 @@
 
 ### 4.1 接上一段计算（标题候选）
 
-- 问题：先试着把 `anf:let` 当作 `let` 读。回指延续与 CPS 一节的拆法：`let` 手里有 `k` 与 `e`，`(k e)` 类型对得上；照样拆 `anf:let`，手里是 `cps:mul3` 与 `kk3`，对不上。`let` 背后是 `∘`，要的是 `∘𝒦`。
+- 问题：先试着把 `anf:let` 当作 `let` 读。回指延续与 CPS 一节的拆法：`let` 手里有 `k` 与 `e`，`(k e)` 类型对得上；照样拆 `anf:let`，手里是 `cps:mul3` 与 `kk3`，对不上。`let` 背后是 `∘`，要的是 `∘𝒦`。宏拿到的是整个右边（不一定是一次调用），只有 `kk3`，写不出 `(∘𝒦 cps:mul3 cps:+)`，单独成段。
 - 造：宏拿到的是整个右边，算出一段计算 `kk3`，没有单独的 `cps:+` 与 `1`、`2`，于是在 `cps:mul3` 前面接一支 `X`：`((∘𝒦 cps:mul3 X) kk3)`，类型 $¬¬\text{Nat} →_𝒦 \text{Nat}$，展开是 $¬¬\text{Nat} → ¬¬\text{Nat}$。交给两边一个延续 `k` 照 `∘𝒦` 展开，与要的复合 `((∘𝒦 cps:mul3 cps:+) 1 2)` 对一对（中间一行是开头的手写版），推出 `(X kk3)` 得是 `kk3`：`(define (neg²:id kkv) kkv)`。
 - 认：它是 $¬¬\text{Nat}$ 上的 `id`，形似 DNE，展开只是原样交出；`((∘𝒦 cps:mul3 neg²:id) (cps:+ 1 2)) = ((∘𝒦 cps:mul3 cps:+) 1 2)`，三种写法合上（4.2 的一般等式是它的推广）。
 - 名字：`kk3`、`neg²:id`。
@@ -98,7 +98,7 @@
 
 ### 4.3 写成宏（标题候选）
 
-- 造：例子展开出的具体代码；宏 `anf:let*-values`、`anf:begin`、`anf:let*`、`anf:if`、`anf:let/cc`，保留 `(∘𝒦 cps:kv neg²:id)` 的形状；宏只用 `∘𝒦` 与 `neg²:id` 接箭头，不改写箭头本身做的事；宏充当编译器。
+- 造：例子展开出的具体代码；宏 `anf:let*-values`、`anf:begin`、`anf:let*`、`anf:if`、`anf:let/cc`，保留 `(∘𝒦 cps:kv neg²:id)` 的形状；不能直接写 `(cps:kv kkv)`（`kkv` 是计算不是值），所以接 `neg²:id`；宏只用 `∘𝒦` 与 `neg²:id` 接箭头，不改写箭头本身做的事；宏充当编译器。
 - 名字：`anf:` 系列。
 
 ## 5. 嵌入语言
@@ -133,7 +133,7 @@
 - 问题：`(+ 1 (anf:eval (cps:mul …)))` 得 25 与 1；`anf:eval` 交进去的是一调用就 `raise` 的 `a->⊥`，结果怎么回到了 `(+ 1 _)`？
 - 认：handler 接住答案，交回调用处；计算真正的去处是调用处之后的工作，`raise` 与 handler 的跳转模拟了它。
 - 造：宿主的 `call/cc` 直接捕获当前延续，填进延续参数：`uncps = (∘ call/cc cps:f)`（类型与定义同块）；放进同一个 `(+ 1 _)`，结果相同，交给的是 `call/cc` 填进去的那条延续本身。与 3.2 语义上呼应：那里在编码中实现 `call/cc`，交出当前延续；这里用宿主的 `call/cc` 运行编码，交入当前延续。
-- 认：`anf:eval` 与 `uncps` 里的 `call/cc` 类型都是 DNE；`uncps` 的类型与 DNE 两个方向都写出（单值类型上的常函数；定义本身就是接一次 DNE）。`cps:id` 是 DNI；对纯 `f`，`(cps f)` 与 `(∘ cps:id f)` 行为相同（区别只在 `f` 何时调用）；`(uncps (cps f)) = f`：对这里用 `call/cc` 实现的 DNE，DNI 接上它就是恒等。
+- 认：`anf:eval` 与 `uncps` 里的 `call/cc` 类型都是 DNE；`uncps` 的定义就是接一次 DNE（不写两者等价的另一个方向）。`cps:id` 是 DNI；对纯 `f`，`(cps f)` 与 `(∘ cps:id f)` 行为相同（区别只在 `f` 何时调用）；`(uncps (cps f)) = f`：对这里用 `call/cc` 实现的 DNE，DNI 接上它就是恒等。
 - 「借宿主」不在本节说，留给第 7 节。
 - 名字：`uncps`。
 
