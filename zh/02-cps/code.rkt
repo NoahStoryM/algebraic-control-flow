@@ -65,7 +65,7 @@
 (define cps (∘ flip neg))
 
 (: ∘𝒦 (∀ (p ...) (→ (→𝒦 pn-1 pn) ... (→𝒦 p1 p2) (→𝒦 p1 pn))))
-(define (∘𝒦 . cps:f*) (flip (apply ∘𝒰 (map flip cps:f*))))
+(define (∘𝒦 . cps:f*) (flip (apply ⨾ (map flip cps:f*))))
 
 (: cps:id (∀ (q) (→𝒦 q q)))
 (define cps:id (∘𝒦))
@@ -214,6 +214,20 @@
          [cps:proc2 (λ (cps:k) ((∘𝒦 cps:add1 cps:k) 10))])
     (check-equal? (⊥->a (((∘𝒦 cps:add1 cps:call/cc) cps:proc1) a->⊥)) 7)
     (check-equal? (⊥->a (((∘𝒦 cps:add1 cps:call/cc) cps:proc2) a->⊥)) 11))
+  ;; 「手中的延续」：手写延续的版本。
+  (let ([cps:proc1 (λ (cps:k) ((cps *) 2 3))]
+        [cps:proc2 (λ (cps:k) (λ (k) ((cps:k 10) (λ (v) (k (add1 v))))))])
+    (check-equal? (⊥->a ((cps:call/cc cps:proc1) (λ (v) (a->⊥ (add1 v))))) 7)
+    (check-equal? (⊥->a ((cps:call/cc cps:proc2) (λ (v) (a->⊥ (add1 v))))) 11))
+  ;; 练习：neg:call/cc 的手写版。
+  (let ([neg:proc1 (λ (kp) (λ (neg:k) (((neg *) kp) 2 3)))]
+        [neg:proc2 (λ (kp) (λ (neg:k) ((neg:k ((neg add1) kp)) 10)))])
+    (check-equal? (⊥->a ((neg:call/cc ((neg add1) a->⊥)) neg:proc1)) 7)
+    (check-equal? (⊥->a ((neg:call/cc ((neg add1) a->⊥)) neg:proc2)) 11))
+  ;; 「两段计算怎样接起来」：(⨾ (neg g) (neg f)) 接两步；(∘𝒦) 与 (cps id) 一样。
+  (let ([f add1] [g (λ (y) (* y 2))])
+    (check-equal? (((⨾ (neg g) (neg f)) values) 3) (g (f 3)))
+    (check-equal? (((∘𝒦) 5) values) (((cps id) 5) values)))
   ;; 练习：两个例子在 𝒰 里用 neg:call/cc 再跑一遍。
   (let* ([neg:add1  (neg add1)]
          [neg:proc1 (λ (kp) (λ (neg:k) (((neg *) kp) 2 3)))]
