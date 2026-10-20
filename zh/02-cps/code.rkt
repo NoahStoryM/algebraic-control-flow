@@ -159,6 +159,23 @@
     (check-equal? ((⨾ f g h) 3) ((∘ h g f) 3))
     (check-equal? (let* ([y (f 3)] [z (g y)]) (h z)) ((⨾ f g h) 3))
     (check-equal? ((⨾) 5) 5))
+  ;; 「否定翻译」：改写前的宿主版本，用宿主的 let/cc；不进完整代码参考。
+  (: mul/cc (→ Real * Real))
+  (define (mul/cc . r*)
+    (let/cc return
+      (: loop (→ (Listof Real) Real))
+      (define (loop r*)
+        (if (null? r*)
+            (*)
+            (let* ([r (car r*)])
+              (if (zero? r)
+                  (return r)
+                  (let* ([r* (cdr r*)]
+                         [res (loop r*)])
+                    (* res r))))))
+      (loop r*)))
+  (check-equal? (mul/cc 1 2 3 4) 24)
+  (check-equal? (mul/cc 1 2 0 3 4) 0)
   ;; 「嵌入语言」的例子：cps:mul 是一支 𝒦 的箭头，不进完整代码参考。
   (: cps:mul (→ Real * (¬¬ Real)))
   (define (cps:mul . r*)
