@@ -229,10 +229,18 @@
     (for ([x '(0 4)])
       (check-equal? (anf:eval ((∘𝒦 cps:kv neg²:id) (cps:id x)))
                     (anf:eval ((neg (flip cps:kv)) (cps:id x)))))
+    ;; 「否定翻译」：先用 cps:mul3 推出 (∘𝒦 cps:mul3 neg²:id) = (neg² mul3)。
+    (let ([mul3 (λ (v) (* v 3))] [kk3 (cps:+ 1 2)])
+      (check-equal? (anf:eval ((∘𝒦 cps:mul3 neg²:id) kk3))
+                    (anf:eval ((neg (neg mul3)) kk3)))
+      (check-equal? (anf:eval ((neg² mul3) kk3)) 9))
     ;; 纯函数特例：(∘𝒦 (cps f) neg²:id) = (neg² f)
     (check-equal? (anf:eval ((∘𝒦 (cps add1) neg²:id) (cps:+ 1 2)))
                   (anf:eval ((neg² add1) (cps:+ 1 2)))))
-  ;; 「填上延续参数」：uncps 交入当前延续，两条路都回到调用处。
+  ;; 「填上延续参数」：anf:eval 用 raise 与 handler 把答案交回调用处。
+  (check-equal? (+ 1 (anf:eval (cps:mul 1 2 3 4))) 25)
+  (check-equal? (+ 1 (anf:eval (cps:mul 1 2 0 3 4))) 1)
+  ;; uncps 交入当前延续，两条路都回到调用处。
   (check-equal? (+ 1 ((uncps cps:mul) 1 2 3 4)) 25)
   (check-equal? (+ 1 ((uncps cps:mul) 1 2 0 3 4)) 1)
   (check-equal? ((uncps (cps add1)) 41) 42)
