@@ -78,7 +78,7 @@
 
 - 问题：照 `let` 读 `anf:let`：手里是 `cps:mul3` 与 `kk3`，对不上；照 `let*` 读三步的 `anf:let*`：矛盾在于 `cps:g` 的形参是 `y`，实参 `(cps:f x)` 的结果却是 `kky`。
 - 两种思路（编号列出）：1. 把实参 `kky` 变成 `y`；2. 把 `cps:g` 包装成直接收 `kky` 的新函数。第一种要对任意类型成立的 DNE，纯函数给不出。
-- 造：直接给出 `neg:g = (flip cps:g)`（与 `cps:g` 一一对应）、`neg²:g = (neg neg:g) = (neg (flip cps:g))`（`neg` 的第二种读法，类型就地一句）；三行展开得回手写包法；`cps->neg² = (∘ neg flip)`，含控制的 `cps:g` 照样适用。不再做倒推类型的分析、具体类型与值的追踪（Noah 10/21：读着吃力，定义本身不难看出）。
+- 造（Noah 10/21 再改）：从类型下手：要的新函数是 ¬¬q → ¬¬r，即两个否定之间的映射，正是 `neg` 交出的形状（第二种读法），交给它的得是 ¬r → ¬q，即 `neg:g = (flip cps:g)`；于是 `neg²:g = (neg neg:g) = (neg (flip cps:g))`。展开用延续的命名约定：`((neg neg:g) kky) = (λ (kz) (kky (neg:g kz))) = (λ (kz) (kky ky)) = kkz`；`cps->neg² = (∘ neg flip)`，含控制的 `cps:g` 照样适用。不再做倒推类型的分析、具体类型与值的追踪（Noah 10/21：读着吃力，定义本身不难看出）。
 - 造：`(cps->neg² cps:mul3)` 接上 `(cps:+ 1 2)` 跑出 9；例子的宏展开。
 - 名字：`kk3`、`cps:mul3`、`neg:g`、`neg²:g`、`cps->neg²`。
 
