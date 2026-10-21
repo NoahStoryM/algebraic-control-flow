@@ -519,6 +519,20 @@
   (check-equal? (answer:mul 2 0 4) 0)
   (check-equal? (((lift:cps add1) 7) values) 8))
 
+;; 「两个世界」：两边的复合借 flip 互相定义（练习答案）。
+(module* transport #f
+  (require rackunit)
+  (define (∘𝒰 . neg:f*) (flip (apply ∘𝒦 (map flip neg:f*))))
+  (define (∘𝒦/⨾ . cps:f*) (flip (apply ⨾ (map flip cps:f*))))
+  (define neg:f (neg add1))
+  (define neg:g (neg (λ (y) (* y 2))))
+  (check-equal? (((∘𝒰 neg:g neg:f) values) 3) ((neg:f (neg:g values)) 3))
+  (check-equal? (((∘𝒰 neg:g neg:f) values) 3) (((⨾ neg:g neg:f) values) 3))
+  (define cps:f (cps add1))
+  (define cps:g (cps (λ (y) (* y 2))))
+  (check-equal? (((∘𝒦/⨾ cps:g cps:f) 3) values) (((∘𝒦 cps:g cps:f) 3) values))
+  (check-equal? (((∘𝒦/⨾ cps:g neg²:id) (cps:f 3)) values) (((cps->neg² cps:g) (cps:f 3)) values)))
+
 ;; 正文「写成宏」「嵌入语言」给出的简化版宏：单个函数体、单值；完整代码里的宏另外处理多值与多个表达式。
 (module* simple-macros #f
   (require rackunit "../../tools/check-output-prefix.rkt")
@@ -574,5 +588,5 @@
     "@\n*@\n**@\n***@")))
 
 (module+ test
-  ;; 运行正文简化版宏的检查。
-  (require (submod ".." simple-macros)))
+  ;; 运行正文简化版宏与「两个世界」的检查。
+  (require (submod ".." simple-macros) (submod ".." transport)))
