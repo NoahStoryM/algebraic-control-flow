@@ -521,7 +521,7 @@
 
 ;; 正文「写成宏」「嵌入语言」给出的简化版宏：单个函数体、单值；完整代码里的宏另外处理多值与多个表达式。
 (module* simple-macros #f
-  (require rackunit)
+  (require rackunit "../../tools/check-output-prefix.rkt")
   (define-syntax-rule (anf:let ([v e]) b)
     (let ([kkv e])
       (define (cps:kv v) b)
@@ -534,6 +534,10 @@
        (anf:let ([v e]) (anf:let* ([v* e*] ...) b))]))
   (define-syntax-rule (anf:let/cc cps:k b* ...)
     (cps:call/cc (λ (cps:k) b* ...)))
+  (define-syntax anf:begin
+    (syntax-rules ()
+      [(_ b) b]
+      [(_ e b* ...) (anf:let ([_ e]) (anf:begin b* ...))]))
   ;; 单值的 anf:if。
   (define-syntax-rule (anf:if test conseq alt)
     (let ([kkb test])
@@ -554,7 +558,20 @@
                             (cps:* res r))))))
       (cps:loop r*)))
   (check-equal? (anf:eval (cps:mul 1 2 3 4)) 24)
-  (check-equal? (anf:eval (cps:mul 1 2 0 3 4)) 0))
+  (check-equal? (anf:eval (cps:mul 1 2 0 3 4)) 0)
+  (define (cps:label) (cps:call/cc cps:id))
+  (check-true
+   (output-starts-with?
+    (λ ()
+      (anf:eval
+       (anf:let* ([cps:yin (cps:label)])
+         (anf:begin
+           (cps:displayln #\@)
+           (anf:let* ([cps:yang (cps:label)])
+             (anf:begin
+               (cps:display #\*)
+               (cps:yin cps:yang)))))))
+    "@\n*@\n**@\n***@")))
 
 (module+ test
   ;; 运行正文简化版宏的检查。

@@ -537,7 +537,7 @@ CPS 一节中闭包链的每一步，都是这样一次复合。`(λ (v) (k (* n
 9
 ```
 
-宏展开出来的，除了程序员写下的箭头，只有 `cps->neg²`，而它只由 `flip` 与 `neg` 拼成。它只把箭头接起来，不改写箭头本身做的事。宏充当编译器，把类似 ANF 的语法翻译成 $¬¬$ 编码的 CPS。别的语法也照这个套路写，用到时再给；完整代码里的宏还处理了多值和多个表达式组成的函数体，接法不变。
+宏展开出来的，除了程序员写下的箭头，只有 `cps->neg²`，而它只由 `flip` 与 `neg` 拼成。它只把箭头接起来，不改写箭头本身做的事。宏充当编译器，把类似 ANF 的语法翻译成 $¬¬$ 编码的 CPS。别的语法也照这个套路写，用到时再给。正文先给单值的简化版；附录的完整代码把同一种接法扩展到多值和多个表达式组成的函数体。
 
 ## 绑定就是复合
 
@@ -663,7 +663,7 @@ $p →_𝒦 q$ 收到 $p$，交出等着 $q$ 的计算。$p →_𝒰 q$ 用的�
 | `cps:f`              | 值 $p$                   | 计算 $¬¬q$               |
 | `(flip cps:f)`       | 延续 $¬q$                | 延续 $¬p$                |
 | `(cps->neg² cps:f)`  | 计算 $¬¬p$               | 计算 $¬¬q$               |
-| `cps:id`             | 值 $q$                   | 计算 $¬¬q$，把值原样交给延续 |
+| `cps:id`             | 值 $q$                   | 计算 $¬¬q$；收到延续后，把原值交给它 |
 | `neg²:id`            | 计算 $¬¬q$               | 同一段计算               |
 | `∘𝒦`                 | 几支 `cps:` 箭头         | 一支 `cps:` 箭头         |
 
@@ -754,15 +754,26 @@ $p →_𝒦 q$ 收到 $p$，交出等着 $q$ 的计算。$p →_𝒰 q$ 用的�
 (define (cps:label) (cps:call/cc cps:id))
 ```
 
-展开一层，`((cps:label) k)` 是 `((cps:call/cc cps:id) k)`，也就是 `((cps:id (cps k)) k)`：`cps:id` 把提升过的 `(cps k)` 原样交给 `k`。`(cps:label)` 交回的是提升过的当前延续，和第一篇的 `(label)` 一样。谜题写进 `anf:let*`。打印也是一步计算，结果用不着，绑定到 `_` 上：
+展开一层，`((cps:label) k)` 是 `((cps:call/cc cps:id) k)`，也就是 `((cps:id (cps k)) k)`：`cps:id` 把提升过的 `(cps k)` 原样交给 `k`。`(cps:label)` 交回一段等待延续的计算；运行时，它把提升过的当前延续 `(cps k)` 作为结果交给 `k`，和第一篇的 `(label)` 一样。绑定得到的 `cps:yin`、`cps:yang`，就是这样的值。谜题写进 `anf:let*`。中间还有打印：打印也是一步计算，只是结果用不着。一串计算依次做下去、只留最后一个的结果，就是 `anf:begin`：把前面的结果绑定到一个用不着的变量 `_` 上，忽略掉。
+
+```racket
+(define-syntax anf:begin
+  (syntax-rules ()
+    [(_ b) b]
+    [(_ e b* ...) (anf:let ([_ e]) (anf:begin b* ...))]))
+```
+
+谜题于是照第一篇的样子写：
 
 ```racket
 > (anf:eval
-   (anf:let* ([cps:yin  (cps:label)]
-              [_        (cps:displayln #\@)]
-              [cps:yang (cps:label)]
-              [_        (cps:display #\*)])
-     (cps:yin cps:yang)))
+   (anf:let* ([cps:yin (cps:label)])
+     (anf:begin
+       (cps:displayln #\@)
+       (anf:let* ([cps:yang (cps:label)])
+         (anf:begin
+           (cps:display #\*)
+           (cps:yin cps:yang))))))
 @
 *@
 **@
