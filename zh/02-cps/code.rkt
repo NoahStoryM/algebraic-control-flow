@@ -64,11 +64,21 @@
 (: cps (∀ (p q) (→ (→𝒞 p q) (→𝒦 p q))))
 (define cps (∘ flip neg))
 
-(: ∘𝒦 (∀ (p ...) (→ (→𝒦 pn-1 pn) ... (→𝒦 p1 p2) (→𝒦 p1 pn))))
-(define (∘𝒦 . cps:f*) (flip (apply ⨾ (map flip cps:f*))))
+(: cps->neg² (∀ (p q) (→ (→𝒦 p q) (→ (¬¬ p) (¬¬ q)))))
+(define cps->neg² (∘ neg flip))
 
 (: cps:id (∀ (q) (→𝒦 q q)))
-(define cps:id (∘𝒦))
+(define cps:id (cps id))
+
+(: ∘𝒦 (∀ (p ...) (→ (→𝒦 pn-1 pn) ... (→𝒦 p1 p2) (→𝒦 p1 pn))))
+(define (∘𝒦 . cps:f*)
+  (if (null? cps:f*)
+      cps:id
+      (let-values ([(cps:g* cps:f) (split-at-right cps:f* 1)])
+        (apply ∘ (append (map cps->neg² cps:g*) cps:f)))))
+
+(: neg²:id (∀ (q) (→𝒦 (¬¬ q) q)))
+(define (neg²:id kkv) kkv)
 
 
 ;;; Clavius 律
@@ -94,13 +104,11 @@
      (anf:begin b* ...)]
     [(_ ([v* e]) b* ...)
      (let ([kkv e])
-       (: neg²:id  (→𝒦 (¬¬ a) a))
-       (: cps:kv   (→𝒦     a  b))
-       (: cps:kkkv (→𝒦 (¬¬ a) b))
-       (define (neg²:id kkv) kkv)
+       (: cps:kv  (→      a  (¬¬ b)))
+       (: neg²:kv (→ (¬¬ a) (¬¬ b)))
        (define (cps:kv . v*) (anf:begin b* ...))
-       (define cps:kkkv (∘𝒦 cps:kv neg²:id))
-       (cps:kkkv kkv))]
+       (define neg²:kv (cps->neg² cps:kv))
+       (neg²:kv kkv))]
     [(_ ([v* e] [v** e*] ...) b* ...)
      (anf:let*-values ([v* e])
        (anf:let*-values ([v** e*] ...)
@@ -119,13 +127,11 @@
 
 (define-syntax-rule (anf:if test conseq alt)
   (let ([kkb test])
-    (: neg²:id  (→𝒦 (¬¬ Boolean) Boolean))
-    (: cps:kb   (→𝒦     Boolean  a))
-    (: cps:kkkb (→𝒦 (¬¬ Boolean) a))
-    (define (neg²:id kkb) kkb)
+    (: cps:kb  (→ Boolean (¬¬ a)))
+    (: neg²:kb (→ (¬¬ Boolean) (¬¬ a)))
     (define (cps:kb . b*) (if (equal? b* '(#f)) alt conseq))
-    (define cps:kkkb (∘𝒦 cps:kb neg²:id))
-    (cps:kkkb kkb)))
+    (define neg²:kb (cps->neg² cps:kb))
+    (neg²:kb kkb)))
 
 (define-syntax-rule (anf:let/cc cps:k b* ...)
   (cps:call/cc (λ (cps:k) b* ...)))
@@ -224,6 +230,19 @@
         [neg:proc2 (λ (kp) (λ (neg:k) ((neg:k ((neg add1) kp)) 10)))])
     (check-equal? (⊥->a ((neg:call/cc ((neg add1) a->⊥)) neg:proc1)) 7)
     (check-equal? (⊥->a ((neg:call/cc ((neg add1) a->⊥)) neg:proc2)) 11))
+  ;; 「绑定就是复合」：∘𝒦 与借道 𝒰 的定义相同（练习答案）；(∘𝒦 cps:g neg²:id) = (cps->neg² cps:g)。
+  (let* ([cps:f (cps add1)] [cps:g (cps (λ (y) (* y 2)))]
+         [via-U (λ cps:f* (flip (apply ⨾ (map flip cps:f*))))])
+    (check-equal? (((∘𝒦 cps:g cps:f) 3) values) (((via-U cps:g cps:f) 3) values))
+    (check-equal? (((∘𝒦 cps:g cps:f cps:g) 3) values) (((via-U cps:g cps:f cps:g) 3) values))
+    (check-equal? (((∘𝒦 cps:g neg²:id) (cps:f 3)) values) (((cps->neg² cps:g) (cps:f 3)) values))
+    (check-equal? (((neg² id) (cps:f 3)) values) ((neg²:id (cps:f 3)) values))
+    (check-equal? (((∘𝒦 cps:f) 3) values) ((cps:f 3) values)))
+  ;; 「对不上的两段」：(cps->neg² (cps g)) = (neg² g)。
+  (let ([g (λ (y) (* y 2))])
+    (check-equal? (((cps->neg² (cps g)) (cps:+ 1 2)) values) (((neg² g) (cps:+ 1 2)) values)))
+  ;; 「箭头指向何方」：(uncps neg²:id) 就是 call/cc 的行为。
+  (check-equal? (+ 1 ((uncps neg²:id) (λ (k) (k 41)))) 42)
   ;; 「两段计算怎样接起来」：(⨾ (neg g) (neg f)) 接两步；(∘𝒦) 与 (cps id) 一样。
   (let ([f add1] [g (λ (y) (* y 2))])
     (check-equal? (((⨾ (neg g) (neg f)) values) 3) (g (f 3)))

@@ -323,9 +323,9 @@ CPS 真正的力量不在于尾递归，而在于延续成为了**一等值**。
 拿 `+` 各走一遍。`(cps +)` 先收操作数 `1`、`2`，交出一个等着延续的值；再交给它一个延续，计算才开始。`(neg +)` 次序反过来，先收延续，再收操作数：
 
 ```racket
-> (((cps +) 1 2) (λ (v) (* v 10)))
+> (⊥->a (((cps +) 1 2) (λ (v) (a->⊥ (* v 10)))))
 30
-> (((neg +) (λ (v) (* v 10))) 1 2)
+> (⊥->a (((neg +) (λ (v) (a->⊥ (* v 10)))) 1 2))
 30
 ```
 
@@ -449,7 +449,7 @@ CPS 一节中闭包链的每一步，都是这样一次复合。`(λ (v) (k (* n
 
 它的意思应当和上面手写的一样。
 
-## 两段计算怎样接起来
+## 对不上的两段
 
 先试着把 `anf:let` 当作 `let` 来读。延续与 CPS 一节把 `let` 拆成过一次调用：
 
@@ -462,179 +462,64 @@ CPS 一节中闭包链的每一步，都是这样一次复合。`(λ (v) (k (* n
 
 `let` 手里有两样东西：等着结果的 `k`，和右边算出的值 `e`。直接调用 `(k e)`，类型对得上。照样拆 `anf:let`，手里也有两样：函数体包成的 `(λ (v) (cps:* v 3))`，把前面的 `mul3` 提升成 `(cps mul3)`，记作 `cps:mul3`，它就是这个 λ；右边 `(cps:+ 1 2)` 算出的值，记作 `kk3`（两个 `k` 对应 $¬¬$ 的两层）。可 `(cps:mul3 kk3)` 对不上：`cps:mul3` 要的是一个数，`kk3` 却是一段还在等延续的计算，延续拿到的才是 `3`。
 
-`let` 背后是 `∘`：开头那条等式 `(let ([y (f x)]) (g y)) = ((∘ g f) x)`。`anf:let` 背后，该是 `cps:+` 与 `cps:mul3` 的复合。两者都照 `cps` 的写法，形状是 $p → ¬¬q$：收到输入，交出等待延续的计算。普通的复合接不上这样的两段：前一段交出的是一段计算，后一段要的却是值。`(∘ cps:mul3 cps:+)` 做的，正是把 `kk3` 交给 `cps:mul3`。
-
-两段要接上，得照手写的那一种来：开头的 λ 就把 `cps:+` 和 `cps:*` 接了起来。写成一般的样子，两段 `cps:f`、`cps:g` 是这样接的：
+步数多了也一样。照 `let*` 读，三步的
 
 ```racket
-(λ (x) (λ (k) ((cps:f x) (λ (y) ((cps:g y) k)))))
+(anf:let* ([y (cps:f x)]
+           [z (cps:g y)])
+  (cps:h z))
 ```
 
-前一段算出的计算，收到的延续是后一段连同最外面的 `k` 包成的 λ。段数一多，λ 就一层套一层。有没有办法像 `∘` 那样，把任意几段直接排开？
+该对应开头那样的复合 `((∘ cps:h cps:g cps:f) x)`。`let*` 给复合的中间结果起名，可这里每一步交出的都是一段计算：`cps:f` 交出的是 `kky`，不是 `y`。手里有 `cps:g` 和 `kky`，类型对不上，没法调用。
 
-有一种写法，两段是直接接得上的。照 `neg` 的写法，形状是 $¬q → ¬p$：收到一条延续，交出另一条延续。把延续独立出来一节的 `(neg g)`、`(neg f)` 接起来，`k` 先交给 `(neg g)`，它交出的延续，正好是 `(neg f)` 要收的。首尾相接，普通的复合就接得起来，只是顺序和值走的方向相反：值先过 `f` 再过 `g`，延续却先交给 `(neg g)`。照调用的先后写，这正是开头的 `⨾`：
+可以先试着从计算中取出值，再交给下一步。但宏要对任意类型都适用，这就要求一个对任意 $a$ 都成立的 $¬¬a → a$，也就是第一篇的 DNE；只用纯函数，给不出这样的操作。
+
+那就反过来，改造下一步，让它直接接收这段计算。`cps:g` 收值、交出计算；把它的两层参数用 `flip` 换个次序，`(flip cps:g)` 先收延续，记作 `neg:g`，`neg:g` 和 `cps:g` 一一对应。`neg:g` 的形状是 $¬r → ¬q$，在两个延续之间映射。对这样的函数再用一次 `neg`，这是 `neg` 的第二种读法：它收到 $¬r → ¬q$，交出 $¬¬q → ¬¬r$，在两段计算之间映射。记作 `neg²:g`：
 
 ```racket
-  ((⨾ (neg g) (neg f)) k)
-= ((neg f) ((neg g) k))
+neg²:g  =  (neg neg:g)  =  (neg (flip cps:g))
 ```
 
-一个也不交，`(⨾)` 收到什么就交出什么，是单位元。
-
-`cps` 的写法和 `neg` 的写法只差参数的顺序，`flip` 在两者之间来回，什么也不丢。那就绕一下：要接的几段照 `cps` 写成，先用 `flip` 换成延续在前的形状，这时每一段交出的延续，正好是前一段要收的；用 `⨾` 接起来，再 `flip` 回来。照 `cps` 写法的函数，就有了自己的复合，记作 `∘𝒦`（取 continuation 的字母）：
+交给它 `kky`，看它做了什么：
 
 ```racket
-(define (∘𝒦 . cps:f*) (flip (apply ⨾ (map flip cps:f*))))
-(define cps:id (∘𝒦))
+  ((neg (flip cps:g)) kky)
+= (λ (k) (kky ((flip cps:g) k)))
+= (λ (k) (kky (λ (y) ((cps:g y) k))))
 ```
 
-一支也不交，`(∘𝒦)` 是单位元，记作 `cps:id`。这样定义的复合，算出来的是什么？从最少的开始，每次交给它一个输入 `x` 和一个延续 `k`。一支也不交：
+第一行是 `neg` 的定义：`(neg h)` 收到 `kky`，交出 `(∘ kky h)`。最后一行正是手写的那种包法：`kky` 收到的延续，是下一步连同最外面的 `k` 包成的 λ。这一步对任何 `cps:g` 都适用，记作 `cps->neg²`：
 
 ```racket
-  (((∘𝒦) x) k)
-= (((flip (⨾)) x) k)
-= (((⨾) k) x)
-= (k x)
+(define cps->neg² (∘ neg flip))
 ```
 
-`flip` 把 `k` 换到 `x` 前面，`(⨾)` 原样交出 `k`，最后 `x` 交给 `k`：单位元 `cps:id` 收到 `x`，原样交给延续。它和 `(cps id)` 做的事一样。
-
-> **练习：** 只交一支 `cps:f`，照同样的办法展开 `(((∘𝒦 cps:f) x) k)`，验证得到的还是 `cps:f`，和 `(∘ f)` 就是 `f` 一样。
-
-交两支 `cps:f`、`cps:g`：
+`cps:g` 若是一个纯函数 `g` 的提升 `(cps g)`，`(flip cps:g)` 就是 `(neg g)`，两次 `flip` 相消，于是 `neg²:g` 正好是两次 `neg`。两次 `neg` 接起来，记作 `neg²`：
 
 ```racket
-  (((∘𝒦 cps:g cps:f) x) k)
-= (((flip (⨾ (flip cps:g) (flip cps:f))) x) k)
-= (((⨾ (flip cps:g) (flip cps:f)) k) x)
-= (((flip cps:f) ((flip cps:g) k)) x)
-= ((cps:f x) ((flip cps:g) k))
-= ((cps:f x) (λ (y) ((cps:g y) k)))
+(define neg² (∘ neg neg))
 ```
-
-`flip` 把 `k` 换到 `x` 前面，`k` 先交给 `(flip cps:g)`，再交给 `(flip cps:f)`，和接闭包链时一样。最后两步拆开 `flip`：`cps:f` 拿到 `x`，收到的延续是 `(λ (y) ((cps:g y) k))`：拿到 `y`，交给 `cps:g`，`cps:g` 的结果再交给 `k`。这正是前面直接写出的两段接法；绕道 𝒰，接法没有变，只是段数多了也能直接排开。
-
-手写 `fib/k` 时，`(λ (v) (fib/k (- n 2) (λ (w) (k (+ v w)))))` 就是这样写出来的：后一步连同它的延续包成一个 λ，交给前一步。手中的延续一节的两个例子，手写的也是这个包法。`∘𝒦` 把这个包法做成了复合，那两个例子可以不再手写延续：
 
 ```racket
-> (define cps:add1 (cps add1))
-> (⊥->a (((∘𝒦 cps:add1 cps:call/cc) cps:proc1) a->⊥))
-7
-> (define (cps:proc2 cps:k) ((∘𝒦 cps:add1 cps:k) 10))
-> (⊥->a (((∘𝒦 cps:add1 cps:call/cc) cps:proc2) a->⊥))
-11
+(cps->neg² (cps g))  =  (neg² g)
 ```
 
-`flip` 来回一趟什么也不丢，`⨾` 的两条运算律也就跟着到了 `∘𝒦` 上：分组无关紧要，`cps:id` 接在哪一头都不改变什么。照 `cps` 写法的函数，于是有了自己的复合、单位元和两条运算律，自成一个世界，叫它 CPS 世界 𝒦。照 `neg` 写法的函数也一样，复合是 `⨾`，单位元是 `(⨾)`，叫它逆否世界 𝒰。为两种形状取个名字：
+一般的 `cps:g` 不必是哪个纯函数的提升，里面可以有 `cps:call/cc` 这样的控制；`neg²:g` 只是 `(cps->neg² cps:g)` 的名字，用的是 `(neg (flip cps:g))` 这个一般的定义。
 
-```racket
-(define-type (→𝒦 p q) (→ p (¬¬ q)))
-(define-type (→𝒰 p q) (← (¬ p) (¬ q)))
-```
-
-$p →_𝒦 q$ 收到 $p$，交出等着 $q$ 的计算。$p →_𝒰 q$ 用的是开头的反向箭头 `←`：它从 $p$ 写到 $q$，函数却从 $¬q$ 指向 $¬p$。有了名字，前面几个函数的类型可以重写，复合与单位元也补上类型：
-
-```racket
-(: neg  (∀ (p q) (→ (→ p q) (→𝒰 p q))))
-(: cps  (∀ (p q) (→ (→ p q) (→𝒦 p q))))
-(: flip (∀ (p q) (case→ (→ (→𝒰 p q) (→𝒦 p q))
-                        (→ (→𝒦 p q) (→𝒰 p q)))))
-
-(: ∘𝒰 (∀ (p ...) (→ (→𝒰 pn-1 pn) ... (→𝒰 p1 p2) (→𝒰 p1 pn))))
-(define ∘𝒰 ⨾)
-(: neg:id (∀ (q) (→𝒰 q q)))
-(define neg:id (∘𝒰))
-
-(: ∘𝒦 (∀ (p ...) (→ (→𝒦 pn-1 pn) ... (→𝒦 p1 p2) (→𝒦 p1 pn))))
-(: cps:id (∀ (q) (→𝒦 q q)))
-```
-
-`case→` 列出同一个函数的几种类型，调用时按交给它的参数取用其中一种：这两行是 `flip` 同一段代码的两种读法，第一行从 𝒰 搬到 𝒦，第二行搬回来。普通函数经 `neg` 进入 𝒰，经 `cps` 进入 𝒦，`flip` 在两个世界之间来回；`∘𝒦` 就是绕道 𝒰 得来的。
-
-> **注意：** `flip` 来回一趟什么也不丢，说的是纯函数。对 𝒦 的箭头，还要它收到参数时只造出一个等待延续的函数，不做别的事；否则 `(∘𝒦 cps:f cps:id)` 就不再等于 `cps:f`：`cps:f` 原本一收到参数就做的事，要等收到延续才做。`cps` 造出的箭头都是这样，本文一直这样假定。
-
-## 接上一段计算
-
-有了 `∘𝒦`，`(1 + 2) × 3` 就有了第二种写法。展开 `∘𝒦` 时看过，它和手写的那一种是同一个计算：
-
-```racket
-  (λ (k)
-    ((cps:+ 1 2)
-     (λ (v)
-       ((cps:* v 3) k))))
-= ((∘𝒦 cps:mul3 cps:+) 1 2)
-```
-
-这一种不用写 λ，可中间结果没有名字，每一步还得先做成一支箭头，再一支支排开。`anf:let` 背后该是 `∘𝒦`，意思也应当和这两种一样。
-
-宏要写出什么代码？最直接的办法，是照手写的那一种写。可宏拿到的是整个右边。右边不一定是一次调用，可以是任何算出一段计算的表达式；宏手里只有它算出的计算，没有单独的 `cps:+` 和 `1`、`2`。好在手写的那一种也用不着拆开它：`(cps:+ 1 2)` 算出的计算记作 `kk3`（两个 `k` 对应 $¬¬$ 的两层），函数体包成 `cps:mul3`，宏要写出的就是：
-
-```racket
-(λ (k) (kk3 (λ (v) ((cps:mul3 v) k))))
-```
-
-`kk3` 收到的延续，是函数体连同最外面的 `k` 包成的 λ。这个 λ 由宏来写，程序员只写 `anf:let`。
-
-回头看这段代码，它的样子眼熟。两段计算怎样接起来一节展开过两支的 `∘𝒦`：`(((∘𝒦 cps:g cps:f) x) k)` 是 `((cps:f x) (λ (y) ((cps:g y) k)))`。这里 `cps:g` 就是 `cps:mul3`；`(cps:f x)` 的位置上，站的是 `kk3` 本身。要把它写成一次复合，只差一支箭头：收下 `kk3`，原样交出 `kk3`。这样的箭头什么也不做，就是 `id`，只是收的是 $¬¬$ 类型的计算。为了和普通的 `id` 分开，记作 `neg²:id`：
-
-```racket
-(define (neg²:id kkv) kkv)
-```
-
-宏写出的代码，于是就是一次复合：
-
-```racket
-  (λ (k) (kk3 (λ (v) ((cps:mul3 v) k))))
-= ((∘𝒦 cps:mul3 neg²:id) kk3)
-```
-
-`kk3` 就是 `(cps:+ 1 2)`，于是：
-
-```racket
-((∘𝒦 cps:mul3 neg²:id) (cps:+ 1 2))  =  ((∘𝒦 cps:mul3 cps:+) 1 2)
-```
-
-左边是 `anf:let` 写出的样子，右边是复合的那一种，两边展开出来都是手写的那一种：三种写法在这里合上。
-
-> **练习：** 名字里的 `neg²` 是怎么来的？只用 `neg` 和 `id`，写出一个与 `neg²:id` 行为相同的函数。提示：先看 `(neg id)` 的类型。
-
-## 绑定就是复合
-
-照这个样子，`(anf:let ([v kkv]) kkw)` 一般写成 `((∘𝒦 cps:kv neg²:id) kkv)`，其中 `cps:kv` 是函数体包成的 `(λ (v) kkw)`。右边 `kkv` 是一次调用 `(cps:f x)` 时，上一节的等式照样成立：把 `cps:mul3` 换成 `cps:kv`，`(cps:+ 1 2)` 换成 `(cps:f x)`，两边的展开一步不改：
-
-```racket
-((∘𝒦 cps:kv neg²:id) (cps:f x))  =  ((∘𝒦 cps:kv cps:f) x)
-```
-
-`neg²:id` 不见了，`cps:f` 直接接在 `cps:kv` 前面。函数体是 `(cps:g y)` 时，`cps:kv` 就是 `cps:g`，`anf:let` 落到的正是上一节想要的 `∘𝒦`。和开头宿主的那条等式并排：
-
-```racket
-(let     ([y     (f x)])     (g y))  =  ((∘      g     f) x)
-(anf:let ([y (cps:f x)]) (cps:g y))  =  ((∘𝒦 cps:g cps:f) x)
-```
-
-`let` 是 `∘` 的另一种写法，`anf:let` 是 `∘𝒦` 的另一种写法，多出来的是中间结果的名字。
-
-> **练习：** 上面第一条等式，左边先算出 `(cps:f x)`，右边要等收到延续才调用 `cps:f`。两边为什么仍然相同？要是 `cps:f` 一收到参数就打印一行，两边还相同吗？
-
-开头的两条运算律，`anf:let` 也原样都有：三步计算的绑定嵌在函数体里，还是先把前两步写成一段、嵌进被求值的那一段，对应 `∘𝒦` 的两种分组；只换名的绑定，对应接上 `cps:id`。
-
-> **练习：** 照开头宿主的写法，写出两条结合律、两条单位律在 `anf:let` 下的四条等式，再用上面并排的第二行和 `∘𝒦` 的两条运算律推出它们。
-
-## 写成宏
-
-回到开头的例子。宏要替我们写出的，是这样一段代码：
+回到 `(1 + 2) × 3`。宏要写出的，就是这样一段代码：
 
 ```racket
 (let ([kk3 (cps:+ 1 2)])
-  (: neg²:id  (→𝒦 (¬¬ Nat) Nat))
-  (: cps:mul3 (→𝒦     Nat  Nat))
-  (define (neg²:id kkv) kkv)
   (define (cps:mul3 v) (cps:* v 3))
-  ((∘𝒦 cps:mul3 neg²:id) kk3))
+  (define neg²:mul3 (cps->neg² cps:mul3))
+  (neg²:mul3 kk3))
 ```
 
-把这些写成宏，`Nat` 换成类型变量 `a`、`b`。宏里的类型标注只是示意：本文的代码在 `no-check` 下运行，标注不经检查，`a`、`b` 也就不必绑定。宏里定义的 `neg²:id`、`cps:kv`、`cps:kkkv` 只在展开出的代码里可见，不会和程序员自己的名字相混。`anf:let` 就是只有一个绑定的 `anf:let*`：
+右边不一定是一次调用，可以是任何算出一段计算的表达式；宏只需要它算出的 `kk3`，再把函数体包成的箭头交给 `cps->neg²`。
+
+## 写成宏
+
+把这些写成宏，具体的类型换成类型变量 `a`、`b`。宏里的类型标注只是示意：本文的代码在 `no-check` 下运行，标注不经检查，`a`、`b` 也就不必绑定。宏里定义的 `cps:kv`、`neg²:kv` 只在展开出的代码里可见，不会和程序员自己的名字相混。`anf:let` 就是只有一个绑定的 `anf:let*`：
 
 ```racket
 (define-syntax anf:let*-values
@@ -643,13 +528,11 @@ $p →_𝒦 q$ 收到 $p$，交出等着 $q$ 的计算。$p →_𝒰 q$ 用的�
      (anf:begin b* ...)]
     [(_ ([v* e]) b* ...)
      (let ([kkv e])
-       (: neg²:id  (→𝒦 (¬¬ a) a))
-       (: cps:kv   (→𝒦     a  b))
-       (: cps:kkkv (→𝒦 (¬¬ a) b))
-       (define (neg²:id kkv) kkv)
+       (: cps:kv  (→      a  (¬¬ b)))
+       (: neg²:kv (→ (¬¬ a) (¬¬ b)))
        (define (cps:kv . v*) (anf:begin b* ...))
-       (define cps:kkkv (∘𝒦 cps:kv neg²:id))
-       (cps:kkkv kkv))]
+       (define neg²:kv (cps->neg² cps:kv))
+       (neg²:kv kkv))]
     [(_ ([v* e] [v** e*] ...) b* ...)
      (anf:let*-values ([v* e])
        (anf:let*-values ([v** e*] ...)
@@ -668,13 +551,11 @@ $p →_𝒦 q$ 收到 $p$，交出等着 $q$ 的计算。$p →_𝒰 q$ 用的�
 
 (define-syntax-rule (anf:if test conseq alt)
   (let ([kkb test])
-    (: neg²:id  (→𝒦 (¬¬ Boolean) Boolean))
-    (: cps:kb   (→𝒦     Boolean  a))
-    (: cps:kkkb (→𝒦 (¬¬ Boolean) a))
-    (define (neg²:id kkb) kkb)
+    (: cps:kb  (→ Boolean (¬¬ a)))
+    (: neg²:kb (→ (¬¬ Boolean) (¬¬ a)))
     (define (cps:kb . b*) (if (equal? b* '(#f)) alt conseq))
-    (define cps:kkkb (∘𝒦 cps:kb neg²:id))
-    (cps:kkkb kkb)))
+    (define neg²:kb (cps->neg² cps:kb))
+    (neg²:kb kkb)))
 
 (define-syntax-rule (anf:let/cc cps:k b* ...)
   (cps:call/cc (λ (cps:k) b* ...)))
@@ -682,9 +563,109 @@ $p →_𝒦 q$ 收到 $p$，交出等着 $q$ 的计算。$p →_𝒰 q$ 用的�
 
 `anf:let*-values` 里的 `v*` 是一张形参表：`(define (cps:kv . v*) …)` 里的 `v*` 换成 `(v)`，就是 `(define (cps:kv v) …)`，因为 `(cps:kv . (v))` 和 `(cps:kv v)` 是同一个 S-表达式。`anf:if` 中那个 λ 是可变参数的：测试值作为列表 `b*` 到达。在 Racket 中只有 `#f` 是假值，所以 `(equal? b* '(#f))` 恰好检测单值为假的情况。`anf:begin` 把一串表达式依次接起来：前面每一个的结果都绑定到 `_` 上丢掉，最后一个的结果就是整段的结果。
 
-宏不能直接写 `(cps:kv kkv)`：`cps:kv` 收的是值，`kkv` 却是一段还在等延续的计算，所以前面要接上 `neg²:id`。宏展开出来的，除了程序员写下的箭头，只有 `∘𝒦` 和一支什么也不做的 `neg²:id`，而 `∘𝒦` 又只由 `flip` 与复合拼成。它们只把箭头接起来，不改写箭头本身做的事。
+宏展开出来的，除了程序员写下的箭头，只有 `cps->neg²`，而它只由 `flip` 与 `neg` 拼成。它只把箭头接起来，不改写箭头本身做的事。宏充当编译器，把类似 ANF 的语法翻译成 $¬¬$ 编码的 CPS。
 
-宏充当编译器，把类似 ANF 的语法翻译成 $¬¬$ 编码的 CPS。
+## 绑定就是复合
+
+宏写好了，回头看它把两步接成了什么。展开 `anf:let`：
+
+```racket
+  (anf:let ([y (cps:f x)]) (cps:g y))
+= ((cps->neg² cps:g) (cps:f x))
+= ((∘ (cps->neg² cps:g) cps:f) x)
+```
+
+又是一次复合。照 `let` 读，本来该是 `((∘ cps:g cps:f) x)`，接不上；现在第一支保持不变，后一支把输入提升成 $¬¬$，普通的 `∘` 就接得上了。几步也一样：第一支不动，其余几支各经过一次 `cps->neg²`。这就是照 `cps` 写法的函数自己的复合，记作 `∘𝒦`（取 continuation 的字母）：
+
+```racket
+  (∘𝒦 cps:h cps:g cps:f)
+= (∘ (cps->neg² cps:h) (cps->neg² cps:g) cps:f)
+```
+
+一支也不交时，它的单位元是 `cps:id`，收到 `x`，原样交给延续，和 `(cps id)` 做的事一样。写成代码，最右边那一支不动，其余的交给 `cps->neg²`：
+
+```racket
+(define cps:id (cps id))
+(define (∘𝒦 . cps:f*)
+  (if (null? cps:f*)
+      cps:id
+      (let-values ([(cps:g* cps:f) (split-at-right cps:f* 1)])
+        (apply ∘ (append (map cps->neg² cps:g*) cps:f)))))
+```
+
+和开头宿主的那条等式并排：
+
+```racket
+(let     ([y     (f x)])     (g y))  =  ((∘      g     f) x)
+(anf:let ([y (cps:f x)]) (cps:g y))  =  ((∘𝒦 cps:g cps:f) x)
+```
+
+`let` 是 `∘` 的另一种写法，`anf:let` 是 `∘𝒦` 的另一种写法，多出来的是中间结果的名字。
+
+> **练习：** 上面第二条等式，左边先算出 `(cps:f x)`，右边要等收到 `x` 才调用 `cps:f`。两边为什么仍然相同？要是 `cps:f` 一收到参数就打印一行，两边还相同吗？
+
+开头的两条运算律，`∘𝒦` 也原样都有：分组无关紧要，`cps:id` 接在哪一头都不改变什么。三步的 `anf:let*` 一层层嵌在函数体里，展开出来是嵌套的 `cps->neg²`；它和上面排平的 `(∘𝒦 cps:h cps:g cps:f)` 相同，靠的正是结合律。只换名的绑定，对应接上 `cps:id`。
+
+> **练习：** 照开头宿主的写法，写出两条结合律、两条单位律在 `anf:let` 下的四条等式；再展开 `∘𝒦` 与 `cps->neg²` 的定义，验证 `∘𝒦` 的两条运算律。
+
+`∘𝒦` 里第一支保持不变。那么第一支若什么也不做，`∘𝒦` 给出的，就是 `cps->neg²` 本身。什么也不做的那一支，收下一段计算，原样交出：它就是 `id`，只是收的是 $¬¬$ 类型，记作 `neg²:id`：
+
+```racket
+(define (neg²:id kkv) kkv)
+```
+
+```racket
+(∘𝒦 cps:g neg²:id)  =  (∘ (cps->neg² cps:g) neg²:id)  =  (cps->neg² cps:g)
+```
+
+把一支箭头的输入提升成 $¬¬$，和在它前面接一支什么也不做的 `neg²:id`，是同一件事。
+
+> **练习：** 名字里的 `neg²` 是怎么来的？验证 `neg²:id` 与 `(neg² id)` 行为相同。
+
+照 `neg` 写法的函数也有自己的复合。$¬q → ¬p$ 这种形状的箭头首尾相接，用开头的 `⨾` 就接得起来，单位元是 `id`：把延续独立出来一节的「接两次就是闭包链」，正是这样接的。
+
+有了复合与单位元，两种写法的函数各自成了一个世界：照 `cps` 写法的叫 CPS 世界 𝒦，照 `neg` 写法的叫逆否世界 𝒰。为两种形状取个名字：
+
+```racket
+(define-type (→𝒦 p q) (→ p (¬¬ q)))
+(define-type (→𝒰 p q) (← (¬ p) (¬ q)))
+```
+
+$p →_𝒦 q$ 收到 $p$，交出等着 $q$ 的计算。$p →_𝒰 q$ 用的是开头的反向箭头 `←`：它从 $p$ 写到 $q$，函数却从 $¬q$ 指向 $¬p$。有了名字，前面几个函数的类型可以重写，复合与单位元也补上类型：
+
+```racket
+(: neg  (∀ (p q) (→ (→ p q) (→𝒰 p q))))
+(: cps  (∀ (p q) (→ (→ p q) (→𝒦 p q))))
+(: flip (∀ (p q) (case→ (→ (→𝒰 p q) (→𝒦 p q))
+                        (→ (→𝒦 p q) (→𝒰 p q)))))
+(: cps->neg² (∀ (p q) (→ (→𝒦 p q) (→ (¬¬ p) (¬¬ q)))))
+
+(: ∘𝒰 (∀ (p ...) (→ (→𝒰 pn-1 pn) ... (→𝒰 p1 p2) (→𝒰 p1 pn))))
+(define ∘𝒰 ⨾)
+(: neg:id (∀ (q) (→𝒰 q q)))
+(define neg:id (∘𝒰))
+
+(: ∘𝒦 (∀ (p ...) (→ (→𝒦 pn-1 pn) ... (→𝒦 p1 p2) (→𝒦 p1 pn))))
+(: cps:id (∀ (q) (→𝒦 q q)))
+(: neg²:id (∀ (q) (→𝒦 (¬¬ q) q)))
+```
+
+`case→` 列出同一个函数的几种类型，调用时按交给它的参数取用其中一种：这两行是 `flip` 同一段代码的两种读法，第一行从 𝒰 搬到 𝒦，第二行搬回来。普通函数经 `neg` 进入 𝒰，经 `cps` 进入 𝒦，`flip` 在两个世界之间来回。`cps->neg²` 是先用 `flip` 进 𝒰，再用一次 `neg`。
+
+> **练习：** 𝒰 的复合也能搬到 𝒦 用：把几支 𝒦 的箭头各 `flip` 到 𝒰，用 `⨾` 接起来，再 `flip` 回来。展开两支的情形，验证得到的就是 `∘𝒦`。
+
+> **注意：** `flip` 来回一趟什么也不丢，说的是纯函数。对 𝒦 的箭头，还要它收到参数时只造出一个等待延续的函数，不做别的事；否则 `(∘𝒦 cps:f cps:id)` 就不再等于 `cps:f`：`cps:f` 原本一收到参数就做的事，要等收到延续才做。`cps` 造出的箭头都是这样，本文一直这样假定。
+
+手中的延续一节那两个手写的例子，有了 `∘𝒦`，就不必再手写延续了：
+
+```racket
+> (define cps:add1 (cps add1))
+> (⊥->a (((∘𝒦 cps:add1 cps:call/cc) cps:proc1) a->⊥))
+7
+> (define (cps:proc2 cps:k) ((∘𝒦 cps:add1 cps:k) 10))
+> (⊥->a (((∘𝒦 cps:add1 cps:call/cc) cps:proc2) a->⊥))
+11
+```
 
 # 嵌入语言
 
@@ -845,36 +826,15 @@ kn-2  =  (∘ kw fib)  =  ((neg fib) kw)
 
 接口也跟着变了。`mul/cc` 收到乘数，交出乘积；`cps:mul` 收到同样的乘数，交出一段等待延续的计算：一个是 $a → b$，一个是 $a → ¬¬b$。控制的做法也换了。`mul/cc` 遇零时，调用的是 `let/cc` 从宿主那里捕获的延续；`cps:mul` 的 `cps:return` 却是 `cps:call/cc` 交到程序手里的参数，而 `cps:call/cc` 的定义只用了 λ 和函数调用。
 
-普通的输入，可以直接交给 `cps:mul`。可改写后的程序里，每一步的输入往往还在前一段计算里：`anf:let*` 每个绑定的右边，交来的都是一段计算。这样的一步怎样接上去？还用接上一段计算一节的例子：`kk3` 是 `(cps:+ 1 2)` 算出的计算，`cps:mul3` 是 `(cps mul3)`。交给它一个延续 `k`，照 `∘𝒦` 展开：
+各步又是怎样接起来的？`anf:let*` 每个绑定的右边交来的都是一段计算，宏用 `cps->neg²` 把下一步的输入提升成 $¬¬$。对调用了 `cps:return` 这样含控制的步骤，用的是一般的定义 `(neg (flip cps:kv))`；对提升过的纯函数，它正好是两次 `neg`，也就是 `neg²`。
 
-```racket
-  (((∘𝒦 cps:mul3 neg²:id) kk3) k)
-= (kk3 (λ (v) ((cps:mul3 v) k)))
-= (kk3 (λ (v) (k (mul3 v))))
-= (kk3 ((neg mul3) k))
-= (((neg (neg mul3)) kk3) k)
-```
-
-第一行到第二行是接上一段计算一节的展开。第三行拆开 `cps:mul3`：它收到 `v` 和 `k`，就是 `(k (mul3 v))`。第四行是 `neg` 的定义：`(neg mul3)` 收到 `k`，把 `mul3` 接在它前面。最后一步又是一次 `neg`，这回站在延续位置上的是 `kk3`。$¬¬\text{Nat}$ 就是 $¬(¬\text{Nat})$，`kk3` 本身就是一条等着 $¬\text{Nat}$ 的延续，而 `((neg mul3) k)` 正是一个 $¬\text{Nat}$。
-
-两次 `neg` 接起来，记作 `neg²`。第二次 `neg` 收到的是 𝒰 的箭头 `(neg mul3)`，这是 `neg` 的第二种读法：类型 $(¬q → ¬p) → (¬¬p → ¬¬q)$。
+`neg²` 只用 `neg`，`neg` 只做复合。交给 `neg²` 的函数是纯的，得到的也是纯的，`neg²` 的类型于是可以写成：
 
 ```racket
 (: neg² (∀ (p q) (→ (→𝒟 p q) (→𝒟 (¬¬ p) (¬¬ q)))))
-(define neg² (∘ neg neg))
 ```
 
-输入还在一段计算里时，接上纯函数 `f` 的提升 `(cps f)`，得到的连接正是 `(neg² f)`：`(∘𝒦 cps:mul3 neg²:id)` 就是 `(neg² mul3)`。接上一段计算一节那道练习也有了答案：`neg²:id` 就是 `(neg² id)`，`id` 接在延续前面，接两层也什么都没改。
-
-函数体里若有控制，比如调用了 `cps:return`，就没有一个 `mul3` 可拆，`(k (mul3 v))` 这一步写不出来。可从 `(λ (v) ((cps:mul3 v) k))` 到 `((neg mul3) k)` 这几步做的，只是把 `(λ (v) ((cps:mul3 v) k))` 写成一个收到 `k` 才交出的延续，这件事 `flip` 对任何 `cps:kv` 都做得到：`(flip cps:kv)` 先收延续、后收值，`((flip cps:kv) k)` 就是那个 λ。对 `cps:mul3`，`(flip cps:mul3)` 正是 `(neg mul3)`：`cps` 是 `(∘ flip neg)`，两次 `flip` 相消。`(neg mul3)` 的位置由 `(flip cps:kv)` 接替，一般的绑定是：
-
-```racket
-(∘𝒦 cps:kv neg²:id)  =  (neg (flip cps:kv))
-```
-
-绑定所做的，只是用 `flip` 换一次参数顺序，再用一次 `neg`。
-
-这就看得出纯在哪里了。`neg`、`flip`、`cps`、`∘𝒦`、`cps:call/cc`、`neg²` 都由 λ、函数应用、复合，以及有限参数表上的 `apply`、`map`、`reverse` 写成，自己不跳转，也不输出：交给它们的函数在 𝒟 里，得到的也在 𝒟 里。`cps:mul` 用到的原语都是纯函数，`car`、`cdr` 只在 `null?` 判过非空以后调用；`cps:loop` 是递归的，但每次处理更短的有限列表。所以 `cps:mul` 整个落在 𝒟 里。
+这就看得出纯在哪里了。`neg`、`flip`、`cps`、`cps->neg²`、`∘𝒦`、`cps:call/cc`、`neg²` 都由 λ、函数应用、复合，以及有限参数表上的 `apply`、`map`、`append`、`split-at-right` 写成，自己不跳转，也不输出：交给它们的函数在 𝒟 里，得到的也在 𝒟 里。`cps:mul` 用到的原语都是纯函数，`car`、`cdr` 只在 `null?` 判过非空以后调用；`cps:loop` 是递归的，但每次处理更短的有限列表。所以 `cps:mul` 整个落在 𝒟 里。
 
 阴阳谜题的控制部分同样是纯的；它的输出来自宿主的 `display`，不终止来自程序本身，这两样在 𝒟 之外，不是改写带进来的。
 
@@ -983,13 +943,19 @@ $¬p$ 在箭头左边，是参数，就是 `kp`。宿主的 Clavius 律只收 `p
 
 所以展开后的这条公式，已经不是宿主里的 Clavius 律，而是一条直觉主义定理：按照 Curry-Howard，它有闭合的、有类型的纯 λ 项，就是 `cps:call/cc`。`neg:call/cc` 也一样。同一条经典定律，换到 𝒦 或 𝒰 里写，就成了直觉主义定理。经典的控制并没有消失，宿主要捕获的那条延续，成了显式的参数。
 
-接上一段计算一节的 `neg²:id` 也可以这样读。它的类型 $¬¬\text{Nat} →_𝒦 \text{Nat}$，看上去像第一篇的 DNE，要从 $¬¬\text{Nat}$ 取出一个 $\text{Nat}$；展开一看，却只是原样交出。
-
 ## 否定翻译
 
 `cps:call/cc` 展示了一个控制构造怎样改写，`cps:mul` 展示了这些构造怎样连成整段程序。第一篇结尾说过，经典的控制流可以编码成显式的延续传递，这种编码叫作**否定翻译**（negative translation）。逻辑里，它把经典证明系统地改写成直觉主义证明。改写 `mul` 一节从 `mul/cc` 到 `cps:mul` 做的，正是这样一次改写：控制操作换成纯的 CPS 构造，原语换成提升过的箭头，类型从 $a → b$ 变成 $a → ¬¬b$，各步再由宏用 `∘𝒦` 接起来。上一节换的是一条经典定律，这里换的是整段程序。改写要落在程序本身：把 `mul/cc` 原样包一层 `cps`，里面的 `let/cc` 照样会去捕获宿主的延续。
 
 `neg²` 的类型 $(p → q) → (¬¬p → ¬¬q)$ 也是一条逆否律，两次取逆否。运行的那一端也读得出来。`cps:id` 的类型 $a → ¬¬a$ 是第一篇的 DNI；`anf:eval` 的类型 $¬¬a → a$ 是 DNE，`uncps` 里那个 `call/cc` 也是，`uncps` 的定义就是在 $p → ¬¬q$ 的函数后面接一次这样的 DNE。对纯函数 `f`，`(cps f)` 与 `(∘ cps:id f)` 行为相同，只差在 `f` 什么时候调用，纯函数看不出这个差别：填上延续参数一节的往返，就是 `f` 之后接 DNI，再接上 DNE。对这里用 `call/cc` 实现的 DNE，DNI 接上它就是恒等。
+
+`neg²:id` 也可以这样读。它的类型 $¬¬a →_𝒦 a$，看上去像 DNE，要从 $¬¬a$ 取出一个 $a$；展开到宿主，却只是 $¬¬a$ 上的 `id`。把它交给 `uncps`，得到的正是宿主的 `call/cc`：
+
+```racket
+(uncps neg²:id)  =  (∘ call/cc neg²:id)  =  call/cc
+```
+
+接到计算输入上以后，`(cps->neg² neg²:id)` 的类型是 $¬¬¬¬a → ¬¬a$：它消去外面一层双重否定，结果仍是一段等待延续的计算。对 $¬¬$ 形式的命题，这样的 DNE 可以用纯函数写出。
 
 ---
 
@@ -1082,11 +1048,21 @@ $¬¬a$ 仍然不是 $a$。展开别名：$¬¬a = (a → ⊥) → ⊥$，它是
 (: cps (∀ (p q) (→ (→𝒞 p q) (→𝒦 p q))))
 (define cps (∘ flip neg))
 
-(: ∘𝒦 (∀ (p ...) (→ (→𝒦 pn-1 pn) ... (→𝒦 p1 p2) (→𝒦 p1 pn))))
-(define (∘𝒦 . cps:f*) (flip (apply ⨾ (map flip cps:f*))))
+(: cps->neg² (∀ (p q) (→ (→𝒦 p q) (→ (¬¬ p) (¬¬ q)))))
+(define cps->neg² (∘ neg flip))
 
 (: cps:id (∀ (q) (→𝒦 q q)))
-(define cps:id (∘𝒦))
+(define cps:id (cps id))
+
+(: ∘𝒦 (∀ (p ...) (→ (→𝒦 pn-1 pn) ... (→𝒦 p1 p2) (→𝒦 p1 pn))))
+(define (∘𝒦 . cps:f*)
+  (if (null? cps:f*)
+      cps:id
+      (let-values ([(cps:g* cps:f) (split-at-right cps:f* 1)])
+        (apply ∘ (append (map cps->neg² cps:g*) cps:f)))))
+
+(: neg²:id (∀ (q) (→𝒦 (¬¬ q) q)))
+(define (neg²:id kkv) kkv)
 
 
 ;;; Clavius 律
@@ -1112,13 +1088,11 @@ $¬¬a$ 仍然不是 $a$。展开别名：$¬¬a = (a → ⊥) → ⊥$，它是
      (anf:begin b* ...)]
     [(_ ([v* e]) b* ...)
      (let ([kkv e])
-       (: neg²:id  (→𝒦 (¬¬ a) a))
-       (: cps:kv   (→𝒦     a  b))
-       (: cps:kkkv (→𝒦 (¬¬ a) b))
-       (define (neg²:id kkv) kkv)
+       (: cps:kv  (→      a  (¬¬ b)))
+       (: neg²:kv (→ (¬¬ a) (¬¬ b)))
        (define (cps:kv . v*) (anf:begin b* ...))
-       (define cps:kkkv (∘𝒦 cps:kv neg²:id))
-       (cps:kkkv kkv))]
+       (define neg²:kv (cps->neg² cps:kv))
+       (neg²:kv kkv))]
     [(_ ([v* e] [v** e*] ...) b* ...)
      (anf:let*-values ([v* e])
        (anf:let*-values ([v** e*] ...)
@@ -1137,13 +1111,11 @@ $¬¬a$ 仍然不是 $a$。展开别名：$¬¬a = (a → ⊥) → ⊥$，它是
 
 (define-syntax-rule (anf:if test conseq alt)
   (let ([kkb test])
-    (: neg²:id  (→𝒦 (¬¬ Boolean) Boolean))
-    (: cps:kb   (→𝒦     Boolean  a))
-    (: cps:kkkb (→𝒦 (¬¬ Boolean) a))
-    (define (neg²:id kkb) kkb)
+    (: cps:kb  (→ Boolean (¬¬ a)))
+    (: neg²:kb (→ (¬¬ Boolean) (¬¬ a)))
     (define (cps:kb . b*) (if (equal? b* '(#f)) alt conseq))
-    (define cps:kkkb (∘𝒦 cps:kb neg²:id))
-    (cps:kkkb kkb)))
+    (define neg²:kb (cps->neg² cps:kb))
+    (neg²:kb kkb)))
 
 (define-syntax-rule (anf:let/cc cps:k b* ...)
   (cps:call/cc (λ (cps:k) b* ...)))
