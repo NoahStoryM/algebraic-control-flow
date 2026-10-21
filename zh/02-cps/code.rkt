@@ -304,6 +304,17 @@
          (anf:let* ([cps:yang (cps:label)])
            (cps:display #\*)
            (cps:yin cps:yang)))))
+    "@\n*@\n**@\n***@"))
+  ;; 正文的写法：打印也写成绑定。
+  (check-true
+   (output-starts-with?
+    (λ ()
+      (anf:eval
+       (anf:let* ([cps:yin  (cps:label)]
+                  [_        (cps:displayln #\@)]
+                  [cps:yang (cps:label)]
+                  [_        (cps:display #\*)])
+         (cps:yin cps:yang))))
     "@\n*@\n**@\n***@")))
 
 
@@ -507,3 +518,43 @@
   (check-equal? (answer:mul 2 3 4) 24)
   (check-equal? (answer:mul 2 0 4) 0)
   (check-equal? (((lift:cps add1) 7) values) 8))
+
+;; 正文「写成宏」给出的简化版宏：单个函数体、单值；完整代码里的宏另外处理多值与多个表达式。
+(module* simple-macros #f
+  (require rackunit)
+  (define-syntax-rule (anf:let ([v e]) b)
+    (let ([kkv e])
+      (define (cps:kv v) b)
+      (define neg²:kv (cps->neg² cps:kv))
+      (neg²:kv kkv)))
+  (define-syntax anf:let*
+    (syntax-rules ()
+      [(_ () b) b]
+      [(_ ([v e] [v* e*] ...) b)
+       (anf:let ([v e]) (anf:let* ([v* e*] ...) b))]))
+  (define-syntax-rule (anf:let/cc cps:k b* ...)
+    (cps:call/cc (λ (cps:k) b* ...)))
+  ;; 练习答案：单值的 anf:if。
+  (define-syntax-rule (anf:if test conseq alt)
+    (let ([kkb test])
+      (define (cps:kb b) (if b conseq alt))
+      ((cps->neg² cps:kb) kkb)))
+  (check-equal? (⊥->a ((anf:let ([v (cps:+ 1 2)]) (cps:* v 3)) a->⊥)) 9)
+  (define (cps:mul . r*)
+    (anf:let/cc cps:return
+      (define (cps:loop r*)
+        (anf:if (cps:null? r*)
+                (cps:*)
+                (anf:let* ([r (cps:car r*)])
+                  (anf:if (cps:zero? r)
+                          (cps:return r)
+                          (anf:let* ([r* (cps:cdr r*)]
+                                     [res (cps:loop r*)])
+                            (cps:* res r))))))
+      (cps:loop r*)))
+  (check-equal? (anf:eval (cps:mul 1 2 3 4)) 24)
+  (check-equal? (anf:eval (cps:mul 1 2 0 3 4)) 0))
+
+(module+ test
+  ;; 运行正文简化版宏的检查。
+  (require (submod ".." simple-macros)))
