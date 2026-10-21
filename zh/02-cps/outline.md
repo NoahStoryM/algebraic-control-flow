@@ -84,7 +84,7 @@
 
 ### 4.2 写成宏
 
-- 造（Noah 10/21）：正文只给 `anf:let`（单个函数体）、`anf:let*`（嵌套）、`anf:let/cc`，各跑一个例子；`anf:if` 一句说明套路，留作练习（答案在 `prelude.rkt` 与 `code.rkt` 的 `simple-macros`）；多值、`anf:begin`、`anf:let*-values` 只在附录的完整代码里。宏只由 `cps->neg²` 把箭头接起来。宏充当编译器。
+- 造（Noah 10/21 再改）：这里只给 `anf:let`（单个函数体）并跑一例；`anf:let*`、`anf:if`（单值）、`anf:let/cc` 到第 5 节 `cps:mul` 用到时再给；多值、`anf:begin`、`anf:let*-values` 只在附录的完整代码里。简化版在 `code.rkt` 的 `simple-macros` 里测试。宏只由 `cps->neg²` 把箭头接起来。宏充当编译器。
 - 名字：`anf:` 系列。
 
 ### 4.3 绑定就是复合
@@ -101,6 +101,7 @@
 
 ## 5. 嵌入语言
 
+- 写 `cps:mul` 前先给它用到的三样：`anf:let*`（嵌套的 `anf:let`）、`anf:if`（测试的计算交给 `cps->neg²`）、`anf:let/cc`，都照 `anf:let` 的套路。
 - 阴阳谜题改写成一串绑定（打印绑定到 `_`），只用 `anf:let*`。其余同现行（`cps:loop` 的 `→𝒦` 标注照旧）；`anf:eval` 的类型 $¬¬a → a$ 与「扮演操作系统」保留（第一篇已有 $¬¬\text{Byte}$ 的读法）。
 
 ### 5.1 计算的位置

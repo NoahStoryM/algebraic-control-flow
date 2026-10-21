@@ -519,7 +519,7 @@
   (check-equal? (answer:mul 2 0 4) 0)
   (check-equal? (((lift:cps add1) 7) values) 8))
 
-;; 正文「写成宏」给出的简化版宏：单个函数体、单值；完整代码里的宏另外处理多值与多个表达式。
+;; 正文「写成宏」「嵌入语言」给出的简化版宏：单个函数体、单值；完整代码里的宏另外处理多值与多个表达式。
 (module* simple-macros #f
   (require rackunit)
   (define-syntax-rule (anf:let ([v e]) b)
@@ -534,11 +534,12 @@
        (anf:let ([v e]) (anf:let* ([v* e*] ...) b))]))
   (define-syntax-rule (anf:let/cc cps:k b* ...)
     (cps:call/cc (λ (cps:k) b* ...)))
-  ;; 练习答案：单值的 anf:if。
+  ;; 单值的 anf:if。
   (define-syntax-rule (anf:if test conseq alt)
     (let ([kkb test])
       (define (cps:kb b) (if b conseq alt))
-      ((cps->neg² cps:kb) kkb)))
+      (define neg²:kb (cps->neg² cps:kb))
+      (neg²:kb kkb)))
   (check-equal? (⊥->a ((anf:let ([v (cps:+ 1 2)]) (cps:* v 3)) a->⊥)) 9)
   (define (cps:mul . r*)
     (anf:let/cc cps:return
