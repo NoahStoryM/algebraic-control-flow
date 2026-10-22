@@ -206,9 +206,9 @@
 拿 `(fact/k 3 k)` 跑一遍，看手里的延续怎么变。把 `(λ (v) (* 3 v))` 记作 `mul3`，其余类推：
 
 ```racket
-  (fact/k 3 k)
-= (fact/k 2 (λ (v) (k (* 3 v))))                =  (fact/k 2 (∘ k mul3))
-= (fact/k 1 (λ (v) ((∘ k mul3) (* 2 v))))       =  (fact/k 1 (∘ k mul3 mul2))
+  (fact/k 3 k)                                  =  (fact/k 3 (∘ k               ))
+= (fact/k 2 (λ (v) ((∘ k          ) (* 3 v))))  =  (fact/k 2 (∘ k mul3          ))
+= (fact/k 1 (λ (v) ((∘ k mul3     ) (* 2 v))))  =  (fact/k 1 (∘ k mul3 mul2     ))
 = (fact/k 0 (λ (v) ((∘ k mul3 mul2) (* 1 v))))  =  (fact/k 0 (∘ k mul3 mul2 mul1))
 = ((∘ k mul3 mul2 mul1) 1)
 ```
@@ -235,6 +235,17 @@
     (if (= n 0)
         (k acc)
         (loop/k (- n 1) (* n acc) k))))
+```
+
+同样拿 `(fact/k 3 k)` 跑一遍：
+
+```racket
+  (fact/k 3 k)
+= (loop/k 3 (*      ) k)
+= (loop/k 2 (*     3) k)
+= (loop/k 1 (*   2 3) k)
+= (loop/k 0 (* 1 2 3) k)
+= (k (* 1 2 3))
 ```
 
 循环体把 `k` 原样传下去，不再包上新的闭包。尾递归之所以不消耗栈空间，正因为它不创建新的延续：每一步复用同一个 `k`。非尾递归版本里闭包链的增长，对应着调用栈的增长。CPS 只是把这种增长从栈搬到了堆上。
@@ -399,9 +410,9 @@ neg  =  (∘ flip cps)
 每个名字处都有一条延续在等它：等 `v3` 的是 `k`，等 `v2` 的是先乘 3 再交给 `k`，依次类推。把等 `vn` 的那一条记作 `kn`：
 
 ```racket
-k3  =  k
-k2  =  (∘ k mul3)
-k1  =  (∘ k mul3 mul2)
+k3  =  (∘ k               )
+k2  =  (∘ k mul3          )
+k1  =  (∘ k mul3 mul2     )
 k0  =  (∘ k mul3 mul2 mul1)
 ```
 
@@ -654,13 +665,13 @@ neg²:g  =  (neg neg:g)  =  (neg (flip cps:g))
 
 照 `neg` 写法的函数，形状是 $¬q → ¬p$：收一条延续，交出另一条。它们也能复合吗？
 
-`flip` 在两种写法之间一一对应，来回一趟什么也不丢。那么照 `cps` 写法的复合，可以原样搬过来：把几支照 `neg` 写法的函数各 `flip` 成 `cps:` 箭头，用 `∘𝒦` 接起来，再 `flip` 回去：
+沿用前面对纯函数按行为相等来比较的约定，`flip` 在两种写法之间来回一趟，什么也不丢。那么照 `cps` 写法的复合，可以原样搬过来：把几支照 `neg` 写法的函数各 `flip` 成 `cps:` 箭头，用 `∘𝒦` 接起来，再 `flip` 回去：
 
 ```racket
 (define (∘𝒰 . neg:f*) (flip (apply ∘𝒦 (map flip neg:f*))))
 ```
 
-> **练习：** 交两支 `neg:g`、`neg:f`，展开 `((∘𝒰 neg:g neg:f) k)`，验证它就是 `(neg:f (neg:g k))`，也就是开头的 `(⨾ neg:g neg:f)`。计算的位置一节用几次 `neg` 接出闭包链，正是这样接的。
+> **练习：** 交两支 `neg:g`、`neg:f`，展开 `((∘𝒰 neg:g neg:f) k)`，验证它就是 `(neg:f (neg:g k))`，也就是 `((⨾ neg:g neg:f) k)`。计算的位置一节用几次 `neg` 接出闭包链，正是这样接的。
 
 搬过来的复合，展开后只是反向复合 `⨾`。反过来也走得通：从 `⨾` 出发，把几支 `cps:` 箭头各 `flip` 成延续在前的形状，用 `⨾` 接起来，再 `flip` 回来，得到的又是 `∘𝒦`；再接上 `neg²:id`，回到 `cps->neg²`：
 
