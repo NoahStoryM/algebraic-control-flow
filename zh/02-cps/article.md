@@ -214,7 +214,7 @@
         (loop (- n 1) (* n acc)))))
 ```
 
-把它也变换成 CPS，闭包链还会增长吗？
+把它也变换成 CPS：
 
 ```racket
 (: fact/k (→ Natural (¬ Natural) ⊥))
