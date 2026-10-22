@@ -256,6 +256,30 @@
   ;; neg:call/cc：先收延续 kp，再收 neg:proc；调用 (neg kp) 也改走 kp。
   (check-equal? (⊥->a ((neg:call/cc (∘ a->⊥ add1)) (λ (kp) (λ (neg:k) (kp 99))))) 100)
   (check-equal? (⊥->a ((neg:call/cc (∘ a->⊥ add1)) (λ (kp) (λ (neg:k) ((neg:k id) 10) (kp 99))))) 11)
+  ;; 「再次隐藏延续」（10/22 试写）：闭包链的例子，手写、cps->neg² 两次、anf:let*、∘𝒦 都是 6。
+  (let* ([mul2 (λ (v) (* 2 v))]
+         [cps:mul1 (cps (λ (v) (* 1 v)))]
+         [cps:mul2 (cps mul2)]
+         [cps:mul3 (cps (λ (v) (* 3 v)))]
+         [kkv1 (cps:mul1 1)]
+         [kv2 (λ (v2) (list 'kv2 v2))])
+    (check-equal? ((λ (k) ((cps:mul1 1) (λ (v1) ((cps:mul2 v1) (λ (v2) ((cps:mul3 v2) (λ (v3) (k v3)))))))) values) 6)
+    (check-equal? (((cps->neg² cps:mul3) ((cps->neg² cps:mul2) (cps:mul1 1))) values) 6)
+    (check-equal? ((anf:let* ([v1 (cps:mul1 1)] [v2 (cps:mul2 v1)] [v3 (cps:mul3 v2)]) (λ (k) (k v3))) values) 6)
+    (check-equal? (((∘𝒦 cps:mul3 cps:mul2 cps:mul1) 1) values) 6)
+    ;; (kv v) = (kkv kv)，kkv = (cps:id v)
+    (check-equal? (kv2 5) ((cps:id 5) kv2))
+    ;; 推导的三行：(λ (kv2) (kkv1 ((neg mul2) kv2))) = (∘ kkv1 (neg mul2)) = ((neg (neg mul2)) kkv1)
+    (check-equal? ((λ (kv2) (kkv1 ((neg mul2) kv2))) kv2) ((∘ kkv1 (neg mul2)) kv2))
+    (check-equal? ((∘ kkv1 (neg mul2)) kv2) (((neg (neg mul2)) kkv1) kv2))
+    (check-equal? (((neg² mul2) kkv1) kv2) '(kv2 2))
+    ;; ((neg mul2) kv2) = (λ (v1) ((cps:mul2 v1) kv2)) = ((flip cps:mul2) kv2)
+    (check-equal? (((neg mul2) kv2) 4) ((λ (v1) ((cps:mul2 v1) kv2)) 4))
+    (check-equal? (((neg mul2) kv2) 4) (((flip cps:mul2) kv2) 4))
+    ;; 含控制的 cps:g：cps->neg² 照样接得上，就是 (neg (flip cps:g))。
+    (let ([cps:g (λ (y) (cps:call/cc (λ (cps:k) (if (> y 0) (cps:k (* 10 y)) (cps:id y)))))])
+      (check-equal? (((cps->neg² cps:g) kkv1) values) 10)
+      (check-equal? (((cps->neg² cps:g) kkv1) values) (((neg (flip cps:g)) kkv1) values))))
   ;; 「再次隐藏延续」开头：手写 CPS、∘𝒦 复合、anf:let 三种写法算出同一个结果。
   (let ([cps:mul3 (cps (λ (v) (* 3 v)))])
     (check-equal? ((λ (k) ((cps:+ 1 2) (λ (v) ((cps:* v 3) k)))) values) 9)
