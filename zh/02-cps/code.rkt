@@ -54,8 +54,9 @@
 (define-type (¬𝒦 p)   (→𝒦 p ⊥))
 
 (: flip
-   (∀ (p q) (case→ (→ (→𝒰 p q) (→𝒦 p q))
-                   (→ (→𝒦 p q) (→𝒰 p q)))))
+   (∀ (p q)
+      (case→ (→ (→𝒰 p q) (→𝒦 p q))
+             (→ (→𝒦 p q) (→𝒰 p q)))))
 (define (((flip f) . y*) . x*) (apply (apply f x*) y*))
 
 (: cps (∀ (p q) (→ (→𝒞 p q) (→𝒦 p q))))
