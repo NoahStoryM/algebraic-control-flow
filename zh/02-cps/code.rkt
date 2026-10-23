@@ -53,8 +53,9 @@
 (define-type (→𝒦 p q) (→ p (¬¬ q)))
 (define-type (¬𝒦 p)   (→𝒦 p ⊥))
 
-(: flip (∀ (p q) (case→ (→ (→𝒰 p q) (→𝒦 p q))
-                        (→ (→𝒦 p q) (→𝒰 p q)))))
+(: flip
+   (∀ (p q) (case→ (→ (→𝒰 p q) (→𝒦 p q))
+                   (→ (→𝒦 p q) (→𝒰 p q)))))
 (define (((flip f) . y*) . x*) (apply (apply f x*) y*))
 
 (: cps (∀ (p q) (→ (→𝒞 p q) (→𝒦 p q))))
@@ -97,13 +98,12 @@
 
 ;;; 两种箭头的复合
 
-(: ∘𝒦 (∀ (p1 p2 p3) (→ (→𝒦 p2 p3) (→𝒦 p1 p2) (→𝒦 p1 p3))))
-(define ((∘𝒦 cps:g cps:f) x)
-  (anf:let ([y (cps:f x)])
-    (cps:g y)))
-
 (: ∘𝒰 (∀ (p1 p2 p3) (→ (→𝒰 p2 p3) (→𝒰 p1 p2) (→𝒰 p1 p3))))
 (define ∘𝒰 ⨾)
+
+;; 借 ∘𝒰 定义 ∘𝒦，可以接任意多支；正文用 anf:let 给的是两支的写法。
+(: ∘𝒦 (∀ (p1 p2 p3) (→ (→𝒦 p2 p3) (→𝒦 p1 p2) (→𝒦 p1 p3))))
+(define (∘𝒦 . cps:f*) (flip (apply ∘𝒰 (map flip cps:f*))))
 
 (: neg:id (∀ (q) (→𝒰 q q)))
 (define neg:id id)
@@ -552,6 +552,19 @@
     (define cps:g (cps (λ (y) (* y 2))))
     (check-equal? (((∘𝒦 cps:g cps:f) 3) values) ((cps:g 4) values))))
 
+;; 正文「绑定就是复合」用 anf:let 给出的两支 ∘𝒦；与借 ∘𝒰 的定义行为相同。
+(module* bind-compose #f
+  (require rackunit (only-in (submod "..") [∘𝒦 main:∘𝒦]))
+  (: ∘𝒦 (∀ (p1 p2 p3) (→ (→𝒦 p2 p3) (→𝒦 p1 p2) (→𝒦 p1 p3))))
+  (define ((∘𝒦 cps:g cps:f) x)
+    (anf:let ([y (cps:f x)])
+      (cps:g y)))
+  (define cps:f (cps add1))
+  (define cps:g (cps (λ (y) (* y 2))))
+  (check-equal? (((∘𝒦 cps:g cps:f) 3) values) (((main:∘𝒦 cps:g cps:f) 3) values))
+  (check-equal? (((main:∘𝒦 cps:g cps:f cps:f) 3) values) 10)
+  (check-equal? (((main:∘𝒦) 3) values) 3))
+
 ;; 正文「嵌入语言」给出的简化版宏：单个函数体、单值；完整代码里的宏另外处理多值与多个表达式。
 (module* simple-macros #f
   (require rackunit "../../tools/check-output-prefix.rkt")
@@ -660,7 +673,7 @@
 
 (module+ test
   ;; 运行正文简化版宏与「两种箭头」的检查。
-  (require (submod ".." simple-macros) (submod ".." transport)))
+  (require (submod ".." simple-macros) (submod ".." transport) (submod ".." bind-compose)))
 
 ;; 「把延续独立出来」：flip 是自己的逆，条件是两层参数之间不做别的事。
 (module+ test
