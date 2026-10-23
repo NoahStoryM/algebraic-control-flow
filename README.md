@@ -1,6 +1,6 @@
 # 控制流的代数本质 / The Algebraic Essence of Control Flow
 
-用 Racket 与 Typed Racket，从 `goto` 与 `label` 出发，一步步造出延续、CPS、定界延续、关系、单子与代数效应。中文先写，在[知乎](https://zhuanlan.zhihu.com/p/2019516690904401803)连载；英文版等中文定稿后再译。
+用 Racket 与 Typed Racket，从 `goto` 与 `label` 出发，一步步造出延续、CPS、定界延续、关系、单子与代数作用。中文先写，在[知乎](https://zhuanlan.zhihu.com/p/2019516690904401803)连载；英文版等中文定稿后再译。
 
 A series on continuations, CPS, delimited control, relations, monads and algebraic effects, built step by step in Racket. The Chinese edition comes first; an English translation will follow once it is frozen.
 
@@ -21,14 +21,25 @@ A series on continuations, CPS, delimited control, relations, monads and algebra
 
 ## 核对
 
-代码在 `#lang typed/racket/no-check` 下运行，针对最新版 Racket 编写。
+代码在 `#lang typed/racket/no-check` 下运行，针对最新版 Racket 编写。正文的定义块与交互块格式见 [代码块写法](tools/REPL.md)。
 
 ```sh
 export LC_ALL=C.UTF-8   # 否则 Racket 读不了中文路径与参数
+racket tools/run-blocks.rkt zh/01-call-cc/article.md
+racket tools/run-blocks.rkt zh/02-cps/article.md
+racket tools/run-blocks.rkt zh/03-delimited/article.md
+racket tools/run-blocks.rkt zh/04-compiler/article.md
 racket tools/run-blocks.rkt zh/05-relations/article.md 描述关系的语言   # 照原样执行正文代码块，核对每处结果
+for n in 01-call-cc 02-cps 03-delimited 04-compiler; do
+  racket tools/cmp-forms.rkt zh/$n/article.md zh/$n/code.rkt
+done
 racket tools/cmp-forms.rkt zh/05-relations/article.md zh/05-relations/code.rkt   # 正文的定义是否都在代码文件里
-raco test zh/05-relations/code.rkt
+raco test zh/*/code.rkt
 ```
+
+第一至四篇的 `blocks.rktd` 按「节标题 + 代码块开头」唯一定位例子，逐项写明不能直接执行的块及原因；`prelude.rkt` 提供前文定义，`code.rkt` 对循环定义、无限输出和编译器做隔离测试。配置的 `stdout` 以原始打印（含换行）比较，`value` 比较结果，`exit` 捕获 `exit` 而不终止核对器。第四篇逐步构造的局部 `match` 分支和未组装的中间版本在配置中标出，最终编译器在 `code.rkt` 与 `check/` 中测试。
+
+`cmp-forms.rkt` 核对正文定义是否逐式出现在对应的 `code.rkt`，找不到时返回非零状态。推导中只有省略号、没有可执行函数体的定义，在各篇的 `form-exceptions.rktd` 中以**完整表达式和原因**逐条列出；正文改动使排除项过期时核对会报错。同名函数在 `code.rkt` 的不同子模块中保留各阶段版本。
 
 参与方式见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 

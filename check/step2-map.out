@@ -1,0 +1,12 @@
+源程序: (map add1 xs)
+编译输出: (map add1 xs)
+目标运行: (2 3)
+
+源程序: (map (λ (x) (add1 x)) xs)
+编译输出: (map (λ (x) (λ (k.0) (k.0 (add1 x)))) xs)
+目标运行: (#<procedure> #<procedure>)
+
+源程序: (add1 (car (map (λ (x) (add1 x)) xs)))
+编译输出: ((λ (v.2) ((car v.2) add1)) (map (λ (x) (λ (k.0) (k.0 (add1 x)))) xs))
+目标运行: 3
+

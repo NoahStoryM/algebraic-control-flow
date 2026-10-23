@@ -1,0 +1,43 @@
+源程序: (if a b c)
+编译输出: (if a b c)
+   ctx@if 被调用 1 次：共 1 个
+
+源程序: (add1 (if a b c))
+编译输出: (if a (add1 b) (add1 c))
+   ctx0@if-stub 被调用 2 次：共 1 个
+   ctx@if 被调用 1 次：共 1 个
+   ctx@平凡调用 被调用 1 次：共 1 个
+
+源程序: (f (if a b c))
+编译输出: ((λ (k.0) (if a (k.0 b) (k.0 c))) (λ (v.1) ((f v.1) values)))
+   ctx0@if-stub 被调用 2 次：共 1 个
+   ctx@if 被调用 1 次：共 1 个
+   ctx@用户调用 被调用 1 次：共 1 个
+
+源程序: (f (if a (if b c d) e))
+编译输出: ((λ (k.0) (if a (if b (k.0 c) (k.0 d)) (k.0 e))) (λ (v.1) ((f v.1) values)))
+   ctx0@if-stub 被调用 2 次：共 2 个
+   ctx@if 被调用 1 次：共 2 个
+   ctx@用户调用 被调用 1 次：共 1 个
+
+源程序: (f (if (g a) (h b) (h c)))
+编译输出: ((g a) (λ (v.2) ((λ (k.0) (if v.2 ((h b) k.0) ((h c) k.0))) (λ (v.1) ((f v.1) values)))))
+   ctx0@if-stub 被调用 2 次：共 1 个
+   ctx@if 被调用 1 次：共 1 个
+   ctx@用户调用 被调用 1 次：共 4 个
+
+源程序: (let ((v (reset (let* ((x (shift k 3)) (y (+ 2 x))) (abort y))))) (+ 10 v))
+编译输出: ((λ (v) (+ 10 v)) ((λ (k) 3) (λ (x) (+ 2 x))))
+   ctx@((λ (x) body) rand) 被调用 0 次：共 3 个
+   ctx@((λ (x) body) rand) 被调用 1 次：共 1 个
+   ctx@(shift _ 被调用 0 次：共 1 个
+   ctx@(shift k 被调用 1 次：共 1 个
+   ctx@平凡调用 被调用 1 次：共 2 个
+
+源程序: (reset (let ((f (λ (x) (shift k 999)))) (add1 (f 42))))
+编译输出: ((λ (f) ((f 42) add1)) (λ (x) (λ (k.0) ((λ (k) 999) k.0))))
+   ctx@((λ (x) body) rand) 被调用 1 次：共 1 个
+   ctx@(shift k 被调用 1 次：共 1 个
+   ctx@平凡调用 被调用 1 次：共 1 个
+   ctx@用户调用 被调用 1 次：共 1 个
+

@@ -47,7 +47,7 @@
 ;; 用集合写的关系，作独立的参照：关系 r 表示成「元素 → 它关联到的元素集合」。
 (define ((rel∘ s r) x) (for*/set ([y (in-set (r x))] [z (in-set (s y))]) z))
 (define (rel:id x) (list->set (list x)))
-(define ((as-rel f) x) (list->set (f x)))       ; 列表世界的箭头读作关系
+(define ((as-rel f) x) (list->set (f x)))       ; ℒ 的箭头读作关系
 (define (forget p*) (list->set p*))             ; 忘掉顺序与重数
 ;; 验证用的样例箭头（divisors 只用于验证，不进正文）
 (define (divisors n)
@@ -240,6 +240,22 @@
               (string-append "(((1 5) 3 4 5) ((1 20) 3 4 5) ((1 20) 5 12 13) ((1 20) 6 8 10) "
                              "((1 20) 8 15 17) ((1 20) 9 12 15) ((1 20) 12 16 20))"))
 (check-equal? (format "~s" (first rows))  "((1 5) 3 4 5)")
+;; 10/13（#38）：正文「关系」一节把 rows 展平成五列，说明元数只是分组的看法
+(: rows/5 (Listof (List ℕ⁺ ℕ⁺ ℕ⁺ ℕ⁺ ℕ⁺)))
+(define rows/5
+  (for/list ([row rows])
+    (match-define (cons (list l h) (list a b c)) row)
+    (list l h a b c)))
+(check-equal? rows/5
+              '((1 5 3 4 5)
+                (1 20 3 4 5)
+                (1 20 5 12 13)
+                (1 20 6 8 10)
+                (1 20 8 15 17)
+                (1 20 9 12 15)
+                (1 20 12 16 20)))
+(check-true  (pyth? 3 4 5))
+(check-false (pyth? 3 4 6))
 (check-equal? (format "~s" (first cache)) "((1 4))")
 (check-equal? (format "~s" (second cache)) "((1 5) (3 4 5))")
 ;; 笛卡尔积的结合律是「一一对应」：((l h) . (a b c)) 对应 (l h a b c)，R 也是五元关系。
@@ -312,6 +328,7 @@
 ;;; 步骤：概念（集合记号里竖线右边的条件，写成代码就是谓词；谓词是纯函数，所以也是一张以输入为键的表：
 ;;;       笛卡尔积里每个元素占一行，值是布尔值）→ 现象（值为 #t 的行是一个 N 元关系，值为 #f 的行是它的补，
 ;;;       合起来是整个笛卡尔积）→ 问题（谓词只回答是或否，找行要自己列候选：§1 的三层循环）
+;; 10/13（#38）：正文不再用 Bit 一例，改用 rows/5 与 pyth?；以下只作验证，留作历史。
 ;; 10/4（Noah）：正文 02 末尾的例子换成 Bit 上的 one?：表只有两行，可以整张列出来；
 ;; 类型里的 : One 说的是「结果为真，当且仅当输入属于 One」，正是子集的视角。
 ;; 注意：函数体不能写 (= b 1)。带检查的 Typed Racket（8.10）拒绝它：= 只给出「为真时 b 是 One」，
@@ -494,7 +511,7 @@
 
 
 ;;; ═══════════════════════════════════════════════════════════════════
-;;; §5 列表世界的复合
+;;; §5 ℒ 箭头的复合
 ;;; ═══════════════════════════════════════════════════════════════════
 ;;; 带走：1. 普通 ∘ 接不上：上一段交出的是一整张列表。
 ;;;       2. ∘ℒ：对列表里的每一行调用下一段，再把结果接起来（append-map）。
@@ -558,10 +575,10 @@
   (for ([b '((1 4) (1 5) (1 20))])
     (check-equal? (dict-ref* cache b) (list (dict-ref cache b)))))
 
-;;; ─── §5-a〔正文〕 列表世界的箭头；前三个关系各是一支箭头 ───
+;;; ─── §5-a〔正文〕 ℒ 的箭头；前三个关系各是一支箭头 ───
 ;;; 步骤：概念（接收一头的值、交出另一头所有相关值的列表；数学上是集合，这里用列表）→ 代码
 ;;; 名字沿用 §4 的（说的是同一个关系，换了一种表示）。
-;;; betweenᵒ 在列表世界里只是一个普通函数：给定 lo、hi，交出其间所有的数。
+;;; betweenᵒ 写成 ℒ 的箭头，只是一个普通函数：给定 lo、hi，交出其间所有的数。
 (define-type (→ℒ p q) (→ p (Listof q)))
 
 (: betweenᵒ (→ Natural Natural (Listof Natural)))
@@ -614,8 +631,10 @@
 (: ℒ:id (∀ (p) (→ℒ p p)))
 (: ∘ℒ   (∀ (p ...) (→ (→ℒ pn-1 pn) ... (→ℒ p1 p2) (→ℒ p1 pn))))
 (define (ℒ:id v) (list v))
-(define ((∘ℒ . f*) x) (foldr append-map (list x) f*))   ; 从最右边的箭头起，逐个用 append-map 接上
-;; 9/30 改为变参（与第二篇的 ∘𝒦 一致）；一个箭头也不给时就是 ℒ:id。规则仍按二元陈述，结合律保证变参无歧义。
+(define ((∘ℒ . f*) . x*)
+  (define-values (g* h*) (split-at-right f* 1))   ; h* 只有最右边的一个箭头
+  (foldr append-map (apply (car h*) x*) g*))       ; 它收下全部参数，其余逐个用 append-map 接上
+;; 9/30 改为变参（与第二篇的 ∘𝒦 一致）；10/12 起最右边的箭头收下全部参数，至少要给一个箭头。规则仍按二元陈述，结合律保证变参无歧义。
 
 ;;; §5-d′〔验证〕 两段的 ∘ℒ 就是 §5-c 那次 append-map
 (check-equal? ((∘ℒ pick-bᵒ pick-aᵒ) '(1 2)) (append-map pick-bᵒ (pick-aᵒ '(1 2))))
@@ -662,7 +681,6 @@
 ;; 结合方式不影响结果（逐字相等）：变参与两种二元结合方式一致；零个箭头即单位
 (check-equal? ((∘ℒ rightᵒ (∘ℒ pick-cᵒ (∘ℒ pick-bᵒ pick-aᵒ))) '(1 20)) (right-triangleᵒ '(1 20)))
 (check-equal? ((∘ℒ (∘ℒ (∘ℒ rightᵒ pick-cᵒ) pick-bᵒ) pick-aᵒ) '(1 20)) (right-triangleᵒ '(1 20)))
-(for ([x '(0 5 (1 2))]) (check-equal? ((∘ℒ) x) (ℒ:id x)))
 (for* ([x '(1 4 6 12)])
   (check-equal? ((∘ℒ divisors) x) (divisors x)))
 ;; 函数的逆不一定是函数：平方的逆关系交出零个或一个（正文可选的旁证）
@@ -684,7 +702,7 @@
 ;; (∘ℒ f₃ (∘ℒ f₂ f₁))   = (∘ℒ (∘ℒ f₃ f₂) f₁)
 ;; (∘ℒ f (∘ ℒ:id h))    = (∘ f h)          ; h 是宿主函数
 ;;
-;;; §5-f′〔验证〕 列表世界逐字成立（equal? 比较列表，不经 forget）
+;;; §5-f′〔验证〕 ℒ 箭头逐字成立（equal? 比较列表，不经 forget）
 (define (tens x) (list x (* 10 x)))
 (define (pm x) (list x (- x)))
 (define (twice n) (list n (* 2 n)))
@@ -704,14 +722,14 @@
     (check-equal? ((∘ℒ g ℒ:id) t) (g t))
     (check-equal? ((∘ℒ ℒ:id f) t) (f t))))
 
-;;; §5-f″〔验证〕 同样的四条在关系世界（集合）里成立：这是设计要求的来处
+;;; §5-f″〔验证〕 同样的四条在关系（集合）上成立：这是设计要求的来处
 (define rel-arrows (map as-rel ℒ-arrows))
 (for* ([x '(1 4 6 12)] [r rel-arrows] [s rel-arrows])
   (check-equal? ((rel∘ r rel:id) x) (r x))
   (check-equal? ((rel∘ rel:id s) x) (s x))
   (for ([t rel-arrows])
     (check-equal? ((rel∘ t (rel∘ r s)) x) ((rel∘ (rel∘ t r) s) x))))
-;; 普通函数是一种特殊的关系：抬进关系世界后照常复合
+;; 普通函数是一种特殊的关系：抬成关系后照常复合
 (for* ([x '(1 4 6 12)] [r rel-arrows] [h hosts])
   (check-equal? ((rel∘ r (∘ rel:id h)) x) ((∘ r h) x)))
 
@@ -725,7 +743,7 @@
  ((∘ℒ rightᵒ pick-cᵒ pick-bᵒ pick-aᵒ↓) '(1 20))
  '((12 16 20) (9 12 15) (8 15 17) (6 8 10) (5 12 13) (3 4 5)))
 
-;;; §5-g′〔验证〕 忘掉顺序与重数，列表世界的复合就是关系的复合
+;;; §5-g′〔验证〕 忘掉顺序与重数，ℒ 箭头的复合就是关系的复合
 (check-equal?
  (forget ((∘ℒ rightᵒ pick-cᵒ pick-bᵒ pick-aᵒ↓) '(1 20)))
  (forget (right-triangles₁ 1 20)))
@@ -1028,7 +1046,7 @@
 ;;; ─── §7-e″〔正文〕（v5.8，正文 06「不确定运算符 amb」）amb 的三行宏；between；直接风格的三角形 ───
 ;;; Noah 10/5 13:21、13:23：05 只到 reset 坍缩（§7-c），amb 单独一节；正文不再出现 fail、collect，
 ;;;   '() 一行认作 (amb)，reset 加 list 认作 in-amb；choose/k 与 choose 保留作推导里的两个名字。
-;;;   between 在 06 用 for/amb 定义；list->amb 按他的写法留到 07（关系的世界）定义。
+;;;   between 在 06 用 for/amb 定义；list->amb 按他的写法留到 07（关系的两种写法）定义。
 ;;; 步骤：概念（choose 做的事早有名字：McCarthy 的 amb）→ 代码（三行宏）→ 现象（两个小例子，取自 amb 包的 README）
 ;;;       → 代码（between，三角形）→ 现象（与 §1 相同；between 的同一组输入有三个结果）
 ;;; 这里的 in-amb 交出列表，一次算完；Noah 的 amb 包里它交出惰性的流（正文点明这一处差别）。
@@ -1192,7 +1210,7 @@
                 ((1 2) (2 2) (2 2 2))))
 (check-equal? (in-amb ((∘ pick-b pick-a) '(1 2))) '((1 1 2) (1 2 2) (2 2 2)))   ; 遮住中间一列
 
-;;; ─── §7-k〔正文 08「关系的世界」（10/5 15:54 从 07 拆出）〕 ℬ 与 ℒ 之间的搬运；复合对得上；来回是恒等 ───
+;;; ─── §7-k〔正文 08「关系的两种写法」（10/5 15:54 从 07 拆出）〕 ℬ 与 ℒ 之间的搬运；复合对得上；来回是恒等 ───
 ;;; Noah 10/5 14:28、14:32：照第二篇的三个世界再演示一遍。14:40：带 amb 的宿主改叫 ℬ（binary relation），
 ;;;   与第二篇的 𝒟、𝒞 排成 𝒟 𝒞 ℬ，模拟它们的世界是 𝒦、ℒ；ℛ 留给关系语言（miniKanren）的世界。
 ;;;  𝒟 纯的宿主，ℒ 交出列表的函数，ℬ 带 amb 的宿主。
@@ -1339,7 +1357,6 @@
 (let ([∘ℒ₀ ∘ℒ])                                              ; 外面那一版：foldr append-map
   (define (∘ℒ . f*) (gather (apply ∘ℬ (map scatter f*))))     ; 正文 08 先给的定义（Noah 10/5 20:05），用到 amb
   (for ([t '((1 5) (2 2) (1 20))])
-    (check-equal? ((∘ℒ) t) ((∘ℒ₀) t))
     (check-equal? ((∘ℒ pick-aᵒ) t) ((∘ℒ₀ pick-aᵒ) t))
     (check-equal? ((∘ℒ pick-bᵒ pick-aᵒ) t) ((∘ℒ₀ pick-bᵒ pick-aᵒ) t))
     (check-equal? ((∘ℒ rightᵒ pick-cᵒ pick-bᵒ pick-aᵒ) t) ((∘ℒ₀ rightᵒ pick-cᵒ pick-bᵒ pick-aᵒ) t))
@@ -1365,10 +1382,9 @@
   ;; 两行说的是同一件事：把 ℒ 的箭头搬到 ℬ，第一行收回来就是第二行
   (check-equal? (in-amb (let* ([y ((scatter f) x)] [z ((scatter g) y)]) z))
                 (for*/list ([y (f x)] [z (g y)]) z)))
-;; inj 不改变函数；纯函数经 inj、gather 搬到 ℒ，就是把结果包成一项的列表；零步的 ∘ℒ 是 list
+;; inj 不改变函数；纯函数经 inj、gather 搬到 ℒ，就是把结果包成一项的列表
 (check-eq? (inj add1) add1)
 (check-equal? ((gather (inj add1)) 41) '(42))
-(check-equal? ((∘ℒ) 7) '(7))
 (check-equal? (in-amb ((∘ℬ pick-b pick-a) '(1 3))) (in-amb ((∘ pick-b pick-a) '(1 3))))
 
 ;;; ─── §7-i〔正文〕 amb：同一组操作的 Racket 式写法（v5.2，Noah 10/2 晚提出） ───

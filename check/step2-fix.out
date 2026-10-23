@@ -1,0 +1,159 @@
+######## 文中例子（修补版）
+==== if 顶层
+源程序:  (if a b c)
+编译输出: (if a b c)
+目标运行: 打印 ""  结果 (error "a: undefined;\n cannot reference an identifier before its definition\n  in module: top-level")
+
+==== if 在 add1 下
+源程序:  (add1 (if a b c))
+编译输出: (if a (add1 b) (add1 c))
+目标运行: 打印 ""  结果 (error "a: undefined;\n cannot reference an identifier before its definition\n  in module: top-level")
+
+==== if 在 f 下
+源程序:  (f (if a b c))
+编译输出: ((λ (k.0) (if a (k.0 b) (k.0 c))) (λ (v.1) ((f v.1) values)))
+目标运行: 打印 ""  结果 (error "a: undefined;\n cannot reference an identifier before its definition\n  in module: top-level")
+
+==== lambda 链
+源程序:  (λ (n) (f (g n)))
+编译输出: (λ (n) (λ (k.0) ((g n) (λ (v.1) ((f v.1) k.0)))))
+目标运行: 打印 ""  结果 (value #<procedure>)
+
+==== 999
+源程序:  (reset (let ((f (λ (x) (shift k 999)))) (add1 (f 42))))
+编译输出: ((λ (f) ((f 42) add1)) (λ (x) (λ (k.0) ((λ (k) 999) k.0))))
+目标运行: 打印 ""  结果 (value 999)
+
+==== abort 一等值
+源程序:  (reset (let ((f abort)) (+ 1 (f 5))))
+编译输出: ((λ (f) ((f 5) (λ (v.2) (+ 1 v.2)))) (λ (v) (λ (k.0) v)))
+目标运行: 打印 ""  结果 (value 5)
+
+==== let/cc
+源程序:  (let ((k (reset (let ((x (let/cc k (abort k)))) (+ x 2))))) (+ (reset (k 3)) 100))
+编译输出: ((λ (k) ((λ (v.7) (+ v.7 100)) ((k 3) values))) ((λ (k.0) (λ (v.1) (λ (k.1) (k.0 v.1)))) (λ (x) (+ x 2))))
+目标运行: 打印 ""  结果 (value 105)
+
+==== 例1
+源程序:  (let ((v (reset (let* ((x 3) (y (+ 2 x))) (abort y))))) (+ 10 v))
+编译输出: ((λ (v) (+ 10 v)) ((λ (x) (+ 2 x)) 3))
+目标运行: 打印 ""  结果 (value 15)
+
+==== 例2
+源程序:  (let ((v (reset (let* ((x (shift k 3)) (y (+ 2 x))) (abort y))))) (+ 10 v))
+编译输出: ((λ (v) (+ 10 v)) ((λ (k) 3) (λ (x) (+ 2 x))))
+目标运行: 打印 ""  结果 (value 13)
+
+==== 例3
+源程序:  (let ((v (reset (let* ((x (shift k (k 3))) (y (+ 2 x))) (abort y))))) (+ 10 v))
+编译输出: ((λ (v) (+ 10 v)) ((λ (k) (k 3)) (λ (x) (+ 2 x))))
+目标运行: 打印 ""  结果 (value 15)
+
+==== 例4
+源程序:  (let ((v (reset (let* ((x (shift k (let ((r (k 3))) (k r)))) (y (+ 2 x))) (abort y))))) (+ 10 v))
+编译输出: ((λ (v) (+ 10 v)) ((λ (k) (k (k 3))) (λ (x) (+ 2 x))))
+目标运行: 打印 ""  结果 (value 17)
+
+==== 阴阳 label 版
+源程序:  (reset (let* ((label (λ () (let/lc k k))) (yin (label)) (_ (display #\@)) (yang (label)) (_ (display #\*))) (yin yang)))
+编译输出: ((λ (label) ((label) (λ (yin) ((λ (_) ((label) (λ (yang) ((λ (_) ((yin yang) values)) (display #\*))))) (display #\@))))) (λ () (λ (k.0) ((λ (k) (k k)) k.0))))
+目标运行: 打印 "@*@**@***@****@*****@******@*******@****..."  结果 (killed "（未结束，已截断）")
+
+==== id 裸延续
+源程序:  (let ((id (reset (shift k k)))) (id (id 3)))
+编译输出: ((λ (id) ((id 3) (λ (v.3) ((id v.3) values)))) values)
+目标运行: 打印 ""  结果 (error "application: not a procedure;\n expected a procedure that can be applied to arguments\n  given: 3")
+
+==== id 包装
+源程序:  (let ((id (reset (shift k (λ (v) (k v)))))) (id (id 3)))
+编译输出: ((λ (id) ((id 3) (λ (v.4) ((id v.4) values)))) ((λ (k) (λ (v) (λ (k.0) (k.0 (k v))))) values))
+目标运行: 打印 ""  结果 (value 3)
+
+==== 阴阳 包装版
+源程序:  (reset (let* ((kn (let/lc k0 (λ (v) (k0 v)))) (_ (display #\@)) (k (let/lc kn+1 (λ (v) (kn+1 v)))) (_ (display #\*))) (kn k)))
+编译输出: ((λ (k0) (k0 (λ (v) (λ (k.0) (k.0 (k0 v)))))) (λ (kn) ((λ (_) ((λ (kn+1) (kn+1 (λ (v) (λ (k.1) (k.1 (kn+1 v)))))) (λ (k) ((λ (_) ((kn k) values)) (display #\*))))) (display #\@))))
+目标运行: 打印 "@*@**@***@****@*****@******@*******@****..."  结果 (killed "（未结束，已截断）")
+
+######## 指控 a/b/c（修补版）
+######## a. 内建函数换名后调用
+==== a1
+源程序:  (let ((f add1)) (f 41))
+编译输出: ((λ (f) ((f 41) values)) (λ v.0 (λ (k.0) (k.0 (apply add1 v.0)))))
+目标运行: 打印 ""  结果 (value 42)
+
+==== a2
+源程序:  (let ((g add1)) (g 1))
+编译输出: ((λ (g) ((g 1) values)) (λ v.0 (λ (k.0) (k.0 (apply add1 v.0)))))
+目标运行: 打印 ""  结果 (value 2)
+
+==== a3 reset 内
+源程序:  (reset (let ((f add1)) (+ 1 (f 41))))
+编译输出: ((λ (f) ((f 41) (λ (v.3) (+ 1 v.3)))) (λ v.1 (λ (k.0) (k.0 (apply add1 v.1)))))
+目标运行: 打印 ""  结果 (value 43)
+
+==== a4 对照：用户函数换名
+源程序:  (let ((f (λ (x) (add1 x)))) (f 41))
+编译输出: ((λ (f) ((f 41) values)) (λ (x) (λ (k.0) (k.0 (add1 x)))))
+目标运行: 打印 ""  结果 (value 42)
+
+==== a5 对照：文中的绕法，手动包成 lambda
+源程序:  (let ((f (λ (x) (add1 x)))) (+ 1 (f 41)))
+编译输出: ((λ (f) ((f 41) (λ (v.2) (+ 1 v.2)))) (λ (x) (λ (k.0) (k.0 (add1 x)))))
+目标运行: 打印 ""  结果 (value 43)
+
+######## b. 高阶：内建函数作为值传给函数
+==== b1
+源程序:  ((λ (h) (h 1)) add1)
+编译输出: ((λ (h) ((h 1) values)) (λ v.0 (λ (k.0) (k.0 (apply add1 v.0)))))
+目标运行: 打印 ""  结果 (value 2)
+
+==== b2 多参 lambda
+源程序:  ((λ (h x) (h x)) add1 1)
+编译输出: ((λ (h x) ((h x) values)) (λ v.1 (λ (k.0) (k.0 (apply add1 v.1)))) 1)
+目标运行: 打印 ""  结果 (value 2)
+
+==== b3 传给用户定义的高阶函数
+源程序:  (let ((twice (λ (h x) (h (h x))))) (twice add1 1))
+编译输出: ((λ (twice) ((twice (λ v.3 (λ (k.1) (k.1 (apply add1 v.3)))) 1) values)) (λ (h x) (λ (k.0) ((h x) (λ (v.1) ((h v.1) k.0))))))
+目标运行: 打印 ""  结果 (value 3)
+
+==== b4 对照：传用户函数
+源程序:  (let ((twice (λ (h x) (h (h x))))) (twice (λ (y) (add1 y)) 1))
+编译输出: ((λ (twice) ((twice (λ (y) (λ (k.1) (k.1 (add1 y)))) 1) values)) (λ (h x) (λ (k.0) ((h x) (λ (v.1) ((h v.1) k.0))))))
+目标运行: 打印 ""  结果 (value 3)
+
+b5: (map add1 xs)，目标程序里 xs = '(1 2)
+编译输出: ((map add1 xs) values)
+目标运行: (error "application: not a procedure;\n expected a procedure that can be applied to arguments\n  given: '(2 3)")
+
+######## c. reset 作为参数时的求值顺序
+==== c1 trivial 调用，reset 在前
+源程序:  (eq? (reset (display 1)) (display 2))
+编译输出: ((λ (v.1) ((λ (v.3) (eq? v.1 v.3)) (display 2))) (display 1))
+目标运行: 打印 "12"  结果 (value #t)
+
+==== c2 trivial 调用，reset 在后（对照）
+源程序:  (eq? (display 1) (reset (display 2)))
+编译输出: ((λ (v.1) ((λ (v.2) (eq? v.1 v.2)) (display 2))) (display 1))
+目标运行: 打印 "12"  结果 (value #t)
+
+==== c3 用户函数调用
+源程序:  (let ((f (λ (a b) a))) (f (reset (display 1)) (display 2)))
+编译输出: ((λ (f) ((λ (v.1) ((λ (v.3) ((f v.1 v.3) values)) (display 2))) (display 1))) (λ (a b) (λ (k.0) (k.0 a))))
+目标运行: 打印 "12"  结果 (value #<void>)
+
+==== c4 带值的版本
+源程序:  (+ (reset (let ((a (display 1))) 1)) (let ((b (display 2))) 2))
+编译输出: ((λ (v.1) ((λ (b) (+ v.1 2)) (display 2))) ((λ (a) 1) (display 1)))
+目标运行: 打印 "12"  结果 (value 3)
+
+==== c5 rator 位置
+源程序:  ((reset (let ((a (display 1))) add1)) (let ((b (display 2))) 2))
+编译输出: ((λ (v.1) ((λ (b) ((v.1 2) values)) (display 2))) ((λ (a) (λ v.3 (λ (k.0) (k.0 (apply add1 v.3))))) (display 1)))
+目标运行: 打印 "12"  结果 (value 3)
+
+==== c6 reset 里有 shift
+源程序:  (+ (reset (+ 10 (shift k (let ((a (display 1))) (k 1))))) (let ((b (display 2))) 2))
+编译输出: ((λ (v.1) ((λ (b) (+ v.1 2)) (display 2))) ((λ (k) ((λ (a) (k 1)) (display 1))) (λ (v.5) (+ 10 v.5))))
+目标运行: 打印 "12"  结果 (value 13)
+
