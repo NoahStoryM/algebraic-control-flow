@@ -1084,17 +1084,30 @@ $¬¬p →_𝒦 p$ 看上去也像 DNE；展开到宿主，它只是 $¬¬p → 
 
 ## 翻译 `call/cc`
 
-照 `neg²` 的类型，任何宿主箭头经过它都落进 𝒟。可 `(neg² f)` 运行时仍原样调用 `f`：`f` 若用了宿主的 `call/cc`，包一层以后照样依赖它，类型写成 $→_𝒟$ 改变不了这一点。不过，就算 `f` 里用了 `call/cc`，也可能另有一个纯函数，和 `(neg² f)` 行为一样。若 `f` 是从一支 CPS 箭头运行回来的，`f` 就是 `(uncps cps:f)`，三种写法一节的等式给出另一种写法：
+照 `neg²` 的类型，𝒞 里的任何箭头经过它都落进 𝒟。可 `(neg² f)` 运行时仍原样调用 `f`：`f` 若用了宿主的 `call/cc`，包一层以后照样依赖它，类型写成 $→_𝒟$ 改变不了这一点。不过，就算 `f` 里用了 `call/cc`，也可能另有一个纯函数，和 `(neg² f)` 行为一样。举个例子：`cps:f` 是一支纯的 CPS 箭头，把 `f` 定义成 `(uncps cps:f)`。`uncps` 里用了 `call/cc`，`f` 里也就有 `call/cc`。展开 `(neg² f)`：
 
 ```racket
-  (neg² (uncps cps:f))
+  (neg² f)
+= (neg² (uncps cps:f))
 = (neg (neg (uncps cps:f)))
+= (neg (flip (cps (uncps cps:f))))
 ≈ (neg (flip cps:f))
 ```
 
-右边只用 λ 和函数调用。`cps:f` 若只用纯的构造写成，右边就落在 𝒟 里。
+第三步用的是 `neg = (∘ flip cps)`，最后一步是三种写法一节的 `(cps (uncps cps:f)) ≈ cps:f`。右边只用 λ 和函数调用，`cps:f` 是纯的，它也落在 𝒟 里。
 
-`call/cc` 自己就是这样运行回来的：同一支箭头一节说过，`(uncps neg²:id)` 就是 `call/cc`。所以 `(neg² call/cc)` 也有纯的写法。那一节停在逆否箭头那一行：`call/cc` 换成逆否箭头，是用在 $¬p$ 上的 `cps:id`。再用一次 `neg`，交齐参数展开：
+`call/cc` 自己就是这样一支 `f`：同一支箭头一节说过，`(uncps neg²:id)` 就是 `call/cc`，而 `neg²:id` 只用 λ 写成。照同样的步子展开 `(neg² call/cc)`，再把 `neg²:id` 拆回 `id`：
+
+```racket
+  (neg² call/cc)
+= (neg (neg call/cc))
+= (neg (flip (cps call/cc)))
+≈ (neg (flip neg²:id))
+≈ (neg (flip (neg (neg id))))
+= (neg (cps (neg id)))
+```
+
+最后一行从 `id` 出发，依次用 `neg`、`cps`、`neg`，一路都不碰 `call/cc`。交齐参数，看它做了什么。同一支箭头一节停在逆否箭头那一行：`call/cc` 换成逆否箭头，是用在 $¬p$ 上的 `cps:id`：
 
 ```racket
   (((neg² call/cc) kkkkp) kp)
@@ -1105,7 +1118,7 @@ $¬¬p →_𝒦 p$ 看上去也像 DNE；展开到宿主，它只是 $¬¬p → 
 
 `call/cc` 不见了，剩下的只用 λ 和函数调用：外层的计算交来一段 `kkp`，再把同一条 `kp` 交给它。从第 4 层到第 2 层，消去两层而不落底，正是数一数 k 一节的 `(neg cps:id)`，三重否定律用在 $¬p$ 上。
 
-逆否箭头那一行是 `(cps neg:id)`，再用一次 `neg`，就是 `(neg (cps neg:id))`：从 `id` 出发，依次用 `neg`、`cps`、`neg`，一路都不碰 `call/cc`。这一串用在别的宿主箭头上也行，记作 `join`；用在 `id` 上的那一支，照名字的约定记作 `join:id`：
+`neg`、`cps`、`neg` 这一串，用在别的宿主箭头上也行，记作 `join`；用在 `id` 上的那一支，照名字的约定记作 `join:id`：
 
 ```racket
 (: join (∀ (p q) (→ (→𝒞 p q) (→𝒟 (¬¬ (¬¬ p)) (¬¬ q)))))
