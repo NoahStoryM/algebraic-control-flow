@@ -6,7 +6,7 @@
   (("# 完整代码参考" "#lang typed/racket/no-check") "完整模块引用块含 #lang，不在交互命名空间重放；code.rkt 原样运行")
 )
  (skip
-  (("# 嵌入语言" "> (anf:eval\n(anf:let* ([cps:yin (cps:label)])") "阴阳谜题无限输出；在 code.rkt 中限时核对前缀")
+  (("# 用嵌入语言写程序" "> (anf:eval\n(anf:let* ([cps:yin (cps:label)])") "阴阳谜题无限输出；在 code.rkt 中限时核对前缀")
 )
 
  (stdout
