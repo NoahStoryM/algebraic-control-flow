@@ -42,7 +42,7 @@
 (define-type (¬𝒰 p)   (→𝒰 p ⊥))
 
 (: neg (∀ (p q) (case→ (→ (→𝒞 p q) (→𝒰 p q))
-                       (→ (→𝒰 p q) (→ (¬¬ p) (¬¬ q))))))
+                       (→ (→𝒰 p q) (→𝒟 (¬¬ p) (¬¬ q))))))
 (define ((neg f) kq) (∘ kq f))
 
 
@@ -116,11 +116,6 @@
 (define ((cps:call/cc cps:proc) kp) ((cps:proc (cps kp)) kp))
 
 
-;;; ¬¬ 上的恒等
-
-(: neg²:id (∀ (a) (→𝒦 (¬¬ a) a)))
-(define (neg²:id kka) kka)
-
 
 ;;; 填上延续参数
 
@@ -129,6 +124,24 @@
 
 (: uncps (∀ (p q) (→ (→𝒦 p q) (→𝒞 p q))))
 (define (uncps cps:f) (∘ call/cc cps:f))
+
+(: unneg (∀ (p q) (→ (→𝒰 p q) (→𝒞 p q))))
+(define unneg (∘ uncps flip))
+
+
+;;; 再用一次 neg
+
+(: neg² (∀ (p q) (→ (→𝒞 p q) (→𝒟 (¬¬ p) (¬¬ q)))))
+(define neg² (∘ neg neg))
+
+
+;;; 否定翻译
+
+(: neg²:id (∀ (a) (→𝒦 (¬¬ a) a)))
+(define (neg²:id kka) kka)
+
+(: neg²:call/cc (∀ (a) (→𝒟 (¬¬ (¬¬ a)) (¬¬ a))))
+(define ((neg²:call/cc kkkka) ka) (kkkka (λ (kka) (kka ka))))
 
 
 ;;; CPS 提升的基本操作
@@ -583,6 +596,36 @@
                (cps:display #\*)
                (cps:yin cps:yang)))))))
     "@\n*@\n**@\n***@")))
+
+;; 「走一圈」「再用一次 neg」「否定翻译」：带 ≈ 的等式，用真正不返回的终结延续核对。
+(module+ test
+  (define cps:esc  ; 含控制：参数为负时经 cps:return 跳出
+    (λ (x) (anf:let/cc cps:return
+             (anf:if ((cps negative?) x) (cps:return 'neg) ((cps add1) x)))))
+  (define (run kk) (⊥->a (kk a->⊥)))
+  (for ([x '(-1 4)])
+    ;; (cps (uncps cps:f)) ≈ cps:f
+    (check-equal? (run ((cps (uncps cps:esc)) x)) (run (cps:esc x)))
+    ;; (neg (uncps cps:f)) ≈ (flip cps:f)
+    (check-equal? (⊥->a (((neg (uncps cps:esc)) a->⊥) x)) (⊥->a (((flip cps:esc) a->⊥) x)))
+    ;; unneg 走 𝒦 回到 𝒞
+    (check-equal? ((unneg (neg add1)) x) (add1 x)))
+  ;; 关键规律：(ka (call/cc kka)) ≈ (kka ka)
+  (let ([kka (λ (k) (k 5))] [kka2 (λ (k) (a->⊥ 'jump))])
+    (check-equal? (⊥->a (a->⊥ (call/cc kka))) (⊥->a (kka a->⊥)))
+    (check-equal? (⊥->a (a->⊥ (call/cc kka2))) (⊥->a (kka2 a->⊥))))
+  ;; (neg² (uncps cps:f)) ≈ (neg (flip cps:f))
+  (let ([kkx (cps:id 4)])
+    (check-equal? (run ((neg² (uncps cps:esc)) kkx)) (run ((neg (flip cps:esc)) kkx))))
+  ;; (neg² call/cc) ≈ neg²:call/cc ≈ (neg (flip neg²:id))；四重否定的 7
+  (for ([kkkka (list (cps:id (cps:id 7))
+                     (λ (k) (k (λ (ka) (ka 8))))
+                     (λ (k) (a->⊥ 'skip)))])
+    (check-equal? (run ((neg² call/cc) kkkka)) (run (neg²:call/cc kkkka)))
+    (check-equal? (run ((neg (flip neg²:id)) kkkka)) (run (neg²:call/cc kkkka))))
+  (check-equal? (anf:eval (neg²:call/cc (cps:id (cps:id 7)))) 7)
+  ;; (uncps neg²:id) 就是 call/cc
+  (check-equal? (+ 1 ((uncps neg²:id) (λ (k) (k 41)))) 42))
 
 (module+ test
   ;; 运行正文简化版宏与「两种箭头」的检查。
