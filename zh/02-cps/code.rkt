@@ -200,6 +200,9 @@
                                      [res (cps:loop r*)])
                             (cps:* res r))))))
       (cps:loop r*)))
+  ;; 「从 mul 到 cps:mul」：(neg (flip cps:mul)) 是 ¬¬p → ¬¬q 的纯函数。
+  (check-equal? (anf:eval ((neg (flip cps:mul)) (λ (k) (k 1 2 3 4)))) 24)
+  (check-equal? (anf:eval ((neg (flip cps:mul)) (λ (k) (k 1 2 0 3 4)))) 0)
   ;; 普通箭头经 CPS 提升后交给答案通道；组合不应改变结果。
   (check-equal? (anf:eval ((cps +) 2 3)) 5)
   (check-equal? (anf:eval ((∘𝒦 (cps add1) (cps (λ (x) (* 2 x)))) 3)) 7)
