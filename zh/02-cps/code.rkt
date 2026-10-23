@@ -28,7 +28,7 @@
   (with-handlers ([ans? (∘ list->values ans-a*)]) exp))
 
 
-;;; 宿主世界
+;;; 宿主的箭头
 
 (define-type (→𝒟 p q) (→ p q))
 (define-type (→𝒞 p q) (→ p q))
@@ -36,64 +36,34 @@
 (: inj (∀ (p q) (→ (→𝒟 p q) (→𝒞 p q))))
 (define (inj f) f)
 
-;;; 逆否世界
+;;; 逆否箭头
 
 (define-type (→𝒰 p q) (← (¬ p) (¬ q)))
 (define-type (¬𝒰 p)   (→𝒰 p ⊥))
 
-(: neg (∀ (p q) (case→ (→ (→𝒞 p q) (→𝒰 p q))
-                       (→ (→𝒰 p q) (→ (¬¬ p) (¬¬ q))))))
+(: neg
+   (∀ (p q)
+      (case→ (→ (→𝒞 p q) (→𝒰     p      q))
+             (→ (→𝒰 p q) (→𝒟 (¬¬ p) (¬¬ q))))))
 (define ((neg f) kq) (∘ kq f))
 
-(: ∘𝒰 (∀ (p ...) (→ (→𝒰 pn-1 pn) ... (→𝒰 p1 p2) (→𝒰 p1 pn))))
-(define ∘𝒰 ⨾)
 
-(: neg:id (∀ (q) (→𝒰 q q)))
-(define neg:id (∘𝒰))
-
-
-;;; CPS 世界
+;;; CPS 箭头
 
 (define-type (→𝒦 p q) (→ p (¬¬ q)))
 (define-type (¬𝒦 p)   (→𝒦 p ⊥))
 
-(: flip (∀ (p q) (case→ (→ (→𝒰 p q) (→𝒦 p q))
-                        (→ (→𝒦 p q) (→𝒰 p q)))))
+(: flip
+   (∀ (p q)
+      (case→ (→ (→𝒰 p q) (→𝒦 p q))
+             (→ (→𝒦 p q) (→𝒰 p q)))))
 (define (((flip f) . y*) . x*) (apply (apply f x*) y*))
 
 (: cps (∀ (p q) (→ (→𝒞 p q) (→𝒦 p q))))
 (define cps (∘ flip neg))
 
-(: cps->neg² (∀ (p q) (→ (→𝒦 p q) (→ (¬¬ p) (¬¬ q)))))
-(define cps->neg² (∘ neg flip))
-
 (: cps:id (∀ (q) (→𝒦 q q)))
 (define cps:id (cps id))
-
-(: ∘𝒦 (∀ (p ...) (→ (→𝒦 pn-1 pn) ... (→𝒦 p1 p2) (→𝒦 p1 pn))))
-(define (∘𝒦 . cps:f*)
-  (if (null? cps:f*)
-      cps:id
-      (let-values ([(cps:g* cps:f) (split-at-right cps:f* 1)])
-        (apply ∘ (append (map cps->neg² cps:g*) cps:f)))))
-
-(: neg²:id (∀ (q) (→𝒦 (¬¬ q) q)))
-(define (neg²:id kkv) kkv)
-
-
-;;; Clavius 律
-
-(: neg:call/cc  (∀ (p) (→𝒰 (→𝒰 (¬𝒰 p) p) p)))
-(: cps:call/cc  (∀ (p) (→𝒦 (→𝒦 (¬𝒦 p) p) p)))
-
-(define ((neg:call/cc kp) neg:proc) ((neg:proc kp) (neg kp)))
-(define ((cps:call/cc cps:proc) kp) ((cps:proc (cps kp)) kp))
-
-
-;;; 两次逆否
-
-(: neg² (∀ (p q) (→ (→𝒟 p q) (→𝒟 (¬¬ p) (¬¬ q)))))
-(define neg² (∘ neg neg))
 
 
 ;;; anf: 宏
@@ -103,12 +73,7 @@
     [(_ () b* ...)
      (anf:begin b* ...)]
     [(_ ([v* e]) b* ...)
-     (let ([kkv e])
-       (: cps:kv  (→      a  (¬¬ b)))
-       (: neg²:kv (→ (¬¬ a) (¬¬ b)))
-       (define (cps:kv . v*) (anf:begin b* ...))
-       (define neg²:kv (cps->neg² cps:kv))
-       (neg²:kv kkv))]
+     (λ (k) (e (λ v* ((anf:begin b* ...) k))))]
     [(_ ([v* e] [v** e*] ...) b* ...)
      (anf:let*-values ([v* e])
        (anf:let*-values ([v** e*] ...)
@@ -126,24 +91,63 @@
   (anf:let* ([v e]) b* ...))
 
 (define-syntax-rule (anf:if test conseq alt)
-  (let ([kkb test])
-    (: cps:kb  (→ Boolean (¬¬ a)))
-    (: neg²:kb (→ (¬¬ Boolean) (¬¬ a)))
-    (define (cps:kb . b*) (if (equal? b* '(#f)) alt conseq))
-    (define neg²:kb (cps->neg² cps:kb))
-    (neg²:kb kkb)))
+  (λ (k) (test (λ b* ((if (equal? b* '(#f)) alt conseq) k)))))
 
 (define-syntax-rule (anf:let/cc cps:k b* ...)
   (cps:call/cc (λ (cps:k) b* ...)))
 
 
-;;; 填上延续参数
+;;; 两种箭头的复合
+
+(: ∘𝒰 (∀ (p1 p2 p3) (→ (→𝒰 p2 p3) (→𝒰 p1 p2) (→𝒰 p1 p3))))
+(define ∘𝒰 ⨾)
+
+;; 借 ∘𝒰 定义 ∘𝒦，可以接任意多支；正文用 anf:let 给的是两支的写法。
+(: ∘𝒦 (∀ (p1 p2 p3) (→ (→𝒦 p2 p3) (→𝒦 p1 p2) (→𝒦 p1 p3))))
+(define (∘𝒦 . cps:f*) (flip (apply ∘𝒰 (map flip cps:f*))))
+
+(: neg:id (∀ (q) (→𝒰 q q)))
+(define neg:id id)
+
+
+;;; Clavius 律
+
+(: neg:call/cc  (∀ (p) (→𝒰 (→𝒰 (¬𝒰 p) p) p)))
+(: cps:call/cc  (∀ (p) (→𝒦 (→𝒦 (¬𝒦 p) p) p)))
+
+(define ((neg:call/cc kp) neg:proc) ((neg:proc kp) (neg kp)))
+(define ((cps:call/cc cps:proc) kp) ((cps:proc (cps kp)) kp))
+
+
+
+;;; 回到宿主
 
 (: anf:eval (∀ (a) (→ (¬¬ a) a)))
 (define (anf:eval kka) (⊥->a (kka a->⊥)))
 
 (: uncps (∀ (p q) (→ (→𝒦 p q) (→𝒞 p q))))
 (define (uncps cps:f) (∘ call/cc cps:f))
+
+(: unneg (∀ (p q) (→ (→𝒰 p q) (→𝒞 p q))))
+(define unneg (∘ uncps flip))
+
+
+;;; 再用一次 neg
+
+(: neg² (∀ (p q) (→ (→𝒞 p q) (→𝒟 (¬¬ p) (¬¬ q)))))
+(define neg² (∘ neg neg))
+
+
+;;; 翻译 call/cc
+
+(: neg²:id (∀ (p) (→𝒦 (¬¬ p) p)))
+(define (neg²:id kkp) kkp)
+
+(: join (∀ (p q) (→ (→𝒞 p q) (→𝒟 (¬¬ (¬¬ p)) (¬¬ q)))))
+(define join (∘ neg cps neg))
+
+(: join:id (∀ (p) (→𝒟 (¬¬ (¬¬ p)) (¬¬ p))))
+(define join:id (join id))
 
 
 ;;; CPS 提升的基本操作
@@ -165,9 +169,9 @@
     (check-equal? ((⨾ f g h) 3) ((∘ h g f) 3))
     (check-equal? (let* ([y (f 3)] [z (g y)]) (h z)) ((⨾ f g h) 3))
     (check-equal? ((⨾) 5) 5))
-  ;; 「否定翻译」：改写前的宿主版本，用宿主的 let/cc；不进完整代码参考。
-  (: mul/cc (→ Real * Real))
-  (define (mul/cc . r*)
+  ;; 「提前返回」：改写前的宿主版本，用宿主的 let/cc；不进完整代码参考。
+  (: mul (→ Real * Real))
+  (define (mul . r*)
     (let/cc return
       (: loop (→ (Listof Real) Real))
       (define (loop r*)
@@ -180,13 +184,13 @@
                          [res (loop r*)])
                     (* res r))))))
       (loop r*)))
-  (check-equal? (mul/cc 1 2 3 4) 24)
-  (check-equal? (mul/cc 1 2 0 3 4) 0)
+  (check-equal? (mul 1 2 3 4) 24)
+  (check-equal? (mul 1 2 0 3 4) 0)
   ;; 「嵌入语言」的例子：cps:mul 是一支 𝒦 的箭头，不进完整代码参考。
   (: cps:mul (→ Real * (¬¬ Real)))
   (define (cps:mul . r*)
     (anf:let/cc cps:return
-      (: cps:loop (→𝒦 (Listof Real) Real))
+      (: cps:loop (→ (Listof Real) (¬¬ Real)))
       (define (cps:loop r*)
         (anf:if (cps:null? r*)
                 (cps:*)
@@ -197,6 +201,9 @@
                                      [res (cps:loop r*)])
                             (cps:* res r))))))
       (cps:loop r*)))
+  ;; 「从 mul 到 cps:mul」：(neg (flip cps:mul)) 是 ¬¬p → ¬¬q 的纯函数。
+  (check-equal? (anf:eval ((neg (flip cps:mul)) (λ (k) (k 1 2 3 4)))) 24)
+  (check-equal? (anf:eval ((neg (flip cps:mul)) (λ (k) (k 1 2 0 3 4)))) 0)
   ;; 普通箭头经 CPS 提升后交给答案通道；组合不应改变结果。
   (check-equal? (anf:eval ((cps +) 2 3)) 5)
   (check-equal? (anf:eval ((∘𝒦 (cps add1) (cps (λ (x) (* 2 x)))) 3)) 7)
@@ -230,23 +237,45 @@
         [neg:proc2 (λ (kp) (λ (neg:k) ((neg:k ((neg add1) kp)) 10)))])
     (check-equal? (⊥->a ((neg:call/cc ((neg add1) a->⊥)) neg:proc1)) 7)
     (check-equal? (⊥->a ((neg:call/cc ((neg add1) a->⊥)) neg:proc2)) 11))
-  ;; 「绑定就是复合」：∘𝒦 与借道 𝒰 的定义相同（练习答案）；(∘𝒦 cps:g neg²:id) = (cps->neg² cps:g)。
-  (let* ([cps:f (cps add1)] [cps:g (cps (λ (y) (* y 2)))]
-         [via-U (λ cps:f* (flip (apply ⨾ (map flip cps:f*))))])
-    (check-equal? (((∘𝒦 cps:g cps:f) 3) values) (((via-U cps:g cps:f) 3) values))
-    (check-equal? (((∘𝒦 cps:g cps:f cps:g) 3) values) (((via-U cps:g cps:f cps:g) 3) values))
-    (check-equal? (((∘𝒦 cps:g neg²:id) (cps:f 3)) values) (((cps->neg² cps:g) (cps:f 3)) values))
-    (check-equal? (((neg² id) (cps:f 3)) values) ((neg²:id (cps:f 3)) values))
-    (check-equal? (((∘𝒦 cps:f) 3) values) ((cps:f 3) values)))
-  ;; 「对不上的两段」：(cps->neg² (cps g)) = (neg² g)。
-  (let ([g (λ (y) (* y 2))])
-    (check-equal? (((cps->neg² (cps g)) (cps:+ 1 2)) values) (((neg² g) (cps:+ 1 2)) values)))
-  ;; 「箭头指向何方」：(uncps neg²:id) 就是 call/cc 的行为。
+  ;; 「绑定就是复合」：两种嵌套、两条单位律（合法 CPS 箭头）；∘𝒦 与借道 ⨾ 的定义相同。
+  (let* ([cps:f (cps add1)] [cps:g (cps (λ (y) (* y 2)))] [cps:h (cps number->string)]
+         [via-⨾ (λ (cps:g cps:f) (flip (⨾ (flip cps:g) (flip cps:f))))])
+    (check-equal? (((∘𝒦 cps:h (∘𝒦 cps:g cps:f)) 3) values) (((∘𝒦 (∘𝒦 cps:h cps:g) cps:f) 3) values))
+    (check-equal? ((anf:let ([y (cps:f 3)]) (anf:let ([z (cps:g y)]) (cps:h z))) values)
+                  ((anf:let ([z (anf:let ([y (cps:f 3)]) (cps:g y))]) (cps:h z)) values))
+    (check-equal? (((∘𝒦 cps:f cps:id) 3) values) ((cps:f 3) values))
+    (check-equal? (((∘𝒦 cps:id cps:f) 3) values) ((cps:f 3) values))
+    (check-equal? (((∘𝒦 cps:g cps:f) 3) values) (((via-⨾ cps:g cps:f) 3) values))
+    ;; 普通纯函数提升保持复合。
+    (check-equal? (((∘𝒦 cps:g cps:f) 3) values) (((cps (∘ (λ (y) (* y 2)) add1)) 3) values))
+    ;; (flip id) 就是 cps:id。
+    (check-equal? (((flip id) 5) values) ((cps:id 5) values)))
+  ;; 宏不提前求值右边：构造时不打印，收到延续才打印；重复运行会重新求值。
+  (let* ([out (open-output-string)]
+         [kkv (parameterize ([current-output-port out])
+                (anf:let ([v (begin (display "e" out) (cps:id 1))]) (cps:id v)))])
+    (check-equal? (get-output-string out) "")
+    (check-equal? (kkv values) 1)
+    (check-equal? (kkv values) 1)
+    (check-equal? (get-output-string out) "ee"))
+  ;; 第一层就打印的箭头：单位律需要前提。
+  (let* ([out (open-output-string)]
+         [cps:noisy (λ (x) (display "!" out) (cps:id x))])
+    ((∘𝒦 cps:noisy cps:id) 1)
+    (check-equal? (get-output-string out) "")
+    (cps:noisy 1)
+    (check-equal? (get-output-string out) "!"))
+  ;; neg²:id 收下一段计算，原样交出，不运行它。
+  (let ([kk3 (cps:id 3)])
+    (check-eq? (neg²:id kk3) kk3))
+  ;; 「同一支箭头」：(∘𝒦 neg²:id neg²:id) 只接掉外面一层，结果仍是计算。
+  (let ([kkkkp (cps:id (cps:id 7))])
+    (check-equal? (((∘𝒦 neg²:id neg²:id) kkkkp) values) 7))
+  ;; 「同一支箭头」：(uncps neg²:id) 就是 call/cc 的行为。
   (check-equal? (+ 1 ((uncps neg²:id) (λ (k) (k 41)))) 42)
-  ;; 「两段计算怎样接起来」：(⨾ (neg g) (neg f)) 接两步；(∘𝒦) 与 (cps id) 一样。
+  ;; 「两段计算怎样接起来」：(⨾ (neg g) (neg f)) 接两步。
   (let ([f add1] [g (λ (y) (* y 2))])
-    (check-equal? (((⨾ (neg g) (neg f)) values) 3) (g (f 3)))
-    (check-equal? (((∘𝒦) 5) values) (((cps id) 5) values)))
+    (check-equal? (((⨾ (neg g) (neg f)) values) 3) (g (f 3))))
   ;; 练习：两个例子在 𝒰 里用 neg:call/cc 再跑一遍。
   (let* ([neg:add1  (neg add1)]
          [neg:proc1 (λ (kp) (λ (neg:k) (((neg *) kp) 2 3)))]
@@ -256,38 +285,23 @@
   ;; neg:call/cc：先收延续 kp，再收 neg:proc；调用 (neg kp) 也改走 kp。
   (check-equal? (⊥->a ((neg:call/cc (∘ a->⊥ add1)) (λ (kp) (λ (neg:k) (kp 99))))) 100)
   (check-equal? (⊥->a ((neg:call/cc (∘ a->⊥ add1)) (λ (kp) (λ (neg:k) ((neg:k id) 10) (kp 99))))) 11)
-  ;; 「再次隐藏延续」开头：手写 CPS、∘𝒦 复合、anf:let 三种写法算出同一个结果。
-  (let ([cps:mul3 (cps (λ (v) (* 3 v)))])
-    (check-equal? ((λ (k) ((cps:+ 1 2) (λ (v) ((cps:* v 3) k)))) values) 9)
-    (check-equal? (((∘𝒦 cps:mul3 cps:+) 1 2) values) 9)
-    (check-equal? (anf:eval (anf:let* ([v (cps:+ 1 2)]) (cps:* v 3))) 9)
-    (check-equal? (anf:eval (anf:let ([v (cps:+ 1 2)]) (cps:* v 3))) 9))
-  ;; 「再次隐藏延续」：(neg² id) 什么也不做，就是宏里的 neg²:id。
-  (let* ([neg²:id (neg² id)]
-         [macro:id (λ (kkv) kkv)]
-         [cps:mul3 (cps (λ (v) (* v 3)))]
-         [cps:g (cps (λ (v) (+ v 1)))])
-    (check-equal? (anf:eval ((neg² id) (cps:+ 1 2))) 3)
-    (check-equal? (anf:eval ((∘𝒦 cps:mul3 neg²:id) (cps:+ 1 2)))
-                  (anf:eval ((∘𝒦 cps:mul3 macro:id) (cps:+ 1 2))))
-    (check-equal? (anf:eval ((∘𝒦 cps:mul3 neg²:id) (cps:+ 1 2))) 9)
-    ;; 拿掉 neg²:id：((∘𝒦 cps:kv neg²:id) (cps:g y)) = ((∘𝒦 cps:kv cps:g) y)
-    (check-equal? (anf:eval ((∘𝒦 cps:mul3 neg²:id) (cps:g 4)))
-                  (anf:eval ((∘𝒦 cps:mul3 cps:g) 4)))
-    ;; 「否定翻译」：(∘𝒦 cps:kv neg²:id) = (neg (flip cps:kv))，含控制的 cps:kv 也成立。
-    (define (cps:kv v) (anf:let/cc k (anf:if (cps:zero? v) (k 'zero) (cps:* v 10))))
-    (for ([x '(0 4)])
-      (check-equal? (anf:eval ((∘𝒦 cps:kv neg²:id) (cps:id x)))
-                    (anf:eval ((neg (flip cps:kv)) (cps:id x)))))
-    ;; 「否定翻译」：先用 cps:mul3 推出 (∘𝒦 cps:mul3 neg²:id) = (neg² mul3)。
-    (let ([mul3 (λ (v) (* v 3))] [kk3 (cps:+ 1 2)])
-      (check-equal? (anf:eval ((∘𝒦 cps:mul3 neg²:id) kk3))
-                    (anf:eval ((neg (neg mul3)) kk3)))
-      (check-equal? (anf:eval ((neg² mul3) kk3)) 9))
-    ;; 纯函数特例：(∘𝒦 (cps f) neg²:id) = (neg² f)
-    (check-equal? (anf:eval ((∘𝒦 (cps add1) neg²:id) (cps:+ 1 2)))
-                  (anf:eval ((neg² add1) (cps:+ 1 2)))))
-  ;; 「填上延续参数」：anf:eval 用 raise 与 handler 把答案交回调用处。
+  ;; 「再次隐藏延续」开头：两步的手写 CPS 与 anf:let 都是 2；三步两种分组的 ∘𝒦 都是 6。
+  (let ([cps:mul1 (cps (λ (v) (* 1 v)))]
+        [cps:mul2 (cps (λ (v) (* 2 v)))]
+        [cps:mul3 (cps (λ (v) (* 3 v)))])
+    (check-equal? ((λ (k) ((cps:mul1 1) (λ (v1) ((cps:mul2 v1) (λ (v2) ((cps:mul3 v2) k)))))) values) 6)
+    (check-equal? ((λ (k) ((cps:mul1 1) (λ (v) ((cps:mul2 v) k)))) values) 2)
+    (check-equal? ((anf:let ([v (cps:mul1 1)]) (cps:mul2 v)) values) 2)
+    (check-equal? ((anf:let ([v1 (cps:mul1 1)]) (anf:let ([v2 (cps:mul2 v1)]) (cps:mul3 v2))) values) 6)
+    (check-equal? (((∘𝒦 cps:mul3 (∘𝒦 cps:mul2 cps:mul1)) 1) values) 6)
+    (check-equal? (((∘𝒦 (∘𝒦 cps:mul3 cps:mul2) cps:mul1) 1) values) 6))
+  ;; 含控制的箭头：两种分组安排同样的剩余工作。
+  (let* ([cps:kv (λ (v) (anf:let/cc k (anf:if (cps:zero? v) (k 100) (cps:* v 10))))]
+         [cps:f (cps add1)])
+    (for ([x '(-1 4)])
+      (check-equal? (anf:eval ((∘𝒦 cps:f (∘𝒦 cps:kv cps:f)) x))
+                    (anf:eval ((∘𝒦 (∘𝒦 cps:f cps:kv) cps:f) x)))))
+  ;; 「回到宿主」：anf:eval 用 raise 与 handler 把答案交回调用处。
   (check-equal? (+ 1 (anf:eval (cps:mul 1 2 3 4))) 25)
   (check-equal? (+ 1 (anf:eval (cps:mul 1 2 0 3 4))) 1)
   ;; uncps 交入当前延续，两条路都回到调用处。
@@ -493,7 +507,7 @@
 )
 
 (module stage-clavius typed/racket/no-check
-  ;; 「新世界下的 Clavius 律」：回顾第一篇 call/cc 的类型，用 𝒞 的写法。
+  ;; 「新箭头下的 Clavius 律」：回顾第一篇 call/cc 的类型，用 𝒞 的写法。
   (define-type ⊥ (∪))
   (define-type (→𝒞 p q) (→ p q))
   (define-type (¬𝒞 p) (→𝒞 p ⊥))
@@ -519,28 +533,44 @@
   (check-equal? (answer:mul 2 0 4) 0)
   (check-equal? (((lift:cps add1) 7) values) 8))
 
-;; 「两个世界」：两边的复合借 flip 互相定义（练习答案）。
+;; 「两种箭头」：两边的复合借 flip 互相定义（练习答案）。
 (module* transport #f
   (require rackunit)
-  (define (∘𝒰 . neg:f*) (flip (apply ∘𝒦 (map flip neg:f*))))
-  (define (∘𝒦/⨾ . cps:f*) (flip (apply ⨾ (map flip cps:f*))))
+  (define (∘𝒰 neg:g neg:f)
+    (flip
+     (∘𝒦 (flip neg:g)
+           (flip neg:f))))
   (define neg:f (neg add1))
   (define neg:g (neg (λ (y) (* y 2))))
   (check-equal? (((∘𝒰 neg:g neg:f) values) 3) ((neg:f (neg:g values)) 3))
   (check-equal? (((∘𝒰 neg:g neg:f) values) 3) (((⨾ neg:g neg:f) values) 3))
+  (let ()
+    (define (∘𝒦 cps:g cps:f)
+      (flip
+       (⨾ (flip cps:g)
+           (flip cps:f))))
+    (define cps:f (cps add1))
+    (define cps:g (cps (λ (y) (* y 2))))
+    (check-equal? (((∘𝒦 cps:g cps:f) 3) values) ((cps:g 4) values))))
+
+;; 正文「绑定就是复合」用 anf:let 给出的两支 ∘𝒦；与借 ∘𝒰 的定义行为相同。
+(module* bind-compose #f
+  (require rackunit (only-in (submod "..") [∘𝒦 main:∘𝒦]))
+  (: ∘𝒦 (∀ (p1 p2 p3) (→ (→𝒦 p2 p3) (→𝒦 p1 p2) (→𝒦 p1 p3))))
+  (define ((∘𝒦 cps:g cps:f) x)
+    (anf:let ([y (cps:f x)])
+      (cps:g y)))
   (define cps:f (cps add1))
   (define cps:g (cps (λ (y) (* y 2))))
-  (check-equal? (((∘𝒦/⨾ cps:g cps:f) 3) values) (((∘𝒦 cps:g cps:f) 3) values))
-  (check-equal? (((∘𝒦/⨾ cps:g neg²:id) (cps:f 3)) values) (((cps->neg² cps:g) (cps:f 3)) values)))
+  (check-equal? (((∘𝒦 cps:g cps:f) 3) values) (((main:∘𝒦 cps:g cps:f) 3) values))
+  (check-equal? (((main:∘𝒦 cps:g cps:f cps:f) 3) values) 10)
+  (check-equal? (((main:∘𝒦) 3) values) 3))
 
-;; 正文「写成宏」「嵌入语言」给出的简化版宏：单个函数体、单值；完整代码里的宏另外处理多值与多个表达式。
+;; 正文「嵌入语言」给出的简化版宏：单个函数体、单值；完整代码里的宏另外处理多值与多个表达式。
 (module* simple-macros #f
   (require rackunit "../../tools/check-output-prefix.rkt")
   (define-syntax-rule (anf:let ([v e]) b)
-    (let ([kkv e])
-      (define (cps:kv v) b)
-      (define neg²:kv (cps->neg² cps:kv))
-      (neg²:kv kkv)))
+    (λ (k) (e (λ (v) (b k)))))
   (define-syntax anf:let*
     (syntax-rules ()
       [(_ () b) b]
@@ -554,11 +584,13 @@
       [(_ e b* ...) (anf:let ([_ e]) (anf:begin b* ...))]))
   ;; 单值的 anf:if。
   (define-syntax-rule (anf:if test conseq alt)
-    (let ([kkb test])
-      (define (cps:kb b) (if b conseq alt))
-      (define neg²:kb (cps->neg² cps:kb))
-      (neg²:kb kkb)))
+    (λ (k) (test (λ (b) ((if b conseq alt) k)))))
   (check-equal? (⊥->a ((anf:let ([v (cps:+ 1 2)]) (cps:* v 3)) a->⊥)) 9)
+  (define (∘𝒦 cps:g cps:f)
+    (λ (x)
+      (anf:let ([y (cps:f x)])
+        (cps:g y))))
+  (check-equal? (⊥->a (((∘𝒦 (cps add1) (cps add1)) 1) a->⊥)) 3)
   (define (cps:mul . r*)
     (anf:let/cc cps:return
       (define (cps:loop r*)
@@ -587,6 +619,74 @@
                (cps:yin cps:yang)))))))
     "@\n*@\n**@\n***@")))
 
+;; 「三种写法」「再用一次 neg」「翻译 call/cc」：带 ≈ 的等式，用真正不返回的终结延续核对。
 (module+ test
-  ;; 运行正文简化版宏与「两个世界」的检查。
-  (require (submod ".." simple-macros) (submod ".." transport)))
+  (define cps:esc  ; 含控制：参数为负时经 cps:return 跳出
+    (λ (x) (anf:let/cc cps:return
+             (anf:if ((cps negative?) x) (cps:return 'neg) ((cps add1) x)))))
+  (define (run kk) (⊥->a (kk a->⊥)))
+  (for ([x '(-1 4)])
+    ;; (cps (uncps cps:f)) ≈ cps:f
+    (check-equal? (run ((cps (uncps cps:esc)) x)) (run (cps:esc x)))
+    ;; (neg (uncps cps:f)) ≈ (flip cps:f)
+    (check-equal? (⊥->a (((neg (uncps cps:esc)) a->⊥) x)) (⊥->a (((flip cps:esc) a->⊥) x)))
+    ;; unneg 走 𝒦 回到 𝒞
+    (check-equal? ((unneg (neg add1)) x) (add1 x)))
+  ;; 关键规律：(kp (call/cc kkp)) ≈ (kkp kp)
+  ;; 前提：kkp 不装异常处理器。装了的话，直接调用 kp 还在处理器里，捕获的延续先离开它。
+  (let ([kkp (λ (kp) (with-handlers ([ans? (λ (_) (a->⊥ 2))]) (kp 1)))])
+    (check-equal? (⊥->a (a->⊥ (call/cc kkp))) 1)
+    (check-equal? (⊥->a (kkp a->⊥)) 2))
+  (let ([kkp (λ (k) (k 5))] [kkp2 (λ (k) (a->⊥ 'jump))])
+    (check-equal? (⊥->a (a->⊥ (call/cc kkp))) (⊥->a (kkp a->⊥)))
+    (check-equal? (⊥->a (a->⊥ (call/cc kkp2))) (⊥->a (kkp2 a->⊥))))
+  ;; (neg² (uncps cps:f)) ≈ (neg (flip cps:f))
+  (let ([kkx (cps:id 4)])
+    (check-equal? (run ((neg² (uncps cps:esc)) kkx)) (run ((neg (flip cps:esc)) kkx))))
+  ;; (neg² call/cc) ≈ join:id ≈ (neg (flip neg²:id))；四重否定的 7
+  (for ([kkkkp (list (cps:id (cps:id 7))
+                     (λ (k) (k (λ (kp) (kp 8))))
+                     (λ (k) (a->⊥ 'skip)))])
+    (check-equal? (run ((neg² call/cc) kkkkp)) (run (join:id kkkkp)))
+    (check-equal? (run ((neg (flip neg²:id)) kkkkp)) (run (join:id kkkkp))))
+  (check-equal? (anf:eval (join:id (cps:id (cps:id 7)))) 7)
+  ;; neg²:id = (neg neg:id)；join 与 cps 的两种拆法；练习：cps->neg²。
+  (for ([kkp (list (cps:id 7) (λ (k) (a->⊥ 'skip)))])
+    (check-equal? (run ((neg neg:id) kkp)) (run (neg²:id kkp))))
+  (let ([f (λ (n) (* n 10))] [k4 (λ (k) (k (λ (kp) (kp 8))))])
+    (check-equal? (run ((join f) k4)) (run ((∘ (neg² f) join:id) k4)))
+    (check-equal? (run ((join f) k4)) (run ((∘ join:id (neg² (neg² f))) k4)))
+    (check-equal? (run ((join f) k4)) (run ((neg² (∘ f call/cc)) k4)))
+    (check-equal? (run ((cps f) 3)) (run ((∘ (neg² f) cps:id) 3))))
+  (let* ([cps->neg² (∘ neg flip)]
+         [cps:f (λ (x) (anf:let/cc k (anf:if ((cps negative?) x) (k 'neg) ((cps add1) x))))])
+    (for ([kkx (list (cps:id 4) (cps:id -1))])
+      (check-equal? (run ((cps->neg² cps:f) kkx)) (run (anf:let ([x kkx]) (cps:f x)))))
+    (for ([k4 (list (cps:id (cps:id 7)) (λ (k) (a->⊥ 9)))])
+      (check-equal? (run ((cps->neg² neg²:id) k4)) (run (join:id k4)))))
+  ;; 同一支箭头：(cps call/cc) ≈ neg²:id，(neg call/cc) ≈ 用在 ¬p 上的 cps:id；
+  ;; 数一数 k：join:id 就是 (neg cps:id)，DNI 的逆否；¬³a → ¬a 也由 (neg cps:id) 给出。
+  (for ([kkp (list (cps:id 7) (λ (k) (k 8)) (λ (k) (a->⊥ 'skip)))])
+    (check-equal? (run ((cps call/cc) kkp)) (run (neg²:id kkp)))
+    (check-equal? (⊥->a (((neg call/cc) a->⊥) kkp)) (⊥->a ((cps:id a->⊥) kkp))))
+  (for ([kkkkp (list (cps:id (cps:id 7)) (λ (k) (k (λ (kp) (kp 8)))) (λ (k) (a->⊥ 9)))])
+    (check-equal? (run ((neg cps:id) kkkkp)) (run (join:id kkkkp))))
+  (let ([kkkp (λ (kkp) (kkp (λ (p) (a->⊥ (* p 10)))))])
+    (check-equal? (⊥->a (((neg cps:id) kkkp) 5)) 50))
+  ;; (uncps neg²:id) 就是 call/cc
+  (check-equal? (+ 1 ((uncps neg²:id) (λ (k) (k 41)))) 42))
+
+(module+ test
+  ;; 运行正文简化版宏与「两种箭头」的检查。
+  (require (submod ".." simple-macros) (submod ".." transport) (submod ".." bind-compose)))
+
+;; 「把延续独立出来」：flip 是自己的逆，条件是两层参数之间不做别的事。
+(module+ test
+  (let* ([out (open-output-string)]
+         [quiet (λ (x) (λ (y) (+ x y)))]
+         [noisy (λ (x) (display "!" out) (λ (y) (+ x y)))])
+    (check-equal? (((flip (flip quiet)) 1) 2) ((quiet 1) 2))
+    ((flip (flip noisy)) 1)
+    (check-equal? (get-output-string out) "")
+    (noisy 1)
+    (check-equal? (get-output-string out) "!")))
