@@ -272,8 +272,8 @@
         [cps:mul2 (cps (λ (v) (* 2 v)))]
         [cps:mul3 (cps (λ (v) (* 3 v)))])
     (check-equal? ((λ (k) ((cps:mul1 1) (λ (v1) ((cps:mul2 v1) (λ (v2) ((cps:mul3 v2) k)))))) values) 6)
-    (check-equal? ((λ (k) ((cps:mul1 1) (λ (v1) ((cps:mul2 v1) k)))) values) 2)
-    (check-equal? ((anf:let ([v1 (cps:mul1 1)]) (cps:mul2 v1)) values) 2)
+    (check-equal? ((λ (k) ((cps:mul1 1) (λ (v) ((cps:mul2 v) k)))) values) 2)
+    (check-equal? ((anf:let ([v (cps:mul1 1)]) (cps:mul2 v)) values) 2)
     (check-equal? ((anf:let ([v1 (cps:mul1 1)]) (anf:let ([v2 (cps:mul2 v1)]) (cps:mul3 v2))) values) 6)
     (check-equal? (((∘𝒦 cps:mul3 (∘𝒦 cps:mul2 cps:mul1)) 1) values) 6)
     (check-equal? (((∘𝒦 (∘𝒦 cps:mul3 cps:mul2) cps:mul1) 1) values) 6))
