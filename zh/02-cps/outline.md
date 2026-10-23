@@ -177,32 +177,30 @@
 - 逆否箭头：`(((neg call/cc) ka) kka) = (ka (call/cc kka)) ≈ (kka ka) = ((cps:id ka) kka)`：`cps:id` 用在 ¬a 上，即 `(cps neg:id)`，1 → 3。
 - 收尾一句：接口改变后，原来的 2 → 0 变成 2 → 2、1 → 3，都不落底（不说「层数整体抬高」，Astra 10/23）。
 
-## 8. 否定翻译（Noah 10/23：大标题）
+## 8. 否定翻译（Noah 10/23：大标题；整节按新叙事重写）
+
+- 大节开头（Noah 10/23）：同一支箭头里，`call/cc` 换成 CPS 箭头是 `neg²:id`，换成逆否箭头是用在 ¬p 上的 `cps:id`，都只用 λ。可要当普通函数用，沿图表回宿主就得经过 `uncps`，`(uncps neg²:id)` 就是 `call/cc` 本身：回到的是完整的宿主 𝒞，`call/cc`、`raise`、`exit`、`display` 都在里面。由此拆出 𝒞、𝒟、`inj`（挪自原 8.1；第一次用到 `→𝒟`）。问：不经过 `call/cc`，能不能落到 𝒟？
+- 删去旧开头：uncps/unneg 读成 DNE、`anf:eval` 也是 DNE、回到宿主的往返是「DNI 再 DNE」。运行边界留给结论。
 
 ### 8.1 再用一次 `neg`
 
-- 开头：`uncps`、`unneg` 读出来是 DNE 与逆否律的逆，都是经典的（挪自原 7.1 末尾）；「不回宿主呢？」逆否箭头再用一次 `neg`，方向翻回来；`neg` 两种读法写进同一个 `case→`（第二行落到 `→𝒟`）；`neg² = (∘ neg neg)`。
-- 第二张图表：右边三角仍交换；左边 𝒟 那一半不交换（逆否箭头沿 `neg`、`inj` 是 ¬¬p → ¬¬q，沿 `unneg` 是 p → q）。
+- 逆否箭头本身就是普通函数 ¬q → ¬p，只是方向反了；再用一次 `neg`，方向翻回来，得到 ¬¬p → ¬¬q。`neg` 两种读法写进同一个 `case→`（第二行落到 `→𝒟`）；`neg² = (∘ neg neg)`。
+- 第二张图表：右边三角仍交换；左边 𝒟 那一半只标转换，不交换。
 - 纯性靠表示等式：`(neg² f)` 运行时仍调用 `f`；`(neg² (uncps cps:f)) ≈ (neg (flip cps:f))` 是纯代表。
 
-- 𝒞、𝒟、`inj` 在这里拆出（挪自原「编码与运行」节首；第一次用到 `→𝒟` 的地方）。
+### 8.2 翻译 `call/cc`
 
-### 8.2 翻译 `call/cc`（10/23）
+- 接同一支箭头逆否那一行，再用一次 `neg` 到 𝒟：`(((neg² call/cc) kkkkp) kp) = … ≈ (kkkkp (cps:id kp))`，4 → 2，就是数一数 k 的 `(neg cps:id)`，三重否定律用在 ¬p 上。
+- `join = (∘ neg cps neg)`，`join:id = (join id) = (neg (cps neg:id))`；四重否定的 `7`；与 `cps` 成对的两种拆法（μ 安静登场，不点名单子）。
+- 练习：`cps->neg² = (∘ neg flip)`，`(cps->neg² neg²:id)` 就是 `join:id`（第六篇 `anf:let` → `∘𝒦` → μ → `cps->neg²` → `anf:let` 要用）。
+- 汇总表：四种写法、「由 `id` 造出」、层数（2 → 0、2 → 2、1 → 3、4 → 2）。收尾句压短：只有宿主那一行落到第 0 层；翻译换了类型，给 DNE 一个纯的代表，取回原类型的结果仍要靠运行边界。
+- 名字：`join`、`join:id`、`cps->neg²`（练习）。
 
-- 运行端的读法：`cps:id` 是 DNI；`anf:eval`、`uncps` 里的 `call/cc` 是 DNE（`anf:eval` 的类型在这里第一次写出）；6.2 的往返。
-- `join`（Noah 10/23 定候选名，取代 `neg²:call/cc`；不用 `dne`：与 `call/cc` 定位重、类型也不是 DNE）：`(neg (cps neg:id))` 从 `id` 出发、不碰 `call/cc`；一般地 `join = (∘ neg cps neg)`，`join:id = (join id)`。与 `cps` 成对：`(cps f) = (∘ cps:id f) = (∘ (neg² f) cps:id)`，`(join f) = (∘ (neg² f) join:id) = (∘ join:id (neg² (neg² f)))`，μ 以这种方式安静登场，不点名单子。表加一列「由 `id` 造出」：`(neg neg:id)`、`(cps neg:id)`、`(neg (cps neg:id))`。
-- 练习（Noah 10/23）：沿第二张图表 𝒦 → 𝒰 → 𝒟 写出 `cps->neg² = (∘ neg flip)`，验证 `((cps->neg² cps:f) kkx)` 与 `(anf:let ([x kkx]) (cps:f x))` 相同、`(cps->neg² neg²:id)` 就是 `join:id`。第六篇按 `anf:let` → `∘𝒦` → μ → `cps->neg²` → `anf:let` 演示单子的等价定义，这几个运算第二篇都要登场一次。
-- 接 6.5 的逆否箭头那一行，再用一次 `neg` 到 𝒟：`(((neg² call/cc) kkkka) ka) = (kkkka ((neg call/cc) ka)) ≈ (kkkka (cps:id ka)) = (kkkka (λ (kka) (kka ka)))`，4 → 2，正是 6.4 的 `(neg cps:id)`：DNI 的逆否（Astra 10/23：正文明确认出）。跑一个四重否定的 `7`。
-- 汇成表：同一支 `call/cc` 的四种写法与层数变化（2 → 0、2 → 2、1 → 3、4 → 2）。表前短回指 `≈` 的前提；不说「四行行为一致」，说沿图表的转换对应。
-- 结论句（Astra 10/23）：翻译没有在纯语言里实现原来的 DNE；它改变了输入输出的类型，让这个经典操作有了由 DNI 和逆否构成的纯表示；要取回原来类型的结果，仍要运行边界的控制能力。
-- 名字：DNI、DNE、`join`、`join:id`、`cps->neg²`（练习）、否定翻译。
+### 8.3 从 `mul` 到 `cps:mul`
 
-
-### 8.3 从 `mul` 到 `cps:mul`（挪自原 6.1，压短）
-
-- 开头接原「编码与运行」节首的反差：`cps:mul` 不用宿主 `call/cc` 就跳出，阴阳谜题却打印、不终止；纯的是哪一部分？
-- 照宿主 `mul` 一行行改写，换掉三样；接口 a → b 变成 a → ¬¬b；纯在哪里（组合子、原语、递归递减），阴阳谜题的输出与不终止在 𝒟 之外。
-- 命名否定翻译（挪自原 7.3）：`cps:call/cc` 换的是一条定律，`join:id` 换的是一个经典操作，`mul → cps:mul` 换的是整段程序；各步由宏生成的延续接起来，就是 `∘𝒦`；改写要落在程序本身。不点 μ、单子、伴随。
+- 开头：上面翻译的是一支箭头；提前返回一节从 `mul` 到 `cps:mul`，翻译的是整段程序。不再设问「纯的是哪一部分」（𝒟 已在大节开头定义）。
+- 换掉三样；接口 a → b 变成 a → ¬¬b；`cps:return` 是参数。直接用 𝒟 说纯：这些构造交进 𝒟 得到 𝒟，`cps:mul` 整个落在 𝒟；阴阳谜题的输出与不终止在 𝒟 之外。
+- 收尾命名**否定翻译**：定律（`cps:call/cc`）、操作（`join:id`）、整段程序（`mul → cps:mul`）三个层次；各步由宏生成的延续接起来，就是 `∘𝒦`；改写要落在程序本身。不点 μ、单子、伴随。
 
 ## 9. 结论
 
