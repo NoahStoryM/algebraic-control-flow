@@ -633,6 +633,10 @@
     ;; unneg 走 𝒦 回到 𝒞
     (check-equal? ((unneg (neg add1)) x) (add1 x)))
   ;; 关键规律：(kp (call/cc kkp)) ≈ (kkp kp)
+  ;; 前提：kkp 不装异常处理器。装了的话，直接调用 kp 还在处理器里，捕获的延续先离开它。
+  (let ([kkp (λ (kp) (with-handlers ([ans? (λ (_) (a->⊥ 2))]) (kp 1)))])
+    (check-equal? (⊥->a (a->⊥ (call/cc kkp))) 1)
+    (check-equal? (⊥->a (kkp a->⊥)) 2))
   (let ([kkp (λ (k) (k 5))] [kkp2 (λ (k) (a->⊥ 'jump))])
     (check-equal? (⊥->a (a->⊥ (call/cc kkp))) (⊥->a (kkp a->⊥)))
     (check-equal? (⊥->a (a->⊥ (call/cc kkp2))) (⊥->a (kkp2 a->⊥))))
