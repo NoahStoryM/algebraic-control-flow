@@ -9,7 +9,7 @@
 ;;; 类型
 ;; a、x 是答案类型参数；类型标注只作设计说明，不经类型检查
 
-(define-type (→𝒟 p q) (→ p q))              ; 构造性宿主世界
+(define-type (→𝒟 p q) (→ p q))              ; 纯的宿主箭头
 (define-type (←𝒟 q p) (→𝒟 p q))
 
 (define-type ⊥ (∪))
@@ -18,8 +18,8 @@
 (define-type (¬ₐ¬ₐ p) (¬ₐ (¬ₐ p)))
 (define-type (¬ₐ¬ₐ¬ₐ p) (¬ₐ (¬ₐ¬ₐ p)))
 
-(define-type (→𝒰ₐ p q) (←𝒟 (¬ₐ p) (¬ₐ q)))  ; 局部逆否世界
-(define-type (→𝒦ₐ p q) (→𝒟 p (¬ₐ¬ₐ q)))    ; 局部 CPS 世界
+(define-type (→𝒰ₐ p q) (←𝒟 (¬ₐ p) (¬ₐ q)))  ; 局部逆否箭头
+(define-type (→𝒦ₐ p q) (→𝒟 p (¬ₐ¬ₐ q)))    ; 局部 CPS 箭头
 ;; 下标换成 x（¬ₓ、¬ₓ¬ₓ、→𝒰ₓ），就是以 x 为基的同一组类型
 
 

@@ -47,7 +47,7 @@
 ;; 用集合写的关系，作独立的参照：关系 r 表示成「元素 → 它关联到的元素集合」。
 (define ((rel∘ s r) x) (for*/set ([y (in-set (r x))] [z (in-set (s y))]) z))
 (define (rel:id x) (list->set (list x)))
-(define ((as-rel f) x) (list->set (f x)))       ; 列表世界的箭头读作关系
+(define ((as-rel f) x) (list->set (f x)))       ; ℒ 的箭头读作关系
 (define (forget p*) (list->set p*))             ; 忘掉顺序与重数
 ;; 验证用的样例箭头（divisors 只用于验证，不进正文）
 (define (divisors n)
@@ -511,7 +511,7 @@
 
 
 ;;; ═══════════════════════════════════════════════════════════════════
-;;; §5 列表世界的复合
+;;; §5 ℒ 箭头的复合
 ;;; ═══════════════════════════════════════════════════════════════════
 ;;; 带走：1. 普通 ∘ 接不上：上一段交出的是一整张列表。
 ;;;       2. ∘ℒ：对列表里的每一行调用下一段，再把结果接起来（append-map）。
@@ -575,10 +575,10 @@
   (for ([b '((1 4) (1 5) (1 20))])
     (check-equal? (dict-ref* cache b) (list (dict-ref cache b)))))
 
-;;; ─── §5-a〔正文〕 列表世界的箭头；前三个关系各是一支箭头 ───
+;;; ─── §5-a〔正文〕 ℒ 的箭头；前三个关系各是一支箭头 ───
 ;;; 步骤：概念（接收一头的值、交出另一头所有相关值的列表；数学上是集合，这里用列表）→ 代码
 ;;; 名字沿用 §4 的（说的是同一个关系，换了一种表示）。
-;;; betweenᵒ 在列表世界里只是一个普通函数：给定 lo、hi，交出其间所有的数。
+;;; betweenᵒ 写成 ℒ 的箭头，只是一个普通函数：给定 lo、hi，交出其间所有的数。
 (define-type (→ℒ p q) (→ p (Listof q)))
 
 (: betweenᵒ (→ Natural Natural (Listof Natural)))
@@ -702,7 +702,7 @@
 ;; (∘ℒ f₃ (∘ℒ f₂ f₁))   = (∘ℒ (∘ℒ f₃ f₂) f₁)
 ;; (∘ℒ f (∘ ℒ:id h))    = (∘ f h)          ; h 是宿主函数
 ;;
-;;; §5-f′〔验证〕 列表世界逐字成立（equal? 比较列表，不经 forget）
+;;; §5-f′〔验证〕 ℒ 箭头逐字成立（equal? 比较列表，不经 forget）
 (define (tens x) (list x (* 10 x)))
 (define (pm x) (list x (- x)))
 (define (twice n) (list n (* 2 n)))
@@ -722,14 +722,14 @@
     (check-equal? ((∘ℒ g ℒ:id) t) (g t))
     (check-equal? ((∘ℒ ℒ:id f) t) (f t))))
 
-;;; §5-f″〔验证〕 同样的四条在关系世界（集合）里成立：这是设计要求的来处
+;;; §5-f″〔验证〕 同样的四条在关系（集合）上成立：这是设计要求的来处
 (define rel-arrows (map as-rel ℒ-arrows))
 (for* ([x '(1 4 6 12)] [r rel-arrows] [s rel-arrows])
   (check-equal? ((rel∘ r rel:id) x) (r x))
   (check-equal? ((rel∘ rel:id s) x) (s x))
   (for ([t rel-arrows])
     (check-equal? ((rel∘ t (rel∘ r s)) x) ((rel∘ (rel∘ t r) s) x))))
-;; 普通函数是一种特殊的关系：抬进关系世界后照常复合
+;; 普通函数是一种特殊的关系：抬成关系后照常复合
 (for* ([x '(1 4 6 12)] [r rel-arrows] [h hosts])
   (check-equal? ((rel∘ r (∘ rel:id h)) x) ((∘ r h) x)))
 
@@ -743,7 +743,7 @@
  ((∘ℒ rightᵒ pick-cᵒ pick-bᵒ pick-aᵒ↓) '(1 20))
  '((12 16 20) (9 12 15) (8 15 17) (6 8 10) (5 12 13) (3 4 5)))
 
-;;; §5-g′〔验证〕 忘掉顺序与重数，列表世界的复合就是关系的复合
+;;; §5-g′〔验证〕 忘掉顺序与重数，ℒ 箭头的复合就是关系的复合
 (check-equal?
  (forget ((∘ℒ rightᵒ pick-cᵒ pick-bᵒ pick-aᵒ↓) '(1 20)))
  (forget (right-triangles₁ 1 20)))
@@ -1046,7 +1046,7 @@
 ;;; ─── §7-e″〔正文〕（v5.8，正文 06「不确定运算符 amb」）amb 的三行宏；between；直接风格的三角形 ───
 ;;; Noah 10/5 13:21、13:23：05 只到 reset 坍缩（§7-c），amb 单独一节；正文不再出现 fail、collect，
 ;;;   '() 一行认作 (amb)，reset 加 list 认作 in-amb；choose/k 与 choose 保留作推导里的两个名字。
-;;;   between 在 06 用 for/amb 定义；list->amb 按他的写法留到 07（关系的世界）定义。
+;;;   between 在 06 用 for/amb 定义；list->amb 按他的写法留到 07（关系的两种写法）定义。
 ;;; 步骤：概念（choose 做的事早有名字：McCarthy 的 amb）→ 代码（三行宏）→ 现象（两个小例子，取自 amb 包的 README）
 ;;;       → 代码（between，三角形）→ 现象（与 §1 相同；between 的同一组输入有三个结果）
 ;;; 这里的 in-amb 交出列表，一次算完；Noah 的 amb 包里它交出惰性的流（正文点明这一处差别）。
@@ -1210,7 +1210,7 @@
                 ((1 2) (2 2) (2 2 2))))
 (check-equal? (in-amb ((∘ pick-b pick-a) '(1 2))) '((1 1 2) (1 2 2) (2 2 2)))   ; 遮住中间一列
 
-;;; ─── §7-k〔正文 08「关系的世界」（10/5 15:54 从 07 拆出）〕 ℬ 与 ℒ 之间的搬运；复合对得上；来回是恒等 ───
+;;; ─── §7-k〔正文 08「关系的两种写法」（10/5 15:54 从 07 拆出）〕 ℬ 与 ℒ 之间的搬运；复合对得上；来回是恒等 ───
 ;;; Noah 10/5 14:28、14:32：照第二篇的三个世界再演示一遍。14:40：带 amb 的宿主改叫 ℬ（binary relation），
 ;;;   与第二篇的 𝒟、𝒞 排成 𝒟 𝒞 ℬ，模拟它们的世界是 𝒦、ℒ；ℛ 留给关系语言（miniKanren）的世界。
 ;;;  𝒟 纯的宿主，ℒ 交出列表的函数，ℬ 带 amb 的宿主。
