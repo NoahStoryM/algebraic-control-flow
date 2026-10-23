@@ -28,7 +28,7 @@
   (with-handlers ([ans? (∘ list->values ans-a*)]) exp))
 
 
-;;; 宿主世界
+;;; 宿主的箭头
 
 (define-type (→𝒟 p q) (→ p q))
 (define-type (→𝒞 p q) (→ p q))
@@ -36,7 +36,7 @@
 (: inj (∀ (p q) (→ (→𝒟 p q) (→𝒞 p q))))
 (define (inj f) f)
 
-;;; 逆否世界
+;;; 逆否箭头
 
 (define-type (→𝒰 p q) (← (¬ p) (¬ q)))
 (define-type (¬𝒰 p)   (→𝒰 p ⊥))
@@ -46,7 +46,7 @@
 (define ((neg f) kq) (∘ kq f))
 
 
-;;; CPS 世界
+;;; CPS 箭头
 
 (define-type (→𝒦 p q) (→ p (¬¬ q)))
 (define-type (¬𝒦 p)   (→𝒦 p ⊥))
@@ -93,7 +93,7 @@
   (cps:call/cc (λ (cps:k) b* ...)))
 
 
-;;; 两个世界的复合
+;;; 两种箭头的复合
 
 (: ∘𝒦 (∀ (p1 p2 p3) (→ (→𝒦 p2 p3) (→𝒦 p1 p2) (→𝒦 p1 p3))))
 (define ((∘𝒦 cps:g cps:f) x)
@@ -489,7 +489,7 @@
 )
 
 (module stage-clavius typed/racket/no-check
-  ;; 「新世界下的 Clavius 律」：回顾第一篇 call/cc 的类型，用 𝒞 的写法。
+  ;; 「新箭头下的 Clavius 律」：回顾第一篇 call/cc 的类型，用 𝒞 的写法。
   (define-type ⊥ (∪))
   (define-type (→𝒞 p q) (→ p q))
   (define-type (¬𝒞 p) (→𝒞 p ⊥))
@@ -515,7 +515,7 @@
   (check-equal? (answer:mul 2 0 4) 0)
   (check-equal? (((lift:cps add1) 7) values) 8))
 
-;; 「两个世界」：两边的复合借 flip 互相定义（练习答案）。
+;; 「两种箭头」：两边的复合借 flip 互相定义（练习答案）。
 (module* transport #f
   (require rackunit)
   (define (∘𝒰 neg:g neg:f)
@@ -589,7 +589,7 @@
     "@\n*@\n**@\n***@")))
 
 (module+ test
-  ;; 运行正文简化版宏与「两个世界」的检查。
+  ;; 运行正文简化版宏与「两种箭头」的检查。
   (require (submod ".." simple-macros) (submod ".." transport)))
 
 ;; 「把延续独立出来」：flip 是自己的逆，条件是两层参数之间不做别的事。
