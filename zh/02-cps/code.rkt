@@ -117,7 +117,7 @@
 
 
 
-;;; 填上延续参数
+;;; 回到宿主
 
 (: anf:eval (∀ (a) (→ (¬¬ a) a)))
 (define (anf:eval kka) (⊥->a (kka a->⊥)))
@@ -135,7 +135,7 @@
 (define neg² (∘ neg neg))
 
 
-;;; 否定翻译
+;;; 翻译 call/cc
 
 (: neg²:id (∀ (a) (→𝒦 (¬¬ a) a)))
 (define (neg²:id kka) kka)
@@ -262,10 +262,10 @@
   ;; neg²:id 收下一段计算，原样交出，不运行它。
   (let ([kk3 (cps:id 3)])
     (check-eq? (neg²:id kk3) kk3))
-  ;; 「否定翻译」：(∘𝒦 neg²:id neg²:id) 只接掉外面一层，结果仍是计算。
+  ;; 「同一支箭头」：(∘𝒦 neg²:id neg²:id) 只接掉外面一层，结果仍是计算。
   (let ([kkkka (cps:id (cps:id 7))])
     (check-equal? (((∘𝒦 neg²:id neg²:id) kkkka) values) 7))
-  ;; 「箭头指向何方」：(uncps neg²:id) 就是 call/cc 的行为。
+  ;; 「同一支箭头」：(uncps neg²:id) 就是 call/cc 的行为。
   (check-equal? (+ 1 ((uncps neg²:id) (λ (k) (k 41)))) 42)
   ;; 「两段计算怎样接起来」：(⨾ (neg g) (neg f)) 接两步。
   (let ([f add1] [g (λ (y) (* y 2))])
@@ -295,7 +295,7 @@
     (for ([x '(-1 4)])
       (check-equal? (anf:eval ((∘𝒦 cps:f (∘𝒦 cps:kv cps:f)) x))
                     (anf:eval ((∘𝒦 (∘𝒦 cps:f cps:kv) cps:f) x)))))
-  ;; 「填上延续参数」：anf:eval 用 raise 与 handler 把答案交回调用处。
+  ;; 「回到宿主」：anf:eval 用 raise 与 handler 把答案交回调用处。
   (check-equal? (+ 1 (anf:eval (cps:mul 1 2 3 4))) 25)
   (check-equal? (+ 1 (anf:eval (cps:mul 1 2 0 3 4))) 1)
   ;; uncps 交入当前延续，两条路都回到调用处。
@@ -600,7 +600,7 @@
                (cps:yin cps:yang)))))))
     "@\n*@\n**@\n***@")))
 
-;; 「走一圈」「再用一次 neg」「否定翻译」：带 ≈ 的等式，用真正不返回的终结延续核对。
+;; 「三种写法」「再用一次 neg」「翻译 call/cc」：带 ≈ 的等式，用真正不返回的终结延续核对。
 (module+ test
   (define cps:esc  ; 含控制：参数为负时经 cps:return 跳出
     (λ (x) (anf:let/cc cps:return
