@@ -1135,14 +1135,7 @@ $¬¬p →_𝒦 p$ 看上去也像 DNE；展开到宿主，它只是 $¬¬p → 
 7
 ```
 
-`join` 和 `cps` 是一对。`cps` 把宿主箭头 `f` 变成「先 `f`，再多两层」；`join` 把它变成「先消去两层，再 `f`」。两者都能拆成用在 `id` 上的那一支，接上 `f` 或 `(neg² f)`，两种拆法都对：
-
-```racket
-(cps  f)  =  (∘ cps:id f)               =  (∘ (neg² f) cps:id)
-(join f)  =  (∘ (neg² f) join:id)       =  (∘ join:id (neg² (neg² f)))
-```
-
-> **练习：** 沿第二张图表从 𝒦 经 𝒰 走到 𝒟：先 `flip`、再 `neg`，记作 `cps->neg²`。验证 `((cps->neg² cps:f) kkx)` 与 `(anf:let ([x kkx]) (cps:f x))` 行为相同，再验证 `(cps->neg² neg²:id)` 就是 `join:id`。
+> **练习：** 沿第二张图表从 𝒦 经 𝒰 走到 𝒟：先 `flip`、再 `neg`，记作 `cps->neg²`。验证 `(cps->neg² neg²:id)` 就是 `join:id`。
 
 同一支 `call/cc`，沿图表换成各种写法，层数这样变化（CPS 箭头、逆否箭头两行，用的是三种写法一节那条规律的前提）：
 

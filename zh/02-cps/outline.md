@@ -191,8 +191,8 @@
 ### 8.2 翻译 `call/cc`
 
 - 接同一支箭头逆否那一行，再用一次 `neg` 到 𝒟：`(((neg² call/cc) kkkkp) kp) = … ≈ (kkkkp (cps:id kp))`，4 → 2，就是数一数 k 的 `(neg cps:id)`，三重否定律用在 ¬p 上。
-- `join = (∘ neg cps neg)`，`join:id = (join id) = (neg (cps neg:id))`；四重否定的 `7`；与 `cps` 成对的两种拆法（μ 安静登场，不点名单子）。
-- 练习：`cps->neg² = (∘ neg flip)`，`(cps->neg² neg²:id)` 就是 `join:id`（第六篇 `anf:let` → `∘𝒦` → μ → `cps->neg²` → `anf:let` 要用）。
+- `join = (∘ neg cps neg)`，`join:id = (join id) = (neg (cps neg:id))`；四重否定的 `7`。删去与 `cps` 成对的两种拆法（Noah 10/23：那是自然性，留给第二部；结尾已过载）。
+- 练习：`cps->neg² = (∘ neg flip)`，只验证 `(cps->neg² neg²:id)` 就是 `join:id`；与 `anf:let` 行为相同的那条留给第六篇叙事（Noah 10/23）（第六篇 `anf:let` → `∘𝒦` → μ → `cps->neg²` → `anf:let` 要用）。
 - 汇总表：四种写法、「由 `id` 造出」、层数（2 → 0、2 → 2、1 → 3、4 → 2）。收尾句压短：只有宿主那一行落到第 0 层；翻译换了类型，给 DNE 一个纯的代表，取回原类型的结果仍要靠运行边界。
 - 名字：`join`、`join:id`、`cps->neg²`（练习）。
 
