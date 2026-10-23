@@ -161,8 +161,8 @@
 ### 6.5 同一支箭头（Noah 10/23 提，Astra 核：只走 DNE 这条线）
 
 - 宿主 `call/cc` 照 DNE 读，¬¬a →𝒞 a，2 → 0。三种写法一一对应，它在另外两种写法里各是什么？
-- CPS 箭头：`(((cps call/cc) kka) kb) = (kb (call/cc kka)) ≈ (kka kb)`，原样交出计算：`neg²:id` 在这里引入（代码同 `id`，类型 `(→𝒦 (¬¬ a) a)`，与 `neg:id` 同一种情形；挪自原 7.4），2 → 2；`(uncps neg²:id) = call/cc`，工作来自 `uncps`。
-- 逆否箭头：`(((neg call/cc) ka) kka) = (ka (call/cc kka)) ≈ (kka ka) = ((cps:id ka) kka)`：`cps:id` 用在 ¬a 上，1 → 3。
+- CPS 箭头：`(((cps call/cc) kka) kb) = (kb (call/cc kka)) ≈ (kka kb)`，原样交出计算：`neg²:id` 在这里引入，并认出它就是 `(neg neg:id)`（名字的来由）（代码同 `id`，类型 `(→𝒦 (¬¬ a) a)`，与 `neg:id` 同一种情形；挪自原 7.4），2 → 2；`(uncps neg²:id) = call/cc`，工作来自 `uncps`。
+- 逆否箭头：`(((neg call/cc) ka) kka) = (ka (call/cc kka)) ≈ (kka ka) = ((cps:id ka) kka)`：`cps:id` 用在 ¬a 上，即 `(cps neg:id)`，1 → 3。
 - 收尾一句：接口改变后，原来的 2 → 0 变成 2 → 2、1 → 3，都不落底（不说「层数整体抬高」，Astra 10/23）。
 
 ### 6.6 新箭头下的 Clavius 律（挪自原 7.2，Noah 10/23；Astra：保留独立小节）
@@ -184,11 +184,13 @@
 ### 7.3 否定翻译（10/23 重写）
 
 - 运行端的读法：`cps:id` 是 DNI；`anf:eval`、`uncps` 里的 `call/cc` 是 DNE（`anf:eval` 的类型在这里第一次写出）；6.2 的往返。
-- 接 6.5 的逆否箭头那一行，再用一次 `neg` 到 𝒟：`(((neg² call/cc) kkkka) ka) = (kkkka ((neg call/cc) ka)) ≈ (kkkka (cps:id ka)) = (kkkka (λ (kka) (kka ka)))`，暂名 `neg²:call/cc`；4 → 2，正是 6.4 的 `(neg cps:id)`：DNI 的逆否（Astra 10/23：正文明确认出）。跑一个四重否定的 `7`。
+- `join`（Noah 10/23 定候选名，取代 `neg²:call/cc`；不用 `dne`：与 `call/cc` 定位重、类型也不是 DNE）：`(neg (cps neg:id))` 从 `id` 出发、不碰 `call/cc`；一般地 `join = (∘ neg cps neg)`，`join:id = (join id)`。与 `cps` 成对：`(cps f) = (∘ cps:id f) = (∘ (neg² f) cps:id)`，`(join f) = (∘ (neg² f) join:id) = (∘ join:id (neg² (neg² f)))`，μ 以这种方式安静登场，不点名单子。表加一列「由 `id` 造出」：`(neg neg:id)`、`(cps neg:id)`、`(neg (cps neg:id))`。
+- 练习（Noah 10/23）：沿第二张图表 𝒦 → 𝒰 → 𝒟 写出 `cps->neg² = (∘ neg flip)`，验证 `((cps->neg² cps:f) kkx)` 与 `(anf:let ([x kkx]) (cps:f x))` 相同、`(cps->neg² neg²:id)` 就是 `join:id`。第六篇按 `anf:let` → `∘𝒦` → μ → `cps->neg²` → `anf:let` 演示单子的等价定义，这几个运算第二篇都要登场一次。
+- 接 6.5 的逆否箭头那一行，再用一次 `neg` 到 𝒟：`(((neg² call/cc) kkkka) ka) = (kkkka ((neg call/cc) ka)) ≈ (kkkka (cps:id ka)) = (kkkka (λ (kka) (kka ka)))`，4 → 2，正是 6.4 的 `(neg cps:id)`：DNI 的逆否（Astra 10/23：正文明确认出）。跑一个四重否定的 `7`。
 - 汇成表：同一支 `call/cc` 的四种写法与层数变化（2 → 0、2 → 2、1 → 3、4 → 2）。表前短回指 `≈` 的前提；不说「四行行为一致」，说沿图表的转换对应。
 - 结论句（Astra 10/23）：翻译没有在纯语言里实现原来的 DNE；它改变了输入输出的类型，让这个经典操作有了由 DNI 和逆否构成的纯表示；要取回原来类型的结果，仍要运行边界的控制能力。
 - 命名否定翻译：`cps:call/cc` 换的是一条定律，`neg²:call/cc` 换的是一个经典操作，`mul → cps:mul` 换的是整段程序；改写要落在程序本身。不点 μ、单子、伴随。
-- 名字：DNI、DNE、`neg²:call/cc`（暂名，待 Noah 定）、否定翻译。
+- 名字：DNI、DNE、`join`、`join:id`、`cps->neg²`（练习）、否定翻译。
 
 ## 8. 结论
 

@@ -140,8 +140,11 @@
 (: neg²:id (∀ (a) (→𝒦 (¬¬ a) a)))
 (define (neg²:id kka) kka)
 
-(: neg²:call/cc (∀ (a) (→𝒟 (¬¬ (¬¬ a)) (¬¬ a))))
-(define ((neg²:call/cc kkkka) ka) (kkkka (λ (kka) (kka ka))))
+(: join (∀ (p q) (→ (→𝒞 p q) (→𝒟 (¬¬ (¬¬ p)) (¬¬ q)))))
+(define join (∘ neg cps neg))
+
+(: join:id (∀ (a) (→𝒟 (¬¬ (¬¬ a)) (¬¬ a))))
+(define join:id (join id))
 
 
 ;;; CPS 提升的基本操作
@@ -617,20 +620,34 @@
   ;; (neg² (uncps cps:f)) ≈ (neg (flip cps:f))
   (let ([kkx (cps:id 4)])
     (check-equal? (run ((neg² (uncps cps:esc)) kkx)) (run ((neg (flip cps:esc)) kkx))))
-  ;; (neg² call/cc) ≈ neg²:call/cc ≈ (neg (flip neg²:id))；四重否定的 7
+  ;; (neg² call/cc) ≈ join:id ≈ (neg (flip neg²:id))；四重否定的 7
   (for ([kkkka (list (cps:id (cps:id 7))
                      (λ (k) (k (λ (ka) (ka 8))))
                      (λ (k) (a->⊥ 'skip)))])
-    (check-equal? (run ((neg² call/cc) kkkka)) (run (neg²:call/cc kkkka)))
-    (check-equal? (run ((neg (flip neg²:id)) kkkka)) (run (neg²:call/cc kkkka))))
-  (check-equal? (anf:eval (neg²:call/cc (cps:id (cps:id 7)))) 7)
+    (check-equal? (run ((neg² call/cc) kkkka)) (run (join:id kkkka)))
+    (check-equal? (run ((neg (flip neg²:id)) kkkka)) (run (join:id kkkka))))
+  (check-equal? (anf:eval (join:id (cps:id (cps:id 7)))) 7)
+  ;; neg²:id = (neg neg:id)；join 与 cps 的两种拆法；练习：cps->neg²。
+  (for ([kka (list (cps:id 7) (λ (k) (a->⊥ 'skip)))])
+    (check-equal? (run ((neg neg:id) kka)) (run (neg²:id kka))))
+  (let ([f (λ (n) (* n 10))] [k4 (λ (k) (k (λ (ka) (ka 8))))])
+    (check-equal? (run ((join f) k4)) (run ((∘ (neg² f) join:id) k4)))
+    (check-equal? (run ((join f) k4)) (run ((∘ join:id (neg² (neg² f))) k4)))
+    (check-equal? (run ((join f) k4)) (run ((neg² (∘ f call/cc)) k4)))
+    (check-equal? (run ((cps f) 3)) (run ((∘ (neg² f) cps:id) 3))))
+  (let* ([cps->neg² (∘ neg flip)]
+         [cps:f (λ (x) (anf:let/cc k (anf:if ((cps negative?) x) (k 'neg) ((cps add1) x))))])
+    (for ([kkx (list (cps:id 4) (cps:id -1))])
+      (check-equal? (run ((cps->neg² cps:f) kkx)) (run (anf:let ([x kkx]) (cps:f x)))))
+    (for ([k4 (list (cps:id (cps:id 7)) (λ (k) (a->⊥ 9)))])
+      (check-equal? (run ((cps->neg² neg²:id) k4)) (run (join:id k4)))))
   ;; 同一支箭头：(cps call/cc) ≈ neg²:id，(neg call/cc) ≈ 用在 ¬a 上的 cps:id；
-  ;; 数一数 k：neg²:call/cc 就是 (neg cps:id)，DNI 的逆否；¬³a → ¬a 也由 (neg cps:id) 给出。
+  ;; 数一数 k：join:id 就是 (neg cps:id)，DNI 的逆否；¬³a → ¬a 也由 (neg cps:id) 给出。
   (for ([kka (list (cps:id 7) (λ (k) (k 8)) (λ (k) (a->⊥ 'skip)))])
     (check-equal? (run ((cps call/cc) kka)) (run (neg²:id kka)))
     (check-equal? (⊥->a (((neg call/cc) a->⊥) kka)) (⊥->a ((cps:id a->⊥) kka))))
   (for ([kkkka (list (cps:id (cps:id 7)) (λ (k) (k (λ (ka) (ka 8)))) (λ (k) (a->⊥ 9)))])
-    (check-equal? (run ((neg cps:id) kkkka)) (run (neg²:call/cc kkkka))))
+    (check-equal? (run ((neg cps:id) kkkka)) (run (join:id kkkka))))
   (let ([kkka (λ (kka) (kka (λ (a) (a->⊥ (* a 10)))))])
     (check-equal? (⊥->a (((neg cps:id) kkka) 5)) 50))
   ;; (uncps neg²:id) 就是 call/cc
