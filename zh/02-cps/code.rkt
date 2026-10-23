@@ -267,11 +267,13 @@
   ;; neg:call/cc：先收延续 kp，再收 neg:proc；调用 (neg kp) 也改走 kp。
   (check-equal? (⊥->a ((neg:call/cc (∘ a->⊥ add1)) (λ (kp) (λ (neg:k) (kp 99))))) 100)
   (check-equal? (⊥->a ((neg:call/cc (∘ a->⊥ add1)) (λ (kp) (λ (neg:k) ((neg:k id) 10) (kp 99))))) 11)
-  ;; 「再次隐藏延续」开头：手写 CPS、嵌套的 anf:let、两种分组的 ∘𝒦 都是 6。
+  ;; 「再次隐藏延续」开头：两步的手写 CPS 与 anf:let 都是 2；三步两种分组的 ∘𝒦 都是 6。
   (let ([cps:mul1 (cps (λ (v) (* 1 v)))]
         [cps:mul2 (cps (λ (v) (* 2 v)))]
         [cps:mul3 (cps (λ (v) (* 3 v)))])
     (check-equal? ((λ (k) ((cps:mul1 1) (λ (v1) ((cps:mul2 v1) (λ (v2) ((cps:mul3 v2) k)))))) values) 6)
+    (check-equal? ((λ (k) ((cps:mul1 1) (λ (v1) ((cps:mul2 v1) k)))) values) 2)
+    (check-equal? ((anf:let ([v1 (cps:mul1 1)]) (cps:mul2 v1)) values) 2)
     (check-equal? ((anf:let ([v1 (cps:mul1 1)]) (anf:let ([v2 (cps:mul2 v1)]) (cps:mul3 v2))) values) 6)
     (check-equal? (((∘𝒦 cps:mul3 (∘𝒦 cps:mul2 cps:mul1)) 1) values) 6)
     (check-equal? (((∘𝒦 (∘𝒦 cps:mul3 cps:mul2) cps:mul1) 1) values) 6))
@@ -589,3 +591,14 @@
 (module+ test
   ;; 运行正文简化版宏与「两个世界」的检查。
   (require (submod ".." simple-macros) (submod ".." transport)))
+
+;; 「把延续独立出来」：flip 是自己的逆，条件是两层参数之间不做别的事。
+(module+ test
+  (let* ([out (open-output-string)]
+         [quiet (λ (x) (λ (y) (+ x y)))]
+         [noisy (λ (x) (display "!" out) (λ (y) (+ x y)))])
+    (check-equal? (((flip (flip quiet)) 1) 2) ((quiet 1) 2))
+    ((flip (flip noisy)) 1)
+    (check-equal? (get-output-string out) "")
+    (noisy 1)
+    (check-equal? (get-output-string out) "!")))
