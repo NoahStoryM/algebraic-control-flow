@@ -41,8 +41,10 @@
 (define-type (→𝒰 p q) (← (¬ p) (¬ q)))
 (define-type (¬𝒰 p)   (→𝒰 p ⊥))
 
-(: neg (∀ (p q) (case→ (→ (→𝒞 p q) (→𝒰 p q))
-                       (→ (→𝒰 p q) (→𝒟 (¬¬ p) (¬¬ q))))))
+(: neg
+   (∀ (p q)
+      (case→ (→ (→𝒞 p q) (→𝒰     p      q))
+             (→ (→𝒰 p q) (→𝒟 (¬¬ p) (¬¬ q))))))
 (define ((neg f) kq) (∘ kq f))
 
 
