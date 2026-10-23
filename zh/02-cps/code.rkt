@@ -116,13 +116,10 @@
 (define ((cps:call/cc cps:proc) kp) ((cps:proc (cps kp)) kp))
 
 
-;;; 两次逆否
+;;; ¬¬ 上的恒等
 
-(: neg²:id (∀ (q) (→𝒦 (¬¬ q) q)))
-(define (neg²:id kkv) kkv)
-
-(: neg² (∀ (p q) (→ (→𝒟 p q) (→𝒟 (¬¬ p) (¬¬ q)))))
-(define neg² (∘ neg neg))
+(: neg²:id (∀ (a) (→𝒦 (¬¬ a) a)))
+(define (neg²:id kka) kka)
 
 
 ;;; 填上延续参数
@@ -227,7 +224,6 @@
     (check-equal? (((∘𝒦 cps:f cps:id) 3) values) ((cps:f 3) values))
     (check-equal? (((∘𝒦 cps:id cps:f) 3) values) ((cps:f 3) values))
     (check-equal? (((∘𝒦 cps:g cps:f) 3) values) (((via-⨾ cps:g cps:f) 3) values))
-    (check-equal? (((neg² id) (cps:f 3)) values) ((neg²:id (cps:f 3)) values))
     ;; 普通纯函数提升保持复合。
     (check-equal? (((∘𝒦 cps:g cps:f) 3) values) (((cps (∘ (λ (y) (* y 2)) add1)) 3) values))
     ;; (flip id) 就是 cps:id。
@@ -247,9 +243,9 @@
     (check-equal? (get-output-string out) "")
     (cps:noisy 1)
     (check-equal? (get-output-string out) "!"))
-  ;; 纯函数特例：(∘𝒦 (cps g) neg²:id) = (neg² g)。
-  (let ([g (λ (y) (* y 2))])
-    (check-equal? (((∘𝒦 (cps g) neg²:id) (cps:id 3)) values) (((neg² g) (cps:id 3)) values)))
+  ;; neg²:id 收下一段计算，原样交出，不运行它。
+  (let ([kk3 (cps:id 3)])
+    (check-eq? (neg²:id kk3) kk3))
   ;; 「否定翻译」：(∘𝒦 neg²:id neg²:id) 只接掉外面一层，结果仍是计算。
   (let ([kkkka (cps:id (cps:id 7))])
     (check-equal? (((∘𝒦 neg²:id neg²:id) kkkka) values) 7))
