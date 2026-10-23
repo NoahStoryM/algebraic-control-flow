@@ -641,7 +641,7 @@
       (check-equal? (run ((cps->neg² cps:f) kkx)) (run (anf:let ([x kkx]) (cps:f x)))))
     (for ([k4 (list (cps:id (cps:id 7)) (λ (k) (a->⊥ 9)))])
       (check-equal? (run ((cps->neg² neg²:id) k4)) (run (join:id k4)))))
-  ;; 同一支箭头：(cps call/cc) ≈ neg²:id，(neg call/cc) ≈ 用在 ¬a 上的 cps:id；
+  ;; 同一支箭头：(cps call/cc) ≈ neg²:id，(neg call/cc) ≈ 用在 ¬p 上的 cps:id；
   ;; 数一数 k：join:id 就是 (neg cps:id)，DNI 的逆否；¬³a → ¬a 也由 (neg cps:id) 给出。
   (for ([kkp (list (cps:id 7) (λ (k) (k 8)) (λ (k) (a->⊥ 'skip)))])
     (check-equal? (run ((cps call/cc) kkp)) (run (neg²:id kkp)))
