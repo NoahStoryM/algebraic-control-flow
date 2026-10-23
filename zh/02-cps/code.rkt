@@ -170,11 +170,11 @@
       (loop r*)))
   (check-equal? (mul/cc 1 2 3 4) 24)
   (check-equal? (mul/cc 1 2 0 3 4) 0)
-  ;; 「用嵌入语言写程序」的例子：cps:mul 是一支 𝒦 的箭头，不进完整代码参考。
+  ;; 「嵌入语言」的例子：cps:mul 是一支 𝒦 的箭头，不进完整代码参考。
   (: cps:mul (→ Real * (¬¬ Real)))
   (define (cps:mul . r*)
     (anf:let/cc cps:return
-      (: cps:loop (→𝒦 (Listof Real) Real))
+      (: cps:loop (→ (Listof Real) (¬¬ Real)))
       (define (cps:loop r*)
         (anf:if (cps:null? r*)
                 (cps:*)
@@ -199,7 +199,7 @@
       (anf:let* ([r (cps:id 0)])
         (cps:return r))))
    0)
-  ;; 「用嵌入语言写程序」：cps:mul 是 𝒦 的箭头，遇零经 cps:return 跳出。
+  ;; 「嵌入语言」：cps:mul 是 𝒦 的箭头，遇零经 cps:return 跳出。
   (check-equal? (anf:eval (cps:mul 1 2 3 4)) 24)
   (check-equal? (anf:eval (cps:mul 1 2 0 3 4)) 0)
   ;; 「手中的延续」的运行例：正常交回，与调用交出去的延续后改走 kp。
@@ -535,7 +535,7 @@
     (define cps:g (cps (λ (y) (* y 2))))
     (check-equal? (((∘𝒦 cps:g cps:f) 3) values) ((cps:g 4) values))))
 
-;; 正文「再次隐藏延续」「用嵌入语言写程序」给出的简化版宏：单个函数体、单值；完整代码里的宏另外处理多值与多个表达式。
+;; 正文「嵌入语言」给出的简化版宏：单个函数体、单值；完整代码里的宏另外处理多值与多个表达式。
 (module* simple-macros #f
   (require rackunit "../../tools/check-output-prefix.rkt")
   (define-syntax-rule (anf:let ([v e]) b)

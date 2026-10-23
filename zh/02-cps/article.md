@@ -473,9 +473,11 @@ k2  =  (∘ k3 mul3)  =  ((neg mul3) k3)
 
 这么短的两个例子，延续却得一个个手写：外面的加 1 一个，`cps:proc2` 里又一个。一等控制一节那句抱怨，到这里更重了：每个延续都得亲手写。
 
-# 再次隐藏延续
+# 嵌入语言
 
 回想开头的观察。`let` 脱糖为 lambda 调用，延续藏在 `let` 里面：等待结果的那个 λ 不用我们写，绑定的语法替我们写了。CPS 变换把延续拉出来变成显式参数，这个 λ 就得亲手写。能不能反过来：用 `let` 语法把 CPS 的延续再藏回去？
+
+## 再次隐藏延续
 
 先看一个具体例子：`(fact/k 2 k)` 的闭包链 `(∘ k mul2 mul1)`，两步乘法。把两步用 `cps` 提升，像 `fact/k` 那样手写延续：
 
@@ -510,9 +512,133 @@ k2  =  (∘ k3 mul3)  =  ((neg mul3) k3)
 2
 ```
 
-## 绑定就是复合
+## 提前返回
 
-`anf:let` 的写法和 `let` 一样，也就碰上开头同样的问题：几步可以嵌在 `b` 里，也可以先接成一段，嵌进 `e`；还可以插一个只换名的绑定。三步嵌在 `b` 里：
+手写的 CPS 版 `mul` 有两处要程序员亲自动手：正常路径上，每一步都要写出新的延续 `(λ (v) (k (* v r)))`；遇到零时，要手动改调 `a->⊥`。在嵌入语言里，前一件交给绑定，后一件交给 `cps:call/cc` 交来的延续。用到的其余宿主函数，也先经 `cps` 提升：
+
+```racket
+(define cps:*         (cps *))
+(define cps:zero?     (cps zero?))
+(define cps:car       (cps car))
+(define cps:cdr       (cps cdr))
+(define cps:null?     (cps null?))
+(define cps:display   (cps display))
+(define cps:displayln (cps displayln))
+```
+
+它们都收值、交出计算，可以直接放进绑定。写 `mul` 还要三样语法，都照 `anf:let` 的套路来。
+
+几个绑定依次接起来，就是一层层嵌套的 `anf:let`：
+
+```racket
+(define-syntax anf:let*
+  (syntax-rules ()
+    [(_ () b) b]
+    [(_ ([v e] [v* e*] ...) b)
+     (anf:let ([v e]) (anf:let* ([v* e*] ...) b))]))
+```
+
+分支也一样：测试那一段算出的计算，收到一条等测试结果的延续；它拿到测试的值，选一支分支，再把 `k` 交给它：
+
+```racket
+(define-syntax-rule (anf:if test conseq alt)
+  (λ (k) (test (λ (b) ((if b conseq alt) k)))))
+```
+
+遇零跳出，要用 `cps:call/cc` 交来的延续。`anf:let/cc` 给它起个名字：
+
+```racket
+(define-syntax-rule (anf:let/cc cps:k b* ...)
+  (cps:call/cc (λ (cps:k) b* ...)))
+```
+
+照一等控制一节的 `mul` 写一个嵌入语言的版本，它本身也收值、交出计算：
+
+```racket
+(: cps:mul (→ Real * (¬¬ Real)))
+(define (cps:mul . r*)
+  (anf:let/cc cps:return
+    (: cps:loop (→ (Listof Real) (¬¬ Real)))
+    (define (cps:loop r*)
+      (anf:if (cps:null? r*)
+              (cps:*)
+              (anf:let* ([r (cps:car r*)])
+                (anf:if (cps:zero? r)
+                        (cps:return r)
+                        (anf:let* ([r* (cps:cdr r*)]
+                                   [res (cps:loop r*)])
+                          (cps:* res r))))))
+    (cps:loop r*)))
+```
+
+`(cps:mul 1 2 3 4)` 交回的是一段等待延续的计算。宏把程序编译成了这样的编码，运行它的，是再次隐藏延续一节的解释器 `anf:eval`。它的类型值得写出来：
+
+```racket
+(: anf:eval (∀ (a) (→ (¬¬ a) a)))
+```
+
+`anf:eval` 的类型是 $¬¬a → a$：接收一个编码后的程序，提供 `a->⊥` 作为终结延续，`⊥->a` 捕获答案。宏在展开时把程序编码为 $¬¬a$，`anf:eval` 在运行时交入终结延续。这和第一篇里操作系统运行程序是同一种分工：程序是一个 $¬¬\text{Byte}$，退出通道由操作系统在启动时交给它。`anf:eval` 扮演的就是操作系统：
+
+```racket
+> (anf:eval (cps:mul 1 2 3 4))
+24
+> (anf:eval (cps:mul 1 2 0 3 4))
+0
+```
+
+`cps:loop` 和 `cps:car` 一样收值、交出计算，所以它的递归调用也写在 `anf:let*` 里。`anf:let/cc` 把当前延续交给程序，名字叫 `cps:return`。遇零时调用它，和手中的延续一节的 `cps:proc2` 一样，计算改走保存的延续，还没做完的乘法全部跳过。其余每一步的延续都由 `anf:let*` 接好，程序员不需要触碰。最后一步同时用到 `res` 和更早的 `r`：宏把后面的代码嵌进前面绑定的函数体，`r` 一路看得见，所以照样能写。
+
+## 阴阳谜题
+
+`cps:return` 只用来跳出循环。第一篇的阴阳谜题对延续要求更多：被捕获的延续要作为值传来传去，再被调用。
+
+`label` 要把捕获的延续原样交出来，用得上一段什么也不做的计算：收到值，交出一段计算，收到延续后把值原样交给它。它就是 `(cps id)`，记作 `cps:id`：
+
+```racket
+(define cps:id (cps id))
+```
+
+`label` 在嵌入语言里写作：
+
+```racket
+(define (cps:label) (cps:call/cc cps:id))
+```
+
+展开一层，`((cps:label) k)` 是 `((cps:call/cc cps:id) k)`，也就是 `((cps:id (cps k)) k)`：`cps:id` 把提升过的 `(cps k)` 原样交给 `k`。`(cps:label)` 交回一段等待延续的计算；运行时，它把提升过的当前延续 `(cps k)` 作为结果交给 `k`，和第一篇的 `(label)` 一样。绑定得到的 `cps:yin`、`cps:yang`，就是这样的值。
+
+谜题写进 `anf:let*`。中间还有打印：打印也是一步计算，只是结果用不着。一串计算依次做下去、只留最后一个的结果，就是 `anf:begin`：把前面的结果绑定到一个用不着的变量 `_` 上，忽略掉。
+
+```racket
+(define-syntax anf:begin
+  (syntax-rules ()
+    [(_ b) b]
+    [(_ e b* ...) (anf:let ([_ e]) (anf:begin b* ...))]))
+```
+
+谜题于是照第一篇的样子写：
+
+```racket
+> (anf:eval
+   (anf:let* ([cps:yin (cps:label)])
+     (anf:begin
+       (cps:displayln #\@)
+       (anf:let* ([cps:yang (cps:label)])
+         (anf:begin
+           (cps:display #\*)
+           (cps:yin cps:yang))))))
+@
+*@
+**@
+***@
+****@
+...
+```
+
+`cps:yin` 是提升过的延续，所以能像 `cps:mul` 这些函数一样直接调用。它包着的，就是计算的位置一节里那样的一条延续：`(cps:label)` 把它所在的位置捕获下来，交给程序。这个位置也是从出口那条延续一步步接出来的，出口那一条，是 `anf:eval` 在计算开始时交进来的。
+
+# 两种箭头
+
+提前返回里的 `anf:let*`，一个绑定套着一个绑定。`anf:let` 的写法和 `let` 一样，也就碰上开头同样的问题：几步可以嵌在 `b` 里，也可以先接成一段，嵌进 `e`；还可以插一个只换名的绑定。三步嵌在 `b` 里：
 
 ```racket
 (anf:let ([y (cps:f x)])
@@ -530,13 +656,7 @@ k2  =  (∘ k3 mul3)  =  ((neg mul3) k3)
 
 和开头一样，改写时要留意名字：嵌进 `e` 里，`y` 对 `(cps:h z)` 就看不见了。
 
-只换名的绑定也有。`anf:let` 的右边得是一段计算，只换名，就要一段什么也不做的计算：收到 `x`，交出一段计算，收到延续后把 `x` 原样交给它。它就是 `(cps id)`，记作 `cps:id`：
-
-```racket
-(define cps:id (cps id))
-```
-
-两种只换名的写法，都该和直接写 `(cps:f x)` 一样：
+只换名的绑定也有。`anf:let` 的右边得是一段计算，只换名，用的就是阴阳谜题里那段什么也不做的计算 `cps:id`。两种只换名的写法，都该和直接写 `(cps:f x)` 一样：
 
 ```racket
 (anf:let ([y (cps:id x)]) (cps:f y))
@@ -544,6 +664,8 @@ k2  =  (∘ k3 mul3)  =  ((neg mul3) k3)
 ```
 
 两种嵌套交出的，是同一段计算吗？只换名的绑定，真的可有可无吗？
+
+## 绑定就是复合
 
 问题一样，解法也可以借来。开头把 `let` 看成复合，问题就成了复合是否满足结合律与单位律。这里也把一次绑定看成一次复合：照 `anf:let` 的样子，先 `cps:f` 再 `cps:g`，接成一支新的箭头，记作 `∘𝒦`（取 continuation 的字母）：
 
@@ -570,7 +692,7 @@ k2  =  (∘ k3 mul3)  =  ((neg mul3) k3)
 
 > **注意：** 这些等式说的是行为相同，用的是把延续独立出来一节的那个前提：两层参数之间不做别的事。比如 `cps:f` 一收到参数就打印，`(∘𝒦 cps:id cps:f)` 就会把打印推迟到收到延续之后。
 
-## 两种箭头
+## 借道逆否复合
 
 `∘𝒦` 满足这两条运算律吗？先拿例子试试。再提升一支 `mul3`，用 `(fact/k 3 k)` 的三步乘法比较两种分组：
 
@@ -589,7 +711,7 @@ k2  =  (∘ k3 mul3)  =  ((neg mul3) k3)
 (define-type (→𝒰 p q) (← (¬ p) (¬ q)))
 ```
 
-$p →_𝒦 q$ 收到 $p$，交出等着 $q$ 的计算。$p →_𝒰 q$ 用的是开头的反向箭头 `←`：它从 $p$ 写到 $q$，函数却从 $¬q$ 指向 $¬p$。有了名字，前面几个函数的类型可以重写：
+$p →_𝒦 q$ 收到 $p$，交出等着 $q$ 的计算。$p →_𝒰 q$ 用的是开头的反向箭头 `←`：它从 $p$ 写到 $q$，函数却从 $¬q$ 指向 $¬p$。有了名字，前面几个函数的类型可以重写；提前返回里 `cps:loop` 的类型，也就是 `(→𝒦 (Listof Real) Real)`：
 
 ```racket
 (: neg  (∀ (p q) (→ (→ p q) (→𝒰 p q))))
@@ -634,124 +756,6 @@ $p →_𝒦 q$ 收到 $p$，交出等着 $q$ 的计算。$p →_𝒰 q$ 用的�
 `⨾` 有结合律与单位律，`∘𝒰` 也就有：分组无关紧要，`neg:id` 接在哪一头都不改变什么。`id` 搬回 CPS 箭头这边，正是 `cps:id`。`flip` 来回一趟什么也不丢，`∘𝒦` 搬过去是 `∘𝒰`，两条运算律也就跟着搬了回来：两种嵌套的 `anf:let` 交出同样的计算，只换名的绑定可有可无。
 
 > **练习：** 反过来，只用 `∘𝒰` 和 `flip` 写出 `∘𝒦`，验证它与由 `anf:let` 给出的定义行为相同。
-
-# 用嵌入语言写程序
-
-手写的 CPS 版 `mul` 有两处要程序员亲自动手：正常路径上，每一步都要写出新的延续 `(λ (v) (k (* v r)))`；遇到零时，要手动改调 `a->⊥`。在嵌入语言里，前一件交给绑定，后一件交给 `cps:call/cc` 交来的延续。用到的其余宿主函数，也先经 `cps` 提升：
-
-```racket
-(define cps:*         (cps *))
-(define cps:zero?     (cps zero?))
-(define cps:car       (cps car))
-(define cps:cdr       (cps cdr))
-(define cps:null?     (cps null?))
-(define cps:display   (cps display))
-(define cps:displayln (cps displayln))
-```
-
-## 提前返回
-
-它们都是 CPS 箭头，可以直接放进绑定。写 `mul` 还要三样语法，都照 `anf:let` 的套路来。
-
-几个绑定依次接起来，就是一层层嵌套的 `anf:let`：
-
-```racket
-(define-syntax anf:let*
-  (syntax-rules ()
-    [(_ () b) b]
-    [(_ ([v e] [v* e*] ...) b)
-     (anf:let ([v e]) (anf:let* ([v* e*] ...) b))]))
-```
-
-分支也一样：测试那一段算出的计算，收到一条等测试结果的延续；它拿到测试的值，选一支分支，再把 `k` 交给它：
-
-```racket
-(define-syntax-rule (anf:if test conseq alt)
-  (λ (k) (test (λ (b) ((if b conseq alt) k)))))
-```
-
-遇零跳出，要用 `cps:call/cc` 交来的延续。`anf:let/cc` 给它起个名字：
-
-```racket
-(define-syntax-rule (anf:let/cc cps:k b* ...)
-  (cps:call/cc (λ (cps:k) b* ...)))
-```
-
-照一等控制一节的 `mul` 写一个嵌入语言的版本，它本身也是一支 CPS 箭头：
-
-```racket
-(: cps:mul (→ Real * (¬¬ Real)))
-(define (cps:mul . r*)
-  (anf:let/cc cps:return
-    (: cps:loop (→𝒦 (Listof Real) Real))
-    (define (cps:loop r*)
-      (anf:if (cps:null? r*)
-              (cps:*)
-              (anf:let* ([r (cps:car r*)])
-                (anf:if (cps:zero? r)
-                        (cps:return r)
-                        (anf:let* ([r* (cps:cdr r*)]
-                                   [res (cps:loop r*)])
-                          (cps:* res r))))))
-    (cps:loop r*)))
-```
-
-`(cps:mul 1 2 3 4)` 交回的是一段等待延续的计算。宏把程序编译成了这样的编码，运行它的，是再次隐藏延续一节的解释器 `anf:eval`。它的类型值得写出来：
-
-```racket
-(: anf:eval (∀ (a) (→ (¬¬ a) a)))
-```
-
-`anf:eval` 的类型是 $¬¬a → a$：接收一个编码后的程序，提供 `a->⊥` 作为终结延续，`⊥->a` 捕获答案。宏在展开时把程序编码为 $¬¬a$，`anf:eval` 在运行时交入终结延续。这和第一篇里操作系统运行程序是同一种分工：程序是一个 $¬¬\text{Byte}$，退出通道由操作系统在启动时交给它。`anf:eval` 扮演的就是操作系统：
-
-```racket
-> (anf:eval (cps:mul 1 2 3 4))
-24
-> (anf:eval (cps:mul 1 2 0 3 4))
-0
-```
-
-`cps:loop` 和 `cps:car` 一样是 CPS 箭头，所以它的递归调用也写在 `anf:let*` 里。`anf:let/cc` 把当前延续交给程序，名字叫 `cps:return`。遇零时调用它，和手中的延续一节的 `cps:proc2` 一样，计算改走保存的延续，还没做完的乘法全部跳过。其余每一步的延续都由 `anf:let*` 接好，程序员不需要触碰。最后一步同时用到 `res` 和更早的 `r`：宏把后面的代码嵌进前面绑定的函数体，`r` 一路看得见，所以照样能写，只是这一段不再是一串首尾相接的 `∘𝒦`。
-
-## 阴阳谜题
-
-`cps:return` 只用来跳出循环。第一篇的阴阳谜题对延续要求更多：被捕获的延续要作为值传来传去，再被调用。`label` 和整个谜题在嵌入语言里写作：
-
-```racket
-(define (cps:label) (cps:call/cc cps:id))
-```
-
-展开一层，`((cps:label) k)` 是 `((cps:call/cc cps:id) k)`，也就是 `((cps:id (cps k)) k)`：`cps:id` 把提升过的 `(cps k)` 原样交给 `k`。`(cps:label)` 交回一段等待延续的计算；运行时，它把提升过的当前延续 `(cps k)` 作为结果交给 `k`，和第一篇的 `(label)` 一样。绑定得到的 `cps:yin`、`cps:yang`，就是这样的值。
-
-谜题写进 `anf:let*`。中间还有打印：打印也是一步计算，只是结果用不着。一串计算依次做下去、只留最后一个的结果，就是 `anf:begin`：把前面的结果绑定到一个用不着的变量 `_` 上，忽略掉。
-
-```racket
-(define-syntax anf:begin
-  (syntax-rules ()
-    [(_ b) b]
-    [(_ e b* ...) (anf:let ([_ e]) (anf:begin b* ...))]))
-```
-
-谜题于是照第一篇的样子写：
-
-```racket
-> (anf:eval
-   (anf:let* ([cps:yin (cps:label)])
-     (anf:begin
-       (cps:displayln #\@)
-       (anf:let* ([cps:yang (cps:label)])
-         (anf:begin
-           (cps:display #\*)
-           (cps:yin cps:yang))))))
-@
-*@
-**@
-***@
-****@
-...
-```
-
-`cps:yin` 是提升过的延续，所以能像别的 CPS 箭头一样直接调用。它包着的，就是计算的位置一节里那样的一条延续：`(cps:label)` 把它所在的位置捕获下来，交给程序。这个位置也是从出口那条延续一步步接出来的，出口那一条，是 `anf:eval` 在计算开始时交进来的。
 
 # 编码与运行
 
