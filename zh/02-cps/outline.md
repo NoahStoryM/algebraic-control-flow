@@ -170,7 +170,8 @@
 
 ### 7.4 同一支箭头（Noah 10/23 提，Astra 核：只走 DNE 这条线）
 
-- 开头（挪自原 Clavius 一节）：读出命题那一节照 Clavius 律读，换写的是整条定律，`proc` 也换成了新箭头；这里照 DNE 读，搬的是同一支箭头，所以不是 `cps:call/cc`。
+- 开头（Noah 10/23）：照名字的约定 `cps:car` 就是 `(cps car)`，`cps:call/cc` 却不是 `(cps call/cc)`，它是整条 Clavius 律换写出来的。那 `(cps call/cc)`、`(neg call/cc)` 是什么？不换写定律，只把箭头搬过去。
+- 收尾回扣：两者搬的是 DNE 这一支箭头，和 `cps:call/cc`、`neg:call/cc` 是两回事。
 - 宿主 `call/cc` 照 DNE 读，¬¬a →𝒞 a，2 → 0。三种写法一一对应，它在另外两种写法里各是什么？
 - CPS 箭头：`(((cps call/cc) kka) kb) = (kb (call/cc kka)) ≈ (kka kb)`，原样交出计算：`neg²:id` 在这里引入，并认出它就是 `(neg neg:id)`（名字的来由）（代码同 `id`，类型 `(→𝒦 (¬¬ a) a)`，与 `neg:id` 同一种情形；挪自原 7.4），2 → 2；`(uncps neg²:id) = call/cc`，工作来自 `uncps`。
 - 逆否箭头：`(((neg call/cc) ka) kka) = (ka (call/cc kka)) ≈ (kka ka) = ((cps:id ka) kka)`：`cps:id` 用在 ¬a 上，即 `(cps neg:id)`，1 → 3。

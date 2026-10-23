@@ -984,7 +984,9 @@ neg          uncps
 
 ## 同一支箭头
 
-新箭头下的 Clavius 律一节照 Clavius 律读 `call/cc`，换写的是整条定律，`proc` 本身也换成了新的箭头，得到的是 `cps:call/cc`。这一节照 DNE 来读，搬的是同一支箭头：宿主的 `call/cc` 是一支宿主箭头 $¬¬p →_𝒞 p$，收下第 2 层的 `kkp`，交出第 0 层的值。三种写法既然同构，它在另外两种写法里各是什么样子？
+新箭头下的 Clavius 律一节有了 `cps:call/cc` 和 `neg:call/cc`。照名字的约定，`cps:car` 就是 `(cps car)`；`cps:call/cc` 却不是 `(cps call/cc)`，它是整条 Clavius 律换写出来的，`proc` 也换成了新的箭头。那 `(cps call/cc)` 和 `(neg call/cc)` 又是什么？
+
+不换写定律，只把箭头搬过去。宿主的 `call/cc` 照 DNE 来读，是一支宿主箭头 $¬¬p →_𝒞 p$：收下第 2 层的 `kkp`，交出第 0 层的值。
 
 先看 CPS 箭头。交给 `(cps call/cc)` 一段 `kkp` 和延续 `kp`，用三种写法一节那条规律：
 
@@ -1026,7 +1028,7 @@ $¬¬p →_𝒦 p$ 看上去也像 DNE；展开到宿主，它只是 $¬¬p → 
 = ((cps:id kp) kkp)
 ```
 
-`(neg call/cc)` 收下第 1 层的 `kp`，交出第 3 层：它就是用在 $¬p$ 上的 `cps:id`，多两层。`neg:id` 就是 `id`，所以它也是 `(cps neg:id)`。宿主里 2 → 0 的这一步，换成 CPS 箭头是 2 → 2，换成逆否箭头是 1 → 3，接口一变，都不再落到第 0 层。
+`(neg call/cc)` 收下第 1 层的 `kp`，交出第 3 层：它就是用在 $¬p$ 上的 `cps:id`，多两层。`neg:id` 就是 `id`，所以它也是 `(cps neg:id)`。宿主里 2 → 0 的这一步，换成 CPS 箭头是 2 → 2，换成逆否箭头是 1 → 3，接口一变，都不再落到第 0 层。`(cps call/cc)` 和 `(neg call/cc)` 搬的是 DNE 这一支箭头，和换写整条 Clavius 律得到的 `cps:call/cc`、`neg:call/cc` 是两回事。
 
 # 否定翻译
 
