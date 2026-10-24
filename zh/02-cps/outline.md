@@ -167,7 +167,7 @@
 - +2 与 -2 的两串等式（Noah 10/23）：延续与 CPS 一节开头的 `(k e) = ((λ (k) (k e)) …)` 从 `(kv v)` 走到 `(kkv kv)`，即 `(kp p) = (let ([kkp (cps:id p)]) (kkp kp))`；三种写法的规律倒过来读，从 `(kkp kp)` 走到 `(kp p)`，要 `call/cc`（DNE）。
 - -2 不落底：第 3 层的 `kkkp` 遇上第 0 层的 `p`，`(((neg cps:id) kkkp) p) = (kkkp (cps:id p))`。点明 `(neg cps:id)` 是 DNI 的逆否 ¬¬¬p → ¬p，**三重否定律**（*law of triple negation*），直觉主义定理，不需要经典逻辑（Noah 10/23）；n ≥ 1 时第 n+2 层到第 n 层都是它。
 - 落到第 0 层：对任意 a，没有统一的纯函数完成 ¬¬a → a（DNE）。不说「第 0 层不可达」；不当作对每个具体类型的不可能性证明（Astra 10/23）。
-- 备用素材（8/6 讨论「数括号」时留下，未进正文；**当时尚不成熟，待 Astra 一并核**）：箭头的（源, 目标）层数记账：`flip` 交换两端，`cps` 目标加二，`neg` 加二再交换；总层数在 `flip` 下不变，在 `cps`、`neg` 下加二，所以由 `id` 出发造不出 (2, 0)，即 DNE。也可用「在手」视角说（目标那层被延续参数吃掉，见第一篇大纲 7.4）。这是箭头上的层数，属于本篇，不迁去第一篇；本节改成短回指时再看要不要用。注意与上一条「不说不可达」的措辞要求对齐。参考：Thielecke 1997 博士论文 *Categorical Structure of Continuation Passing Style*（application as DNE、thunking as DNI），整理文献时列上。
+- Astra 10/24 审过（数学仓库 `math/background.md` 10.9 与第 10 组其余各条）：8 月的箭头（源, 目标）记账不收，旧推法不成立（`flip` 交换的是柯里化的两个参数，(2, 0) 的总层数也是二）。第一篇迁走基础说明以后，本节压成一段桥接，或并入 7.4 开头，不重讲否定塔。桥接里剩下的是本篇独有的三件事：第一篇的 DNI 在这里就是 `cps:id`；第一篇的三重否定构造在这里就是 `(neg cps:id)`；7.2 的运行等式 `(kp (call/cc kkp)) ≈ (kkp kp)` 表现为把计算交给延续。两个等式要分开：`kkp = (cps:id p)` 时 `(kkp kp) = (kp p)` 是直接 β 化简；任意 `kkp` 的那条依赖 7.2 的控制语义条件。7.4 的问题（`(cps call/cc)` 是什么）与第一篇不同，主旨不会被提前讲掉；2 → 2、1 → 3、4 → 2 是接口改变后的表示，取回原类型仍涉及运行边界。文献：Thielecke 1997 博士论文 *Categorical Structure of Continuation Passing Style*（application as DNE、thunking as DNI），整理文献时列上（凭记忆，未核原文）。
 
 ### 7.4 同一支箭头（Noah 10/23 提，Astra 核：只走 DNE 这条线）
 
