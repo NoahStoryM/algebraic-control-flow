@@ -12,12 +12,4 @@
   (("# 从 `call/cc` 定义标签" "(define (call/cc proc)"))
   (("# 深层的逻辑" "(: cc      (∀ (p)   (→ (∪ p (→ p ⊥)))))"))
 )
-
- (reset
-  (("# 代入排中律" "(define-type (¬¬ q) (¬ (¬ q)))"))
-)
-
- (stdout
-  (("# 代入排中律" "> (define W1  ; 时刻 1：在上下文 C1 中，冻结最内层计算") exact "C1: enter\nC1: exit\nC2: enter\nC2: exit\nC2: enter\nC2: exit\nC1: enter\nreached the frozen context C1\nC1: exit\nhello\n")
-)
 )
