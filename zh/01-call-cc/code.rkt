@@ -211,102 +211,6 @@
   (provide (all-defined-out))
 )
 
-(module stage-22 typed/racket/no-check
-
-  (define b 111)
-
-  (: f (→ Real))
-
-  (define (f) (* 1 b))
-  (define (set-b! v) (set! b v))
-  (provide (all-defined-out))
-)
-
-(module stage-23 typed/racket/no-check
-
-  (define a (make-parameter 1))
-
-  (define b 111)
-
-  (: f (→ Real))
-
-  (define (f) (* (a) b))
-  (provide (all-defined-out))
-)
-
-(module stage-24 typed/racket/no-check
-  (define-type ⊥ (∪))
-  (define-type (¬ p) (→ p ⊥))
-  (define (cc) (call/cc values))
-  (define-type (¬¬ q) (¬ (¬ q)))
-
-  (: wait/fc (∀ (q) (→ (¬¬ q) (¬¬ q))))
-
-  (define (wait/fc kk)
-    (define first? #t)
-    (: k (∪ (¬ q) (¬¬ q)))
-    ;; 首次：(cc) 返回这个位置作为延续；k : ¬¬q
-    ;; 重入：(cc) 返回刚刚传递到这里的值；k : ¬q
-    (define k (cc))
-    (unless first? (kk k))
-    (set! first? #f)
-    k)
-  (provide (all-defined-out))
-)
-
-(module stage-25 typed/racket/no-check
-  (define-type ⊥ (∪))
-  (define-type (¬ p) (→ p ⊥))
-  (define-type (¬¬ p) (¬ (¬ p)))
-  (define (cc) (call/cc values))
-  (: wait/fc (∀ (q) (→ (→ (¬ q) q) (¬¬ q))))
-
-  (define (wait/fc proc)
-    (define first? #t)
-    (define k (cc))
-    (unless first? (call-with-values (λ () (proc k)) k))
-    (set! first? #f)
-    k)
-  (provide (all-defined-out))
-)
-
-(module stage-26 typed/racket/no-check
-  (require (submod ".." stage-25))
-  (define (run-stage-26)
-    (define a (make-parameter 1))
-
-    (define b 111)
-
-    (: f (¬ (¬ Real)))
-
-    (define f (wait/fc (λ (_) (* (a) b))))
-    (list (call/cc f) (begin (set! b 222) (call/cc f)) (parameterize ([a 2]) (call/cc f))))
-
-  (provide (all-defined-out))
-)
-
-(module stage-27 racket
-  (require (submod ".." stage-25))
-  (define (run-stage-27)
-    (define W1
-      (dynamic-wind
-        (λ () (displayln "C1: enter"))
-        (λ () (wait/fc
-               (λ (fc)
-                 (displayln "reached the frozen context C1")
-                 (fc 'hello))))
-        (λ () (displayln "C1: exit"))))
-
-    (define W2
-      (dynamic-wind
-        (λ () (displayln "C2: enter"))
-        (λ () (wait/fc W1))
-        (λ () (displayln "C2: exit"))))
-    (displayln (call/cc W2)))
-
-  (provide (all-defined-out))
-)
-
 (module signature-1 typed/racket/no-check
   (define-type ⊥ (∪))
   (: cc      (∀ (p)   (→ (∪ p (→ p ⊥)))))
@@ -343,13 +247,7 @@
            (prefix-in label: (submod ".." stage-3))
            (prefix-in elimination: (submod ".." stage-6))
            (prefix-in trace: (submod ".." stage-18))
-           (prefix-in yin: (submod ".." stage-20))
-           (prefix-in thunk: (submod ".." stage-22))
-           (prefix-in param: (submod ".." stage-23))
-           (prefix-in frozen0: (submod ".." stage-24))
-           (prefix-in frozen: (submod ".." stage-25))
-           (prefix-in context: (submod ".." stage-26))
-           (prefix-in wind: (submod ".." stage-27)))
+           (prefix-in yin: (submod ".." stage-20)))
   (check-equal? (label:mul) 1)
   (check-equal? (label:mul 2 3 4) 24)
   (check-equal? (label:mul 2 0 3) 0)
@@ -362,15 +260,4 @@
                          (displayln #\*)
                          (trace:apply-cont kn kn+1))))
                "(k0 k0)\t@\n(k1 k1)\t*\n(k0 k1)\t@\n"))
-  (check-true (output-starts-with? (λ () (yin:k0 yin:k0)) "@\n*@\n**@\n***@"))
-  (check-equal? (let () (thunk:set-b! 111) (define a (thunk:f))
-                 (thunk:set-b! 222) (list a (thunk:f))) '(111 222))
-  (check-equal? (parameterize ([param:a 2]) (param:f)) 222)
-  (check-equal? (call/cc (frozen0:wait/fc (λ (k) (k 42)))) 42)
-  (check-equal? (call/cc (frozen:wait/fc (λ (_) 43))) 43)
-  (check-equal? (context:run-stage-26) '(111 222 222))
-  (check-equal?
-   (with-output-to-string wind:run-stage-27)
-   (string-append "C1: enter\nC1: exit\nC2: enter\nC2: exit\n"
-                  "C2: enter\nC2: exit\nC1: enter\n"
-                  "reached the frozen context C1\nC1: exit\nhello\n")))
+  (check-true (output-starts-with? (λ () (yin:k0 yin:k0)) "@\n*@\n**@\n***@")))
