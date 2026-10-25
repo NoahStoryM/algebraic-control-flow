@@ -1,0 +1,11 @@
+/* 「控制流的代数本质」底本样式 */
+.AcfCode { font-family: monospace; }
+.AcfDisplayMath { text-align: center; margin: 1em 0; }
+.AcfRepl, .AcfOut { margin: 0.5em 0 1em 0; }
+.AcfReplInput { border-collapse: collapse; }
+.AcfReplInput td { vertical-align: top; padding: 0; }
+.AcfPrompt { margin: 0 0.5em 0 0; }
+.AcfReplOutput, .AcfOut > p { font-family: monospace; color: #960096; white-space: pre; margin: 0 0 0.3em 0; }
+.AcfOut > p { color: inherit; }
+.AcfNotice, .AcfExercise { border-left: 3px solid #aaa; padding: 0.2em 0.8em; margin: 1em 0; background: #f7f7f7; }
+.AcfExercise { border-left-color: #6a8; }

@@ -1,8 +1,11 @@
 #lang racket
+(require "scrbl-source.rkt")
 ;; 用法：racket tools/cmp-forms.rkt <草稿或几节拼起来的 .md> art5-code.rkt（两个参数都要给；只给一个会退回默认的 art5-draft.md）
 ;; 取出草稿里所有 ```racket 定义块中的定义（define、:、define-type、struct、define-syntax-rule）；
 ;; 首个非空行以 > 开始的交互块只由 run-blocks.rkt 核对，
 ;; 逐个检查它是否（读成 S 表达式后）出现在代码文件里。right-triangles₀…₈ 视同 right-triangles。
+;; 第一个参数也可以是篇的 main.scrbl：取 @code-block 与 @eq-block 里的定义（见 tools/scrbl-source.rkt），
+;; form-exceptions.rktd 同样放在 main.scrbl 旁边。
 (define-values (draft code)
   (match (current-command-line-arguments)
     [(vector d c) (values d c)]
@@ -26,7 +29,13 @@
         [else acc]))
 (define code-forms
   (collect-forms (read-all-from-string (string-join (cdr (file->lines code)) "\n")) (set)))
-(define blocks (regexp-match* #px"(?s:```racket\n(.*?)\n```)" (file->string draft) #:match-select cadr))
+(define blocks
+  (if (regexp-match? #rx"[.]scrbl$" draft)
+      (for*/list ([sec (scrbl-sections draft)]
+                  [b (cdr sec)]
+                  #:when (memq (sblock-kind b) '(code eq)))
+        (sblock-source b))
+      (regexp-match* #px"(?s:```racket\n(.*?)\n```)" (file->string draft) #:match-select cadr)))
 (define doc-forms
   (filter (λ (f) (and (pair? f) (memq (car f) heads)))
           (map norm (append-map read-all-from-string blocks))))

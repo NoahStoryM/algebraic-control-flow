@@ -1,0 +1,219 @@
+#lang racket/base
+;; 「控制流的代数本质」Scribble 底本的共享写法。用法见 lib/README.md。
+;;
+;; 正文里的代码块原样写在 |{ … }| 里，核对工具（tools/run-blocks.rkt、tools/cmp-forms.rkt）
+;; 直接读 .scrbl 源文件取出这些字符串，和 .md 时代一样按原样执行。这里只负责排版。
+(require racket/list
+         racket/string
+         scribble/core
+         scribble/decode
+         scribble/html-properties
+         (only-in scribble/manual typeset-code seclink)
+         (only-in scribble/base linebreak hspace)
+         scriblib/footnote
+         racket/runtime-path)
+
+(provide code-block repl-block eq-block out-block
+         c m mm
+         defterm term defsym glossary-table symbol-table
+         xref
+         notice exercise
+         (rename-out [note fn])
+         acf-style chapter-style)
+
+(define-runtime-path css-file "acf.css")
+(define-runtime-path js-file "acf.js")
+
+;; 挂在部的 @title 上：引入样式表与公式脚本（MathJax 从 CDN 载入）。
+(define acf-style
+  (make-style #f (list (css-addition css-file) (js-addition js-file))))
+;; 挂在篇的 @title 上：每个小篇在 HTML 里单独成页。
+(define chapter-style
+  (make-style #f (list 'toc (css-addition css-file) (js-addition js-file))))
+
+;; ---------------------------------------------------------------------------
+;; 代码块
+;;
+;;   @code-block|{ … }|  定义块与示意块：照文件写，不带提示符
+;;   @repl-block|{ … }|  交互块：> 输入，下面是 REPL 的打印
+;;   @eq-block|{ … }|    等式块：推导与化简，各步用顶层的 = 连接，不执行
+;;   @out-block|{ … }|   不带语言的输出块（编译后程序的输出、矩阵等）
+;;
+;; 关键字参数只给核对工具看，排版时忽略（含义见 tools/REPL.md）：
+;;   #:skip "原因"  #:reset #t  #:stdout '(exact "…")  #:value '(equal v)
+;;   #:error "正则"  #:exit 0
+
+(define empty-context (datum->syntax #f 'acf))
+
+(define (racket-text str)
+  ;; 不给标识符加文档链接：系列约定正文不引外部文档，Racket 文档也不引。
+  (typeset-code #:context empty-context #:keep-lang-line? #t str))
+
+(define (body->string strs)
+  (string-append* (map (λ (s) (if (string? s) s (format "~a" s))) strs)))
+
+(define-syntax-rule (define-block-form (name str) body ...)
+  (define (name #:skip [skip #f] #:reset [reset #f] #:stdout [stdout #f]
+                #:value [value #f] #:error [err #f] #:exit [ex #f]
+                . strs)
+    (let ([str (body->string strs)]) body ...)))
+
+(define-block-form (code-block str) (racket-text str))
+(define-block-form (eq-block str) (racket-text str))
+
+(define-block-form (out-block str)
+  (nested-flow (make-style "AcfOut" '())
+               (list (paragraph (make-style #f (list 'div))
+                                (verbatim-lines str)))))
+
+(define (verbatim-lines str)
+  (add-between (for/list ([line (string-split str "\n" #:trim? #f)])
+                 (element 'tt (spaces->hspace line)))
+               (element #f (list (linebreak)))))
+
+(define (spaces->hspace s)
+  (for/list ([piece (regexp-match* #px" +|[^ ]+" s)])
+    (if (char=? (string-ref piece 0) #\space)
+        (hspace (string-length piece))
+        piece)))
+
+;; 交互块：每一项是「> 输入」加上其后的打印。拆分规则与 tools/run-blocks.rkt 相同：
+;; 以 "> " 开头的行开始新的一项，输入读成完整表达式之前的行都属于输入。
+(define (complete-form? s)
+  (with-handlers ([exn:fail:read? (λ (_) #f)])
+    (define in (open-input-string s))
+    (define v (read in))
+    (and (not (eof-object? v)) (eof-object? (read in)))))
+
+(define (repl-items str)
+  (define items '())
+  (define input #f)
+  (define out '())
+  (define ready? #f)
+  (define (finish!)
+    (when input (set! items (cons (cons input (reverse out)) items)))
+    (set! input #f) (set! out '()) (set! ready? #f))
+  (for ([line (string-split str "\n" #:trim? #f)])
+    (cond [(string-prefix? line "> ")
+           (finish!)
+           (set! input (substring line 2))
+           (set! ready? (complete-form? input))]
+          [(not input) (void)]
+          [ready? (set! out (cons line out))]
+          [else
+           ;; 续行在原缩进上多加了两个空格，去掉后与首行对齐
+           (set! input (string-append input "\n"
+                                      (if (string-prefix? line "  ") (substring line 2) line)))
+           (set! ready? (complete-form? input))]))
+  (finish!)
+  (reverse items))
+
+(define-block-form (repl-block str)
+  (nested-flow
+   (make-style "AcfRepl" '())
+   (append*
+    (for/list ([item (repl-items str)])
+      (define input (car item))
+      (define outs (cdr item))
+      (cons (table (make-style "AcfReplInput" '())
+                   (list (list (paragraph (make-style "AcfPrompt" '()) (element 'tt ">"))
+                               (racket-text input))))
+            (if (null? outs)
+                '()
+                (list (paragraph (make-style "AcfReplOutput" (list 'div))
+                                 (verbatim-lines (string-join outs "\n"))))))))))
+
+;; ---------------------------------------------------------------------------
+;; 行内
+
+;; 行内代码：原样等宽，不着色、不加链接。含 @ 或不配对花括号时写 @c|{…}|。
+(define (c . strs) (element (make-style "AcfCode" '()) (body->string strs)))
+
+;; 公式：写 Unicode 与 TeX 的混合，例如 @m{¬p ∨ q}、@m{\text{Label}}。
+;; HTML 里交给 MathJax；文本输出里保留原样，便于核对。
+(define (m . strs)
+  (element (make-style "AcfMath" '()) (list "\\(" (body->string strs) "\\)")))
+(define (mm . strs)
+  (paragraph (make-style "AcfDisplayMath" '()) (list "\\[" (body->string strs) "\\]")))
+
+;; ---------------------------------------------------------------------------
+;; 术语与符号
+;;
+;; @defterm[#:en "continuation"]{延续}  第一次作为术语出现：加粗，注英文，登记进术语表
+;; @defterm[#:en "Double Negation Introduction" #:abbr "DNI"]{双重否定引入}
+;; @term{延续}  之后需要链回定义处时用（一般不必）
+;; @defsym["¬p" "说明"]  在符号定义处放一个不可见的锚，登记进符号表
+
+;; 收集阶段按文档顺序把条目登记进表里，解析阶段的 delayed-block 再读出来。
+;; （Scribble 的 resolve-get-keys 不带 part 时只看外部文档，所以自己记。）
+(define entries (make-hash))   ; kind -> (listof (cons key vector))，倒序
+(define (register! kind key val)
+  (define old (hash-ref entries kind '()))
+  (unless (assoc key old)
+    (hash-set! entries kind (cons (cons key val) old))))
+(define (collected kind) (reverse (hash-ref entries kind '())))
+
+(define (content->key content)
+  (string-normalize-spaces (content->string content)))
+
+(define (defterm #:en [en #f] #:abbr [abbr #f] #:key [key #f] . content)
+  (define k (or key (content->key content)))
+  (list
+   (collect-element #f '() (λ (ci) (register! 'term k (vector content en abbr))))
+   (target-element #f (element 'bold content) (list 'acf-term k))
+   (cond [(and en abbr) (list "（" (element 'italic en) "，" abbr "）")]
+         [en (list "（" (element 'italic en) "）")]
+         [abbr (list "（" abbr "）")]
+         [else '()])))
+
+(define (term #:key [key #f] . content)
+  (link-element #f content (list 'acf-term (or key (content->key content)))))
+
+(define (defsym sym description)
+  (list
+   (collect-element #f '() (λ (ci) (register! 'symbol sym description)))
+   (target-element #f '() (list 'acf-sym sym))))
+
+;; 术语表与符号表按第一次出现的顺序排列，每项链回定义处。
+(define (glossary-table)
+  (delayed-block
+   (λ (renderer part ri)
+     (define rows
+       (for/list ([entry (collected 'term)])
+         (define k (car entry))
+         (define v (cdr entry))
+         (list (paragraph plain (link-element #f (vector-ref v 0) (list 'acf-term k)))
+               (paragraph plain (if (vector-ref v 1) (element 'italic (vector-ref v 1)) ""))
+               (paragraph plain (or (vector-ref v 2) "")))))
+     (table (make-style 'boxed '())
+            (cons (list (paragraph plain "术语") (paragraph plain "英文") (paragraph plain "缩写"))
+                  rows)))))
+
+(define (symbol-table)
+  (delayed-block
+   (λ (renderer part ri)
+     (define rows
+       (for/list ([entry (collected 'symbol)])
+         (define sym (car entry))
+         (list (paragraph plain (link-element #f (m sym) (list 'acf-sym sym)))
+               (paragraph plain (cdr entry)))))
+     (table (make-style 'boxed '())
+            (cons (list (paragraph plain "符号") (paragraph plain "含义")) rows)))))
+
+;; ---------------------------------------------------------------------------
+;; 引用
+;;
+;; 节的标签写成 "篇号:名字"，例如 @section[#:tag "01:compare"]{比较}。
+;; 回指照正文原来的说法写，链接到那一节：@xref["01:compare"]{比较一节}。
+;; 篇与篇之间同样用 @xref（整个第一部是一份文档）。外部链接用 @hyperlink。
+;; 文献用 scriblib/autobib（见 lib/README.md），第一篇目前没有文献引用。
+(define (xref tag . content)
+  (apply seclink tag content))
+
+;; ---------------------------------------------------------------------------
+;; 注意框与练习框；脚注用 @fn{…}（scriblib/footnote 的 note）。
+(define (callout class label content)
+  (nested-flow (make-style class '())
+               (decode-flow (cons (element 'bold label) content))))
+(define (notice . content) (callout "AcfNotice" "注意：" content))
+(define (exercise . content) (callout "AcfExercise" "练习：" content))
