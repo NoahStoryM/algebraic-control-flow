@@ -206,7 +206,7 @@
   (define-type (¬¬  q) (¬ (¬  q)))
   (define-type (¬¬¬ q) (¬ (¬¬ q)))
 
-  (: triple-negation (∀ (q) (→ (¬ (¬ (¬ q))) (¬ q))))
+  (: triple-negation (∀ (q) (→ (¬¬¬ q) (¬ q))))
   (define ((triple-negation kkkq) q)
     (define (kkq kq) (kq q))
     (kkkq kkq))

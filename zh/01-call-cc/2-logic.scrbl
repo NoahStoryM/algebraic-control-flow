@@ -328,7 +328,7 @@ DNI 和 @racket[apply-cont] 是同一个操作，只是参数顺序不
 (define-type (¬¬  q) (¬ (¬  q)))
 (define-type (¬¬¬ q) (¬ (¬¬ q)))
 
-(: triple-negation (∀ (q) (→ (¬ (¬ (¬ q))) (¬ q))))
+(: triple-negation (∀ (q) (→ (¬¬¬ q) (¬ q))))
 (define ((triple-negation kkkq) q)
   (define (kkq kq) (kq q))
   (kkkq kkq))]
