@@ -35,7 +35,8 @@ scribble --text --dest build zh/main.scrbl # 纯文本，便于通读和比对
 ## 多语言（试验，#101 待定）
 
 - 每种语言一份文档：`zh/main.scrbl` → `acf-zh`，`en/main.scrbl` → `acf-en`，各自一棵「部 → 篇 → 小篇」的树，共用 `code.rkt`。
-- 两种语言的篇、小篇和带标签的节用同样的标签（`01`、`01:1-labels`、`01:compare`）。`@also-in['en "01:1-labels"]` 链到另一种语言里的同一页；部的根写 `"top"`。raco setup 会给每份文档的节标签加上文档前缀，同名不相撞。
+- 各语言的篇、小篇和每一节用同样的标签（`01`、`01:1-labels`、`01:compare`……）。系列前言写 `@(language-links 'zh)`，排出各语言的入口；篇和小篇的开头写 `@also-in['en "01:1-labels"]`，链到另一种语言里的同一页。raco setup 会给每份文档的节标签加上文档前缀，同名不相撞。
+- 页面右上角的「Racket language family」是 raco setup 给每份文档加的，指 Racket、Rhombus 这样的程序语言家族，不能拿来切换中英文。
 - 术语表、符号表按文档分开收集；表头写 `@(glossary-table #:lang 'en)`。英文文档里 `@defterm{continuation}` 不注英文，缩写用半角括号。
 - 英文文件同样写 `#lang acf/scribble`：去掉中文换行那一步碰不到英文。
 

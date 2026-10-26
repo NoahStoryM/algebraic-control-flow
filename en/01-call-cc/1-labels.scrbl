@@ -14,7 +14,7 @@ it in our hands, and pass it around?
 (define (goto l) (l l))
 (define (label) (primitive-call/cc goto))]
 
-@section{First-Class Labels}
+@section[#:tag "01:first-class"]{First-Class Labels}
 
 Suppose we have first-class @tech{labels}:
 
@@ -38,7 +38,7 @@ function, and returned as a result. And it stays valid after the
 function that created it has returned, so @racket[goto] can still jump
 back into that function. C's @tech{labels} can do neither.
 
-@subsection{Loops}
+@subsection[#:tag "01:loop"]{Loops}
 
 @examples[#:eval ev #:label #f
 (let ([x 0])
@@ -53,7 +53,7 @@ returns the same @tech{label} again; @racket[loop] is rebound to it,
 and the body runs from the top. The mutable variable @racket[x]
 records how many times we have been through.
 
-@subsection{Early Return}
+@subsection[#:tag "01:early-return"]{Early Return}
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define (mul . r*)
@@ -78,7 +78,7 @@ is skipped, and the function hands over @racket[result], the zero just
 stored there. The boolean flag @racket[first?] exists to tell whether
 we entered for the first time or came back through @racket[goto].
 
-@subsection{The Trouble with Labels}
+@subsection[#:tag "01:label-trouble"]{The Trouble with Labels}
 
 Both examples rely on @bold{mutating state} (@racket[set!]) to carry
 information across jumps. A @tech{label} carries no data when we
@@ -87,7 +87,7 @@ effects. The flag @racket[first?] in the second example has nothing to
 do with multiplication: its only purpose is to answer “are we running
 for the first time, or did we just jump back?”
 
-@section{From Labels to Continuations: the @racket[cc] Operator}
+@section[#:tag "01:cc"]{From Labels to Continuations: the @racket[cc] Operator}
 
 The basic limitation of first-class @tech{labels} is that
 @racket[goto] is a one-way ticket with no luggage. To avoid mutating
@@ -148,7 +148,7 @@ control reaches the @racket[if] once more. This time @racket[saved] is
 no longer @racket[#f]; the then branch is taken and @racket[(cc)]
 returns a second time, handing over the stored value.
 
-@subsection{@racket[mul] Again}
+@subsection[#:tag "01:mul-cc"]{@racket[mul] Again}
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define (mul . r*)
@@ -179,7 +179,7 @@ product @racket[res] and we return from the then branch. Both paths
 meet through the @tech{continuation} @racket[result], with no mutable
 state and no flag.
 
-@section{Eliminating the Branch: @racket[call/cc]}
+@section[#:tag "01:call-cc"]{Eliminating the Branch: @racket[call/cc]}
 
 @racket[cc] got rid of mutable state but brought a new requirement:
 @bold{branching}. Every call to @racket[(cc)] can return two kinds of
@@ -268,7 +268,7 @@ be written @racket[(let/cc return …)].
 
 @bold{Exercise}: define @racket[call/cc] using @racket[let/cc].
 
-@subsection{A More General Continuation Type}
+@subsection[#:tag "01:general-type"]{A More General Continuation Type}
 
 The @tech{continuation} handed to @racket[proc] has type @m{p → ⊥}.
 This type can be relaxed. First, a strange function:
@@ -299,7 +299,7 @@ Setting @m{q = ⊥} brings back the original type. The original version
 says more directly what a @tech{continuation} is: a function that
 receives a @m{p} and never returns.
 
-@subsection{The Invisible Continuation}
+@subsection[#:tag "01:invisible"]{The Invisible Continuation}
 
 @racket[k] and @racket[(compose absurd k)] behave the same because
 @racket[k] never returns, so nothing after it ever runs. There is a
@@ -347,7 +347,7 @@ other hand, never returns normally; its result always leaves through
 It takes a computation that delivers its result through a
 @tech{continuation}, and pulls the result out.
 
-@section{Defining Labels from @racket[call/cc]}
+@section[#:tag "01:label-from-call-cc"]{Defining Labels from @racket[call/cc]}
 
 Let @m{p = @ty{Label}}. The @tech{continuation} that @racket[call/cc]
 hands to @racket[proc] then has type @m{@ty{Label} → ⊥}, which is

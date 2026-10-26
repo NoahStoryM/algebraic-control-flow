@@ -26,7 +26,7 @@
          c m mm ty
          define-tech tech/guide tech/refer
          defterm defsym glossary-table symbol-table
-         xref also-in
+         xref also-in language-links
          (rename-out [note fn])
          acf-style chapter-style)
 
@@ -244,5 +244,20 @@
 (define (also-in lang tag)
   (match-define (cons text doc) (hash-ref translations lang))
   (margin-note (seclink tag #:doc doc text)))
+
+;; 系列前言里各语言的入口：@(language-links 'zh)。当前语言不加链接。
+;; 右上角的「Racket language family」是 raco setup 给每份文档加的，指的是 Racket、Rhombus
+;; 这样的程序语言家族，由文档页的脚本处理，借不来做自然语言的切换。
+(define language-order '(zh en))
+(define language-names (hash 'zh "中文" 'en "English"))
+(define (language-links current)
+  (paragraph (make-style "AcfLanguages" '())
+             (add-between
+              (for/list ([lang (in-list language-order)])
+                (define name (hash-ref language-names lang))
+                (if (eq? lang current)
+                    (element 'bold name)
+                    (seclink "top" #:doc (cdr (hash-ref translations lang)) name)))
+              " · ")))
 
 ;; 脚注用 @fn{…}（scriblib/footnote 的 note）。旁注直接用 Scribble 的 @margin-note。

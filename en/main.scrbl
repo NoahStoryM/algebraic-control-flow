@@ -3,7 +3,7 @@
 @title[#:style acf-style]{The Algebraic Essence of Control Flow
   · Part I}
 
-@also-in['zh "top"]
+@(language-links 'en)
 
 @;{Trial of the English edition (Noah 10/26): only the first
 sub-article, written to check the layout and how two languages fit
