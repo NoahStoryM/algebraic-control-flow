@@ -95,7 +95,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
   @item{类型为 @m{p → ⊥} 的@tech{延续}：接受类型为 @m{p}
   的值且永不返回的函数（它跳回捕获点）。}
   @item{类型为 @m{p} 的值，在@tech{延续}被调用时收到。}]
-我们把这个操作符叫做 @racket[cc]（@italic{current-continuation}
+我们把这个操作符叫做 @racket[cc]（@racket[current-continuation]
 的缩写）：
 
 @examples[#:eval ev #:label #f #:no-prompt
