@@ -1,7 +1,7 @@
 #lang racket
 ;; 核对一篇从 .md 转成 .scrbl 之后，正文文字与代码有没有走样（#47 的验收办法）。
 ;;
-;; 用法：LC_ALL=C.UTF-8 racket tools/cmp-conversion.rkt zh/01-call-cc/article.md zh/01-call-cc/main.scrbl
+;; 用法：LC_ALL=C.UTF-8 racket tools/cmp-conversion.rkt zh/0X-…/article.md zh/0X-…/main.scrbl
 ;;
 ;; 做法：在进程内用 Scribble 的文本渲染器把 .scrbl 排成纯文本，再把 .md 去掉标记，
 ;; 两边都删去所有空白后比较。.md 按段落（空行分隔，代码块整块算一段）逐段到 .scrbl 的文本里找，

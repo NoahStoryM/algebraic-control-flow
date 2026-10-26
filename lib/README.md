@@ -113,7 +113,7 @@ scribble --text --dest build zh/main.scrbl # 纯文本，便于通读和比对
 export LC_ALL=C.UTF-8
 racket tools/run-blocks.rkt zh/01-call-cc/main.scrbl
 racket tools/cmp-forms.rkt zh/01-call-cc/main.scrbl zh/01-call-cc/code.rkt
-racket tools/cmp-conversion.rkt zh/01-call-cc/article.md zh/01-call-cc/main.scrbl   # 只在从 .md 转换时用
+racket tools/cmp-conversion.rkt zh/0X-…/article.md zh/0X-…/main.scrbl   # 只在把一篇从 .md 转换过来时用
 ```
 
 两个核对工具从篇的 `main.scrbl` 出发，跟着 `@include-section` 读各小篇，用法和结果与 .md 时一样（`tools/scrbl-source.rkt`）。`cmp-conversion.rkt` 把 .scrbl 排成纯文本，逐段比对 .md 的正文文字，代码块逐字比对。
