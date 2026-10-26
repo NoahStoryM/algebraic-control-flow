@@ -160,25 +160,29 @@ Coq 这样的一致类型论用@defterm{正性}条件禁止这类定义。Racket
 构造性类型系统所自然栖居的逻辑。那么 @racket[cc] 和 @racket[call/cc]
 到底添加了什么？
 
-答案藏在否定的层数里。固定一个类型 @m{A}，把 @m{A} 本身算作第 0
-层，@m{¬A} 算作第 1 层，@m{¬¬A} 算作第 2 层，依此类推。多一层的类型，
-正是「接收少一层的值、结果为 @m{⊥}」的函数类型。
+回头看前面那些类型，变来变去的，只是否定叠了几层：@racket[cc] 交出
+@m{p} 或 @m{¬p}，@racket[call/cc] 从 @m{¬¬p} 里取出
+@m{p}，@tech{延续}收下一个值，得到 @m{⊥}。那就数一数层数。
 
-拿最后那版 @racket[mul] 来数，底类型是 @m{@ty{Real}}。交给
-@racket[return] 的 @racket[r] 是一个实数，在第 0 层；@racket[return]
-等一个实数，在第 1 层；照@xref["01:invisible"]{那条看不见的延续}的办法
-包一层，@racket[(λ (return) (return (proc return)))] 等一个
-@racket[return]，从不正常返回，在第 2 层。
+还是拿最后那版 @racket[mul]。@racket[r] 是一个实数，
+什么也不等；@racket[return] 等一个实数；照@xref["01:invisible"]{那条看
+不见的延续}的办法包一层，@racket[(λ (return) (return (proc return)))]
+又等一个 @racket[return]，而且从不正常返回。把 @racket[r] 的类型
+@m{@ty{Real}} 算作第 0 层，@racket[return] 就在第 1 层，是
+@m{¬@ty{Real}}；包了一层的那个在第 2 层，是 @m{¬¬@ty{Real}}。
 
-@m{A} 可以是任何类型，甚至可以是 @m{@ty{Label}}；
-但谈论同一座否定塔的时候，@m{A} 要固定下来，只数它外面包了几层，
-不去拆它的内部。
+一般地，固定一个类型 @m{A}，把 @m{A} 本身算作第 0 层，@m{¬A} 算作第 1
+层，@m{¬¬A} 算作第 2 层，依此类推：多一层的类型，
+正是「接收少一层的值、结果为 @m{⊥}」的函数类型。@m{A} 可以是任何类型，
+甚至可以是 @m{@ty{Label}}；只是谈论同一座否定塔的时候，@m{A}
+要固定下来，只数它外面包了几层，不去拆它的内部。
 
-变量的名字也可以替我们数层数。一个值叫 @racket[v]，
-等它的@tech{延续}就叫 @racket[kv]，等 @racket[kv] 的就叫
-@racket[kkv]：名字里有几个 @racket[k]，就比 @racket[v] 多几层。
+层数也可以写进名字里。一个值叫 @racket[v]，等它的@tech{延续}就叫
+@racket[kv]，等 @racket[kv] 的就叫 @racket[kkv]：名字里有几个
+@racket[k]，就比 @racket[v] 多几层。照这个习惯，@racket[return] 该叫
+@racket[kr]。
 
-与@tech{否定}打交道，有四种方式：
+有了层数，与@tech{否定}打交道的方式可以排成四种：
 
 @itemlist[
   @item{@defterm{矛盾律}：第 @m{n+1} 层与第 @m{n} 层相遇，得到
