@@ -4,7 +4,7 @@
 
 ## 结构
 
-仓库是一个 Racket 包（`info.rkt`），风格照 ctp：包名、库名、文档名都用缩写 `acf`（Noah 10/26）。按「部 → 篇 → 小篇」的树搭（#47、#91）：
+仓库是一个 Racket 包（`info.rkt`），风格照 ctp：包名、库名都用缩写 `acf`；每种语言一份文档，文档名带语言后缀，中文是 `acf-zh`，以后英文是 `acf-en`（Noah 10/26）。按「部 → 篇 → 小篇」的树搭（#47、#91）：
 
 ```
 zh/main.scrbl                 部：目录、各篇、术语表、符号表
@@ -22,7 +22,7 @@ zh/01-call-cc/3-fixed-point.scrbl
 
 ```sh
 export LC_ALL=C.UTF-8
-raco pkg install --name acf   # 在仓库根目录：装上依赖、编译、生成文档，打开 doc/acf/index.html
+raco pkg install --name acf   # 在仓库根目录：装上依赖、编译、生成文档，打开 doc/acf-zh/index.html
 raco setup --pkgs acf         # 之后改了正文，重新生成
 scribble --text --dest build zh/main.scrbl # 纯文本，便于通读和比对
 ```
