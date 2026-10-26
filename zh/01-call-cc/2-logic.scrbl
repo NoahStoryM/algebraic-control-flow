@@ -229,19 +229,15 @@ Coq 这样的一致类型论用@defterm{正性}条件禁止这类定义。Racket
 只差值和@tech{延续}谁先到：@m{¬p → p → ⊥} 和 @m{p → ¬p → ⊥}
 只差参数的次序，@tech{矛盾律}和 DNI 互相推得出。
 右边一列都是提供当前@tech{延续}，只差交给一个函数还是交到手
-里：@racket[call/cc] 能@xref["01:call-cc"]{用 @racket[cc]
-写出}，@racket[cc] 也能@xref["01:label-from-call-cc"]{用
-@racket[call/cc] 写出}，就是 @racket[(call/cc values)]。@tech{排中
-律}和 DNE 作为对任意类型都成立的原则，同样互相推得出。
-
-用 @racket[cc] 写出的那个 @racket[call/cc]，
-照@xref["01:invisible"]{「那条看不见的延续」}里的第二种读法，要求
-@racket[proc] 从不正常返回，读起来正是一段由@tech{排中律}推出 DNE
-的证明：@racket[(cc)] 交出 @m{p} 那一支，就直接交出；交出 @m{¬p}
-那一支，就交给 @racket[proc]，@tech{矛盾律}给出 @m{⊥}，
-而照爆炸原理（@racket[absurd]），@m{⊥} 可以当作任何类型。
-用列表包一层，只是为了在运行时分得清这两支。经典的成分全在
-@racket[(cc)] 那一步，其余都是构造性的。
+里。@racket[cc] 能@xref["01:label-from-call-cc"]{用 @racket[call/cc]
+写出}，就是 @racket[(call/cc values)]；@racket[call/cc]
+也能@xref["01:call-cc"]{用 @racket[cc] 写出}，
+照@xref["01:invisible"]{「那条看不见的延续」}里的第二种读法，
+那段代码读起来正是由@tech{排中律}推出 DNE：@racket[(cc)] 交出 @m{p}
+那一支，就直接交出；交出 @m{¬p} 那一支，就交给 @racket[proc]，得到的
+@m{⊥} 照爆炸原理（@racket[absurd]）可以当作任何类型。@tech{排中律}和
+DNE 作为对任意类型都成立的原则，同样互相推得出，
+经典的成分只在提供当前@tech{延续}的那一步。
 
 @bold{练习}：@italic{实质条件} @m{¬p ∨ q} 是经典逻辑中 @m{p → q}
 的另一种编码。试着实现 @c{material->procedure : (¬p ∨ q) → p → q} 和
