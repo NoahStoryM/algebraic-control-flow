@@ -9,11 +9,12 @@
 ;; define-tech、tech/guide、tech/refer 取自 ctp 的 scribblings/ctp-utils.rkt（amb 的 utils.rkt 里也有同样的一份）。
 (require (for-syntax racket/base syntax/parse)
          racket/list
+         racket/match
          racket/string
          scribble/core
          scribble/decode
          scribble/html-properties
-         (only-in scribble/manual typeset-code seclink tech deftech math)
+         (only-in scribble/manual typeset-code seclink tech deftech math margin-note)
          (only-in scribble/base linebreak hspace)
          scriblib/footnote
          (only-in scribble/example make-base-eval)
@@ -25,7 +26,7 @@
          c m mm ty
          define-tech tech/guide tech/refer
          defterm defsym glossary-table symbol-table
-         xref
+         xref also-in language-links
          (rename-out [note fn])
          acf-style chapter-style)
 
@@ -141,12 +142,20 @@
 
 ;; 收集阶段按文档顺序把条目登记进表里，解析阶段的 delayed-block 再读出来。
 ;; （Scribble 的 resolve-get-keys 不带 part 时只看外部文档，所以自己记。）
-(define entries (make-hash))   ; kind -> (listof (cons key vector))，倒序
-(define (register! kind key val)
-  (define old (hash-ref entries kind '()))
+;; 每种语言一份文档，raco setup 可能在同一个进程里排几份文档，所以按文档的根 part 分开记。
+(define entries (make-weak-hasheq))   ; 根 part -> kind -> (listof (cons key vector))，倒序
+(define (root-of ci) (let ([ps (collect-info-parents ci)]) (and (pair? ps) (last ps))))
+(define (register! ci kind key val)
+  (define table (hash-ref! entries (root-of ci) make-hash))
+  (define old (hash-ref table kind '()))
   (unless (assoc key old)
-    (hash-set! entries kind (cons (cons key val) old))))
-(define (collected kind) (reverse (hash-ref entries kind '())))
+    (hash-set! table kind (cons (cons key val) old))))
+(define (collected root kind)
+  (reverse (hash-ref (hash-ref entries root (hash)) kind '())))
+
+;; 中文的术语后面用全角括号注英文；英文文档里的术语本身就是英文，不注，缩写用半角括号。
+(define (cjk-content? content)
+  (for/or ([c (in-string (content->string content))]) (char<=? #\u4E00 c #\u9FFF)))
 
 (define (content->key content)
   (string-normalize-spaces (content->string content)))
@@ -154,9 +163,10 @@
 (define (defterm #:en [en #f] #:abbr [abbr #f] #:key [key #f] . content)
   (define k (or key (content->key content)))
   (list
-   (collect-element #f '() (λ (ci) (register! 'term k (vector content en abbr))))
+   (collect-element #f '() (λ (ci) (register! ci 'term k (vector content en abbr))))
    (element 'bold (list (apply deftech #:key k #:style? #f content)))
-   (cond [(and en abbr) (list "（" (element 'italic en) "，" abbr "）")]
+   (cond [(not (cjk-content? content)) (if abbr (list " (" abbr ")") '())]
+         [(and en abbr) (list "（" (element 'italic en) "，" abbr "）")]
          [en (list "（" (element 'italic en) "）")]
          [abbr (list "（" abbr "）")]
          [else '()])))
@@ -165,35 +175,55 @@
 (define (defsym sym description)
   (define k (content->key (list sym)))
   (list
-   (collect-element #f '() (λ (ci) (register! 'symbol k (cons sym description))))
-   (target-element #f '() (list 'acf-sym k))))
+   (collect-element #f '() (λ (ci) (register! ci 'symbol k (cons sym description))))
+   (target-element #f '() (sym-tag k))))
 
-;; 术语表与符号表按第一次出现的顺序排列，每项链回定义处。
-(define (glossary-table)
-  (delayed-block
-   (λ (renderer part ri)
+;; 锚的标签借用 'tech 这一类：raco setup 给每份文档的标签加前缀时只处理 part、tech、cite，
+;; 别的标签各文档共用一个名字空间，中英两份文档的同一个符号就会相撞。
+(define (sym-tag k) (list 'tech (list "acf-sym" k)))
+
+;; 术语表与符号表按第一次出现的顺序排列，每项链回定义处。表头按 #:lang 用中文或英文。
+;; 表前放一个空的 collect-element，记下这张表属于哪份文档。
+(define headers
+  (hash 'zh (hash 'term "术语" 'en "英文" 'abbr "缩写" 'symbol "符号" 'meaning "含义")
+        'en (hash 'term "Term" 'en "English" 'abbr "Abbreviation" 'symbol "Symbol" 'meaning "Meaning")))
+(define (header lang key) (paragraph plain (hash-ref (hash-ref headers lang) key)))
+
+(define (table-for-root make-table)
+  (define root (box #f))
+  (list (paragraph plain (collect-element #f '() (λ (ci) (set-box! root (root-of ci)))))
+        (delayed-block (λ (renderer part ri) (make-table (unbox root))))))
+
+(define (glossary-table #:lang [lang 'zh])
+  (table-for-root
+   (λ (root)
      (define rows
-       (for/list ([entry (collected 'term)])
+       (for/list ([entry (collected root 'term)])
          (define k (car entry))
          (define v (cdr entry))
-         (list (paragraph plain (apply tech #:key k (vector-ref v 0)))
-               (paragraph plain (if (vector-ref v 1) (element 'italic (vector-ref v 1)) ""))
-               (paragraph plain (or (vector-ref v 2) "")))))
+         (append
+          (list (paragraph plain (apply tech #:key k (vector-ref v 0))))
+          (if (eq? lang 'zh)
+              (list (paragraph plain (if (vector-ref v 1) (element 'italic (vector-ref v 1)) "")))
+              '())
+          (list (paragraph plain (or (vector-ref v 2) ""))))))
      (table (make-style 'boxed '())
-            (cons (list (paragraph plain "术语") (paragraph plain "英文") (paragraph plain "缩写"))
+            (cons (if (eq? lang 'zh)
+                      (list (header lang 'term) (header lang 'en) (header lang 'abbr))
+                      (list (header lang 'term) (header lang 'abbr)))
                   rows)))))
 
-(define (symbol-table)
-  (delayed-block
-   (λ (renderer part ri)
+(define (symbol-table #:lang [lang 'zh])
+  (table-for-root
+   (λ (root)
      (define rows
-       (for/list ([entry (collected 'symbol)])
+       (for/list ([entry (collected root 'symbol)])
          (define k (car entry))
          (define sym (cadr entry))
-         (list (paragraph plain (link-element #f (m sym) (list 'acf-sym k)))
+         (list (paragraph plain (link-element #f (m sym) (sym-tag k)))
                (paragraph plain (cddr entry)))))
      (table (make-style 'boxed '())
-            (cons (list (paragraph plain "符号") (paragraph plain "含义")) rows)))))
+            (cons (list (header lang 'symbol) (header lang 'meaning)) rows)))))
 
 ;; ---------------------------------------------------------------------------
 ;; 引用
@@ -204,5 +234,30 @@
 ;; 文献用 scriblib/autobib（见 lib/README.md），第一篇目前没有文献引用。
 (define (xref tag . content)
   (apply seclink tag content))
+
+;; 另一种语言的同一页：@also-in['zh "01:1-labels"] 链到中文文档里标签相同的那一节。
+;; 两种语言的篇、小篇和带标签的节用同样的标签，这样两边能互相指到。
+;; raco setup 自己给每份文档的节标签加上文档前缀，所以两份文档用同样的标签不会相撞。
+(define translations
+  (hash 'zh (cons "中文版" '(lib "acf/zh/main.scrbl"))
+        'en (cons "English version" '(lib "acf/en/main.scrbl"))))
+(define (also-in lang tag)
+  (match-define (cons text doc) (hash-ref translations lang))
+  (margin-note (seclink tag #:doc doc text)))
+
+;; 系列前言里各语言的入口：@(language-links 'zh)。当前语言不加链接。
+;; 右上角的「Racket language family」是 raco setup 给每份文档加的，指的是 Racket、Rhombus
+;; 这样的程序语言家族，由文档页的脚本处理，借不来做自然语言的切换。
+(define language-order '(zh en))
+(define language-names (hash 'zh "中文" 'en "English"))
+(define (language-links current)
+  (paragraph (make-style "AcfLanguages" '())
+             (add-between
+              (for/list ([lang (in-list language-order)])
+                (define name (hash-ref language-names lang))
+                (if (eq? lang current)
+                    (element 'bold name)
+                    (seclink "top" #:doc (cdr (hash-ref translations lang)) name)))
+              " · ")))
 
 ;; 脚注用 @fn{…}（scriblib/footnote 的 note）。旁注直接用 Scribble 的 @margin-note。

@@ -3,3 +3,8 @@
 .AcfType { font-style: normal; }
 .AcfOut { margin: 0.5em 0 1em 0; }
 .AcfOut > p { font-family: monospace; white-space: pre; margin: 0 0 0.3em 0; }
+
+/* 系列前言里各语言的入口 */
+.AcfLanguages {
+  text-align: right;
+}
