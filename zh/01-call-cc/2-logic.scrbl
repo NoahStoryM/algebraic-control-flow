@@ -196,13 +196,18 @@ Coq 这样的一致类型论用@defterm{正性}条件禁止这类定义。Racket
 第一次交出一个捕获来的@tech{延续}，有人把实数传回来以后，
 再交出那个实数。@m{p ∨ ¬p}，这是@tech{排中律}。
 
-@bold{只有一个等@tech{延续}的东西。}照@xref["01:invisible"]{那条看不见
-的延续}的办法，把 @racket[mul] 交给 @racket[call/cc] 的那个 @racket[λ]
-包一层，得到 @racket[(λ (return) (return (proc return)))]：它等一个
-@racket[return]，从不正常返回，类型是 @m{¬¬@ty{Real}}。
-我们要的却是一个实数。@racket[call/cc] 造出一个 @racket[return]
-交给它，再把这个 @racket[λ] 交给 @racket[return] 的那个实数取回来。从
-@m{¬¬p} 得到 @m{p}，这是@tech{双重否定消除}。
+@bold{只有一个等@tech{延续}的东西。}这是 DNI 反过来。DNI 把 @racket[r]
+包成 @racket[(λ (return) (return r))]；现在手里只有这样一个
+@m{¬¬@ty{Real}}，要的却是里面的实数。要它交出实数，得先交给它一个
+@racket[return]，可手里没有@tech{延续}。何况一个 @m{¬¬@ty{Real}}
+不一定是包出来的：照@xref["01:invisible"]{那条看不见的延续}的办法，把
+@racket[mul] 交给 @racket[call/cc] 的那个 @racket[λ]
+包一层，@racket[(λ (return) (return (proc return)))] 也等一个
+@racket[return]，从不正常返回，里面并没有现成的实数，
+要算了才有。@racket[call/cc] 就做这件事：造出一个 @racket[return]
+交给它，再把交到 @racket[return] 手里的实数取回来。从 @m{¬¬p} 得到
+@m{p}，这是@tech{双重否定消除}。DNI 只是把值包起来，DNE 要拆开，
+却得先造一个@tech{延续}。
 
 排成一张表：
 
