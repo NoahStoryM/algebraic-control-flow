@@ -4,6 +4,8 @@
 ;; 正文里的代码块原样写在 |{ … }| 里，核对工具（tools/run-blocks.rkt、tools/cmp-forms.rkt）
 ;; 直接读 .scrbl 源文件取出这些字符串，和 .md 时代一样按原样执行。这里只负责排版。
 ;;
+;; 写法参照 ctp（Noah 10/26）：术语用 @deftech/@tech，公式用 Scribble 自带的 math，
+;; 旁注用 @margin-note，练习写成「@bold{练习}：」开头的段落。
 ;; define-tech、tech/guide、tech/refer 取自 ctp 的 scribblings/ctp-utils.rkt（amb 的 utils.rkt 里也有同样的一份）。
 (require (for-syntax racket/base syntax/parse)
          racket/list
@@ -11,29 +13,30 @@
          scribble/core
          scribble/decode
          scribble/html-properties
-         (only-in scribble/manual typeset-code seclink tech)
+         (only-in scribble/manual typeset-code seclink tech deftech math)
          (only-in scribble/base linebreak hspace)
          scriblib/footnote
+         (only-in scribble/example make-base-eval)
+         (only-in racket/sandbox sandbox-eval-limits sandbox-memory-limit)
          racket/runtime-path)
 
-(provide code-block repl-block eq-block out-block
-         c m mm
+(provide make-acf-eval
+         out-block
+         c m mm ty
          define-tech tech/guide tech/refer
-         defterm term defsym glossary-table symbol-table
+         defterm defsym glossary-table symbol-table
          xref
-         notice exercise
          (rename-out [note fn])
          acf-style chapter-style)
 
 (define-runtime-path css-file "acf.css")
-(define-runtime-path js-file "acf.js")
 
-;; 挂在部的 @title 上：引入样式表与公式脚本（MathJax 从 CDN 载入）。
+;; 挂在部的 @title 上：引入样式表。
 (define acf-style
-  (make-style #f (list (css-addition css-file) (js-addition js-file))))
+  (make-style #f (list (css-addition css-file))))
 ;; 挂在篇的 @title 上：每个小篇在 HTML 里单独成页。
 (define chapter-style
-  (make-style #f (list 'toc (css-addition css-file) (js-addition js-file))))
+  (make-style #f (list 'toc (css-addition css-file))))
 
 ;; ---------------------------------------------------------------------------
 ;; 代码里的链接
@@ -45,6 +48,9 @@
                     racket/control
                     (only-in typed/racket/base : ∀ ∪ U → case→ define-type Values)
                     control/context))
+;; 同样的绑定也交给引用本模块的文档，正文里的 @racket[call/cc] 等因此能直接链接。
+(provide (for-label (all-from-out racket/base racket/control control/context)
+                    : ∀ ∪ U → case→ define-type Values))
 
 (define label-context (quote-syntax here))
 
@@ -72,16 +78,21 @@
 (define-tech tech/refer '(lib "scribblings/reference/reference.scrbl"))
 
 ;; ---------------------------------------------------------------------------
+;; 求值器
+;;
+;; 正文的例子用 Scribble 的 @examples 写，构建文档时真的运行（照 amb 的 amb-examples）。
+;; 每个小篇建自己的求值器：@(define ev (make-acf-eval))，前文假定已有的定义用
+;; @examples[#:eval ev #:hidden …] 补上。代码在 typed/racket/no-check 下运行。
+(define (make-acf-eval)
+  (parameterize ([sandbox-eval-limits #f] [sandbox-memory-limit #f])
+    (make-base-eval #:lang 'typed/racket/no-check)))
+
+;; ---------------------------------------------------------------------------
 ;; 代码块
 ;;
-;;   @code-block|{ … }|  定义块与示意块：照文件写，不带提示符
-;;   @repl-block|{ … }|  交互块：> 输入，下面是 REPL 的打印
-;;   @eq-block|{ … }|    等式块：推导与化简，各步用顶层的 = 连接，不执行
-;;   @out-block|{ … }|   不带语言的输出块（编译后程序的输出、矩阵等）
-;;
-;; 关键字参数只给核对工具看，排版时忽略（含义见 tools/REPL.md）：
-;;   #:skip "原因"  #:reset #t  #:stdout '(exact "…")  #:value '(equal v)
-;;   #:error "正则"  #:exit 0
+;; 例子写 @examples[#:eval ev #:label #f …]：交互的例子带提示符，定义加 #:no-prompt；
+;; 只排版、不求值的代码（推导、示意、不会停的程序）写 @racketblock[…]，
+;; 注释写 (code:comment "…")。不带语言的输出（矩阵等）写 @out-block|{ … }|。
 
 (define (racket-text str)
   (typeset-code #:context label-context #:keep-lang-line? #t str))
@@ -89,19 +100,10 @@
 (define (body->string strs)
   (string-append* (map (λ (s) (if (string? s) s (format "~a" s))) strs)))
 
-(define-syntax-rule (define-block-form (name str) body ...)
-  (define (name #:skip [skip #f] #:reset [reset #f] #:stdout [stdout #f]
-                #:value [value #f] #:error [err #f] #:exit [ex #f]
-                . strs)
-    (let ([str (body->string strs)]) body ...)))
-
-(define-block-form (code-block str) (racket-text str))
-(define-block-form (eq-block str) (racket-text str))
-
-(define-block-form (out-block str)
+(define (out-block . strs)
   (nested-flow (make-style "AcfOut" '())
                (list (paragraph (make-style #f (list 'div))
-                                (verbatim-lines str)))))
+                                (verbatim-lines (body->string strs))))))
 
 (define (verbatim-lines str)
   (add-between (for/list ([line (string-split str "\n" #:trim? #f)])
@@ -114,73 +116,28 @@
         (hspace (string-length piece))
         piece)))
 
-;; 交互块：每一项是「> 输入」加上其后的打印。拆分规则与 tools/run-blocks.rkt 相同：
-;; 以 "> " 开头的行开始新的一项，输入读成完整表达式之前的行都属于输入。
-(define (complete-form? s)
-  (with-handlers ([exn:fail:read? (λ (_) #f)])
-    (define in (open-input-string s))
-    (define v (read in))
-    (and (not (eof-object? v)) (eof-object? (read in)))))
-
-(define (repl-items str)
-  (define items '())
-  (define input #f)
-  (define out '())
-  (define ready? #f)
-  (define (finish!)
-    (when input (set! items (cons (cons input (reverse out)) items)))
-    (set! input #f) (set! out '()) (set! ready? #f))
-  (for ([line (string-split str "\n" #:trim? #f)])
-    (cond [(string-prefix? line "> ")
-           (finish!)
-           (set! input (substring line 2))
-           (set! ready? (complete-form? input))]
-          [(not input) (void)]
-          [ready? (set! out (cons line out))]
-          [else
-           ;; 续行在原缩进上多加了两个空格，去掉后与首行对齐
-           (set! input (string-append input "\n"
-                                      (if (string-prefix? line "  ") (substring line 2) line)))
-           (set! ready? (complete-form? input))]))
-  (finish!)
-  (reverse items))
-
-(define-block-form (repl-block str)
-  (nested-flow
-   (make-style "AcfRepl" '())
-   (append*
-    (for/list ([item (repl-items str)])
-      (define input (car item))
-      (define outs (cdr item))
-      (cons (table (make-style "AcfReplInput" '())
-                   (list (list (paragraph (make-style "AcfPrompt" '()) (element 'tt ">"))
-                               (racket-text input))))
-            (if (null? outs)
-                '()
-                (list (paragraph (make-style "AcfReplOutput" (list 'div))
-                                 (verbatim-lines (string-join outs "\n"))))))))))
-
 ;; ---------------------------------------------------------------------------
 ;; 行内
 
-;; 行内代码：按 Racket 着色并链接，和代码块一样。含 @ 或不配对花括号时写 @c|{…}|。
+;; 行内代码：标识符与能读成一个 S 表达式的代码片段写 @racket[…]（Scribble 自带）；
+;; 读不成的（如 #lang 行）写 @c{…}，按 Racket 着色并链接，和代码块一样。
 (define (c . strs)
   (typeset-code #:context label-context #:block? #f #:indent 0 #:keep-lang-line? #t (body->string strs)))
 
-;; 公式：写 Unicode 与 TeX 的混合，例如 @m{¬p ∨ q}、@m{\text{Label}}。
-;; HTML 里交给 MathJax；文本输出里保留原样，便于核对。
-(define (m . strs)
-  (element (make-style "AcfMath" '()) (list "\\(" (body->string strs) "\\)")))
-(define (mm . strs)
-  (paragraph (make-style "AcfDisplayMath" '()) (list "\\[" (body->string strs) "\\]")))
+;; 公式：用 Scribble 自带的 math，照 ctp 的写法只用 Unicode，例如 @m{p ∨ ¬p}。
+;; 字母排成斜体；类型名用 @ty{Label} 排成正体；代码名用 @racket[cc]。
+(define (m . content) (apply math content))
+(define (mm . content)
+  (paragraph (make-style "AcfDisplayMath" '()) (apply math content)))
+(define (ty . content) (element (make-style "AcfType" '()) content))
 
 ;; ---------------------------------------------------------------------------
 ;; 术语与符号
 ;;
 ;; @defterm[#:en "continuation"]{延续}  第一次作为术语出现：加粗，注英文，登记进术语表
 ;; @defterm[#:en "Double Negation Introduction" #:abbr "DNI"]{双重否定引入}
-;; @term{延续}  之后需要链回定义处时用（一般不必）
-;; @defsym["¬p" "说明"]  在符号定义处放一个不可见的锚，登记进符号表
+;; 之后每次出现都写 @tech{延续}，链回定义处（照 ctp）。defterm 底下就是 Scribble 的 deftech。
+;; @defsym["¬p" "说明"]  在符号定义处放一个不可见的锚，登记进符号表；类型名写 @defsym[@ty{Label} "说明"]
 
 ;; 收集阶段按文档顺序把条目登记进表里，解析阶段的 delayed-block 再读出来。
 ;; （Scribble 的 resolve-get-keys 不带 part 时只看外部文档，所以自己记。）
@@ -198,19 +155,18 @@
   (define k (or key (content->key content)))
   (list
    (collect-element #f '() (λ (ci) (register! 'term k (vector content en abbr))))
-   (target-element #f (element 'bold content) (list 'acf-term k))
+   (element 'bold (list (apply deftech #:key k #:style? #f content)))
    (cond [(and en abbr) (list "（" (element 'italic en) "，" abbr "）")]
          [en (list "（" (element 'italic en) "）")]
          [abbr (list "（" abbr "）")]
          [else '()])))
 
-(define (term #:key [key #f] . content)
-  (link-element #f content (list 'acf-term (or key (content->key content)))))
-
+;; sym 可以是字符串，也可以是排版好的内容（如 @ty{Label}）；键取它的文字。
 (define (defsym sym description)
+  (define k (content->key (list sym)))
   (list
-   (collect-element #f '() (λ (ci) (register! 'symbol sym description)))
-   (target-element #f '() (list 'acf-sym sym))))
+   (collect-element #f '() (λ (ci) (register! 'symbol k (cons sym description))))
+   (target-element #f '() (list 'acf-sym k))))
 
 ;; 术语表与符号表按第一次出现的顺序排列，每项链回定义处。
 (define (glossary-table)
@@ -220,7 +176,7 @@
        (for/list ([entry (collected 'term)])
          (define k (car entry))
          (define v (cdr entry))
-         (list (paragraph plain (link-element #f (vector-ref v 0) (list 'acf-term k)))
+         (list (paragraph plain (apply tech #:key k (vector-ref v 0)))
                (paragraph plain (if (vector-ref v 1) (element 'italic (vector-ref v 1)) ""))
                (paragraph plain (or (vector-ref v 2) "")))))
      (table (make-style 'boxed '())
@@ -232,9 +188,10 @@
    (λ (renderer part ri)
      (define rows
        (for/list ([entry (collected 'symbol)])
-         (define sym (car entry))
-         (list (paragraph plain (link-element #f (m sym) (list 'acf-sym sym)))
-               (paragraph plain (cdr entry)))))
+         (define k (car entry))
+         (define sym (cadr entry))
+         (list (paragraph plain (link-element #f (m sym) (list 'acf-sym k)))
+               (paragraph plain (cddr entry)))))
      (table (make-style 'boxed '())
             (cons (list (paragraph plain "符号") (paragraph plain "含义")) rows)))))
 
@@ -248,10 +205,4 @@
 (define (xref tag . content)
   (apply seclink tag content))
 
-;; ---------------------------------------------------------------------------
-;; 注意框与练习框；脚注用 @fn{…}（scriblib/footnote 的 note）。
-(define (callout class label content)
-  (nested-flow (make-style class '())
-               (decode-flow (cons (element 'bold label) content))))
-(define (notice . content) (callout "AcfNotice" "注意：" content))
-(define (exercise . content) (callout "AcfExercise" "练习：" content))
+;; 脚注用 @fn{…}（scriblib/footnote 的 note）。旁注直接用 Scribble 的 @margin-note。
