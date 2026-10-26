@@ -196,9 +196,9 @@ Coq 这样的一致类型论用@defterm{正性}条件禁止这类定义。Racket
 第一次交出一个捕获来的@tech{延续}，有人把实数传回来以后，
 再交出那个实数。@m{p ∨ ¬p}，这是@tech{排中律}。
 
-@bold{只有一个等@tech{延续}的东西。}这是 DNI 反过来。DNI 把 @racket[r]
-包成 @racket[(λ (return) (return r))]；现在手里只有这样一个
-@m{¬¬@ty{Real}}，要的却是里面的实数。要它交出实数，得先交给它一个
+@bold{只有一个等@tech{延续}的东西。}手里没有实数，只有一个
+@m{¬¬@ty{Real}}，比如 DNI 包出来的 @racket[(λ (return) (return r))]，
+要的却是里面的实数，方向正和 DNI 相反。要它交出实数，得先交给它一个
 @racket[return]，可手里没有@tech{延续}。何况一个 @m{¬¬@ty{Real}}
 不一定是包出来的：照@xref["01:invisible"]{那条看不见的延续}的办法，把
 @racket[mul] 交给 @racket[call/cc] 的那个 @racket[λ]
