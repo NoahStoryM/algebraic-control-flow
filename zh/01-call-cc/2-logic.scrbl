@@ -304,16 +304,17 @@ DNE 作为对任意类型都成立的原则，同样互相推得出，
 
 所以程序是一个 @m{¬¬@ty{Byte}}：它等着计算终结处的那条@tech{延续}。
 运行它，就是把这条@tech{延续}交给它，取回退出码，从 @m{¬¬@ty{Byte}}
-得到 @m{@ty{Byte}}，正是「分水岭」里的 DNE。
+得到 @m{@ty{Byte}}，正是@xref["01:watershed"]{「分水岭」}里的 DNE。
 
-这也是「分水岭」末尾那个问题的一个回答。在语言里模拟 @racket[exit]，
-得靠 @racket[call/cc] 捕获当前@tech{延续}；真实的程序却用不着。OS
-启动程序时，计算终结处的当前@tech{延续}已经在那里了，就是
-@racket[exit]，直接交给程序就行，不必再用 @racket[cc] 或
-@racket[call/cc] 去捕获。程序把退出码交给 @racket[exit]，
-这次调用不会回到程序里的当前位置，OS 接到的就是退出码本身。从
-@m{¬¬@ty{Byte}} 到 @m{@ty{Byte}} 的这一步，在语言的边界上完成：
-运行一个程序，就是一次 @m{¬¬@ty{Byte} → @ty{Byte}}。
+这也是@xref["01:watershed"]{「分水岭」}末尾那个问题的一个回答。
+在语言里模拟 @racket[exit]，得靠 @racket[call/cc]
+捕获当前@tech{延续}；真实的程序却用不着。OS 启动程序时，
+计算终结处的当前@tech{延续}已经在那里了，就是 @racket[exit]，
+直接交给程序就行，不必再用 @racket[cc] 或 @racket[call/cc] 去捕获。
+程序把退出码交给 @racket[exit]，这次调用不会回到程序里的当前位置，OS
+接到的就是退出码本身。从 @m{¬¬@ty{Byte}} 到 @m{@ty{Byte}} 的这一步，
+在语言的边界上完成：运行一个程序，就是一次
+@m{¬¬@ty{Byte} → @ty{Byte}}。
 
 @subsection[#:tag "01:neg-q"]{代入 @m{¬q}}
 
@@ -363,8 +364,8 @@ DNE 作为对任意类型都成立的原则，同样互相推得出，
 
 @racket[triple-negation] 里的几个名
 字，@racket[q]、@racket[kq]、@racket[kkq]、@racket[kkkq]，
-差的只是外面叠了几个否定。数一数，刚才的做法能说得更清楚，「分水岭」
-留下的问题也有了回答。
+差的只是外面叠了几个否定。数一数，刚才的做法能说得更清
+楚，@xref["01:watershed"]{「分水岭」}留下的问题也有了回答。
 
 固定一个类型 @m{A}，把 @m{A} 本身算作第 0 层，@m{¬A} 算作第 1
 层，@m{¬¬A} 算作第 2 层，依此类推：多一层的类型，
@@ -374,7 +375,7 @@ DNE 作为对任意类型都成立的原则，同样互相推得出，
 一个值叫 @racket[v]，等它的@tech{延续}就叫 @racket[kv]，等 @racket[kv]
 的就叫 @racket[kkv]，名字里有几个 @racket[k]，就比 @racket[v] 多几层。
 
-「分水岭」的四种情形，用层数说就是：
+@xref["01:watershed"]{「分水岭」}的四种情形，用层数说就是：
 
 @itemlist[
   @item{@tech{矛盾律}：第 @m{n+1} 层与第 @m{n} 层相遇，得到 @m{⊥}。}
@@ -382,22 +383,21 @@ DNE 作为对任意类型都成立的原则，同样互相推得出，
   @item{DNE：减两层，从第 @m{n+2} 层落到第 @m{n} 层。}
   @item{@tech{排中律}：交出相邻两层之一，第 @m{n} 层或第 @m{n+1}
   层。}]
-以 @m{q} 为底，@racket[triple-negation] 是从第 3 层减到第 1 层。
-它的做法是：手里第 0 层的 @racket[q] 和第 3 层的 @racket[kkkq]
-差三层，碰不上；把 @racket[q] 用 DNI 升到第 2 层的 @racket[kkq]，与
-@racket[kkkq] 相邻，调用。
+以 @m{q} 为底，@racket[triple-negation] 从第 3 层减到第 1 层：第 0
+层的 @racket[q] 用 DNI 升到第 2 层，正好与第 3 层的 @racket[kkkq]
+相邻。
 
 层数还带出一个规律。DNI、DNE 一次加减两层，不改变奇偶，@tech{矛盾律}却
 要一奇一偶。奇偶不同的两个值，把低的那个反复做 DNI，
-总能升到与另一个相邻，再调用，就像第 0 层的 @racket[q] 和第 3 层的
-@racket[kkkq]。从 @m{p ∨ ¬p} 出发，两支各做几次 DNI，
-也就得到任意的「偶数层 ∨ 奇数层」，用不着 DNE。奇偶相同的两个，
-只靠加减两层永远凑不成相邻；别的办法行不行，这几条规则管不着。
+总能升到与另一个相邻，再调用，@racket[triple-negation] 就是这样做的。
+从 @m{p ∨ ¬p} 出发，两支各做几次 DNI，也就得到任意的「偶数层 ∨
+奇数层」，用不着 DNE。奇偶相同的两个，只靠 DNI、DNE 凑不成相邻。
 
-回到「分水岭」留下的问题。@xref["01:program-type"]{「程序的类型」}里，
-当前@tech{延续}由 OS 交来，用不着捕获；@racket[triple-negation]
-更进一步，连外面交来的@tech{延续}也不要。它交出的 @m{¬q}
-不是凭空来的，它要调用的 @racket[kkkq] 是交进来的。用层数说，
+回到@xref["01:watershed"]{「分水岭」}留下的问
+题。@xref["01:program-type"]{「程序的类型」}里，
+计算终结处的那条@tech{延续}由 OS 交来，用不着捕
+获；@racket[triple-negation] 连这样一条交来的@tech{延续}也用不着，
+它交出的 @m{¬q}，是用交进来的 @racket[kkkq] 做成的。用层数说，
 减两层的目标在第 1 层或更高时，总能先交出一个函数，等下一层的值来；
 只有一路落到第 0 层，要当场交出一个值，才没有对任何类型都适用的纯 λ
 写法；要真的把计算跑起来，就得像运行程序那样，由外面交来一条通道。
