@@ -160,91 +160,65 @@ Coq 这样的一致类型论用@defterm{正性}条件禁止这类定义。Racket
 构造性类型系统所自然栖居的逻辑。那么 @racket[cc] 和 @racket[call/cc]
 到底添加了什么？
 
-回头看前面那些类型，变来变去的，只是否定叠了几层：@racket[cc] 交出
-@m{p} 或 @m{¬p}，@racket[call/cc] 从 @m{¬¬p} 里取出
-@m{p}，@tech{延续}收下一个值，得到 @m{⊥}。那就数一数层数。
+换个问法：只用函数，我们能拿@tech{延续}做什么？回到最后那版
+@racket[mul]，看它里面的 @racket[r] 和 @racket[return]。@racket[r]
+是一个实数；@racket[return] 是一个@tech{延续}，等一个实数，类型是
+@m{¬@ty{Real}}。按手里有什么，分四种情形。
 
-还是拿最后那版 @racket[mul]。@racket[r] 是一个实数，
-什么也不等；@racket[return] 等一个实数；照@xref["01:invisible"]{那条看
-不见的延续}的办法包一层，@racket[(λ (return) (return (proc return)))]
-又等一个 @racket[return]，而且从不正常返回。把 @racket[r] 的类型
-@m{@ty{Real}} 算作第 0 层，@racket[return] 就在第 1 层，是
-@m{¬@ty{Real}}；包了一层的那个在第 2 层，是 @m{¬¬@ty{Real}}。
-
-一般地，固定一个类型 @m{A}，把 @m{A} 本身算作第 0 层，@m{¬A} 算作第 1
-层，@m{¬¬A} 算作第 2 层，依此类推：多一层的类型，
-正是「接收少一层的值、结果为 @m{⊥}」的函数类型。@m{A} 可以是任何类型，
-甚至可以是 @m{@ty{Label}}；只是谈论同一座否定塔的时候，@m{A}
-要固定下来，只数它外面包了几层，不去拆它的内部。
-
-层数也可以写进名字里。一个值叫 @racket[v]，等它的@tech{延续}就叫
-@racket[kv]，等 @racket[kv] 的就叫 @racket[kkv]：名字里有几个
-@racket[k]，就比 @racket[v] 多几层。照这个习惯，@racket[return] 该叫
-@racket[kr]。
-
-有了层数，与@tech{否定}打交道的方式可以排成四种：
-
-@itemlist[
-  @item{@defterm{矛盾律}：第 @m{n+1} 层与第 @m{n} 层相遇，得到
-  @m{⊥}。}
-  @item{@defterm[#:en "Double Negation Introduction" #:abbr "DNI"]{双
-  重否定引入}：加两层，从第 @m{n} 层升到第 @m{n+2} 层。}
-  @item{@tech{排中律}：交出相邻两层之一，第 @m{n} 层的 @m{p}，或者第
-  @m{n+1} 层的 @m{¬p}，而且不要求调用者事先给出任何一支。}
-  @item{@tech{双重否定消除}：减两层，从第 @m{n+2} 层的 @m{¬¬p} 取出第
-  @m{n} 层的 @m{p}。}]
-前两种只需要普通函数。把一个 @m{¬p} 和一个 @m{p}
-放在一起，@tech{矛盾律}就是调用：
+@bold{两样都有。}手里有 @racket[return]，也有 @racket[r]，
+那就调用：@racket[(return r)]。一个 @m{¬p} 和一个 @m{p} 放在一起，得到
+@m{⊥}，这是@defterm{矛盾律}。我们给这个操作起个名字：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: apply-cont (∀ (p) (→ (¬ p) p ⊥)))
 (define (apply-cont kv . v*) (apply kv v*))]
 
-这就是函数调用。我们给它起了个名字 @racket[apply-cont]，
-因为在当前的设定中@tech{延续}恰好是函数。但「向@tech{延续}传递一个值」
-本身是一个独立的概念：@tech{延续}换一种表示，它就不再只是函数调用。
+它就是函数调用，因为在当前的设定中@tech{延续}恰好是函数。
+但「向@tech{延续}传递一个值」本身是一个独立的概念：@tech{延续}换一种表
+示，它就不再只是函数调用。
 
-DNI 不需要什么新东西。给任意一个值 @racket[v]，总能写出
-@racket[(define (kkv kv) (kv v))]：@racket[kkv] 等一个 @racket[kv]，
-等它来了，就把 @racket[v] 交给它。@racket[v] 在第 @m{n}
-层，@racket[kkv] 便在第 @m{n+2} 层。@racket[kkv] 被调用时做的，正是
-@racket[apply-cont] 做的事：把值交给@tech{延续}。
-只是值先到，@tech{延续}后到。这里只有 @racket[λ] 和函数调用，
-不需要任何控制操作符。
+@bold{只有值。}手里有 @racket[r]，@tech{延续}还没来，调用不了。
+但可以先写一个函数等着：@racket[(λ (return) (return r))]，等
+@racket[return] 来了，再把 @racket[r] 交给它。它等一个
+@m{¬@ty{Real}}，类型是 @m{¬¬@ty{Real}}。给任意一个值都能这样写，从
+@m{p} 得到 @m{¬¬p}，这
+是@defterm[#:en "Double Negation Introduction" #:abbr "DNI"]{双重否定
+引入}。它做的仍是 @racket[apply-cont] 那件事，把值交给@tech{延续}，
+只是值先到，@tech{延续}后到。
 
-两者都是@defterm[#:en "constructive"]{构造性}的：结论里的每样东西，
-都由交到手里的东西做成。后两种则需要捕获当前@tech{延续}：@tech{排中
-律}是 @racket[cc]，@tech{双重否定消除}是 @racket[call/cc]。说 DNE
-需要经典逻辑，是说它作为对任意类型都统一成立的原则；
-落到某个具体类型上，一个实例也许不捕获就写得出来。
+这两种都只用 @racket[λ] 和函数调用，都
+是@defterm[#:en "constructive"]{构造性}的：结论里的每样东西，
+都由交到手里的东西做成。另外两种情形，函数就办不到了。
 
-层数一次只加减两层，奇偶便自然出来了：DNI、DNE
-不改变奇偶，@tech{矛盾律}却要一奇一偶。奇偶不同的两个值，
-把低的那个反复做 DNI，总能升到与另一个相邻，再调用，比如第 0
-层的值升到第 2 层，就能交给第 3 层的那个。从 @m{p ∨ ¬p} 出发，
-两支各做几次 DNI，也就得到任意的「偶数层 ∨ 奇数层」，用不着 DNE。
-奇偶相同的两个，只靠加减两层永远凑不成相邻；别的办法行不行，
-这几条规则管不着。
+@bold{什么都没有。}手里既没有实数，也没有@tech{延续}，
+却要交出两者之一：一个 @m{@ty{Real}}，或者一个 @m{¬@ty{Real}}，
+而且不要求调用者事先给出任何一支。这就是 @racket[(cc)]：
+第一次交出一个捕获来的@tech{延续}，有人把实数传回来以后，
+再交出那个实数。@m{p ∨ ¬p}，这是@tech{排中律}。
 
-把四条规则排成一张表。两行按两个类型差几层来分：上一行差一层，
-下一行差两层；左边一列构造性，右边一列经典：
+@bold{只有一个等@tech{延续}的东西。}照@xref["01:invisible"]{那条看不见
+的延续}的办法，把 @racket[mul] 交给 @racket[call/cc] 的那个 @racket[λ]
+包一层，得到 @racket[(λ (return) (return (proc return)))]：它等一个
+@racket[return]，从不正常返回，类型是 @m{¬¬@ty{Real}}。
+我们要的却是一个实数。@racket[call/cc] 造出一个 @racket[return]
+交给它，再把这个 @racket[λ] 交给 @racket[return] 的那个实数取回来。从
+@m{¬¬p} 得到 @m{p}，这是@tech{双重否定消除}。
+
+排成一张表：
 
 @tabular[#:style 'boxed #:row-properties '(bottom-border ())
   (list
-   (list "" @elem{层数} @elem{构造性} @elem{经典})
+   (list "" @elem{构造性} @elem{经典})
    (list @elem{@m{¬p} 遇上 @m{p}}
-         @elem{差一层}
          @elem{@bold{@tech{矛盾律}}：@racket[apply-cont]（函数调用）}
          @elem{@bold{@tech{排中律}}：@racket[cc]（捕获@tech{延续}）})
    (list @elem{@m{¬¬p} 遇上 @m{p}}
-         @elem{差两层}
-         @elem{@bold{DNI}：@racket[(λ (kv) (kv v))]}
+         @elem{@bold{DNI}：@racket[(λ (k) (k v))]}
          @elem{@bold{DNE}：@racket[call/cc]（捕获@tech{延续}）}))]
 
 右边一列也不是两条互不相干的原则。回头看@xref["01:call-cc"]{消除分支一
-节}用 @racket[cc] 定义的 @racket[call/cc]，照@xref["01:invisible"]{那
-条看不见的延续}里的第二种读法，要求 @racket[proc] 从不正常返回，
-它的类型就是 @m{¬¬p}：
+节}用 @racket[cc] 定义的 @racket[call/cc]，照那条看不见的延续里的第二
+种读法，要求 @racket[proc] 从不正常返回，它的类型就是 @m{¬¬p}：
 
 @racketblock[
 (define (call/cc proc)
@@ -269,13 +243,15 @@ DNI 不需要什么新东西。给任意一个值 @racket[v]，总能写出
 交出的那一支 @m{¬p}，事先谁也没有给它；@racket[call/cc] 交给
 @racket[proc] 的那个 @m{¬p}，也是它自己造的。
 
-可是，减两层一定要凭空造一个@tech{否定}吗？DNE 作为一般原则是经典的，
-它的每一个实例都是吗？
+可是，从 @m{¬¬p} 取出 @m{p}，一定要凭空造一个@tech{否定}吗？说 DNE
+需要经典逻辑，是说它作为对任意类型都统一成立的原则。
+落到某一个具体的类型上，它的实例也都要捕获吗？
 
 @bold{练习}：@italic{实质条件} @m{¬p ∨ q} 是经典逻辑中 @m{p → q}
 的另一种编码。试着实现 @c{material->procedure : (¬p ∨ q) → p → q} 和
 @c{procedure->material : (p → q) → ¬p ∨ q}。你会发现其中一个方向需要
 @racket[cc]，是哪一个？
+
 
 @section[#:tag "01:substitute"]{代入不同的类型}
 
@@ -326,7 +302,7 @@ DNI 不需要什么新东西。给任意一个值 @racket[v]，总能写出
 接到的就是退出码本身。从 @m{¬¬@ty{Byte}} 得到 @m{@ty{Byte}}：
 运行一个程序，就是一次 DNE。
 
-这一次减两层用上了捕获。但不能由此说：@m{@ty{Byte}} 外面没有否定，
+这一次 DNE 用上了捕获。但不能由此说：@m{@ty{Byte}} 外面没有否定，
 所以非捕获不可。@racket[(λ (kk) 0)] 也有 @m{¬¬@ty{Byte} → @ty{Byte}}
 的类型，它什么也不捕获，只是根本不运行交给它的程序。
 我们要的不只是这个类型有居民，而是一个真的把程序跑起来、
@@ -339,11 +315,8 @@ DNI 不需要什么新东西。给任意一个值 @racket[v]，总能写出
 
 @mm{¬¬¬q → ¬q}
 
-从 @m{q} 数起，这是从第 3 层减到第 1 层。
-
-照名字里数 @racket[k] 的习惯，手里是一个第 3 层的 @racket[kkkq]，
-要交出一个第 1 层的值。第 1 层的值是一个函数，等一个 @racket[q]，
-那就先把这个函数交出去：
+手里是一个 @m{¬¬¬q}，叫它 @racket[kkkq]，要交出一个 @m{¬q}。@m{¬q}
+是一个函数，等一个 @racket[q]，那就先把这个函数交出去：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define-type (¬¬  q) (¬ (¬  q)))
@@ -354,13 +327,14 @@ DNI 不需要什么新东西。给任意一个值 @racket[v]，总能写出
   (define (kkq kq) (kq q))
   (kkkq kkq))]
 
-等 @racket[q] 交来，手里就有了第 0 层的 @racket[q] 和第 3 层的
-@racket[kkkq]。把 @racket[q] 做一次 DNI，得到第 2 层的 @racket[kkq]，
-与 @racket[kkkq] 相邻，交给它。只有 @racket[λ] 和函数调用，
+等 @racket[q] 交来，手里就有了 @racket[q] 和
+@racket[kkkq]。@racket[kkkq] 等的是一个 @m{¬¬q}，@racket[q]
+还差两个否定；照 DNI 的写法包一层，@racket[kkq] 等一个 @racket[kq]，
+正是 @m{¬¬q}，交给 @racket[kkkq]。只有 @racket[λ] 和函数调用，
 什么也没有捕获。
 
 试一试。拿 @racket[displayln] 当作一个 @m{¬q}，照 DNI
-的写法把它升两层，得到一个 @m{¬¬¬q}，再降回来：
+的写法把它包成一个 @m{¬¬¬q}，再交给 @racket[triple-negation] 取回来：
 
 @examples[#:eval ev #:label #f
 (define (kkkq kkq) (kkq displayln))
@@ -378,8 +352,43 @@ DNI 不需要什么新东西。给任意一个值 @racket[v]，总能写出
 算；@racket[triple-negation] 却要等 @racket[q] 交来，才去调用
 @racket[kkkq]。两者在类型上可以互换，在程序里不一定。
 
-回到上面的问题：减两层不一定要捕获。目标在第 1 层或更高时，
-总能先交出一个函数，等下一层的值来；只有一路落到第 0 层，
+@subsubsection[#:tag "01:layers"]{数一数层数}
+
+@racket[triple-negation] 里的几个名
+字，@racket[q]、@racket[kq]、@racket[kkq]、@racket[kkkq]，
+差的只是外面叠了几个否定。数一数，刚才的做法能说得更清楚，
+分水岭留下的问题也有了回答。
+
+固定一个类型 @m{A}，把 @m{A} 本身算作第 0 层，@m{¬A} 算作第 1
+层，@m{¬¬A} 算作第 2 层，依此类推：多一层的类型，
+正是「接收少一层的值、结果为 @m{⊥}」的函数类型。@m{A} 可以是任何类型，
+甚至可以是 @m{@ty{Label}}；只是谈论同一座否定塔的时候，@m{A}
+要固定下来，只数它外面包了几层，不去拆它的内部。名字也替我们数：
+一个值叫 @racket[v]，等它的@tech{延续}就叫 @racket[kv]，等 @racket[kv]
+的就叫 @racket[kkv]，名字里有几个 @racket[k]，就比 @racket[v] 多几层。
+
+分水岭的四种情形，用层数说就是：
+
+@itemlist[
+  @item{@tech{矛盾律}：第 @m{n+1} 层与第 @m{n} 层相遇，得到 @m{⊥}。}
+  @item{DNI：加两层，从第 @m{n} 层升到第 @m{n+2} 层。}
+  @item{@tech{排中律}：交出相邻两层之一，第 @m{n} 层或第 @m{n+1} 层。}
+  @item{DNE：减两层，从第 @m{n+2} 层落到第 @m{n} 层。}]
+以 @m{q} 为底，@racket[triple-negation] 是从第 3 层减到第 1 层。
+它的做法是：手里第 0 层的 @racket[q] 和第 3 层的 @racket[kkkq]
+差三层，碰不上；把 @racket[q] 用 DNI 升到第 2 层的 @racket[kkq]，与
+@racket[kkkq] 相邻，调用。
+
+层数还带出一个规律。DNI、DNE 一次加减两层，不改变奇偶，@tech{矛盾律}却
+要一奇一偶。奇偶不同的两个值，把低的那个反复做 DNI，
+总能升到与另一个相邻，再调用，就像第 0 层的 @racket[q] 和第 3 层的
+@racket[kkkq]。从 @m{p ∨ ¬p} 出发，两支各做几次 DNI，
+也就得到任意的「偶数层 ∨ 奇数层」，用不着 DNE。奇偶相同的两个，
+只靠加减两层永远凑不成相邻；别的办法行不行，这几条规则管不着。
+
+回到分水岭留下的问题：从 @m{¬¬p} 取出 @m{p}，
+不一定要凭空造一个@tech{否定}。用层数说，减两层的目标在第 1
+层或更高时，总能先交出一个函数，等下一层的值来；只有一路落到第 0 层，
 要当场交出一个值，才没有对任何类型都适用的纯 λ 写法；
 要真的把计算跑起来，就得像运行程序那样，由外面交来一条通道。
 
