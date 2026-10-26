@@ -23,20 +23,20 @@
           [(thread-dead? t) (display s)]
           [else (sleep 0.01) (loop)])))]
 
-@section[#:tag "01:label-sub"]{代入 @m{@ty{Label}}}
+@section[#:tag "01:label-sub"]{代入 @math{@ty{Label}}}
 
-@tech{排中律} @m{p ∨ ¬p} 的两个分支，一个是 @m{p}，一个是 @m{¬p}：
-一真一假。但如果代入的类型让真假变成同一个东西呢？更进一步：
-既然两个分支是同一个类型，我们何必再区分它们？
+@tech{排中律} @math{p ∨ ¬p} 的两个分支，一个是 @math{p}，一个是
+@math{¬p}：一真一假。但如果代入的类型让真假变成同一个东西呢？
+更进一步：既然两个分支是同一个类型，我们何必再区分它们？
 
-既真又假，这正是@tech{说谎者悖论}，我们熟悉的 @m{@ty{Label}}。
-放宽@tech{排中律}对不相交的要求，把 @m{@ty{Label}} 代入 @m{p}：
+既真又假，这正是@tech{说谎者悖论}，我们熟悉的 @math{@ty{Label}}。
+放宽@tech{排中律}对不相交的要求，把 @math{@ty{Label}} 代入 @math{p}：
 
 @mm{@ty{Label} ∨ ¬@ty{Label} = @ty{Label} ∨ @ty{Label} = @ty{Label}}
 
-一切坍缩为 @racket[Label]。@m{@ty{Label}} 是@defterm{否定的不动点}：
-它的反驳就是它自己。特别地，@bold{@racket[goto] 本身就是一个
-@racket[Label]}：
+一切坍缩为 @racket[Label]。@math{@ty{Label}}
+是@defterm{否定的不动点}：它的反驳就是它自己。
+特别地，@bold{@racket[goto] 本身就是一个 @racket[Label]}：
 
 @mm{@ty{Label} → ⊥ = ¬@ty{Label} = @ty{Label}}
 
@@ -45,7 +45,7 @@
 @racketblock[
 (goto (label))]
 
-但既然每个 @m{@ty{Label}} 同时也是一个合法的 @m{¬@ty{Label}}，
+但既然每个 @math{@ty{Label}} 同时也是一个合法的 @math{¬@ty{Label}}，
 没有什么能阻止我们把@italic{任意}@tech{标签}传给任何其他@tech{标签}：
 
 @racketblock[
@@ -144,7 +144,7 @@ k3         *    *    *    @
 @c{(k3 k3)*}、@c{(k2 k3)*}、@c{(k1 k3)*}、@c|{(k0 k3)@}| 正是第
 @racket[k3] 行的 @racket[*]、@racket[*]、@racket[*]、@c|{@}|。
 每一行正是原版谜题打印出的一行（插桩版为了配合追踪，
-每个字符各占一行）。每行 @m{n} 打印 @m{n} 个 @racket[*] 和一个
+每个字符各占一行）。每行 @math{n} 打印 @math{n} 个 @racket[*] 和一个
 @c|{@}|。这个模式来自：
 
 @itemlist[#:style 'ordered
@@ -197,22 +197,23 @@ k3         *    *    *    @
 
 反过来看，原来的谜题就是这组@bold{互递归调用}，只是其中的@tech{延续}由
 @racket[(label)] 在运行时捕获，而不是作为参数传进来。回忆我们说过的
-@m{@ty{Label} = ¬@ty{Label}}，它是@tech{说谎者悖论}，
+@math{@ty{Label} = ¬@ty{Label}}，它是@tech{说谎者悖论}，
 一个既不能判真也不能判假的命题。阴阳谜题就是那个悖论作为程序运行起来的
 样子：永不终止地振荡，永远无法落定为真或为假。
 
 @section[#:tag "01:conclusion"]{结论}
 
 @xref["01:compare"]{比较一节}把三种风格的力量归于同一步：
-跳转目标成为值。这个值的类型是 @m{¬p}。只用 @racket[λ] 和函数调用，
-写不出非空 @m{p} 的@tech{否定}，@racket[cc] 和 @racket[call/cc]
+跳转目标成为值。这个值的类型是 @math{¬p}。只用 @racket[λ] 和函数调用，
+写不出非空 @math{p} 的@tech{否定}，@racket[cc] 和 @racket[call/cc]
 交出的@tech{延续}都是在运行时捕获的。@xref["01:watershed"]{分水岭一
 节}的表格沿着同一条线分成两列：@racket[apply-cont] 和 DNI
 只消耗交到手里的@tech{否定}，只需要普通函数；@racket[cc] 和
-@racket[call/cc] 要凭空造出一个非空 @m{p} 的@tech{否定}，必须捕获。
+@racket[call/cc] 要凭空造出一个非空 @math{p} 的@tech{否定}，必须捕获。
 
-程序在操作系统面前也处在这条线上。它是一个 @m{¬¬@ty{Byte}}，等待的那条
-@m{¬@ty{Byte}} 不由它自己写出，而是在启动时由操作系统交给它。
+程序在操作系统面前也处在这条线上。它是一个 @math{¬¬@ty{Byte}}，
+等待的那条 @math{¬@ty{Byte}} 不由它自己写出，
+而是在启动时由操作系统交给它。
 
 @subsection[#:tag "01:open-threads"]{未解的线索}
 
@@ -231,11 +232,12 @@ k3         *    *    *    @
 这种编码叫做@defterm[#:en "negative translation"]{否定翻译}；
 它在计算上的对应物，叫做@bold{@tech{延续}单子}。
 
-还有另一根线头。程序类型 @m{¬¬@ty{Byte}} 中的 @m{⊥} 不是世界的终结：
-进程终止后，OS 继续运行。@m{⊥} 只是@italic{这个进程}的终结，
-不是所有计算的终结。它是一个@italic{相对的} bottom，不是绝对的。
+还有另一根线头。程序类型 @math{¬¬@ty{Byte}} 中的 @math{⊥}
+不是世界的终结：进程终止后，OS 继续运行。@math{⊥}
+只是@italic{这个进程}的终结，不是所有计算的终结。
+它是一个@italic{相对的} bottom，不是绝对的。
 
-如果我们能在程序@italic{内部}拥有相对的 @m{⊥} 呢？如果函数调用，
+如果我们能在程序@italic{内部}拥有相对的 @math{⊥} 呢？如果函数调用，
 而不仅仅是 OS，也能充当定界符呢？
 
 但那些

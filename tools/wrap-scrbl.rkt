@@ -11,7 +11,7 @@
 ;; 改写时先把一段正文连成一行（两个中文字之间直接相连，其余用一个空格连接），再重新折。
 ;; 下面这些地方不动：
 ;;   @examples[…]、@racketblock[…]、@out-block|{…}|、@tabular[…]、标题行等整块；
-;;   方括号里（@racket[…]、关键字参数）、字符串里、@m{…}/@mm{…}/@c{…} 里的空格。
+;;   方括号里（@racket[…]、关键字参数）、字符串里、@math{…}/@mm{…}/@c{…} 里的空格。
 ;; 代码块里的长行要手工按 Racket 的缩进改。
 (provide char-cols line-cols)
 
@@ -61,7 +61,7 @@
          [(and (char=? c #\]) (> bracket 0)) (loop (add1 i) (sub1 bracket) braces in-string? acc)]
          [(char=? c #\{)
           (define code? (or (memq 'code braces)
-                            (regexp-match? #px"@(m|mm|c|tt|ty)$" (substring line 0 i))))
+                            (regexp-match? #px"@(math|mm|c|tt|ty)$" (substring line 0 i))))
           (loop (add1 i) bracket (cons (if code? 'code 'text) braces) in-string? acc)]
          [(and (char=? c #\}) (pair? braces)) (loop (add1 i) bracket (cdr braces) in-string? acc)]
          [(or (> bracket 0) (memq 'code braces)) (loop (add1 i) bracket braces in-string? acc)]
