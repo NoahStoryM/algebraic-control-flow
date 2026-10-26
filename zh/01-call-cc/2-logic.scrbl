@@ -2,9 +2,6 @@
 
 @title[#:tag "01:2-logic"]{类型里的逻辑}
 
-标签、@racket[cc]、@racket[call/cc] 能互相写出，签名却各不相同。
-这一回先不看它们做什么，只看这些签名本身。
-
 @(define ev (make-acf-eval))
 @examples[#:eval ev #:hidden
 (define-type ⊥ (∪))
@@ -12,15 +9,13 @@
 (define (goto l) (l l))
 (define (label) (primitive-call/cc goto))]
 
-@section[#:tag "01:deeper-logic"]{深层的逻辑}
-
-三种风格的差别，最后都落在了类型上。@xref["01:compare"]{「比较」
-一节}的表里有联合类型，也有高阶类型；单是 @racket[call/cc]
-一个操作符，就写出了三种签名，而且每一种都成立。这些操作符的实现用到了
-@racket[label]、@racket[goto] 和 @racket[set!]，签名里却一样也看不到，
-只用到 @m{→}、@m{⊥}、@m{∪} 三样东西。写 @racket[absurd]
-时我们还顺口说了一句「从空类型可以推出任何东西」，
-这已经是逻辑里的说法了。把这些签名放在一起：
+标签、@racket[cc]、@racket[call/cc] 能互相写出，
+签名却各不相同。@xref["01:compare"]{「比较」一节}的表里有联合类型，
+也有高阶类型；单是 @racket[call/cc] 一个操作符，就写出了三种签名，
+而且每一种都成立。这些操作符的实现用到了 @racket[label]、@racket[goto]
+和 @racket[set!]，签名里却一样也看不到，只用到 @m{→}、@m{⊥}、@m{∪}
+三样东西。写 @racket[absurd] 时我们还顺口说了一句「从空类型可以推出任
+何东西」，这已经是逻辑里的说法了。把这些签名放在一起：
 
 @racketblock[
 (: cc      (∀ (p)   (→ (∪ p (→ p ⊥)))))
@@ -33,7 +28,7 @@
 这五个签名读起来就像五条命题，而且是逻辑课本里有名字的五条。
 这只是字面上的相像，还是经得起检验？
 
-@subsection[#:tag "01:from-bottom"]{从 @m{⊥} 出发}
+@section[#:tag "01:from-bottom"]{从 @m{⊥} 出发}
 
 在这个类比中，没有值的空类型 @m{⊥} 应该对应假：不存在该类型的表达式。
 如果这个类比成立，那么 @m{p → ⊥} 就对应逻辑中的否定：给定 @m{p}
@@ -62,7 +57,7 @@
 非空意味着为真，空意味着为假。为一个类型写出表达式，
 就是证明对应的命题。
 
-@subsection[#:tag "01:types-to-logic"]{从类型到逻辑}
+@section[#:tag "01:types-to-logic"]{从类型到逻辑}
 
 「非空即真」的读法能推广到我们用过的其他类型构造子吗？假设有两个表达式
 @m{x} 和 @m{y}，类型分别是 @m{p} 和 @m{q}。从这个设定出发，
@@ -118,7 +113,7 @@ Typed Racket 中的 @racket[(Values)] 类型：它只有一个值，
 其余四条只在经典逻辑中成立，只承认构造性证明的逻辑一般证不出它们；
 我们的操作符也正是靠捕获@tech{延续}才实现它们的。
 
-@subsection[#:tag "01:where-fails"]{对应关系在哪里失效}
+@section[#:tag "01:where-fails"]{对应关系在哪里失效}
 
 @tech{Curry-Howard 对应}在纯粹的全函数语言（如 Agda 和 Coq）
 中是精确的：对任意非空的 @m{p}，@m{¬p} 确实是空的。
@@ -153,7 +148,7 @@ Coq 这样的一致类型论用@defterm{正性}条件禁止这类定义。Racket
 即便严格的逻辑解读不再精确。后文说一个类型「既真又假」，
 或者由类型读出程序会做什么，都是这种意义上的指引，不是可靠的逻辑推导。
 
-@subsection[#:tag "01:watershed"]{分水岭}
+@section[#:tag "01:watershed"]{分水岭}
 
 在引入 @racket[cc] 和 @racket[call/cc] 之前，我们拥有的一切（函数、
 积、联合、@m{⊤}、@m{⊥}）都属于@defterm{直觉主义逻辑}：
