@@ -4,7 +4,7 @@
 
 ## 结构
 
-按「部 → 篇 → 小篇」的树搭（#47、#91）：
+仓库是一个 Racket 包（`info.rkt`），风格照 ctp：库名用缩写 `acf`，文档名也是 `acf`。按「部 → 篇 → 小篇」的树搭（#47、#91）：
 
 ```
 zh/main.scrbl                 部：目录、各篇、术语表、符号表
@@ -22,15 +22,18 @@ zh/01-call-cc/3-fixed-point.scrbl
 
 ```sh
 export LC_ALL=C.UTF-8
-scribble --htmls --dest build zh/main.scrbl     # 整个第一部，多页 HTML
-scribble --text  --dest build zh/main.scrbl     # 纯文本，便于通读和比对
+raco pkg install          # 在仓库根目录：装上依赖、编译、生成文档，打开 doc/acf/index.html
+raco setup --pkgs algebraic-control-flow   # 之后改了正文，重新生成
+scribble --text --dest build zh/main.scrbl # 纯文本，便于通读和比对
 ```
+
+直接用 `scribble --htmls` 也能排，但要加 `++xref-in setup/xref load-collections-xref`，代码里的链接才找得到别的文档。
 
 ## 正文
 
 | 写法 | 用途 |
 | --- | --- |
-| `@c{(label)}` | 行内代码，原样等宽，不加链接。含 `@` 或花括号不配对时写 `@c\|{#\@}\|` |
+| `@c{(label)}` | 行内代码，和代码块一样着色并链接。含 `@` 或花括号不配对时写 `@c\|{#\@}\|` |
 | `@m{¬p ∨ q}` | 行内公式（Unicode 与 TeX 混写，如 `@m{\text{Label}}`），HTML 里由 MathJax 排版 |
 | `@mm{…}` | 独立成行的公式 |
 | `@bold{…}`、`@italic{…}` | 加粗、斜体（不是术语时用） |
@@ -96,7 +99,10 @@ scribble --text  --dest build zh/main.scrbl     # 纯文本，便于通读和比
 - 节的标签写成「篇号:名字」：`@section[#:tag "01:compare"]{比较}`。小篇的标签是 `01:1-labels` 这样的文件名。
 - 回指照正文原来的说法写，链到那一节：`@xref["01:compare"]{比较一节}`。整个第一部是一份文档，篇与篇之间也这样写。
 - 文献用 `scriblib/autobib`：在部的目录下放一个 `bib.rkt`，写 `(define-cite ~cite citet generate-bibliography #:style author+date-style)` 和各条 `make-bib`；正文 `@~cite[条目]` 或 `@citet[条目]`，部末 `@(generate-bibliography #:sec-title "参考文献")`。第一篇目前没有文献引用，所以还没建。
-- 系列约定「正文不直接引用外部文档」照旧（STYLE.md）。代码块和 `@c` 都不给标识符加 Racket 文档的链接。
+- 其他文档里的术语：`@tech/refer{continuation}`（Racket Reference）、`@tech/guide{…}`（Racket Guide），写法取自 ctp。要引别的文档，在 `acf.rkt` 里用 `define-tech` 再定义一个。
+- 代码里的链接：代码块和 `@c` 里的标识符按 `acf.rkt` 里 `for-label` 引入的库排版，着色并链接到它们的文档。现在引入的有 `racket/base`、`racket/control`、Typed Racket 的类型记号和 `control-context`（`label`、`goto`、`cc`……）。用到新的库，就在那里加。正文自己重新定义的名字也链接到库里对应的那一个（Noah 10/26）。
+- 新版 Racket 才有的库或名字用 `optional-for-label` 引入：在 8.10 上 `control-context` 编译不过，Typed Racket 也没有 `∪`，这时这些名字照常着色，只是不带链接。定稿时要在最新版 Racket 上构建一次。
+- 不直接引用其他文档的正文（STYLE.md）。
 
 ## 注释
 

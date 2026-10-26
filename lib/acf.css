@@ -1,5 +1,4 @@
 /* 「控制流的代数本质」底本样式 */
-.AcfCode { font-family: monospace; }
 .AcfDisplayMath { text-align: center; margin: 1em 0; }
 .AcfRepl, .AcfOut { margin: 0.5em 0 1em 0; }
 .AcfReplInput { border-collapse: collapse; }

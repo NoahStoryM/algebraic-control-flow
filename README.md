@@ -43,7 +43,7 @@ raco test zh/*/code.rkt
 
 `cmp-forms.rkt` 核对正文定义是否逐式出现在对应的 `code.rkt`，找不到时返回非零状态。推导中只有省略号、没有可执行函数体的定义，在各篇的 `form-exceptions.rktd` 中以**完整表达式和原因**逐条列出；正文改动使排除项过期时核对会报错。同名函数在 `code.rkt` 的不同子模块中保留各阶段版本。
 
-第一篇的 Scribble 底本（`zh/main.scrbl` → `zh/01-call-cc/main.scrbl` → 三个小篇）的写法、构建与核对见 [lib/README.md](lib/README.md)。
+仓库是一个 Racket 包（库名 `acf`）。在仓库根目录运行 `raco pkg install`，会装上依赖、编译并生成文档 `doc/acf/index.html`。第一篇的 Scribble 底本（`zh/main.scrbl` → `zh/01-call-cc/main.scrbl` → 三个小篇）的写法、构建与核对见 [lib/README.md](lib/README.md)。
 
 参与方式见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 

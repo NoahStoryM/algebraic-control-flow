@@ -3,3 +3,4 @@ compiled/
 *.dep
 build/
 __pycache__/
+doc/

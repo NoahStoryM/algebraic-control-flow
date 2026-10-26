@@ -3,18 +3,22 @@
 ;;
 ;; 正文里的代码块原样写在 |{ … }| 里，核对工具（tools/run-blocks.rkt、tools/cmp-forms.rkt）
 ;; 直接读 .scrbl 源文件取出这些字符串，和 .md 时代一样按原样执行。这里只负责排版。
-(require racket/list
+;;
+;; define-tech、tech/guide、tech/refer 取自 ctp 的 scribblings/ctp-utils.rkt（amb 的 utils.rkt 里也有同样的一份）。
+(require (for-syntax racket/base syntax/parse)
+         racket/list
          racket/string
          scribble/core
          scribble/decode
          scribble/html-properties
-         (only-in scribble/manual typeset-code seclink)
+         (only-in scribble/manual typeset-code seclink tech)
          (only-in scribble/base linebreak hspace)
          scriblib/footnote
          racket/runtime-path)
 
 (provide code-block repl-block eq-block out-block
          c m mm
+         define-tech tech/guide tech/refer
          defterm term defsym glossary-table symbol-table
          xref
          notice exercise
@@ -32,6 +36,71 @@
   (make-style #f (list 'toc (css-addition css-file) (js-addition js-file))))
 
 ;; ---------------------------------------------------------------------------
+;; 代码里的链接
+;;
+;; 代码块与 @c 里的标识符按下面这些库的绑定排版：着色，并链接到它们的文档（Noah 10/26：
+;; 代码层面的链接与高亮不算引用外部文档）。要链接新的库，在这里加。
+;; 正文里重新定义过的名字（call/cc、label、cc……）也链接到库里对应的那一个。
+;; 新版 Racket 才有的库或名字（control-context 在 8.10 上编译不过，Typed Racket 8.10 没有 ∪）
+;; 用 optional-for-label 引入：载入得了、名字存在才链接，否则照常着色、不带链接。
+;; 定稿时在最新版 Racket 上构建。
+(require (for-label racket/base
+                    racket/control
+                    (only-in typed/racket/base : ∀ U → case→ define-type Values)))
+
+(begin-for-syntax
+  (define (exported-names mod)
+    (with-handlers ([(λ (_) #t) (λ (_) #f)])
+      (and (module-declared? mod #t)
+           (let-values ([(vars stxs) (module->exports mod)])
+             (for*/list ([phase+names (in-list (append vars stxs))]
+                         #:when (eqv? (car phase+names) 0)
+                         [name (in-list (cdr phase+names))])
+               (car name)))))))
+
+;; (optional-for-label mod)          整个库
+;; (optional-for-label mod id ...)   库里的这几个名字（有几个链接几个）
+(define-syntax (optional-for-label stx)
+  (syntax-parse stx
+    [(_ mod:id id:id ...)
+     (define names (exported-names (syntax-e #'mod)))
+     (define wanted (filter (λ (i) (and names (memq (syntax-e i) names)))
+                            (syntax->list #'(id ...))))
+     (cond [(not names) #'(begin)]
+           [(null? (syntax->list #'(id ...)))
+            (datum->syntax stx `(require (for-label ,#'mod)))]
+           [(null? wanted) #'(begin)]
+           [else (datum->syntax stx `(require (for-label (only-in ,#'mod ,@wanted))))])]))
+
+(optional-for-label control/context)
+(optional-for-label typed/racket/base ∪)
+
+(define label-context (quote-syntax here))
+
+;; 引用其他文档的术语（取自 ctp）：@tech/refer{continuation}、@tech/guide{…}
+(define-syntax (define-tech stx)
+  (syntax-parse stx
+    [(_ tech/name module-path)
+     (syntax/loc stx
+       (define (tech/name
+                #:key          [key        #f]
+                #:normalize?   [normalize? #t]
+                #:tag-prefixes [prefixes   #f]
+                #:indirect?    [indirect?  #f]
+                .
+                alt)
+         (apply tech
+                #:key          key
+                #:normalize?   normalize?
+                #:doc          module-path
+                #:tag-prefixes prefixes
+                #:indirect?    indirect?
+                alt)))]))
+
+(define-tech tech/guide '(lib "scribblings/guide/guide.scrbl"))
+(define-tech tech/refer '(lib "scribblings/reference/reference.scrbl"))
+
+;; ---------------------------------------------------------------------------
 ;; 代码块
 ;;
 ;;   @code-block|{ … }|  定义块与示意块：照文件写，不带提示符
@@ -43,11 +112,8 @@
 ;;   #:skip "原因"  #:reset #t  #:stdout '(exact "…")  #:value '(equal v)
 ;;   #:error "正则"  #:exit 0
 
-(define empty-context (datum->syntax #f 'acf))
-
 (define (racket-text str)
-  ;; 不给标识符加文档链接：系列约定正文不引外部文档，Racket 文档也不引。
-  (typeset-code #:context empty-context #:keep-lang-line? #t str))
+  (typeset-code #:context label-context #:keep-lang-line? #t str))
 
 (define (body->string strs)
   (string-append* (map (λ (s) (if (string? s) s (format "~a" s))) strs)))
@@ -126,8 +192,9 @@
 ;; ---------------------------------------------------------------------------
 ;; 行内
 
-;; 行内代码：原样等宽，不着色、不加链接。含 @ 或不配对花括号时写 @c|{…}|。
-(define (c . strs) (element (make-style "AcfCode" '()) (body->string strs)))
+;; 行内代码：按 Racket 着色并链接，和代码块一样。含 @ 或不配对花括号时写 @c|{…}|。
+(define (c . strs)
+  (typeset-code #:context label-context #:block? #f #:indent 0 #:keep-lang-line? #t (body->string strs)))
 
 ;; 公式：写 Unicode 与 TeX 的混合，例如 @m{¬p ∨ q}、@m{\text{Label}}。
 ;; HTML 里交给 MathJax；文本输出里保留原样，便于核对。
