@@ -11,7 +11,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 (define (goto l) (l l))
 (define (label) (primitive-call/cc goto))]
 
-@section{一等标签}
+@section[#:tag "01:first-class"]{一等标签}
 
 设想我们有一等的@tech{标签}：
 
@@ -33,7 +33,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 它仍然有效，@racket[goto] 还能跳回那个函数里面去。C
 的@tech{标签}两件都做不到。
 
-@subsection{循环}
+@subsection[#:tag "01:loop"]{循环}
 
 @examples[#:eval ev #:label #f
 (let ([x 0])
@@ -47,7 +47,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 重新绑定到它，循环体从头再走一遍。可变变量 @racket[x]
 记下已经走了几遍。
 
-@subsection{提前返回}
+@subsection[#:tag "01:early-return"]{提前返回}
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define (mul . r*)
@@ -71,7 +71,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 函数交出 @racket[result]，也就是刚存进去的零。布尔标志 @racket[first?]
 就是用来分辨这是第一次进入，还是经 @racket[goto] 跳回来的。
 
-@subsection{标签的问题}
+@subsection[#:tag "01:label-trouble"]{标签的问题}
 
 注意两个例子都依赖@bold{修改可变状态}（@racket[set!]）
 来在跳转之间传递信息。@racket[(goto loop)] 时，@tech{标签}本身不携带任
@@ -79,7 +79,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 @racket[first?] 与乘法无关：它存在的唯一目的就是区分「我们是第一次运
 行，还是刚刚跳回来？」
 
-@section{从标签到延续：@racket[cc] 操作符}
+@section[#:tag "01:cc"]{从标签到延续：@racket[cc] 操作符}
 
 一等@tech{标签}的根本限制在于：@racket[goto] 是一张单程票，
 不带任何载荷。要避免修改状态，我们需要向跳转目标发送一个值。
@@ -130,7 +130,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 @racket[saved] 不再是 @racket[#f]，走 then 分支，@racket[(cc)]
 第二次返回，交出存进去的值。
 
-@subsection{再写 @racket[mul]}
+@subsection[#:tag "01:mul-cc"]{再写 @racket[mul]}
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define (mul . r*)
@@ -157,7 +157,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 then 分支返回。两条路径都通过@tech{延续} @racket[result] 汇合，
 不需要可变状态，也不需要标志。
 
-@section{消除分支：@racket[call/cc]}
+@section[#:tag "01:call-cc"]{消除分支：@racket[call/cc]}
 
 @racket[cc] 消除了可变状态，但带来了新的要求：@bold{分支}。每次调用
 @racket[(cc)] 的返回值都有两种可能，程序员必须区分收到的是哪种情况。
@@ -234,7 +234,7 @@ then 分支返回。两条路径都通过@tech{延续} @racket[result] 汇合，
 
 @bold{练习}：用 @racket[let/cc] 定义 @racket[call/cc]。
 
-@subsection{更一般的延续类型}
+@subsection[#:tag "01:general-type"]{更一般的延续类型}
 
 交给 @racket[proc] 的@tech{延续}，类型是 @m{p → ⊥}。
 这个类型还可以放宽。先看一个奇怪的函数：
@@ -261,7 +261,7 @@ then 分支返回。两条路径都通过@tech{延续} @racket[result] 汇合，
 令 @m{q = ⊥}，就回到原来的类型。原来的版本更直接地说出了@tech{延续}是
 什么：一个接收 @m{p}、永不返回的函数。
 
-@subsection{那条看不见的延续}
+@subsection[#:tag "01:invisible"]{那条看不见的延续}
 
 @racket[k] 和 @racket[(compose absurd k)] 行为一样，因为 @racket[k]
 不会返回，后面接了什么都不会执行。@racket[call/cc]
@@ -300,7 +300,7 @@ then 分支返回。两条路径都通过@tech{延续} @racket[result] 汇合，
 
 输入一个借@tech{延续}来交付结果的计算，从中把结果取出来。
 
-@section{从 @racket[call/cc] 定义标签}
+@section[#:tag "01:label-from-call-cc"]{从 @racket[call/cc] 定义标签}
 
 令 @m{p = @ty{Label}}，@racket[call/cc] 交给 @racket[proc]
 的@tech{延续}类型就是 @m{@ty{Label} → ⊥}，恰好是一个@tech{标

@@ -23,7 +23,7 @@
           [(thread-dead? t) (display s)]
           [else (sleep 0.01) (loop)])))]
 
-@section{代入 @m{@ty{Label}}}
+@section[#:tag "01:label-sub"]{代入 @m{@ty{Label}}}
 
 @tech{排中律} @m{p ∨ ¬p} 的两个分支，一个是 @m{p}，一个是 @m{¬p}：
 一真一假。但如果代入的类型让真假变成同一个东西呢？更进一步：
@@ -54,7 +54,7 @@
 在类型层面上，「跳转目标」和「跳转指令」没有区别：它们是同一种东西。
 这种自指式的坍缩不是 bug，它是@tech{延续}令人费解的那些行为的源头。
 
-@subsection{阴阳谜题}
+@subsection[#:tag "01:yin-yang"]{阴阳谜题}
 
 把@tech{标签}直接交给@tech{标签}，就得到 David Madore 的阴阳谜题：
 
@@ -78,7 +78,7 @@
 每一轮都比上一轮多打印一个 @racket[*]。多出来的那个 @racket[*]，
 记在了哪里？
 
-@subsubsection{追踪谜题}
+@subsubsection[#:tag "01:trace"]{追踪谜题}
 
 给每个@tech{延续}一个唯一的名字
 （@racket[k0]、@racket[k1]、@racket[k2]……），让每次
@@ -125,7 +125,7 @@
         (displayln #\*)
         (apply-cont kn kn+1))))))]
 
-@subsubsection{读矩阵}
+@subsubsection[#:tag "01:matrix"]{读矩阵}
 
 把追踪排列成矩阵（行按参数@tech{标签}索引，列按目标@tech{标签}索引，
 越往左的列越新）：
@@ -156,7 +156,7 @@ k3         *    *    *    @
 之所以能级联，是因为每个@tech{延续}都「记得」下一步要跳向哪个
 @racket[kn]，形成一条链，每经过一次 @racket[k0] 就多一个链节。
 
-@subsubsection{用函数重写}
+@subsubsection[#:tag "01:rewrite"]{用函数重写}
 
 这三条规律只涉及@tech{延续}之间谁调用谁、传的是什么。照着它们，
 把每个@tech{延续}直接写成一个函数：跳向一个@tech{延续}，就是调用它；
@@ -201,7 +201,7 @@ k3         *    *    *    @
 一个既不能判真也不能判假的命题。阴阳谜题就是那个悖论作为程序运行起来的
 样子：永不终止地振荡，永远无法落定为真或为假。
 
-@section{结论}
+@section[#:tag "01:conclusion"]{结论}
 
 @xref["01:compare"]{比较一节}把三种风格的力量归于同一步：
 跳转目标成为值。这个值的类型是 @m{¬p}。只用 @racket[λ] 和函数调用，
@@ -214,7 +214,7 @@ k3         *    *    *    @
 程序在操作系统面前也处在这条线上。它是一个 @m{¬¬@ty{Byte}}，等待的那条
 @m{¬@ty{Byte}} 不由它自己写出，而是在启动时由操作系统交给它。
 
-@subsection{未解的线索}
+@subsection[#:tag "01:open-threads"]{未解的线索}
 
 但我们小心避开了一个问题。编程语言建立在@bold{构造性}的基础之
 上：@tech{Curry-Howard 对应}把程序与直觉主义证明配对，

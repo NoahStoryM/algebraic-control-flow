@@ -99,7 +99,7 @@ scribble --text --dest build zh/main.scrbl # 纯文本，便于通读和比对
 
 ## 引用
 
-- 节的标签写成「篇号:名字」：`@section[#:tag "01:compare"]{比较}`。小篇的标签是 `01:1-labels` 这样的文件名。
+- 每个节标题（`@section`、`@subsection`、`@subsubsection`）都写标签，形如「篇号:英文短名」：`@section[#:tag "01:compare"]{比较}`。小篇的标签是 `01:1-labels` 这样的文件名，篇是 `01`。不写标签时 Scribble 用标题文字生成，改标题或换语言就变了；写死以后，链接稳定，各语言版本的同一节标签相同（Noah 10/26）。
 - 回指照正文原来的说法写，链到那一节：`@xref["01:compare"]{比较一节}`。整个第一部是一份文档，篇与篇之间也这样写。
 - 文献用 `scriblib/autobib`：在部的目录下放一个 `bib.rkt`，写 `(define-cite ~cite citet generate-bibliography #:style author+date-style)` 和各条 `make-bib`；正文 `@~cite[条目]` 或 `@citet[条目]`，部末 `@(generate-bibliography #:sec-title "参考文献")`。第一篇目前没有文献引用，所以还没建。
 - 其他文档里的术语：`@tech/refer{continuation}`（Racket Reference）、`@tech/guide{…}`（Racket Guide），写法取自 ctp。要引别的文档，在 `acf.rkt` 里用 `define-tech` 再定义一个。
