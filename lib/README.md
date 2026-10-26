@@ -18,7 +18,7 @@ zh/01-call-cc/3-fixed-point.scrbl
 - 部的 `@title` 带 `#:style acf-style`；篇的 `@title` 带 `#:style chapter-style`，HTML 里每个小篇单独成页。
 - 小篇文件里，`@title` 是小篇名，`@section` 对应 .md 里的「#」，`@subsection` 对应「##」，`@subsubsection` 对应「###」。
 
-构建：
+构建（Racket 用最新版，AI 的环境里先运行 `sh tools/setup-racket.sh`，见 CONTRIBUTING.md）：
 
 ```sh
 export LC_ALL=C.UTF-8
@@ -101,7 +101,6 @@ scribble --text --dest build zh/main.scrbl # 纯文本，便于通读和比对
 - 文献用 `scriblib/autobib`：在部的目录下放一个 `bib.rkt`，写 `(define-cite ~cite citet generate-bibliography #:style author+date-style)` 和各条 `make-bib`；正文 `@~cite[条目]` 或 `@citet[条目]`，部末 `@(generate-bibliography #:sec-title "参考文献")`。第一篇目前没有文献引用，所以还没建。
 - 其他文档里的术语：`@tech/refer{continuation}`（Racket Reference）、`@tech/guide{…}`（Racket Guide），写法取自 ctp。要引别的文档，在 `acf.rkt` 里用 `define-tech` 再定义一个。
 - 代码里的链接：代码块和 `@c` 里的标识符按 `acf.rkt` 里 `for-label` 引入的库排版，着色并链接到它们的文档。现在引入的有 `racket/base`、`racket/control`、Typed Racket 的类型记号和 `control-context`（`label`、`goto`、`cc`……）。用到新的库，就在那里加。正文自己重新定义的名字也链接到库里对应的那一个（Noah 10/26）。
-- 新版 Racket 才有的库或名字用 `optional-for-label` 引入：在 8.10 上 `control-context` 编译不过，Typed Racket 也没有 `∪`，这时这些名字照常着色，只是不带链接。定稿时要在最新版 Racket 上构建一次。
 - 不直接引用其他文档的正文（STYLE.md）。
 
 ## 注释

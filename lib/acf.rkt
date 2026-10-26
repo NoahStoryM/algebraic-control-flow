@@ -41,39 +41,10 @@
 ;; 代码块与 @c 里的标识符按下面这些库的绑定排版：着色，并链接到它们的文档（Noah 10/26：
 ;; 代码层面的链接与高亮不算引用外部文档）。要链接新的库，在这里加。
 ;; 正文里重新定义过的名字（call/cc、label、cc……）也链接到库里对应的那一个。
-;; 新版 Racket 才有的库或名字（control-context 在 8.10 上编译不过，Typed Racket 8.10 没有 ∪）
-;; 用 optional-for-label 引入：载入得了、名字存在才链接，否则照常着色、不带链接。
-;; 定稿时在最新版 Racket 上构建。
 (require (for-label racket/base
                     racket/control
-                    (only-in typed/racket/base : ∀ U → case→ define-type Values)))
-
-(begin-for-syntax
-  (define (exported-names mod)
-    (with-handlers ([(λ (_) #t) (λ (_) #f)])
-      (and (module-declared? mod #t)
-           (let-values ([(vars stxs) (module->exports mod)])
-             (for*/list ([phase+names (in-list (append vars stxs))]
-                         #:when (eqv? (car phase+names) 0)
-                         [name (in-list (cdr phase+names))])
-               (car name)))))))
-
-;; (optional-for-label mod)          整个库
-;; (optional-for-label mod id ...)   库里的这几个名字（有几个链接几个）
-(define-syntax (optional-for-label stx)
-  (syntax-parse stx
-    [(_ mod:id id:id ...)
-     (define names (exported-names (syntax-e #'mod)))
-     (define wanted (filter (λ (i) (and names (memq (syntax-e i) names)))
-                            (syntax->list #'(id ...))))
-     (cond [(not names) #'(begin)]
-           [(null? (syntax->list #'(id ...)))
-            (datum->syntax stx `(require (for-label ,#'mod)))]
-           [(null? wanted) #'(begin)]
-           [else (datum->syntax stx `(require (for-label (only-in ,#'mod ,@wanted))))])]))
-
-(optional-for-label control/context)
-(optional-for-label typed/racket/base ∪)
+                    (only-in typed/racket/base : ∀ ∪ U → case→ define-type Values)
+                    control/context))
 
 (define label-context (quote-syntax here))
 
