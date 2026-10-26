@@ -14,8 +14,8 @@ zh/01-call-cc/2-logic.scrbl
 zh/01-call-cc/3-fixed-point.scrbl
 ```
 
-- 每个文件以 `#lang acf` 开头：它就是 `scribble/manual` 加上 `scribble/example` 和 `acf.rkt` 的写法（`lang/reader.rkt`、`lib/doc-lang.rkt`），不必再 `require`。要先 `raco pkg install --name acf`，`#lang acf` 才找得到。
-- 每行不超过 70 栏，中文字与全角标点算两栏。`#lang acf` 读入时去掉两个中文字之间的换行（`lib/cjk-join.rkt`），所以中文段落可以随处折行，排出来不多空格；中文与代码、英文之间的换行照常排成一个空格，不要这个空格时在行尾写 `@;`（它连同换行和下一行的缩进一起吃掉）。`racket tools/wrap-scrbl.rkt 文件…` 自动折行，`--check` 只检查；代码块里的长行要手工按 Racket 的缩进改。
+- 每个文件以 `#lang scribble/manual` 开头，接一行 `@(require "../../lib/acf.rkt")`（部的文件写 `"../lib/acf.rkt"`）。`acf.rkt` 同时带上 `scribble/example`，它的 `defterm` 盖过 scribble/manual 自带的那个。
+- 每行尽量靠近 70 栏，中文字与全角标点算两栏。只在原本就有空格的地方折行（下一个是英文单词或代码的时候）：Scribble 把行尾的换行排成一个空格，这样折行不改变排出来的文字。两个中文字之间不折，连续的中文因此可以超过 70 栏（Noah 10/26）。`racket tools/wrap-scrbl.rkt 文件…` 先把每段连成一行再重新折，`--check` 只检查；代码块里的长行要手工按 Racket 的缩进改。
 - 部的 `@title` 带 `#:style acf-style`；篇的 `@title` 带 `#:style chapter-style`，HTML 里每个小篇单独成页。
 - 小篇文件里，`@title` 是小篇名，`@section` 对应 .md 里的「#」，`@subsection` 对应「##」，`@subsubsection` 对应「###」。
 - 篇的引言写在篇的 `main.scrbl`，小篇之前；读者须知暂放系列前言 `zh/main.scrbl`。标题之间要有文字过渡：小篇标题、节标题后面先有一两句话，再接下一级标题。

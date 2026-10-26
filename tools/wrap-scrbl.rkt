@@ -1,18 +1,18 @@
 #lang racket
-;; 把 .scrbl 的正文折到每行不超过 70 栏（STYLE.md；Noah 10/26），中文字与全角标点算两栏。
+;; 把 .scrbl 的正文折行，每行尽量靠近 70 栏（STYLE.md；Noah 10/26），中文字与全角标点算两栏。
 ;;
 ;; 用法：LC_ALL=C.UTF-8 racket tools/wrap-scrbl.rkt [--check] 文件 …
-;;   不带 --check：就地改写；带 --check：只报告超长的行，有超长行时返回非零状态。
+;;   不带 --check：就地改写；带 --check：只列出能折却没折的行，有这种行时返回非零状态。
 ;;
-;; 只在两处折行：两个中文字（含全角标点）之间，或一个半角空格处（空格换成换行）。
-;; #lang acf 读入时会去掉两个中文字之间的换行（lib/cjk-join.rkt），空格处的换行照常排成空格，
-;; 所以折行不改变排出来的文字。下面这些地方不折：
-;;   @examples[…]、@racketblock[…]、@out-block|{…}| 等代码块整块；
-;;   方括号里（@racket[…]、关键字参数）、字符串里、@m{…}/@mm{…}/@c{…} 里。
-;; 标题行也不折（标题里的换行会带进目录）。
-;; 代码块里的超长行要手工按 Racket 的缩进改，--check 会把它们列出来。
-;; 中文与代码（@racket 等）之间的折行会排成一个空格；不想要这个空格时，在行尾写 @; 接续。
-(provide char-cols line-cols break-points wrap-line)
+;; 只在半角空格处折行（空格换成换行）。Scribble 把行尾的换行排成一个空格，
+;; 所以在原本就有空格的地方折行，排出来的文字不变；两个中文字之间没有空格，那里不折。
+;; 于是一段连续的中文可能超过 70 栏，这是允许的：只求每行尽量靠近 70。
+;; 改写时先把一段正文连成一行（两个中文字之间直接相连，其余用一个空格连接），再重新折。
+;; 下面这些地方不动：
+;;   @examples[…]、@racketblock[…]、@out-block|{…}|、@tabular[…]、标题行等整块；
+;;   方括号里（@racket[…]、关键字参数）、字符串里、@m{…}/@mm{…}/@c{…} 里的空格。
+;; 代码块里的长行要手工按 Racket 的缩进改。
+(provide char-cols line-cols)
 
 (define limit 70)
 
@@ -25,92 +25,111 @@
 (define (char-cols c) (if (wide? c) 2 1))
 (define (line-cols s) (for/sum ([c s]) (char-cols c)))
 
-;; 整块跳过的代码形式：从开头一行起，到方括号或 |{ }| 配平为止
-(define code-start #px"^\\s*@(examples|racketblock|racketblock0|interaction|out-block|tabular|title|section|subsection|subsubsection|\\(define)")
+;; 整块跳过的形式：从开头一行起，到方括号或 |{ }| 配平为止
+(define code-start
+  #px"^\\s*(#lang|@\\(|@(examples|racketblock|racketblock0|interaction|out-block|tabular|title|section|subsection|subsubsection|include-section|table-of-contents)\\b)")
+;; 收尾一个块的行：之后的行不与它相连
+(define block-end #px"(\\}\\]|^\\s*\\])\\s*$")
+;; 不与上一行相连的行：块级形式的开头，或单独的收尾括号
+(define block-start
+  #px"^\\s*(@(itemlist|item|margin-note|nested|centered|para|defsym)\\b|[\\]}])")
 
-;; 一行里可以折行的位置：返回 (listof (cons 位置 种类))，种类 'cjk 表示在位置前折，'space 表示删去该空格
+(define (bracket-delta line)
+  ;; 粗略地数方括号与 |{ }|，用来找代码块的结尾
+  (- (+ (length (regexp-match* #rx"\\[" line)) (length (regexp-match* #rx"\\|\\{" line)))
+     (+ (length (regexp-match* #rx"\\]" line)) (length (regexp-match* #rx"\\}\\|" line)))))
+
+;; 一行里可以折行的空格位置
 (define (break-points line)
   (define n (string-length line))
-  (let loop ([i 0] [bracket 0] [brace-stack '()] [in-string? #f] [acc '()])
+  (let loop ([i 0] [bracket 0] [braces '()] [in-string? #f] [acc '()])
     (cond
       [(>= i n) (reverse acc)]
       [else
        (define c (string-ref line i))
-       (define protected? (or in-string? (> bracket 0) (memq 'code brace-stack)))
        (cond
          [in-string?
-          (loop (add1 i) bracket brace-stack (not (and (char=? c #\") (not (char=? (string-ref line (sub1 i)) #\\)))) acc)]
-         [(and (char=? c #\") (> bracket 0)) (loop (add1 i) bracket brace-stack #t acc)]
-         [(char=? c #\[) (loop (add1 i) (add1 bracket) brace-stack in-string? acc)]
-         [(and (char=? c #\]) (> bracket 0)) (loop (add1 i) (sub1 bracket) brace-stack in-string? acc)]
+          (define end? (and (char=? c #\") (not (char=? (string-ref line (sub1 i)) #\\))))
+          (loop (add1 i) bracket braces (not end?) acc)]
+         [(and (char=? c #\") (> bracket 0)) (loop (add1 i) bracket braces #t acc)]
+         [(char=? c #\[) (loop (add1 i) (add1 bracket) braces in-string? acc)]
+         [(and (char=? c #\]) (> bracket 0)) (loop (add1 i) (sub1 bracket) braces in-string? acc)]
          [(char=? c #\{)
-          ;; @m{ @mm{ @c{ 的花括号里不折
-          (define code? (regexp-match? #px"@(m|mm|c|tt|ty)$" (substring line 0 i)))
-          (loop (add1 i) bracket (cons (if (or code? (memq 'code brace-stack)) 'code 'text) brace-stack) in-string? acc)]
-         [(and (char=? c #\}) (pair? brace-stack)) (loop (add1 i) bracket (cdr brace-stack) in-string? acc)]
-         [protected? (loop (add1 i) bracket brace-stack in-string? acc)]
-         [(and (char=? c #\space) (> i 0) (< (add1 i) n)
+          (define code? (or (memq 'code braces)
+                            (regexp-match? #px"@(m|mm|c|tt|ty)$" (substring line 0 i))))
+          (loop (add1 i) bracket (cons (if code? 'code 'text) braces) in-string? acc)]
+         [(and (char=? c #\}) (pair? braces)) (loop (add1 i) bracket (cdr braces) in-string? acc)]
+         [(and (char=? c #\space) (zero? bracket) (not (memq 'code braces))
+               (> i 0) (< (add1 i) n)
                (not (char=? (string-ref line (sub1 i)) #\space)))
-          (loop (add1 i) bracket brace-stack in-string? (cons (cons i 'space) acc))]
-         [(and (> i 0) (cjk? c) (cjk? (string-ref line (sub1 i))))
-          (loop (add1 i) bracket brace-stack in-string? (cons (cons i 'cjk) acc))]
-         [else (loop (add1 i) bracket brace-stack in-string? acc)])])))
+          (loop (add1 i) bracket braces in-string? (cons i acc))]
+         [else (loop (add1 i) bracket braces in-string? acc)])])))
 
 (define (indent-of line) (car (regexp-match #px"^\\s*" line)))
 
-;; 把一行折成若干行，续行沿用原行的缩进
+;; 把一段连成一行：两个中文字之间直接相连；行尾的 @; 去掉且直接相连；其余用一个空格
+(define (join-lines lines)
+  (for/fold ([acc (car lines)]) ([next (cdr lines)])
+    (define body (string-trim next #:right? #f))
+    (cond [(regexp-match? #px"@;\\s*$" acc)
+           (string-append (regexp-replace #px"@;\\s*$" acc "") body)]
+          [(and (positive? (string-length acc)) (positive? (string-length body))
+                (cjk? (string-ref acc (sub1 (string-length acc))))
+                (cjk? (string-ref body 0)))
+           (string-append acc body)]
+          [else (string-append acc " " body)])))
+
+;; 在空格处折行，每行尽量靠近 limit；续行沿用首行的缩进
 (define (wrap-line line)
   (define ind (indent-of line))
   (let loop ([line line] [acc '()])
     (if (<= (line-cols line) limit)
         (reverse (cons line acc))
-        (let* ([bps (break-points line)]
-               [ok (filter (λ (bp) (<= (line-cols (substring line 0 (car bp))) limit)) bps)]
-               [ok (filter (λ (bp) (> (car bp) (string-length ind))) ok)]
-               ;; 开头一段本身就超长（不能折的公式、链接等）时，在第一个能折的地方折
-               [late (filter (λ (bp) (> (car bp) (string-length ind))) bps)])
-          (if (and (null? ok) (null? late))
-              (reverse (cons line acc))         ; 没有可折的位置，留着让 --check 报出来
-              (let* ([bp (if (null? ok) (car late) (last ok))]
-                     [head (substring line 0 (car bp))]
-                     [tail (substring line (if (eq? (cdr bp) 'space) (add1 (car bp)) (car bp)))])
-                (loop (string-append ind tail) (cons head acc))))))))
+        (let* ([bps (filter (λ (i) (> i (string-length ind))) (break-points line))]
+               [fit (filter (λ (i) (<= (line-cols (substring line 0 i)) limit)) bps)]
+               [i (cond [(pair? fit) (last fit)]
+                        [(pair? bps) (car bps)]   ; 开头一段本身超长：在第一个空格处折
+                        [else #f])])
+          (if i
+              (loop (string-append ind (substring line (add1 i))) (cons (substring line 0 i) acc))
+              (reverse (cons line acc)))))))
 
-(define (bracket-delta line)
-  ;; 粗略地数方括号与 |{ }|，用来找代码块的结尾（代码里的字符串与字符字面量不会含未配平的方括号）
-  (- (+ (length (regexp-match* #rx"\\[" line)) (length (regexp-match* #rx"\\|\\{" line)))
-     (+ (length (regexp-match* #rx"\\]" line)) (length (regexp-match* #rx"\\}\\|" line)))))
-
+;; 把文件分成：原样保留的行，和要重排的正文段（连续的正文行）
 (define (process lines)
-  (let loop ([ls lines] [depth 0] [acc '()] [long '()] [n 1])
+  (let loop ([ls lines] [depth 0] [para '()] [acc '()])
+    (define (flush)
+      (if (null? para)
+          acc
+          (append (reverse (wrap-line (join-lines (reverse para)))) acc)))
     (cond
-      [(null? ls) (values (reverse acc) (reverse long))]
+      [(null? ls) (reverse (flush))]
       [else
        (define line (car ls))
        (cond
-         [(or (> depth 0) (regexp-match? code-start line) (regexp-match? #px"^#lang" line))
-          (define d (+ depth (bracket-delta line)))
-          (loop (cdr ls) (max d 0) (cons line acc)
-                (if (> (line-cols line) limit) (cons (cons n line) long) long) (add1 n))]
-         [else
-          (define out (wrap-line line))
-          (loop (cdr ls) 0 (append (reverse out) acc)
-                (append (for/list ([l out] #:when (> (line-cols l) limit)) (cons n l)) long)
-                (add1 n))])])))
+         [(or (> depth 0) (regexp-match? code-start line))
+          (loop (cdr ls) (max 0 (+ depth (bracket-delta line))) '() (cons line (flush)))]
+         [(string=? (string-trim line) "")
+          (loop (cdr ls) 0 '() (cons line (flush)))]
+         [(regexp-match? block-start line)
+          (loop (cdr ls) 0 (list line) (flush))]
+         ;; 上一行收尾了一个块（如 @itemlist 的 }]），这一行另起一段
+         [(and (pair? para) (regexp-match? block-end (car para)))
+          (loop (cdr ls) 0 (list line) (flush))]
+         [else (loop (cdr ls) 0 (cons line para) acc)])])))
 
 (module+ main
   (define check? #f)
   (define files
     (command-line #:once-each [("--check") "只检查，不改写" (set! check? #t)]
                   #:args files files))
-  (define bad 0)
+  (define changed 0)
   (for ([f files])
     (define lines (file->lines f))
-    (define-values (out long) (process lines))
-    (unless check? (display-lines-to-file out f #:exists 'truncate))
-    (for ([l long])
-      (set! bad (add1 bad))
-      (printf "~a:~a: ~a 栏：~a\n" f (car l) (line-cols (cdr l))
-              (let ([s (cdr l)]) (substring s 0 (min 40 (string-length s)))))))
-  (printf "超过 ~a 栏的行：~a\n" limit bad)
-  (when (and check? (> bad 0)) (exit 1)))
+    (define out (process lines))
+    (unless (equal? out lines)
+      (set! changed (add1 changed))
+      (if check?
+          (printf "~a：折行与 wrap-scrbl 的结果不同\n" f)
+          (display-lines-to-file out f #:exists 'truncate))))
+  (printf "~a 个文件~a\n" changed (if check? "需要重新折行" "已重新折行"))
+  (when (and check? (> changed 0)) (exit 1)))

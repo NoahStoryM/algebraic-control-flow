@@ -16,11 +16,12 @@
          (only-in scribble/manual typeset-code seclink tech deftech math)
          (only-in scribble/base linebreak hspace)
          scriblib/footnote
-         (only-in scribble/example make-base-eval)
+         scribble/example
          (only-in racket/sandbox sandbox-eval-limits sandbox-memory-limit)
          racket/runtime-path)
 
-(provide make-acf-eval
+(provide (all-from-out scribble/example)
+         make-acf-eval
          out-block
          c m mm ty
          define-tech tech/guide tech/refer
