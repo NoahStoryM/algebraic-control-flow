@@ -161,56 +161,45 @@ Coq 这样的一致类型论用@defterm{正性}条件禁止这类定义。Racket
 到底添加了什么？
 
 换个问法：只用函数，我们能拿@tech{延续}做什么？回到最后那版
-@racket[mul]，看它里面的 @racket[r] 和 @racket[return]。@racket[r]
-是一个实数；@racket[return] 是一个@tech{延续}，等一个实数，类型是
-@m{¬@ty{Real}}。按手里有什么，分四种情形。
+@racket[mul]。里面有一个实数 @racket[r]，还有一个@tech{延续}
+@racket[return]，它等一个实数，类型是 @m{¬@ty{Real}}。
 
-@bold{两样都有。}手里有 @racket[return]，也有 @racket[r]，
-那就调用：@racket[(return r)]。一个 @m{¬p} 和一个 @m{p} 放在一起，得到
-@m{⊥}，这是@defterm{矛盾律}。我们给这个操作起个名字：
+最直接的是调用：@racket[(return r)]，把实数交给等着它的@tech{延续}。
+给这个操作起个名字：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: apply-cont (∀ (p) (→ (¬ p) p ⊥)))
 (define (apply-cont kv . v*) (apply kv v*))]
 
-它就是函数调用，因为在当前的设定中@tech{延续}恰好是函数。
-但「向@tech{延续}传递一个值」本身是一个独立的概念：@tech{延续}换一种表
-示，它就不再只是函数调用。
+在当前的设定中@tech{延续}恰好是函数，所以它就是函数调用；@tech{延续}换
+一种表示，向它传值就不再只是函数调用。
 
-@bold{只有值。}手里有 @racket[r]，@tech{延续}还没来，调用不了。
-但可以先写一个函数等着：@racket[(λ (return) (return r))]，等
-@racket[return] 来了，再把 @racket[r] 交给它。它等一个
-@m{¬@ty{Real}}，类型是 @m{¬¬@ty{Real}}。给任意一个值都能这样写，从
-@m{p} 得到 @m{¬¬p}，这
+要是@tech{延续}还没来，手里只有 @racket[r] 呢？调用不了，
+但可以先写一个函数等
+着：@racket[(λ (return) (return r))]，@racket[return] 一来，就把
+@racket[r] 交给它。它等的是一个 @m{¬@ty{Real}}，类型是
+@m{¬¬@ty{Real}}。做的还是调用，只是值先到，@tech{延续}后到。
+
+反过来，要是手里只有这样一个等@tech{延续}的函数，
+想要的却是里面的实数呢？它在等一个 @racket[return]，可是没有人交给它。
+只用函数，这一步做不到，要靠 @racket[call/cc]：
+它把当前@tech{延续}交给这个函数当作 @racket[return]，实数交到
+@racket[return] 手里，也就回到了调用 @racket[call/cc] 的地方。最后那版
+@racket[mul] 也是这样，把乘积从那个 @racket[λ] 里取了回来。
+
+再进一步，连等@tech{延续}的函数也不要，直接把当前@tech{延续}拿到手里。
+这就是 @racket[(cc)]：它先交出当前@tech{延续}，等有人把实数传回来，
+再交出那个实数。手里原本什么也没有，它交出的却总是两者之一，一个实数，
+或者一个等实数的@tech{延续}，事先不要求谁给出任何一支。
+
+这四步，逻辑里各有一个名字。调用是@defterm{矛盾律}：一个 @m{¬p} 和一个
+@m{p} 放在一起，得到 @m{⊥}。先写一个函数等着，
 是@defterm[#:en "Double Negation Introduction" #:abbr "DNI"]{双重否定
-引入}。它做的仍是 @racket[apply-cont] 那件事，把值交给@tech{延续}，
-只是值先到，@tech{延续}后到。
-
-这两种都只用 @racket[λ] 和函数调用，都
+引入}：从 @m{p} 得到 @m{¬¬p}。@racket[call/cc] 反过来，从 @m{¬¬p} 得到
+@m{p}，是@tech{双重否定消除}；@racket[cc] 交出 @m{p ∨ ¬p}，
+是@tech{排中律}。前两种只用 @racket[λ] 和函数调用，
 是@defterm[#:en "constructive"]{构造性}的：结论里的每样东西，
-都由交到手里的东西做成。另外两种情形，函数就办不到了，
-都要用到当前@tech{延续}。
-
-@bold{只有一个等@tech{延续}的东西。}手里没有实数，只有一个
-@m{¬¬@ty{Real}}，比如 DNI 包出来的 @racket[(λ (return) (return r))]，
-要的却是里面的实数，方向正和 DNI 相反。要它交出实数，得先交给它一个
-@racket[return]，可手里没有@tech{延续}。何况一个 @m{¬¬@ty{Real}}
-不一定是包出来的：照@xref["01:invisible"]{那条看不见的延续}的办法，把
-@racket[mul] 交给 @racket[call/cc] 的那个 @racket[λ]
-包一层，@racket[(λ (return) (return (proc return)))] 也等一个
-@racket[return]，从不正常返回，里面并没有现成的实数，
-要算了才有。@racket[call/cc] 就做这件事：把当前@tech{延续}交给它当作
-@racket[return]，实数交到 @racket[return] 手里，也就回到了调用
-@racket[call/cc] 的地方。从 @m{¬¬p} 得到 @m{p}，
-这是@tech{双重否定消除}。DNI 只是把值包起来，DNE 要拆开，
-却得先有一个@tech{延续}。
-
-@bold{什么都没有。}连等@tech{延续}的函数也没有，手里既没有实数，
-也没有@tech{延续}，却要交出两者之一：一个 @m{@ty{Real}}，或者一个
-@m{¬@ty{Real}}，而且不要求调用者事先给出任何一支。这就是
-@racket[(cc)]：它直接把当前@tech{延续}交出来；有人把实数传回来以后，
-再交出那个实数。@m{p ∨ ¬p}，这是@tech{排中律}。@racket[call/cc]
-把当前@tech{延续}交给一个函数，@racket[cc] 干脆把它交到我们手里。
+都由交到手里的东西做成。后两种要用到当前@tech{延续}，是经典的。
 
 排成一张表：
 
