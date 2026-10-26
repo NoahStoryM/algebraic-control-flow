@@ -194,7 +194,7 @@
   (define-type (¬¬ p) (¬ (¬ p)))
   (: apply-cont (∀ (p) (→ (¬ p) p ⊥)))
 
-  (define (apply-cont k . v*) (apply k v*))
+  (define (apply-cont kv . v*) (apply kv v*))
   (provide (all-defined-out))
 )
 
@@ -202,10 +202,14 @@
   (define-type ⊥ (∪))
   (define-type (¬ p) (→ p ⊥))
   (: apply-cont (∀ (p) (→ (¬ p) p ⊥)))
-  (define (apply-cont k . v*) (apply k v*))
+  (define (apply-cont kv . v*) (apply kv v*))
+  (define-type (¬¬  q) (¬ (¬  q)))
+  (define-type (¬¬¬ q) (¬ (¬¬ q)))
+
   (: triple-negation (∀ (q) (→ (¬ (¬ (¬ q))) (¬ q))))
   (define ((triple-negation kkkq) q)
-    (kkkq (λ (kq) (kq q))))
+    (define (kkq kq) (kq q))
+    (kkkq kkq))
   (define kkkq (curryr apply-cont displayln))
   (provide (all-defined-out))
 )

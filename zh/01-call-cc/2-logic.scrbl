@@ -166,6 +166,10 @@ Coq 这样的一致类型论用@defterm{正性}条件禁止这类定义。Racket
 甚至可以是 @m{@ty{Label}}；但谈论同一座否定塔的时候，@m{A}
 要固定下来，只数它外面包了几层，不去拆它的内部。
 
+变量的名字也可以替我们数层数。一个值叫 @racket[v]，
+等它的@tech{延续}就叫 @racket[kv]，等 @racket[kv] 的就叫
+@racket[kkv]：名字里有几个 @racket[k]，就比 @racket[v] 多几层。
+
 与@tech{否定}打交道，有四种方式：
 
 @itemlist[
@@ -182,7 +186,7 @@ Coq 这样的一致类型论用@defterm{正性}条件禁止这类定义。Racket
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: apply-cont (∀ (p) (→ (¬ p) p ⊥)))
-(define (apply-cont k . v*) (apply k v*))]
+(define (apply-cont kv . v*) (apply kv v*))]
 
 这就是函数调用。我们给它起了个名字 @racket[apply-cont]，
 因为在当前的设定中@tech{延续}恰好是函数。但「向@tech{延续}传递一个值」
@@ -316,20 +320,22 @@ DNI 和 @racket[apply-cont] 是同一个操作，只是参数顺序不
 
 从 @m{q} 数起，这是从第 3 层减到第 1 层。
 
-先交代一个命名的习惯。一个变量叫 @racket[q]，等它的@tech{延续}就叫
-@racket[kq]，等 @racket[kq] 的就叫 @racket[kkq]：名字里有几个
-@racket[k]，就比 @racket[q] 多几层。手里是一个第 3 层的
-@racket[kkkq]，要交出一个第 1 层的值。第 1 层的值是一个函数，等一个
-@racket[q]，那就先把这个函数交出去：
+照名字里数 @racket[k] 的习惯，手里是一个第 3 层的 @racket[kkkq]，
+要交出一个第 1 层的值。第 1 层的值是一个函数，等一个 @racket[q]，
+那就先把这个函数交出去：
 
 @examples[#:eval ev #:label #f #:no-prompt
+(define-type (¬¬  q) (¬ (¬  q)))
+(define-type (¬¬¬ q) (¬ (¬¬ q)))
+
 (: triple-negation (∀ (q) (→ (¬ (¬ (¬ q))) (¬ q))))
 (define ((triple-negation kkkq) q)
-  (kkkq (λ (kq) (kq q))))]
+  (define (kkq kq) (kq q))
+  (kkkq kkq))]
 
 等 @racket[q] 交来，手里就有了第 0 层的 @racket[q] 和第 3 层的
-@racket[kkkq]。把 @racket[q] 做一次 DNI，@racket[(λ (kq) (kq q))] 在第
-2 层，与 @racket[kkkq] 相邻，交给它。只有 @racket[λ] 和函数调用，
+@racket[kkkq]。把 @racket[q] 做一次 DNI，得到第 2 层的 @racket[kkq]，
+与 @racket[kkkq] 相邻，交给它。只有 @racket[λ] 和函数调用，
 什么也没有捕获。
 
 试一试。拿 @racket[displayln] 当作一个 @m{¬q}，用 DNI 把它升两层，
