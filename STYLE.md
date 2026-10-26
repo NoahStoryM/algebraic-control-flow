@@ -90,7 +90,7 @@
 
 **Scribble 写法**（第一篇起。Noah 10/26 提出参照 ctp，并定了引言的位置、标题间的过渡、`@tech` 与 `@racket`、每行 70 栏、原生代码块、旁注的位置几条；公式、练习两条是 Claude 照 ctp 整理的。具体写法见 [lib/README.md](lib/README.md)）
 
-- 文件以 `#lang scribble/manual` 开头，接一行 `@(require "…/lib/acf.rkt")`。每行尽量靠近 70 栏（按显示宽度，中文字算两栏），只在原本就有空格的地方折行，也就是下一个是英文单词或代码的时候；两个中文字之间不折，所以连续的中文可以超过 70 栏（Noah 10/26）。`racket tools/wrap-scrbl.rkt` 自动折行，`--check` 检查。
+- 文件以 `#lang acf/scribble` 开头：scribble/manual 加上本系列的写法，并在读入时去掉两个中文字之间的换行（Noah 10/26 定名，不占 `#lang acf`）。每行不超过 70 栏（按显示宽度，中文字算两栏），可以在空格处或两个中文字之间折行，尽量折在标点之后，标点不放在行首。`racket tools/wrap-scrbl.rkt` 自动折行，`--check` 检查。
 - 篇的引言写在篇的 `main.scrbl`，小篇之前。系列的引言等整个系列完结后再写；读者须知（Racket 版本、`typed/racket/no-check`、需要的预备知识）先放在系列前言 `zh/main.scrbl`。
 - 标题之间要有文字过渡：小篇标题、节标题后面不直接接下一级标题，至少先有一两句话。
 - 术语第一次出现写 `@defterm`（底下是 `@deftech`），之后每次出现都写 `@tech`。这样读者从后面任何一处点进去，都能跳回定义处，知道该补读哪里。节标题里不加。
