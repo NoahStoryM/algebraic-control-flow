@@ -2,6 +2,9 @@
 
 @title[#:tag "01:3-fixed-point"]{否定的不动点}
 
+还有一个类型我们早就认识，却一直没拿来代入：@math{@ty{Label}}。
+它是它自己的否定，层数还数得下去吗？
+
 @(define ev (make-acf-eval))
 @examples[#:eval ev #:hidden
 (define-type ⊥ (∪))
@@ -25,18 +28,31 @@
 
 @section[#:tag "01:label-sub"]{代入 @math{@ty{Label}}}
 
-@tech{排中律} @math{p ∨ ¬p} 的两个分支，一个是 @math{p}，一个是
-@math{¬p}：一真一假。但如果代入的类型让真假变成同一个东西呢？
-更进一步：既然两个分支是同一个类型，我们何必再区分它们？
+把 @math{@ty{Label}} 代入@tech{排中律} @math{p ∨ ¬p}。
+按定义，@math{¬@ty{Label}} 就是 @math{@ty{Label}}，
+两个分支成了同一个类型：
 
-既真又假，这正是@tech{说谎者悖论}，我们熟悉的 @math{@ty{Label}}。
-放宽@tech{排中律}对不相交的要求，把 @math{@ty{Label}} 代入 @math{p}：
+@mm{@ty{Label} ∨ ¬@ty{Label} = @ty{Label} ∨ @ty{Label}}
 
-@mm{@ty{Label} ∨ ¬@ty{Label} = @ty{Label} ∨ @ty{Label} = @ty{Label}}
+一真一假的两支，在这里分不出真假。@xref["01:types-to-logic"]{「从类型
+到逻辑」}说过，Typed Racket 的 @racket[∪] 是普通的并集，
+不记录值从哪一边来；两边既然是同一个类型，并起来就只剩它自己：
 
-一切坍缩为 @racket[Label]。@math{@ty{Label}}
-是@defterm{否定的不动点}：它的反驳就是它自己。
-特别地，@bold{@racket[goto] 本身就是一个 @racket[Label]}：
+@mm{@ty{Label} ∪ @ty{Label} = @ty{Label}}
+
+要是换成带标签的和，记下每个值来自哪一
+支，@math{@ty{Label} + @ty{Label}} 并不会坍缩成 @math{@ty{Label}}。
+坍缩，是因为分支的记号被忘掉了。
+
+既然两支是同一个类型，也就不必再分。@racket[mul] 当初要用
+@racket[real?] 分辨 @racket[(cc)] 交出的是值还是@tech{延续}；在
+@math{@ty{Label}} 上，不管交出哪一支，拿到的都是一个@tech{标签}，
+既能当值存着，也能当@tech{延续}去调
+用。@xref["01:label-from-call-cc"]{「从 call/cc 定义标签」}里那句
+@racket[(define (label) (cc))]，就是这样一个不分支的 @racket[cc]。
+
+@math{@ty{Label}} 是@defterm{否定的不动点}：它的反驳就是它自己。连
+@racket[goto] 也是一个@tech{标签}：
 
 @mm{@ty{Label} → ⊥ = ¬@ty{Label} = @ty{Label}}
 
@@ -51,8 +67,22 @@
 @racketblock[
 ((label) (label))]
 
-在类型层面上，「跳转目标」和「跳转指令」没有区别：它们是同一种东西。
-这种自指式的坍缩不是 bug，它是@tech{延续}令人费解的那些行为的源头。
+用层数来数，@math{@ty{Label} = ¬@ty{Label} = ¬¬@ty{Label} = …}：
+同一个类型，既能放在参数的位置，也能放在它的否定的位置。
+层数分不清这两个角色了。这不是说@tech{标签}有了一个无穷大的层号，
+而是根本没法给它一个与否定相容的有限层号。可以把它想成一座无穷高的否定
+塔，每一层都是同一个 @math{@ty{Label}}；计数在这里失效了。
+
+代价是，「有类型的程序就是证明」这个读法也失效了。有了
+@math{@ty{Label}}，只用 @racket[λ] 和函数调用的有类型程序，
+也不再保证终止：@racket[goto] 是一个 @math{@ty{Label}}，
+把它交给它自己，
+
+@racketblock[
+(goto goto)]
+
+类型是 @math{⊥}，却永远算不完。这并不是说用到 @math{@ty{Label}}
+的程序都会循环。一个程序停不停，要看它自己怎样调用。
 
 @subsection[#:tag "01:yin-yang"]{阴阳谜题}
 
@@ -72,6 +102,10 @@
       (let ([yang (label)])
         (display #\*)
         (yin yang))))))]
+
+两次 @racket[(label)] 交出的都是@tech{标签}。@racket[(yin yang)]
+就是一次函数调用：同一个类型，@racket[yin] 当作@tech{延
+续}，@racket[yang] 当作交给它的值。
 
 程序里没有循环，没有计数器，也没有 @racket[set!]：只有两次
 @racket[(label)]、两次打印和一次调用。输出却是一道无限增长的阶梯，
@@ -125,10 +159,16 @@
         (displayln #\*)
         (apply-cont kn kn+1))))))]
 
+追踪的每一项是一对名字：前一个是被跳向的目标，后一个是交给它的参数。
+名字 @racket[kn]、@racket[kn+1] 只是程序里的占位；追踪里出现的
+@racket[k0]、@racket[k1]、@racket[k2]……才是具体的@tech{延
+续}。@racket[k0] 由第一处 @racket[(cc)] 捕获，而且只捕获这一次；之后的
+@racket[k1]、@racket[k2]……都由第二处捕获。
+
 @subsubsection[#:tag "01:matrix"]{读矩阵}
 
-把追踪排列成矩阵（行按参数@tech{标签}索引，列按目标@tech{标签}索引，
-越往左的列越新）：
+把追踪排列成矩阵：每一项 @c{(目标 参数)}，按参数放进行，按目标放进列，
+越往左的列越新：
 
 @out-block|{
       ...  k3   k2   k1   k0
@@ -158,8 +198,14 @@ k3         *    *    *    @
 
 @subsubsection[#:tag "01:rewrite"]{用函数重写}
 
-这三条规律只涉及@tech{延续}之间谁调用谁、传的是什么。照着它们，
-把每个@tech{延续}直接写成一个函数：跳向一个@tech{延续}，就是调用它；
+这三条规律只涉及@tech{延续}之间谁调用谁、传的是什么。回到原来的谜题，
+看第二处 @racket[(label)] 捕获的那条@tech{延续}：它收到一个值以后，
+要做的就是这个捕获点后面剩下的程序，打印一个 @racket[*]，
+再把收到的值交给 @racket[yin]。这件事写成函数，就是一个收 @racket[k]
+的 @racket[kn+1]：打印 @racket[*]，再调用 @racket[(kn k)]。
+第一处捕获的 @racket[k0] 也一样：它收到 @racket[kn] 以后，打印
+@c|{@}|，捕获一条新的 @racket[kn+1]，再把 @racket[kn+1] 交给
+@racket[kn+1]。跳向一个@tech{延续}，就是调用它；
 捕获一个新@tech{延续}，就是定义一个新函数。
 
 @racketblock[
@@ -203,21 +249,22 @@ k3         *    *    *    @
 
 @section[#:tag "01:conclusion"]{结论}
 
-@xref["01:compare"]{比较一节}把三种风格的力量归于同一步：
-跳转目标成为值。这个值的类型是 @math{¬p}。只用 @racket[λ] 和函数调用，
-写不出非空 @math{p} 的@tech{否定}，@racket[cc] 和 @racket[call/cc]
-交出的@tech{延续}都是在运行时捕获的。@xref["01:watershed"]{分水岭一
-节}的表格沿着同一条线分成两列：@racket[apply-cont] 和 DNI
-只消耗交到手里的@tech{否定}，只需要普通函数；@racket[cc] 和
-@racket[call/cc] 要凭空造出一个非空 @math{p} 的@tech{否定}，必须捕获。
+@tech{标签}、@racket[cc]、@racket[call/cc] 交出的都是@tech{延续}，
+而只用 @racket[λ] 和函数调用，凭空写不出一个非空类型的@tech{延
+续}。@xref["01:watershed"]{「分水岭」}沿着这条线分成两列：
+调用@tech{延续}、写一个函数等着@tech{延续}，
+只用交到手里的那条；@racket[call/cc] 和 @racket[cc]
+却凭空拿到了当前@tech{延续}。
 
-程序在操作系统面前也处在这条线上。它是一个 @math{¬¬@ty{Byte}}，
-等待的那条 @math{¬@ty{Byte}} 不由它自己写出，
-而是在启动时由操作系统交给它。
+代入具体的类型，这条线又看得更细。程序是一个 @math{¬¬@ty{Byte}}，
+它等待的那条@tech{延续}不由它自己写出，而是在启动时由操作系统交给它；
+三重否定律连这样一条交来的@tech{延续}也用不着；到了
+@math{@ty{Label}}，层数分不清角色，同一个@tech{标签}既当@tech{延续}又
+当值，阴阳谜题就这样永远振荡下去。
 
 @subsection[#:tag "01:open-threads"]{未解的线索}
 
-但我们小心避开了一个问题。编程语言建立在@bold{构造性}的基础之
+但我们小心避开了一个问题。编程语言建立在@tech{构造性}的基础之
 上：@tech{Curry-Howard 对应}把程序与直觉主义证明配对，
 而在@tech{直觉主义逻辑}中，@tech{排中律}不是定理。
 然而我们一直在愉快地使用@tech{排中律}、Clavius 律和 DNE，
@@ -225,12 +272,11 @@ k3         *    *    *    @
 
 这怎么可能？一个构造性语言如何支持经典推理？
 
-阴阳谜题的 CPS 分解提供了一条线索。当我们只用纯 lambda
+阴阳谜题的 CPS 分解提供了一条线索。当我们只用 @racket[λ]
 和函数调用（没有 @racket[call/cc]、没有 @racket[goto]、没有可变状态）
 重写谜题时，表达能力没有任何损失。经典的控制流仍然存在，
 只是被@bold{换了一种方式编码}：作为显式的@tech{延续}传递。在证明论中，
-这种编码叫做@defterm[#:en "negative translation"]{否定翻译}；
-它在计算上的对应物，叫做@bold{@tech{延续}单子}。
+这种编码叫做@defterm[#:en "negative translation"]{否定翻译}。
 
 还有另一根线头。程序类型 @math{¬¬@ty{Byte}} 中的 @math{⊥}
 不是世界的终结：进程终止后，OS 继续运行。@math{⊥}
