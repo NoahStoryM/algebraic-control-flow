@@ -8,17 +8,17 @@
   (define (label) (primitive-call/cc goto))
 
   (define (cc)
-    (define v* #f)
+    (define saved #f)
     (define l (label))
-    (if v*
-        (apply values v*)
-        (λ vs (set! v* vs) (goto l))))
+    (if saved
+        (apply values saved)
+        (λ args (set! saved args) (goto l))))
 
   (define (call/cc proc)
-    (define v* (cc))
-    (if (list? v*)
-        (apply values v*)
-        (proc (λ vs (v* vs)))))
+    (define x (cc))
+    (if (list? x)
+        (apply values x)
+        (proc (λ args (x args)))))
 
   (define (mul . r*)
     (define result (cc))
@@ -29,6 +29,18 @@
           (if (zero? r)
               (result r)
               (* res r))))))
+
+(module label-to-cc/return racket
+  (require (only-in (submod ".." label-to-cc) call/cc))
+  (provide mul)
+  (define (mul . r*)
+    (call/cc
+     (λ (return)
+       (for/fold ([res (*)])
+                 ([r (in-list r*)])
+         (if (zero? r)
+             (return r)
+             (* res r)))))))
 
 (module call/cc-to-label racket
   (provide label goto)
@@ -41,11 +53,11 @@
   (define (goto l) (l l))
   (define (label) (primitive-call/cc goto))
   (define (call/cc proc)
-    (define v* #f)
+    (define saved #f)
     (define l (label))
-    (if v*
-        (apply values v*)
-        (proc (λ vs (set! v* vs) (goto l)))))
+    (if saved
+        (apply values saved)
+        (proc (λ args (set! saved args) (goto l)))))
   (define (cc) (call/cc values)))
 
 (module cc-to-label racket
@@ -60,7 +72,8 @@
            (prefix-in a: (submod ".." label-to-cc))
            (prefix-in b: (submod ".." call/cc-to-label))
            (prefix-in c: (submod ".." label-to-call/cc))
-           (prefix-in d: (submod ".." cc-to-label)))
+           (prefix-in d: (submod ".." cc-to-label))
+           (prefix-in e: (submod ".." label-to-cc/return)))
 
   (define (count-to-seven label goto)
     (let ([x 0])
@@ -77,6 +90,9 @@
   (check-equal? (a:mul) 1)
   (check-equal? (a:mul 2 3 4) 24)
   (check-equal? (a:mul 2 3 0 4) 0)
+  (check-equal? (e:mul) 1)
+  (check-equal? (e:mul 2 3 4) 24)
+  (check-equal? (e:mul 2 0 3) 0)
   (check-equal? (a:call/cc (λ (k) (+ 100 (k 9)))) 9)
   (check-equal? (c:call/cc (λ (k) (+ 100 (k 9)))) 9)
   (check-equal? (let ([v (a:cc)]) (if (procedure? v) (v 42) v)) 42)
