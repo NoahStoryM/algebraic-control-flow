@@ -13,9 +13,9 @@
 
 @section[#:tag "01:deeper-logic"]{深层的逻辑}
 
-三种风格的差别，最后都落在了类型上。@xref["01:compare"]{比较表}里有联
-合类型，也有高阶类型；单是 @racket[call/cc] 一个操作符，
-就写出了三种签名，而且每一种都成立。这些操作符的实现用到了
+三种风格的差别，最后都落在了类型上。@xref["01:compare"]{「比较」
+一节}的表里有联合类型，也有高阶类型；单是 @racket[call/cc]
+一个操作符，就写出了三种签名，而且每一种都成立。这些操作符的实现用到了
 @racket[label]、@racket[goto] 和 @racket[set!]，签名里却一样也看不到，
 只用到 @m{→}、@m{⊥}、@m{∪} 三样东西。写 @racket[absurd]
 时我们还顺口说了一句「从空类型可以推出任何东西」，
@@ -116,7 +116,7 @@ Typed Racket 中的 @racket[(Values)] 类型：它只有一个值，
 也确实只用一个空的 @racket[case-λ] 就写了出来。
 其余四条只在经典逻辑中成立，只承认构造性证明的逻辑一般证不出它们；
 我们的操作符也正是靠捕获@tech{延续}才实现它们的。两件事怎样连在一起，
-本节末尾的@xref["01:watershed"]{分水岭}再说。
+本节末尾的@xref["01:watershed"]{「分水岭」}再说。
 
 @subsection[#:tag "01:where-fails"]{对应关系在哪里失效}
 
@@ -198,7 +198,7 @@ Coq 这样的一致类型论用@defterm{正性}条件禁止这类定义。Racket
 是@defterm[#:en "Double Negation Introduction" #:abbr "DNI"]{双重否定
 引入}：从 @m{p} 得到 @m{¬¬p}。
 
-这两步只用函数就够了。回想@xref["01:from-bottom"]{从 ⊥ 出发}一节：
+这两步只用函数就够了。回想@xref["01:from-bottom"]{「从 ⊥ 出发」}一节：
 对非空的 @m{p}，只用 @racket[λ]，凭空写不出一个
 @m{¬p}，@tech{延续}只能由别人交来。调用用的是手里现成的
 @racket[return]；先写一个函数等着，是等别人把 @racket[return] 交进来。
@@ -226,35 +226,33 @@ Coq 这样的一致类型论用@defterm{正性}条件禁止这类定义。Racket
          @elem{@bold{DNI}：@racket[(λ (k) (k v))]}
          @elem{@bold{DNE}：@racket[call/cc]（捕获@tech{延续}）}))]
 
-右边一列也不是两条互不相干的原则。回头看@xref["01:call-cc"]{消除分支一
-节}用 @racket[cc] 定义的 @racket[call/cc]，照那条看不见的延续里的第二
-种读法，要求 @racket[proc] 从不正常返回，它的类型就是 @m{¬¬p}：
+表里每一列的上下两格，其实是一回事。左边一列，
+调用@tech{延续}和先写一个函数等着，做的是同一次调用，
+只差值和@tech{延续}谁先到：@m{¬p → p → ⊥} 和 @m{p → ¬p → ⊥}
+只差参数的次序，@tech{矛盾律}和 DNI 互相推得出。右边一列，
+第一小篇里，@xref["01:call-cc"]{「消除分支」}一节用 @racket[cc] 写出了
+@racket[call/cc]，@xref["01:label-from-call-cc"]{「从 call/cc
+定义标签」}一节又用 @racket[call/cc] 写出了
+@racket[cc]：@racket[(call/cc values)]。逻辑里也一样，@tech{排中律}和
+DNE 作为对任意类型都成立的原则，互相推得出。
 
-@racketblock[
-(define (call/cc proc)
-  (define x (cc))           (code:comment "p ∨ ¬p")
-  (if (list? x)
-      (apply values x)      (code:comment "p：直接交出")
-      (code:comment "¬p：交给 proc，结果是 ⊥")
-      (proc (λ args (x args)))))]
-
-@racket[(cc)] 就是向@tech{排中律}要一个 @m{p ∨ ¬p}。得到传回来的结果，
-是 @m{p} 那一支，直接交出；得到捕获的@tech{延续}，是 @m{¬p} 那一支，
-交给 @racket[proc]，@tech{矛盾律}给出 @m{⊥}，
+用 @racket[cc] 写出的那个 @racket[call/cc]，
+照@xref["01:invisible"]{「那条看不见的延续」}里的第二种读法，要求
+@racket[proc] 从不正常返回，读起来正是一段由@tech{排中律}推出 DNE
+的证明：@racket[(cc)] 交出 @m{p} 那一支，就直接交出；交出 @m{¬p}
+那一支，就交给 @racket[proc]，@tech{矛盾律}给出 @m{⊥}，
 而照爆炸原理（@racket[absurd]），@m{⊥} 可以当作任何类型。
-用列表包一层，只是为了在运行时分得清这两支。DNE
-就这样由@tech{排中律}推了出来：经典的成分全在 @racket[(cc)] 那一步，
-其余都是构造性的。
-
-可是，从 @m{¬¬p} 取出 @m{p}，一定要凭空拿到一个@tech{延续}吗？说 DNE
-需要经典逻辑，是说它作为对任意类型都统一成立的原则。
-落到某一个具体的类型上，它的实例也都要捕获吗？
+用列表包一层，只是为了在运行时分得清这两支。经典的成分全在
+@racket[(cc)] 那一步，其余都是构造性的。
 
 @bold{练习}：@italic{实质条件} @m{¬p ∨ q} 是经典逻辑中 @m{p → q}
 的另一种编码。试着实现 @c{material->procedure : (¬p ∨ q) → p → q} 和
 @c{procedure->material : (p → q) → ¬p ∨ q}。你会发现其中一个方向需要
 @racket[cc]，是哪一个？
 
+可是，从 @m{¬¬p} 取出 @m{p}，一定要凭空拿到一个@tech{延续}吗？说 DNE
+需要经典逻辑，是说它作为对任意类型都统一成立的原则。
+落到某一个具体的类型上，它的实例也都要捕获吗？
 
 @section[#:tag "01:substitute"]{代入不同的类型}
 
@@ -359,8 +357,8 @@ Coq 这样的一致类型论用@defterm{正性}条件禁止这类定义。Racket
 
 @racket[triple-negation] 里的几个名
 字，@racket[q]、@racket[kq]、@racket[kkq]、@racket[kkkq]，
-差的只是外面叠了几个否定。数一数，刚才的做法能说得更清楚，
-分水岭留下的问题也有了回答。
+差的只是外面叠了几个否定。数一数，刚才的做法能说得更清楚，「分水岭」
+留下的问题也有了回答。
 
 固定一个类型 @m{A}，把 @m{A} 本身算作第 0 层，@m{¬A} 算作第 1
 层，@m{¬¬A} 算作第 2 层，依此类推：多一层的类型，
@@ -370,7 +368,7 @@ Coq 这样的一致类型论用@defterm{正性}条件禁止这类定义。Racket
 一个值叫 @racket[v]，等它的@tech{延续}就叫 @racket[kv]，等 @racket[kv]
 的就叫 @racket[kkv]，名字里有几个 @racket[k]，就比 @racket[v] 多几层。
 
-分水岭的四种情形，用层数说就是：
+「分水岭」的四种情形，用层数说就是：
 
 @itemlist[
   @item{@tech{矛盾律}：第 @m{n+1} 层与第 @m{n} 层相遇，得到 @m{⊥}。}
@@ -390,7 +388,7 @@ Coq 这样的一致类型论用@defterm{正性}条件禁止这类定义。Racket
 也就得到任意的「偶数层 ∨ 奇数层」，用不着 DNE。奇偶相同的两个，
 只靠加减两层永远凑不成相邻；别的办法行不行，这几条规则管不着。
 
-回到分水岭留下的问题：从 @m{¬¬p} 取出 @m{p}，
+回到「分水岭」留下的问题：从 @m{¬¬p} 取出 @m{p}，
 不一定要凭空拿到一个@tech{延续}。@racket[triple-negation] 也交出了一个
 @m{¬q}，可它不是凭空来的，它要调用的 @racket[kkkq] 是交进来的。
 用层数说，减两层的目标在第 1 层或更高时，总能先交出一个函数，
