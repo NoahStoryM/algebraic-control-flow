@@ -166,10 +166,19 @@ Coq 这样的一致类型论用@defterm{正性}条件禁止这类定义。Racket
 甚至可以是 @m{@ty{Label}}；但谈论同一座否定塔的时候，@m{A}
 要固定下来，只数它外面包了几层，不去拆它的内部。
 
-与@tech{否定}打交道，有四种方式。其中两种只需要普通函数。
+与@tech{否定}打交道，有四种方式：
 
-@defterm{矛盾律}：第 @m{n+1} 层与第 @m{n} 层相遇，得到 @m{⊥}。把一个
-@m{¬p} 和一个 @m{p} 放在一起，就是调用：
+@itemlist[
+  @item{@defterm{矛盾律}：第 @m{n+1} 层与第 @m{n} 层相遇，得到
+  @m{⊥}。}
+  @item{@defterm[#:en "Double Negation Introduction" #:abbr "DNI"]{双
+  重否定引入}：加两层，从第 @m{n} 层升到第 @m{n+2} 层。}
+  @item{@tech{排中律}：交出相邻两层之一，第 @m{n} 层的 @m{p}，或者第
+  @m{n+1} 层的 @m{¬p}，而且不要求调用者事先给出任何一支。}
+  @item{@tech{双重否定消除}：减两层，从第 @m{n+2} 层的 @m{¬¬p} 取出第
+  @m{n} 层的 @m{p}。}]
+前两种只需要普通函数。把一个 @m{¬p} 和一个 @m{p}
+放在一起，@tech{矛盾律}就是调用：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: apply-cont (∀ (p) (→ (¬ p) p ⊥)))
@@ -179,23 +188,16 @@ Coq 这样的一致类型论用@defterm{正性}条件禁止这类定义。Racket
 因为在当前的设定中@tech{延续}恰好是函数。但「向@tech{延续}传递一个值」
 本身是一个独立的概念：@tech{延续}换一种表示，它就不再只是函数调用。
 
-@defterm[#:en "Double Negation Introduction" #:abbr "DNI"]{双重否定引
-入}：加两层，从第 @m{n} 层升到第 @m{n+2} 层。它和 @racket[apply-cont]
-是同一个操作，只是参数顺序不同。@racket[apply-cont]
-接收@tech{延续}和值，而 DNI 先接收值，返回一个等待@tech{延续}的
-@m{¬¬p}：@racket[(curryr apply-cont)]。这是一个纯粹的 λ，
-不需要任何控制操作符。
+DNI 和 @racket[apply-cont] 是同一个操作，只是参数顺序不
+同。@racket[apply-cont] 接收@tech{延续}和值，而 DNI 先接收值，
+返回一个等待@tech{延续}的 @m{¬¬p}：@racket[(curryr apply-cont)]。
+这是一个纯粹的 λ，不需要任何控制操作符。
 
 两者都是@defterm[#:en "constructive"]{构造性}的：结论里的每样东西，
-都由交到手里的东西做成。另外两种则需要捕获当前@tech{延续}。
-
-@tech{排中律}：交出相邻两层之一，第 @m{n} 层的 @m{p}，或者第 @m{n+1}
-层的 @m{¬p}，而且不要求调用者事先给出任何一支。这是 @racket[cc]。
-
-@tech{双重否定消除}：减两层，从第 @m{n+2} 层的 @m{¬¬p} 取出第 @m{n}
-层的 @m{p}。这是 @racket[call/cc]。说它需要经典逻辑，
-是说它作为对任意类型都统一成立的原则；落到某个具体类型上，
-一个实例也许不捕获就写得出来。
+都由交到手里的东西做成。后两种则需要捕获当前@tech{延续}：@tech{排中
+律}是 @racket[cc]，@tech{双重否定消除}是 @racket[call/cc]。说 DNE
+需要经典逻辑，是说它作为对任意类型都统一成立的原则；
+落到某个具体类型上，一个实例也许不捕获就写得出来。
 
 四条规则只管层数的加减，奇偶便自然出来了。DNI 和 DNE 一次加减两层，
 都不改变奇偶；@tech{矛盾律}要求两层相邻，也就是一奇一偶。
@@ -217,8 +219,8 @@ Coq 这样的一致类型论用@defterm{正性}条件禁止这类定义。Racket
          @elem{@bold{@tech{排中律}}：@racket[cc]（捕获@tech{延续}）})
    (list @elem{@m{¬¬p} 遇上 @m{p}}
          @elem{差两层}
-         @elem{@bold{DNI}：柯里化的 @racket[apply-cont]，加两层}
-         @elem{@bold{DNE}：@racket[call/cc]（捕获@tech{延续}），减两层}))]
+         @elem{@bold{DNI}：柯里化的 @racket[apply-cont]}
+         @elem{@bold{DNE}：@racket[call/cc]（捕获@tech{延续}）}))]
 
 右边一列并不是两条互不相干的原则。手里有一个 @m{¬¬p}，记作 @m{h}，
 再向@tech{排中律}要一个 @m{p ∨ ¬p}，分情形：得到 @m{p}，直接交出；得到
