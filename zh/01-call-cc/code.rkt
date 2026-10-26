@@ -203,14 +203,19 @@
   (define-type (¬ p) (→ p ⊥))
   (: apply-cont (∀ (p) (→ (¬ p) p ⊥)))
   (define (apply-cont kv . v*) (apply kv v*))
-  (define-type (¬¬  q) (¬ (¬  q)))
+  (define-type (¬¬ q) (¬ (¬ q)))
   (define-type (¬¬¬ q) (¬ (¬¬ q)))
+
+  (: dni (∀ (p) (→ p (¬¬ p))))
+  (define (dni v)
+    (define (kkv kv) (kv v))
+    kkv)
 
   (: triple-negation (∀ (q) (→ (¬¬¬ q) (¬ q))))
   (define ((triple-negation kkkq) q)
     (define (kkq kq) (kq q))
     (kkkq kkq))
-  (define kkkq (curryr apply-cont displayln))
+  (define kkkq (dni displayln))
   (provide (all-defined-out))
 )
 
@@ -294,4 +299,5 @@
   (check-true (output-starts-with? (λ () (yin:k0 yin:k0)) "@\n*@\n**@\n***@"))
   ;; 三重否定律：把 DNI 升两层的延续降回来，行为和原来的一样，什么也不捕获
   (check-equal? (with-output-to-string (λ () ((tn:triple-negation tn:kkkq) 'hello))) "hello\n")
-  (check-equal? ((tn:triple-negation (curryr tn:apply-cont (λ (q) (list 'got q)))) 7) '(got 7)))
+  (check-equal? ((tn:triple-negation (tn:dni (λ (q) (list 'got q)))) 7) '(got 7))
+  (check-equal? ((tn:dni 5) (λ (v) (* v v))) 25))

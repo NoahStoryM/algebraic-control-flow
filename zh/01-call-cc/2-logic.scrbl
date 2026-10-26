@@ -192,10 +192,20 @@ Coq 这样的一致类型论用@defterm{正性}条件禁止这类定义。Racket
 因为在当前的设定中@tech{延续}恰好是函数。但「向@tech{延续}传递一个值」
 本身是一个独立的概念：@tech{延续}换一种表示，它就不再只是函数调用。
 
-DNI 和 @racket[apply-cont] 是同一个操作，只是参数顺序不
-同。@racket[apply-cont] 接收@tech{延续}和值，而 DNI 先接收值，
-返回一个等待@tech{延续}的 @m{¬¬p}：@racket[(curryr apply-cont)]。
-这是一个纯粹的 λ，不需要任何控制操作符。
+DNI 先收下一个值 @racket[v]，交出一个等待@tech{延续}的函数
+@racket[kkv]：等 @racket[kv] 来了，就把 @racket[v] 交给它。
+
+@examples[#:eval ev #:label #f #:no-prompt
+(define-type (¬¬ q) (¬ (¬ q)))
+
+(: dni (∀ (p) (→ p (¬¬ p))))
+(define (dni v)
+  (define (kkv kv) (kv v))
+  kkv)]
+
+@racket[kkv] 被调用时做的，正是 @racket[apply-cont] 做的事：
+把值交给@tech{延续}。只是值先到，@tech{延续}后到。这里只有 @racket[λ]
+和函数调用，不需要任何控制操作符。
 
 两者都是@defterm[#:en "constructive"]{构造性}的：结论里的每样东西，
 都由交到手里的东西做成。后两种则需要捕获当前@tech{延续}：@tech{排中
@@ -223,7 +233,7 @@ DNI 和 @racket[apply-cont] 是同一个操作，只是参数顺序不
          @elem{@bold{@tech{排中律}}：@racket[cc]（捕获@tech{延续}）})
    (list @elem{@m{¬¬p} 遇上 @m{p}}
          @elem{差两层}
-         @elem{@bold{DNI}：柯里化的 @racket[apply-cont]}
+         @elem{@bold{DNI}：@racket[dni]}
          @elem{@bold{DNE}：@racket[call/cc]（捕获@tech{延续}）}))]
 
 右边一列并不是两条互不相干的原则。手里有一个 @m{¬¬p}，记作 @m{h}，
@@ -325,7 +335,6 @@ DNI 和 @racket[apply-cont] 是同一个操作，只是参数顺序不
 那就先把这个函数交出去：
 
 @examples[#:eval ev #:label #f #:no-prompt
-(define-type (¬¬  q) (¬ (¬  q)))
 (define-type (¬¬¬ q) (¬ (¬¬ q)))
 
 (: triple-negation (∀ (q) (→ (¬¬¬ q) (¬ q))))
@@ -342,7 +351,7 @@ DNI 和 @racket[apply-cont] 是同一个操作，只是参数顺序不
 得到一个 @m{¬¬¬q}，再降回来：
 
 @examples[#:eval ev #:label #f
-(define kkkq (curryr apply-cont displayln))
+(define kkkq (dni displayln))
 ((triple-negation kkkq) 'hello)]
 
 为什么这一次不用捕获？要交出的结果本身也是一个函数，
