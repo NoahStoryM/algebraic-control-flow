@@ -1,3 +1,6 @@
 compiled/
 *.zo
 *.dep
+build/
+__pycache__/
+doc/

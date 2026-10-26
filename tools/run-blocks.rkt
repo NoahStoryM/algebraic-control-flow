@@ -1,5 +1,11 @@
 #lang racket
+(require "scrbl-source.rkt")
 ;; 用法：LC_ALL=C.UTF-8 racket tools/run-blocks.rkt zh/0X-…/article.md [伪代码节标题片段 ...]
+;;       LC_ALL=C.UTF-8 racket tools/run-blocks.rkt zh/0X-…/main.scrbl
+;; .scrbl：从篇的 main.scrbl 出发，跟着 @include-section 读各小篇（见 tools/scrbl-source.rkt）。
+;; 核对配置写在代码块的关键字参数里（#:skip "原因"、#:reset #t 等，含义同下面的 blocks.rktd），
+;; 按 @section 分节，同样自动加载篇目录下的 prelude.rkt。块的种类与内容要一致：
+;; @repl-block 以 > 开始，@eq-block 有顶层的 =，@code-block 两者都不是。
 ;; 若文章旁有 blocks.rktd，则按节标题与代码块开头唯一定位配置项，自动加载 prelude.rkt：
 ;;   (skip   (("# 节标题" "块的首行") "明确原因"))
 ;;   (reset  (("# 节标题" "块的首行"))) ; 从该块起重新建立命名空间并加载前置定义
@@ -28,7 +34,9 @@
 ;;   不是定义的顶层式子（例如照抄前文的一段程序），必须原样出现在本文件别的节里。
 ;;   参数里有中文，要在 UTF-8 的区域设置下运行（LC_ALL=C.UTF-8 racket …），否则参数被读成问号，一节也对不上；对不上时报错。
 (define ns (make-base-namespace))
-(define src (file->string (vector-ref (current-command-line-arguments) 0)))
+(define article-arg (vector-ref (current-command-line-arguments) 0))
+(define scrbl? (regexp-match? #rx"[.]scrbl$" article-arg))
+(define src (if scrbl? "" (file->string article-arg)))
 (define sections (filter (λ (s) (not (string=? s ""))) (regexp-split #px"(?m:^(?=# ))" src)))
 (define pseudo-titles (cdr (vector->list (current-command-line-arguments))))
 (define (title-of sec) (car (string-split sec "\n")))
@@ -111,7 +119,7 @@
               (and (not prefix?)
                    (string=? comparable (if (string=? target "") "" (string-append target "\n")))))
     (error 'repl "~s: ~s vs ~s" (repl-input command) comparable expected)))
-(define article-path (vector-ref (current-command-line-arguments) 0))
+(define article-path article-arg)
 (define config-path (build-path (path-only (path->complete-path article-path)) "blocks.rktd"))
 (define (subterm? x y) (or (equal? x y) (and (pair? y) (or (subterm? x (car y)) (subterm? x (cdr y))))))
 (define n-blocks 0) (define n-eq 0) (define n-ok 0) (define n-rerun 0) (define n-pseudo 0)
@@ -176,16 +184,16 @@
 
 ;; 带配置的文章按「节标题 + 块首行」定位。一个选择器必须恰好指向一个块；
 ;; 插入其他块不会改变配置的含义。
-(struct block (section first source) #:transparent)
+(struct block (section first source opts) #:transparent)
+(define (first-line b)
+  (let ([ls (filter (λ (s) (not (string=? s ""))) (map string-trim (string-split b "\n")))])
+    (if (null? ls) "" (car ls))))
 (define (configured-blocks)
   (for/list ([sec sections])
     (cons (title-of sec)
           (for/list ([b (blocks-of sec)])
-            (block (title-of sec)
-                   (let ([ls (filter (λ (s) (not (string=? s ""))) (map string-trim (string-split b "\n")))])
-                     (if (null? ls) "" (car ls)))
-                   b)))))
-(define (run-configured)
+            (block (title-of sec) (first-line b) b #f)))))
+(define (run-configured-md)
   (define all-sections (configured-blocks))
   (define all-blocks (append* (map cdr all-sections)))
   (define cfg (call-with-input-file config-path read))
@@ -214,8 +222,33 @@
             (hash-set! entries (cons kind b) arg)]
            [_ (error 'config "配置格式错误：~s" item)]))]
       [_ (error 'config "配置格式错误：~s" group)]))
-  (define (setting kind b [default #f]) (hash-ref entries (cons kind b) default))
-  (define prelude (build-path (path-only config-path) "prelude.rkt"))
+  (run-configured all-sections
+                  (λ (kind b) (hash-ref entries (cons kind b) #f))
+                  (build-path (path-only config-path) "prelude.rkt")))
+
+;; .scrbl：配置来自代码块的关键字参数。只执行 racket 代码块，@out-block 不执行。
+(define (run-configured-scrbl)
+  (define all-sections
+    (for/list ([sec (scrbl-sections article-path)])
+      (cons (car sec)
+            (for/list ([sb (cdr sec)] #:unless (eq? (sblock-kind sb) 'out))
+              (define src (sblock-source sb))
+              (define b (block (car sec) (first-line src) src (sblock-opts sb)))
+              (define repl? (interactive? src))
+              (define equation? (and (not repl?) (memq '= (forms-of src)) #t))
+              (define expected (case (sblock-kind sb) [(repl) 'repl] [(eq) 'eq] [else 'code]))
+              (define actual (cond [repl? 'repl] [equation? 'eq] [else 'code]))
+              (unless (equal? expected actual)
+                (error 'scrbl "~a / ~a：写成了 ~a-block，内容却像 ~a-block"
+                       (car sec) (first-line src) expected actual))
+              b))))
+  (run-configured all-sections
+                  (λ (kind b) (hash-ref (block-opts b) kind #f))
+                  (build-path (path-only (path->complete-path article-path)) "prelude.rkt")))
+
+(define (run-configured all-sections setting* prelude)
+  (define all-blocks (append* (map cdr all-sections)))
+  (define (setting kind b [default #f]) (or (setting* kind b) default))
   (define current-ns (setup-namespace (and (file-exists? prelude) prelude)))
   (define checked 0)
   (define skipped 0)
@@ -389,4 +422,6 @@
   (printf "代码块 ~a 个（其中等式块 ~a 个，不执行），核对的结果 ~a 处，全部一致；先用后定义、重跑了一遍的有 ~a 节~a\n"
           n-blocks n-eq n-ok n-rerun
           (if (zero? n-pseudo) "" (format "；伪代码节 ~a 节（不执行）" n-pseudo))))
-(if (file-exists? config-path) (run-configured) (run-legacy))
+(cond [scrbl? (run-configured-scrbl)]
+      [(file-exists? config-path) (run-configured-md)]
+      [else (run-legacy)])

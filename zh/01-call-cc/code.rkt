@@ -153,7 +153,6 @@
 )
 
 (module stage-8 typed/racket/no-check
-  (require (rename-in racket/base [case-lambda case-λ]))
   (define-type ⊥ (∪))
   (: absurd (∀ (q) (→ ⊥ q)))
 
@@ -236,7 +235,6 @@
 )
 
 (module signature-5 typed/racket/no-check
-  (require (rename-in racket/base [case-lambda case-λ]))
   (define-type ⊥ (∪))
   (: absurd  (∀ (q)   (→ ⊥ q)))
   (define absurd (case-λ))

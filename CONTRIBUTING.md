@@ -40,4 +40,6 @@
 ## 环境
 
 - `LC_ALL=C.UTF-8`，否则中文路径与参数会被读成问号。
-- 在 Racket 8.10 上：Typed Racket 的 `∪` 没有绑定（真要检查类型时换成 `U`）；`racket/match` 还没有 `match-λ`，核对时要补一行别名。全部定稿后在最新版 Racket 上重跑。
+- Racket 用最新版（现在是 9.3），不用 apt 装的旧版。AI 的临时环境连不上 Racket 的下载站和包目录，安装包放在 [NoahStoryM/racket-dist](https://github.com/NoahStoryM/racket-dist) 的 Release 上：会话里挂上这个仓库，再运行 `sh tools/setup-racket.sh`。脚本会装好 Racket、`control-context`、`amb`，并把本仓库装成包 `acf`，大约一分钟（Noah 10/26）。
+- 核对、转换一类的工具尽量用 Racket 本身写，放在 `tools/`，不引入 Python 等别的运行环境（Noah 10/26）。这些工具是给接手的 AI 用的，Noah 只看正文。
+- 仓库里还留着几处为旧版 8.10 写的别名（`match-λ`、`case-λ`），在 9.3 上不影响运行，遇到时可以顺手删。
