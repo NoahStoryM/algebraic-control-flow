@@ -2,6 +2,8 @@
 
 @title[#:tag "01:1-labels"]{从标签到 call/cc}
 
+@also-in['en "01:1-labels"]
+
 C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里，传来传去呢？
 
 @(define ev (make-acf-eval))

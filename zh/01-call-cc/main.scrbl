@@ -3,6 +3,8 @@
 @title[#:tag "01"
   #:style chapter-style]{标签成为逻辑之时：揭开 call/cc 的神秘面纱}
 
+@also-in['en "01"]
+
 @racket[call-with-current-continuation]（简写 @racket[call/cc]，
 「以当前@tech{延续}调用」）是 Scheme 传统中最强大、
 也最令人畏惧的控制操作符之一。人们常说它是「美化的 goto」，
