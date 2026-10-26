@@ -115,8 +115,7 @@ Typed Racket 中的 @racket[(Values)] 类型：它只有一个值，
 表里的定律分两种。爆炸原理在任何逻辑里都成立，@racket[absurd]
 也确实只用一个空的 @racket[case-λ] 就写了出来。
 其余四条只在经典逻辑中成立，只承认构造性证明的逻辑一般证不出它们；
-我们的操作符也正是靠捕获@tech{延续}才实现它们的。两件事怎样连在一起，
-本节末尾的@xref["01:watershed"]{「分水岭」}再说。
+我们的操作符也正是靠捕获@tech{延续}才实现它们的。
 
 @subsection[#:tag "01:where-fails"]{对应关系在哪里失效}
 
@@ -226,15 +225,14 @@ Coq 这样的一致类型论用@defterm{正性}条件禁止这类定义。Racket
          @elem{@bold{DNI}：@racket[(λ (k) (k v))]}
          @elem{@bold{DNE}：@racket[call/cc]（捕获@tech{延续}）}))]
 
-表里每一列的上下两格，其实是一回事。左边一列，
-调用@tech{延续}和先写一个函数等着，做的是同一次调用，
+表里每一列的上下两格，其实是一回事。左边一列都是调用@tech{延续}，
 只差值和@tech{延续}谁先到：@m{¬p → p → ⊥} 和 @m{p → ¬p → ⊥}
-只差参数的次序，@tech{矛盾律}和 DNI 互相推得出。右边一列，
-第一小篇里，@xref["01:call-cc"]{「消除分支」}一节用 @racket[cc] 写出了
-@racket[call/cc]，@xref["01:label-from-call-cc"]{「从 call/cc
-定义标签」}一节又用 @racket[call/cc] 写出了
-@racket[cc]：@racket[(call/cc values)]。逻辑里也一样，@tech{排中律}和
-DNE 作为对任意类型都成立的原则，互相推得出。
+只差参数的次序，@tech{矛盾律}和 DNI 互相推得出。
+右边一列都是提供当前@tech{延续}，只差交给一个函数还是交到手
+里：@racket[call/cc] 能@xref["01:call-cc"]{用 @racket[cc]
+写出}，@racket[cc] 也能@xref["01:label-from-call-cc"]{用
+@racket[call/cc] 写出}，就是 @racket[(call/cc values)]。@tech{排中
+律}和 DNE 作为对任意类型都成立的原则，同样互相推得出。
 
 用 @racket[cc] 写出的那个 @racket[call/cc]，
 照@xref["01:invisible"]{「那条看不见的延续」}里的第二种读法，要求
