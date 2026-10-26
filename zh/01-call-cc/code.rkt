@@ -194,7 +194,23 @@
   (define-type (¬¬ p) (¬ (¬ p)))
   (: apply-cont (∀ (p) (→ (¬ p) p ⊥)))
 
-  (define (apply-cont k . v*) (apply k v*))
+  (define (apply-cont kv . v*) (apply kv v*))
+  (provide (all-defined-out))
+)
+
+(module triple-negation typed/racket/no-check
+  (define-type ⊥ (∪))
+  (define-type (¬ p) (→ p ⊥))
+  (: apply-cont (∀ (p) (→ (¬ p) p ⊥)))
+  (define (apply-cont kv . v*) (apply kv v*))
+  (define-type (¬¬  q) (¬ (¬  q)))
+  (define-type (¬¬¬ q) (¬ (¬¬ q)))
+
+  (: triple-negation (∀ (q) (→ (¬¬¬ q) (¬ q))))
+  (define ((triple-negation kkkq) q)
+    (define (kkq kq) (kq q))
+    (kkkq kkq))
+  (define (kkkq kkq) (kkq displayln))
   (provide (all-defined-out))
 )
 
@@ -261,7 +277,8 @@
            (prefix-in label: (submod ".." stage-3))
            (prefix-in elimination: (submod ".." stage-6))
            (prefix-in trace: (submod ".." stage-18))
-           (prefix-in yin: (submod ".." stage-20)))
+           (prefix-in yin: (submod ".." stage-20))
+           (prefix-in tn: (submod ".." triple-negation)))
   (check-equal? (label:mul) 1)
   (check-equal? (label:mul 2 3 4) 24)
   (check-equal? (label:mul 2 0 3) 0)
@@ -274,4 +291,7 @@
                          (displayln #\*)
                          (trace:apply-cont kn kn+1))))
                "(k0 k0)\t@\n(k1 k1)\t*\n(k0 k1)\t@\n"))
-  (check-true (output-starts-with? (λ () (yin:k0 yin:k0)) "@\n*@\n**@\n***@")))
+  (check-true (output-starts-with? (λ () (yin:k0 yin:k0)) "@\n*@\n**@\n***@"))
+  ;; 三重否定律：把 DNI 升两层的延续降回来，行为和原来的一样，什么也不捕获
+  (check-equal? (with-output-to-string (λ () ((tn:triple-negation tn:kkkq) 'hello))) "hello\n")
+  (check-equal? ((tn:triple-negation (λ (kkq) (kkq (λ (q) (list 'got q))))) 7) '(got 7)))

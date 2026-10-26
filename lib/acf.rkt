@@ -45,11 +45,12 @@
 ;; 代码层面的链接与高亮不算引用外部文档）。要链接新的库，在这里加。
 ;; 正文里重新定义过的名字（call/cc、label、cc……）也链接到库里对应的那一个。
 (require (for-label racket/base
+                    racket/function
                     racket/control
                     (only-in typed/racket/base : ∀ ∪ U → case→ define-type Values)
                     control/context))
 ;; 同样的绑定也交给引用本模块的文档，正文里的 @racket[call/cc] 等因此能直接链接。
-(provide (for-label (all-from-out racket/base racket/control control/context)
+(provide (for-label (all-from-out racket/base racket/function racket/control control/context)
                     : ∀ ∪ U → case→ define-type Values))
 
 (define label-context (quote-syntax here))
