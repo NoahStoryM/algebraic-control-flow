@@ -39,8 +39,8 @@ scribble --text --dest build zh/main.scrbl # 纯文本，便于通读和比对
 | `@racket[call/cc]`、`@racket[(label)]` | 行内代码：标识符和能读成一个 S 表达式的片段（Scribble 自带）。着色并链接到对应库的文档 |
 | `@c{#lang typed/racket/no-check}` | 读不成一个 S 表达式的代码片段，同样着色。含 `@` 时写 `@c\|{(k0 k3)@}\|` |
 | `@tt{goto}` | 不是 Racket 绑定的名字（如 C 的 `goto`），只用等宽字 |
-| `@m{¬p ∨ q}` | 行内公式（Scribble 自带的 `math`），只用 Unicode；字母斜体 |
-| `@ty{Label}` | 公式里的类型名，排成正体：`@m{¬¬@ty{Byte} → @ty{Byte}}` |
+| `@math{¬p ∨ q}` | 行内公式（Scribble 自带），只用 Unicode；字母斜体。不另起别名（Noah 10/26） |
+| `@ty{Label}` | 公式里的类型名，排成正体：`@math{¬¬@ty{Byte} → @ty{Byte}}` |
 | `@mm{…}` | 独立成行的公式；需要空开时写 `@hspace[4]` |
 | `@bold{…}`、`@italic{…}` | 加粗、斜体（不是术语时用） |
 | `@hyperlink["url"]{文字}` | 外部链接 |
@@ -92,10 +92,10 @@ scribble --text --dest build zh/main.scrbl # 纯文本，便于通读和比对
 符号第一次定义处放一个不可见的锚：
 
 ```scribble
-@defsym["¬p" "p 的否定：p → ⊥，延续的类型"]@m{¬p}
+@defsym["¬p" "p 的否定：p → ⊥，延续的类型"]@math{¬p}
 ```
 
-第一个参数按公式写（会用 `@m` 排版；类型名写 `@defsym[@ty{Label} "…"]`），第二个是符号表里的说明。正文里不显示，只在部末的符号表出现，链回这里。
+第一个参数按公式写（会用 `@math` 排版；类型名写 `@defsym[@ty{Label} "…"]`），第二个是符号表里的说明。正文里不显示，只在部末的符号表出现，链回这里。
 
 ## 引用
 

@@ -22,7 +22,7 @@
 
 (provide make-acf-eval
          out-block
-         c m mm ty
+         c mm ty
          define-tech tech/guide tech/refer
          defterm defsym glossary-table symbol-table
          xref
@@ -125,9 +125,8 @@
 (define (c . strs)
   (typeset-code #:context label-context #:block? #f #:indent 0 #:keep-lang-line? #t (body->string strs)))
 
-;; 公式：用 Scribble 自带的 math，照 ctp 的写法只用 Unicode，例如 @m{p ∨ ¬p}。
+;; 公式：行内直接写 Scribble 自带的 @math，照 ctp 的写法只用 Unicode，例如 @math{p ∨ ¬p}。
 ;; 字母排成斜体；类型名用 @ty{Label} 排成正体；代码名用 @racket[cc]。
-(define (m . content) (apply math content))
 (define (mm . content)
   (paragraph (make-style "AcfDisplayMath" '()) (apply math content)))
 (define (ty . content) (element (make-style "AcfType" '()) content))
@@ -191,7 +190,7 @@
        (for/list ([entry (collected 'symbol)])
          (define k (car entry))
          (define sym (cadr entry))
-         (list (paragraph plain (link-element #f (m sym) (list 'acf-sym k)))
+         (list (paragraph plain (link-element #f (math sym) (list 'acf-sym k)))
                (paragraph plain (cddr entry)))))
      (table (make-style 'boxed '())
             (cons (list (paragraph plain "符号") (paragraph plain "含义")) rows)))))

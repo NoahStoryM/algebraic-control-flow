@@ -24,7 +24,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 值。@racket[(goto l)] 跳回 @racket[l] 被创建的地方，让当初那次
 @racket[(label)] 调用再返回一次，交出的仍是这个
 @racket[l]。@racket[goto] 的返回类型是
-@defsym["⊥" "空类型，没有值；读作假"]@m{⊥}（bottom），
+@defsym["⊥" "空类型，没有值；读作假"]@math{⊥}（bottom），
 一个没有值的类型：@racket[goto] 永远不会回到调用它的地方，
 控制转移到了别处。
 
@@ -92,9 +92,9 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 于是这个操作符的返回值有两种可能：
 
 @itemlist[
-  @item{类型为 @m{p → ⊥} 的@tech{延续}：接受类型为 @m{p}
+  @item{类型为 @math{p → ⊥} 的@tech{延续}：接受类型为 @math{p}
   的值且永不返回的函数（它跳回捕获点）。}
-  @item{类型为 @m{p} 的值，在@tech{延续}被调用时收到。}]
+  @item{类型为 @math{p} 的值，在@tech{延续}被调用时收到。}]
 我们把这个操作符叫做 @racket[cc]（@racket[current-continuation]
 的缩写）：
 
@@ -236,7 +236,7 @@ then 分支返回。两条路径都通过@tech{延续} @racket[result] 汇合，
 
 @subsection[#:tag "01:general-type"]{更一般的延续类型}
 
-交给 @racket[proc] 的@tech{延续}，类型是 @m{p → ⊥}。
+交给 @racket[proc] 的@tech{延续}，类型是 @math{p → ⊥}。
 这个类型还可以放宽。先看一个奇怪的函数：
 
 @examples[#:eval ev #:label #f #:no-prompt
@@ -245,21 +245,21 @@ then 分支返回。两条路径都通过@tech{延续} @racket[result] 汇合，
 
 @racket[case-λ] 按参数的个数分情形定义函数，每个子句对应一种调用方式。
 一个子句也没有的 @racket[(case-λ)]，没有任何调用方式能与它匹配，
-这样的函数永远不会被调用。这正合 @m{⊥} 的情形：@m{⊥} 没有值，
+这样的函数永远不会被调用。这正合 @math{⊥} 的情形：@math{⊥} 没有值，
 谁也交不出一个来给它。既然永远不会被调用，说它交出什么类型都不会错，
-所以 @racket[absurd] 的类型是 @m{⊥ → q}，@m{q} 任意。
+所以 @racket[absurd] 的类型是 @math{⊥ → q}，@math{q} 任意。
 从空类型可以推出任何东西。
 
 把 @racket[absurd] 接在@tech{延续} @racket[k]
-后面，@racket[(compose absurd k)] 的类型就是 @m{p → q}。它的行为和
+后面，@racket[(compose absurd k)] 的类型就是 @math{p → q}。它的行为和
 @racket[k] 完全一样：一调用，@racket[k] 就跳走，永远到不了
 @racket[absurd]。所以交给 @racket[proc] 的@tech{延续}也可以看作
-@m{p → q}，@racket[call/cc] 的类型随之变成：
+@math{p → q}，@racket[call/cc] 的类型随之变成：
 
 @mm{((p → q) → p) → p}
 
-令 @m{q = ⊥}，就回到原来的类型。原来的版本更直接地说出了@tech{延续}是
-什么：一个接收 @m{p}、永不返回的函数。
+令 @math{q = ⊥}，就回到原来的类型。原来的版本更直接地说出了@tech{延
+续}是什么：一个接收 @math{p}、永不返回的函数。
 
 @subsection[#:tag "01:invisible"]{那条看不见的延续}
 
@@ -288,12 +288,12 @@ then 分支返回。两条路径都通过@tech{延续} @racket[result] 汇合，
 显式地交出去；第一行里，它经正常返回走到同一个地方。
 正常返回时隐含经过的，就是这条看不见的@tech{延续}。
 
-再看类型。@racket[proc] 自己的类型是 @m{(p → ⊥) → p}，
-它可以正常返回一个 @m{p}，@racket[call/cc] 的类型就照这个读法写成。
+再看类型。@racket[proc] 自己的类型是 @math{(p → ⊥) → p}，
+它可以正常返回一个 @math{p}，@racket[call/cc] 的类型就照这个读法写成。
 包了一层的 @racket[(λ (k) (k (proc k)))] 则从不正常返回，结果总是经
-@racket[k] 交出，它的类型是 @m{(p → ⊥) → ⊥}。两者交给
+@racket[k] 交出，它的类型是 @math{(p → ⊥) → ⊥}。两者交给
 @racket[call/cc]，行为相同。也可以干脆要求 @racket[proc]
-本身就从不正常返回，它的类型便是 @m{(p → ⊥) → ⊥}。
+本身就从不正常返回，它的类型便是 @math{(p → ⊥) → ⊥}。
 照这个读法，@racket[call/cc] 的类型是：
 
 @mm{((p → ⊥) → ⊥) → p}
@@ -302,9 +302,10 @@ then 分支返回。两条路径都通过@tech{延续} @racket[result] 汇合，
 
 @section[#:tag "01:label-from-call-cc"]{从 @racket[call/cc] 定义标签}
 
-令 @m{p = @ty{Label}}，@racket[call/cc] 交给 @racket[proc]
-的@tech{延续}类型就是 @m{@ty{Label} → ⊥}，恰好是一个@tech{标
-签}。@tech{标签}因此可以直接由 @racket[call/cc] 定义：
+令 @math{p = @ty{Label}}，@racket[call/cc] 交给 @racket[proc]
+的@tech{延续}类型就是 @math{@ty{Label} → ⊥}，
+恰好是一个@tech{标签}。@tech{标签}因此可以直接由 @racket[call/cc]
+定义：
 
 @(define ev1 (make-acf-eval))
 @examples[#:eval ev1 #:label #f #:no-prompt
@@ -313,7 +314,7 @@ then 分支返回。两条路径都通过@tech{延续} @racket[result] 汇合，
 (define (label) (call/cc goto))]
 
 @defsym[@ty{Label} "标签的类型：Label = Label → ⊥"]
-@m{@ty{Label} = @ty{Label} → ⊥} 是一个递归类型：@tech{标签}是一个接
+@math{@ty{Label} = @ty{Label} → ⊥} 是一个递归类型：@tech{标签}是一个接
 受@tech{标签}且永不返回的函数。@racket[(label)] 做了什么，
 一步步展开来看。把 @racket[call/cc] 交给 @racket[goto]
 的@tech{延续}记作 @racket[k]，它通向 @racket[(label)] 被调用的地方：
@@ -378,16 +379,16 @@ then 分支返回。两条路径都通过@tech{延续} @racket[result] 汇合，
          @elem{高阶回调 (@racket[call/cc])})
    (list @elem{@bold{涉及的类型}}
          @elem{只有 @racket[Label]}
-         @elem{联合类型 @m{p ∪ (p → ⊥)}}
-         @elem{高阶：@m{((p → ⊥) → p) → p} 或
-               @m{((p → ⊥) → ⊥) → p}})
+         @elem{联合类型 @math{p ∪ (p → ⊥)}}
+         @elem{高阶：@math{((p → ⊥) → p) → p} 或
+               @math{((p → ⊥) → ⊥) → p}})
    (list @elem{@bold{需要可变状态？}}
          @elem{是：必须用 @racket[set!] 在跳转间传递信息}
          @elem{否}
          @elem{否})
    (list @elem{@bold{需要手动分支？}}
          @elem{否}
-         @elem{是：必须区分 @m{p} 和 @m{p → ⊥}}
+         @elem{是：必须区分 @math{p} 和 @math{p → ⊥}}
          @elem{否}))]
 
 三种风格能做到的事没有区别，力量的来源也是同一个：跳转目标成为了值。在
