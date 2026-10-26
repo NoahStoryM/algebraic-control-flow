@@ -25,7 +25,8 @@ A series on continuations, CPS, delimited control, relations, monads and algebra
 
 ```sh
 export LC_ALL=C.UTF-8   # 否则 Racket 读不了中文路径与参数
-racket tools/run-blocks.rkt zh/01-call-cc/main.scrbl   # 第一篇已改用 Scribble 底本
+racket tools/run-blocks.rkt zh/01-call-cc/main.scrbl   # 第一篇已改用 Scribble 底本，例子在生成文档时运行
+racket tools/wrap-scrbl.rkt --check zh/main.scrbl zh/01-call-cc/*.scrbl   # 每行不超过 70 栏
 racket tools/cmp-forms.rkt zh/01-call-cc/main.scrbl zh/01-call-cc/code.rkt
 racket tools/run-blocks.rkt zh/02-cps/article.md
 racket tools/run-blocks.rkt zh/03-delimited/article.md

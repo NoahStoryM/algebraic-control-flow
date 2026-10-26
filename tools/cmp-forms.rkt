@@ -4,7 +4,7 @@
 ;; 取出草稿里所有 ```racket 定义块中的定义（define、:、define-type、struct、define-syntax-rule）；
 ;; 首个非空行以 > 开始的交互块只由 run-blocks.rkt 核对，
 ;; 逐个检查它是否（读成 S 表达式后）出现在代码文件里。right-triangles₀…₈ 视同 right-triangles。
-;; 第一个参数也可以是篇的 main.scrbl：取 @code-block 与 @eq-block 里的定义（见 tools/scrbl-source.rkt），
+;; 第一个参数也可以是篇的 main.scrbl：取 @examples（隐藏的除外）与 @racketblock 里的定义（见 tools/scrbl-source.rkt），
 ;; form-exceptions.rktd 同样放在 main.scrbl 旁边。
 (define-values (draft code)
   (match (current-command-line-arguments)
@@ -29,16 +29,25 @@
         [else acc]))
 (define code-forms
   (collect-forms (read-all-from-string (string-join (cdr (file->lines code)) "\n")) (set)))
-(define blocks
-  (if (regexp-match? #rx"[.]scrbl$" draft)
+;; .scrbl：取 @examples（隐藏的除外）与 @racketblock 里的式子；.md：取 ```racket 定义块。
+(define scrbl? (regexp-match? #rx"[.]scrbl$" draft))
+(define scrbl-blocks
+  (if scrbl?
       (for*/list ([sec (scrbl-sections draft)]
                   [b (cdr sec)]
-                  #:when (memq (sblock-kind b) '(code eq)))
-        (sblock-source b))
+                  #:when (memq (sblock-kind b) '(examples racketblock))
+                  #:unless (hash-ref (sblock-opts b) '#:hidden #f))
+        (sblock-forms b))
+      '()))
+(define blocks
+  (if scrbl?
+      scrbl-blocks
       (regexp-match* #px"(?s:```racket\n(.*?)\n```)" (file->string draft) #:match-select cadr)))
 (define doc-forms
   (filter (λ (f) (and (pair? f) (memq (car f) heads)))
-          (map norm (append-map read-all-from-string blocks))))
+          (map norm (if scrbl?
+                        (append* scrbl-blocks)
+                        (append-map read-all-from-string blocks)))))
 (define exceptions-file
   (build-path (or (path-only draft) (current-directory)) "form-exceptions.rktd"))
 (define exceptions

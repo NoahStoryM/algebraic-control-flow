@@ -16,9 +16,12 @@
          (only-in scribble/manual typeset-code seclink tech deftech math)
          (only-in scribble/base linebreak hspace)
          scriblib/footnote
+         (only-in scribble/example make-base-eval)
+         (only-in racket/sandbox sandbox-eval-limits sandbox-memory-limit)
          racket/runtime-path)
 
-(provide code-block repl-block eq-block out-block
+(provide make-acf-eval
+         out-block
          c m mm ty
          define-tech tech/guide tech/refer
          defterm defsym glossary-table symbol-table
@@ -75,16 +78,21 @@
 (define-tech tech/refer '(lib "scribblings/reference/reference.scrbl"))
 
 ;; ---------------------------------------------------------------------------
+;; 求值器
+;;
+;; 正文的例子用 Scribble 的 @examples 写，构建文档时真的运行（照 amb 的 amb-examples）。
+;; 每个小篇建自己的求值器：@(define ev (make-acf-eval))，前文假定已有的定义用
+;; @examples[#:eval ev #:hidden …] 补上。代码在 typed/racket/no-check 下运行。
+(define (make-acf-eval)
+  (parameterize ([sandbox-eval-limits #f] [sandbox-memory-limit #f])
+    (make-base-eval #:lang 'typed/racket/no-check)))
+
+;; ---------------------------------------------------------------------------
 ;; 代码块
 ;;
-;;   @code-block|{ … }|  定义块与示意块：照文件写，不带提示符
-;;   @repl-block|{ … }|  交互块：> 输入，下面是 REPL 的打印
-;;   @eq-block|{ … }|    等式块：推导与化简，各步用顶层的 = 连接，不执行
-;;   @out-block|{ … }|   不带语言的输出块（编译后程序的输出、矩阵等）
-;;
-;; 关键字参数只给核对工具看，排版时忽略（含义见 tools/REPL.md）：
-;;   #:skip "原因"  #:reset #t  #:stdout '(exact "…")  #:value '(equal v)
-;;   #:error "正则"  #:exit 0
+;; 例子写 @examples[#:eval ev #:label #f …]：交互的例子带提示符，定义加 #:no-prompt；
+;; 只排版、不求值的代码（推导、示意、不会停的程序）写 @racketblock[…]，
+;; 注释写 (code:comment "…")。不带语言的输出（矩阵等）写 @out-block|{ … }|。
 
 (define (racket-text str)
   (typeset-code #:context label-context #:keep-lang-line? #t str))
@@ -92,19 +100,10 @@
 (define (body->string strs)
   (string-append* (map (λ (s) (if (string? s) s (format "~a" s))) strs)))
 
-(define-syntax-rule (define-block-form (name str) body ...)
-  (define (name #:skip [skip #f] #:reset [reset #f] #:stdout [stdout #f]
-                #:value [value #f] #:error [err #f] #:exit [ex #f]
-                . strs)
-    (let ([str (body->string strs)]) body ...)))
-
-(define-block-form (code-block str) (racket-text str))
-(define-block-form (eq-block str) (racket-text str))
-
-(define-block-form (out-block str)
+(define (out-block . strs)
   (nested-flow (make-style "AcfOut" '())
                (list (paragraph (make-style #f (list 'div))
-                                (verbatim-lines str)))))
+                                (verbatim-lines (body->string strs))))))
 
 (define (verbatim-lines str)
   (add-between (for/list ([line (string-split str "\n" #:trim? #f)])
@@ -116,52 +115,6 @@
     (if (char=? (string-ref piece 0) #\space)
         (hspace (string-length piece))
         piece)))
-
-;; 交互块：每一项是「> 输入」加上其后的打印。拆分规则与 tools/run-blocks.rkt 相同：
-;; 以 "> " 开头的行开始新的一项，输入读成完整表达式之前的行都属于输入。
-(define (complete-form? s)
-  (with-handlers ([exn:fail:read? (λ (_) #f)])
-    (define in (open-input-string s))
-    (define v (read in))
-    (and (not (eof-object? v)) (eof-object? (read in)))))
-
-(define (repl-items str)
-  (define items '())
-  (define input #f)
-  (define out '())
-  (define ready? #f)
-  (define (finish!)
-    (when input (set! items (cons (cons input (reverse out)) items)))
-    (set! input #f) (set! out '()) (set! ready? #f))
-  (for ([line (string-split str "\n" #:trim? #f)])
-    (cond [(string-prefix? line "> ")
-           (finish!)
-           (set! input (substring line 2))
-           (set! ready? (complete-form? input))]
-          [(not input) (void)]
-          [ready? (set! out (cons line out))]
-          [else
-           ;; 续行在原缩进上多加了两个空格，去掉后与首行对齐
-           (set! input (string-append input "\n"
-                                      (if (string-prefix? line "  ") (substring line 2) line)))
-           (set! ready? (complete-form? input))]))
-  (finish!)
-  (reverse items))
-
-(define-block-form (repl-block str)
-  (nested-flow
-   (make-style "AcfRepl" '())
-   (append*
-    (for/list ([item (repl-items str)])
-      (define input (car item))
-      (define outs (cdr item))
-      (cons (table (make-style "AcfReplInput" '())
-                   (list (list (paragraph (make-style "AcfPrompt" '()) (element 'tt ">"))
-                               (racket-text input))))
-            (if (null? outs)
-                '()
-                (list (paragraph (make-style "AcfReplOutput" (list 'div))
-                                 (verbatim-lines (string-join outs "\n"))))))))))
 
 ;; ---------------------------------------------------------------------------
 ;; 行内

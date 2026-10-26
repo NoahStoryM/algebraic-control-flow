@@ -8,8 +8,9 @@
 ;; 找到就划掉，所以段落挪了位置不算差异。最后报告两样东西：
 ;;   1. .md 里在 .scrbl 中找不到的段落（文字改了或丢了）；
 ;;   2. .scrbl 里没被划掉的剩余文字（新加的文字）。节号「1.2.1.」这类排版产物不报。
-;; 删空白比较看不出代码缩进的变化，所以代码块另外逐字比较：.md 的每个代码块
-;; 要和 .scrbl（跟着 @include-section，见 scrbl-source.rkt）里某个代码块的内容一字不差。
+;; 代码另外按 S 表达式比较：.md 的每个 racket 代码块（交互块只取 > 后的输入）读成的式子，
+;; 要和 .scrbl 里某个 @examples（隐藏的除外）或 @racketblock 的式子相同；
+;; 不带语言的输出块按文字比较。交互块的打印由 Scribble 运行生成，已含在上面的正文比较里。
 ;; 有找不到的段落或代码块时返回非零状态。
 (require scribble/render
          setup/xref
@@ -21,15 +22,17 @@
   (define paras '())
   (define cur '())
   (define fence #f)
+  (define fence-kind 'code)
   (define (push! kind lines)
     (set! paras (cons (cons kind (string-join (reverse lines) "\n")) paras)))
   (for ([line (string-split text "\n" #:trim? #f)])
     (cond [fence
            (if (string-prefix? line "```")
-               (begin (push! 'code fence) (set! fence #f))
+               (begin (push! fence-kind fence) (set! fence #f))
                (set! fence (cons line fence)))]
           [(string-prefix? line "```")
            (unless (null? cur) (push! 'text cur) (set! cur '()))
+           (set! fence-kind (if (string-prefix? line "```racket") 'code 'out))
            (set! fence '())]
           [(string=? (string-trim line) "")
            (unless (null? cur) (push! 'text cur) (set! cur '()))]
@@ -78,8 +81,35 @@
      (file->string (build-path dir "out.txt")))
    (λ () (delete-directory/files dir))))
 
+;; .scrbl 的代码：每块一项，S 表达式的列表；输出块是字符串
 (define (scrbl-code scrbl)
-  (for*/list ([sec (scrbl-sections scrbl)] [b (cdr sec)]) (sblock-source b)))
+  (for*/list ([sec (scrbl-sections scrbl)] [b (cdr sec)]
+              #:unless (hash-ref (sblock-opts b) '#:hidden #f))
+    (sblock-forms b)))
+
+;; .md 的代码：racket 块读成 S 表达式的列表（交互块只取输入），输出块是字符串
+(define (md-code p)
+  (define kind (car p))
+  (define str (cdr p))
+  (cond
+    [(eq? kind 'out) str]
+    [(regexp-match? #px"^\\s*> " str)
+     (define inputs
+       (let loop ([lines (string-split str "\n" #:trim? #f)] [cur #f] [acc '()])
+         (define (done) (if cur (cons cur acc) acc))
+         (cond [(null? lines) (reverse (done))]
+               [(string-prefix? (car lines) "> ")
+                (loop (cdr lines) (substring (car lines) 2) (done))]
+               [(and cur (not (complete? cur)))
+                (loop (cdr lines) (string-append cur "\n" (car lines)) acc)]
+               [else (loop (cdr lines) cur acc)])))
+     (map (λ (i) (read (open-input-string i))) (reverse (reverse inputs)))]
+    [else (with-input-from-string str (λ () (for/list ([e (in-port read)]) e)))]))
+
+(define (complete? s)
+  (with-handlers ([(λ (_) #t) (λ (_) #f)])
+    (define in (open-input-string s))
+    (and (not (eof-object? (read in))) (eof-object? (read in)))))
 
 (define (main md scrbl)
   (define paras (md-paragraphs (file->string md)))
@@ -88,7 +118,7 @@
   (define pool (regexp-replace* #px"-{5,}" (squash text) ""))           ; 表头下的横线
   (define missing '())
   (for ([p paras])
-    (define q (squash (if (eq? (car p) 'code) (cdr p) (strip-md (cdr p)))))
+    (define q (squash (if (memq (car p) '(code out)) (cdr p) (strip-md (cdr p)))))
     (unless (string=? q "")
       (define pos (let ([m (regexp-match-positions (regexp-quote q) pool)]) (and m (caar m))))
       (if pos
@@ -99,14 +129,14 @@
             (for/list ([x (string-split pool "\0" #:trim? #f)])
               (regexp-replace #px"^\\d+(\\.\\d+)*\\.?" x ""))))
   (define codes (scrbl-code scrbl))
-  (define md-codes (for/list ([p paras] #:when (eq? (car p) 'code)) (cdr p)))
+  (define md-codes (for/list ([p paras] #:when (memq (car p) '(code out))) (md-code p)))
   (define code-missing (filter (λ (c) (not (member c codes))) md-codes))
   (define code-extra (filter (λ (c) (not (member c md-codes))) codes))
   (printf "代码块：md ~a 个，scrbl ~a 个；md 有而 scrbl 没有的 ~a 个，scrbl 多出的 ~a 个\n"
           (length md-codes) (length codes) (length code-missing) (length code-extra))
   (for ([c (append code-missing code-extra)])
-    (printf "  ! ~a\n" (string-replace c "\n" "\n    ")))
-  (define all-missing (append (reverse missing) code-missing))
+    (printf "  ! ~s\n" c))
+  (define all-missing (append (reverse missing) (map (λ (c) (format "~s" c)) code-missing)))
   (printf "md 里找不到的段落：~a\n" (length all-missing))
   (for ([p all-missing])
     (define s (string-replace p "\n" "\n    "))

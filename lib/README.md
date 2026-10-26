@@ -14,10 +14,11 @@ zh/01-call-cc/2-logic.scrbl
 zh/01-call-cc/3-fixed-point.scrbl
 ```
 
-- 每个文件以 `#lang scribble/manual` 开头，接一行 `@(require "../../lib/acf.rkt")`（部的文件写 `"../lib/acf.rkt"`）。
+- 每个文件以 `#lang acf` 开头：它就是 `scribble/manual` 加上 `scribble/example` 和 `acf.rkt` 的写法（`lang/reader.rkt`、`lib/doc-lang.rkt`），不必再 `require`。要先 `raco pkg install --name acf`，`#lang acf` 才找得到。
+- 每行不超过 70 栏，中文字与全角标点算两栏。`#lang acf` 读入时去掉两个中文字之间的换行（`lib/cjk-join.rkt`），所以中文段落可以随处折行，排出来不多空格；中文与代码、英文之间的换行照常排成一个空格，不要这个空格时在行尾写 `@;`（它连同换行和下一行的缩进一起吃掉）。`racket tools/wrap-scrbl.rkt 文件…` 自动折行，`--check` 只检查；代码块里的长行要手工按 Racket 的缩进改。
 - 部的 `@title` 带 `#:style acf-style`；篇的 `@title` 带 `#:style chapter-style`，HTML 里每个小篇单独成页。
 - 小篇文件里，`@title` 是小篇名，`@section` 对应 .md 里的「#」，`@subsection` 对应「##」，`@subsubsection` 对应「###」。
-- 篇的引言写在篇的 `main.scrbl`，小篇之前。标题之间要有文字过渡：小篇标题、节标题后面先有一两句话，再接下一级标题。
+- 篇的引言写在篇的 `main.scrbl`，小篇之前；读者须知暂放系列前言 `zh/main.scrbl`。标题之间要有文字过渡：小篇标题、节标题后面先有一两句话，再接下一级标题。
 
 构建（Racket 用最新版，AI 的环境里先运行 `sh tools/setup-racket.sh`，见 CONTRIBUTING.md）：
 
@@ -42,39 +43,34 @@ scribble --text --dest build zh/main.scrbl # 纯文本，便于通读和比对
 | `@mm{…}` | 独立成行的公式；需要空开时写 `@hspace[4]` |
 | `@bold{…}`、`@italic{…}` | 加粗、斜体（不是术语时用） |
 | `@hyperlink["url"]{文字}` | 外部链接 |
-| `@margin-note{…}` | 旁注（原先的「注意」框），放在它所补充的段落前面 |
+| `@margin-note{…}` | 旁注（原先的「注意」框），放在它所补充的段落的上面 |
 | `@bold{练习}：…` | 练习，写成普通段落，不加框 |
 
 正文里的 `@`、不配对的 `{` `}` 要写成 `@"@"`、`@"{"`。
 
 ## 代码块
 
-四种块，内容一律原样写在 `|{` 与 `}|` 之间（这样 `@` 和花括号不用转义）：
+照 amb 的 `amb-examples`，例子写 Scribble 原生的 `@examples`，生成文档时真的运行，打印和结果由 Racket 给出（Noah 10/26）。每个小篇建自己的求值器（`typed/racket/no-check`），前文假定已有的定义用隐藏的例子补上：
 
 ```scribble
-@code-block|{
+@(define ev (make-acf-eval))
+@examples[#:eval ev #:hidden
+(define primitive-call/cc call/cc)
 (define (goto l) (l l))
-}|
+(define (label) (primitive-call/cc goto))]
 ```
 
-| 写法 | 对应 tools/REPL.md 的 |
+| 写法 | 用途 |
 | --- | --- |
-| `@code-block` | 定义块与示意块 |
-| `@repl-block` | 交互块（`> ` 开头） |
-| `@eq-block` | 等式块（顶层的 `=`，不执行） |
-| `@out-block` | 不带语言标记的输出块（不执行） |
+| `@examples[#:eval ev #:label #f #:no-prompt …]` | 定义：照文件的样子排，运行但不显示结果 |
+| `@examples[#:eval ev #:label #f …]` | 交互：带 `>` 提示符，下面是运行出来的打印与结果 |
+| `@racketblock[…]` | 只排版、不运行：推导与等式、示意程序、不会停的程序 |
+| `@out-block\|{…}\|` | 不带语言的输出（如矩阵），原样排 |
 
-核对配置写成块的关键字参数，含义与 .md 时代的 `blocks.rktd` 相同，不再按「节标题 + 首行」定位：
-
-```scribble
-@repl-block[#:skip "阴阳谜题无限输出，由 code.rkt 限时检查"]|{ … }|
-@code-block[#:reset #t]|{ … }|
-@repl-block[#:stdout '(exact "C1: enter\n")]|{ … }|
-```
-
-可用的有 `#:skip "原因"`、`#:reset #t`、`#:stdout '(exact|prefix "…")`、`#:value '(equal v)`、`#:error "正则"`、`#:exit 0`。排版时忽略。
-
-块的种类要和内容一致，核对工具会检查：`@repl-block` 以 `> ` 开始，`@eq-block` 有顶层的 `=`，`@code-block` 两者都不是。
+- 注释写 `(code:comment "…")`，空行写 `(code:blank)`；方括号里的 `;` 注释会被读取器丢掉。
+- 不会停的程序要显示输出时，用 `(eval:alts 显示的程序 实际运行的程序)`：显示原程序，运行一个只截取前几行、再打出 `...` 的版本（见第一篇第三小篇的 `show-lines`）。
+- 需要从头换一套定义时（例如以另一个原语为起点），另建一个求值器，不在同一个里覆盖。
+- 例子求值出错（没有用 `eval:error` 标明的）时，文档构建失败。
 
 ## 术语
 
@@ -117,9 +113,13 @@ scribble --text --dest build zh/main.scrbl # 纯文本，便于通读和比对
 
 ```sh
 export LC_ALL=C.UTF-8
-racket tools/run-blocks.rkt zh/01-call-cc/main.scrbl
+raco setup --pkgs acf                                  # 生成文档；例子出错就失败
+racket tools/run-blocks.rkt zh/01-call-cc/main.scrbl   # 同样实例化文档，并数一数各类代码块
 racket tools/cmp-forms.rkt zh/01-call-cc/main.scrbl zh/01-call-cc/code.rkt
+racket tools/wrap-scrbl.rkt --check zh/main.scrbl zh/01-call-cc/*.scrbl
 racket tools/cmp-conversion.rkt zh/0X-…/article.md zh/0X-…/main.scrbl   # 只在把一篇从 .md 转换过来时用
 ```
 
-两个核对工具从篇的 `main.scrbl` 出发，跟着 `@include-section` 读各小篇，用法和结果与 .md 时一样（`tools/scrbl-source.rkt`）。`cmp-conversion.rkt` 把 .scrbl 排成纯文本，逐段比对 .md 的正文文字，代码块逐字比对。
+- `run-blocks.rkt` 对 .scrbl 不再逐处比对手写的打印：例子都由 Scribble 运行，它只是把文档实例化一次，任何例子出错就报错。
+- `cmp-forms.rkt` 取 `@examples`（隐藏的除外）与 `@racketblock` 里的定义，核对它们都在 `code.rkt` 里（`tools/scrbl-source.rkt`，去掉 `code:comment`）。
+- `cmp-conversion.rkt` 把 .scrbl 排成纯文本，逐段比对 .md 的正文文字；代码按 S 表达式比对，交互块只比输入。

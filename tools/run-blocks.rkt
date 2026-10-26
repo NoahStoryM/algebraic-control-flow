@@ -2,10 +2,7 @@
 (require "scrbl-source.rkt")
 ;; 用法：LC_ALL=C.UTF-8 racket tools/run-blocks.rkt zh/0X-…/article.md [伪代码节标题片段 ...]
 ;;       LC_ALL=C.UTF-8 racket tools/run-blocks.rkt zh/0X-…/main.scrbl
-;; .scrbl：从篇的 main.scrbl 出发，跟着 @include-section 读各小篇（见 tools/scrbl-source.rkt）。
-;; 核对配置写在代码块的关键字参数里（#:skip "原因"、#:reset #t 等，含义同下面的 blocks.rktd），
-;; 按 @section 分节，同样自动加载篇目录下的 prelude.rkt。块的种类与内容要一致：
-;; @repl-block 以 > 开始，@eq-block 有顶层的 =，@code-block 两者都不是。
+;; .scrbl：从篇的 main.scrbl 出发，例子由 Scribble 在构建时求值（见 run-configured-scrbl）。
 ;; 若文章旁有 blocks.rktd，则按节标题与代码块开头唯一定位配置项，自动加载 prelude.rkt：
 ;;   (skip   (("# 节标题" "块的首行") "明确原因"))
 ;;   (reset  (("# 节标题" "块的首行"))) ; 从该块起重新建立命名空间并加载前置定义
@@ -226,25 +223,21 @@
                   (λ (kind b) (hash-ref entries (cons kind b) #f))
                   (build-path (path-only config-path) "prelude.rkt")))
 
-;; .scrbl：配置来自代码块的关键字参数。只执行 racket 代码块，@out-block 不执行。
+;; .scrbl：例子写成 @examples，构建文档时由 Scribble 求值（照 amb 的 amb-examples），
+;; 打印与结果都是实际运行出来的，不再手写、也就不必逐处比对。这里把文档实例化一次：
+;; 任何一个例子求值出错（没有用 eval:error 标明的），文档就构建失败，核对随之报错。
 (define (run-configured-scrbl)
-  (define all-sections
-    (for/list ([sec (scrbl-sections article-path)])
-      (cons (car sec)
-            (for/list ([sb (cdr sec)] #:unless (eq? (sblock-kind sb) 'out))
-              (define src (sblock-source sb))
-              (define b (block (car sec) (first-line src) src (sblock-opts sb)))
-              (define repl? (interactive? src))
-              (define equation? (and (not repl?) (memq '= (forms-of src)) #t))
-              (define expected (case (sblock-kind sb) [(repl) 'repl] [(eq) 'eq] [else 'code]))
-              (define actual (cond [repl? 'repl] [equation? 'eq] [else 'code]))
-              (unless (equal? expected actual)
-                (error 'scrbl "~a / ~a：写成了 ~a-block，内容却像 ~a-block"
-                       (car sec) (first-line src) expected actual))
-              b))))
-  (run-configured all-sections
-                  (λ (kind b) (hash-ref (block-opts b) kind #f))
-                  (build-path (path-only (path->complete-path article-path)) "prelude.rkt")))
+  (define sections (scrbl-sections article-path))
+  (define blocks (append* (map cdr sections)))
+  (define (count-kind k [pred (λ (b) #t)])
+    (count (λ (b) (and (eq? (sblock-kind b) k) (pred b))) blocks))
+  (define hidden? (λ (b) (hash-ref (sblock-opts b) '#:hidden #f)))
+  (parameterize ([current-namespace (make-base-namespace)]
+                 [current-output-port (open-output-nowhere)])
+    (dynamic-require (path->complete-path article-path) 'doc))
+  (printf "examples ~a 个（其中隐藏 ~a 个），racketblock ~a 个，输出块 ~a 个；例子全部求值通过\n"
+          (count-kind 'examples) (count-kind 'examples hidden?)
+          (count-kind 'racketblock) (count-kind 'out)))
 
 (define (run-configured all-sections setting* prelude)
   (define all-blocks (append* (map cdr all-sections)))
