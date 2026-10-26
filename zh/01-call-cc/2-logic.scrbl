@@ -188,13 +188,8 @@ Coq 这样的一致类型论用@defterm{正性}条件禁止这类定义。Racket
 
 这两种都只用 @racket[λ] 和函数调用，都
 是@defterm[#:en "constructive"]{构造性}的：结论里的每样东西，
-都由交到手里的东西做成。另外两种情形，函数就办不到了。
-
-@bold{什么都没有。}手里既没有实数，也没有@tech{延续}，
-却要交出两者之一：一个 @m{@ty{Real}}，或者一个 @m{¬@ty{Real}}，
-而且不要求调用者事先给出任何一支。这就是 @racket[(cc)]：
-第一次交出一个捕获来的@tech{延续}，有人把实数传回来以后，
-再交出那个实数。@m{p ∨ ¬p}，这是@tech{排中律}。
+都由交到手里的东西做成。另外两种情形，函数就办不到了，
+都要用到当前@tech{延续}。
 
 @bold{只有一个等@tech{延续}的东西。}手里没有实数，只有一个
 @m{¬¬@ty{Real}}，比如 DNI 包出来的 @racket[(λ (return) (return r))]，
@@ -204,10 +199,18 @@ Coq 这样的一致类型论用@defterm{正性}条件禁止这类定义。Racket
 @racket[mul] 交给 @racket[call/cc] 的那个 @racket[λ]
 包一层，@racket[(λ (return) (return (proc return)))] 也等一个
 @racket[return]，从不正常返回，里面并没有现成的实数，
-要算了才有。@racket[call/cc] 就做这件事：造出一个 @racket[return]
-交给它，再把交到 @racket[return] 手里的实数取回来。从 @m{¬¬p} 得到
-@m{p}，这是@tech{双重否定消除}。DNI 只是把值包起来，DNE 要拆开，
-却得先造一个@tech{延续}。
+要算了才有。@racket[call/cc] 就做这件事：把当前@tech{延续}交给它当作
+@racket[return]，实数交到 @racket[return] 手里，也就回到了调用
+@racket[call/cc] 的地方。从 @m{¬¬p} 得到 @m{p}，
+这是@tech{双重否定消除}。DNI 只是把值包起来，DNE 要拆开，
+却得先有一个@tech{延续}。
+
+@bold{什么都没有。}连等@tech{延续}的函数也没有，手里既没有实数，
+也没有@tech{延续}，却要交出两者之一：一个 @m{@ty{Real}}，或者一个
+@m{¬@ty{Real}}，而且不要求调用者事先给出任何一支。这就是
+@racket[(cc)]：它直接把当前@tech{延续}交出来；有人把实数传回来以后，
+再交出那个实数。@m{p ∨ ¬p}，这是@tech{排中律}。@racket[call/cc]
+把当前@tech{延续}交给一个函数，@racket[cc] 干脆把它交到我们手里。
 
 排成一张表：
 
@@ -377,8 +380,9 @@ Coq 这样的一致类型论用@defterm{正性}条件禁止这类定义。Racket
 @itemlist[
   @item{@tech{矛盾律}：第 @m{n+1} 层与第 @m{n} 层相遇，得到 @m{⊥}。}
   @item{DNI：加两层，从第 @m{n} 层升到第 @m{n+2} 层。}
-  @item{@tech{排中律}：交出相邻两层之一，第 @m{n} 层或第 @m{n+1} 层。}
-  @item{DNE：减两层，从第 @m{n+2} 层落到第 @m{n} 层。}]
+  @item{DNE：减两层，从第 @m{n+2} 层落到第 @m{n} 层。}
+  @item{@tech{排中律}：交出相邻两层之一，第 @m{n} 层或第 @m{n+1}
+  层。}]
 以 @m{q} 为底，@racket[triple-negation] 是从第 3 层减到第 1 层。
 它的做法是：手里第 0 层的 @racket[q] 和第 3 层的 @racket[kkkq]
 差三层，碰不上；把 @racket[q] 用 DNI 升到第 2 层的 @racket[kkq]，与
