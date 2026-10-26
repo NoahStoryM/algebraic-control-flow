@@ -3,15 +3,6 @@
 
 @title[#:tag "01:1-labels"]{从标签到 call/cc}
 
-大家好，
-
-之前我写过一篇@hyperlink["https://www.zhihu.com/question/21954238/answer/1892887870676653657"]{知乎回答}，探讨 @c{call/cc} 与 @c{goto}、@c{label} 之间的联系，并以此解析了阴阳谜题。这篇文章把那个思想实验完整地走一遍：以 C 语言风格的 @c{goto} 和 @c{label} 为原语，从零推导出 @c{call/cc}。
-
-@italic{（剧透：我写了一个 Racket 包 @hyperlink["https://docs.racket-lang.org/context/index.html"]{@c{control-context}}，提供了文中的这些构造，可以边读边玩！）}
-
-@notice{本系列所有代码均针对 Racket 的最新版本编写。如果你使用的是较旧版本（例如你的 Linux 发行版所打包的版本），部分绑定可能尚不存在。}
-
-
 @section{引言}
 
 @c{call/cc}（全称 @italic{call-with-current-continuation}，「以当前延续调用」）是 Scheme 传统中最强大、也最令人畏惧的控制操作符之一。人们常说它是「美化的 goto」，这个说法可以照字面检验。C 的 @c{goto} 只能跳到写死在代码里的标签。如果标签本身是一个值，可以存进变量、作为返回值，就成了@defterm[#:en "first-class labels"]{一等标签}。从一等标签出发，离 @c{call/cc} 还有多远？
