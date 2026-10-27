@@ -126,6 +126,7 @@
                (string-append "k" (number->string n)))))
     (apply-cont l l)))
 (define (apply-cont kl l)
+  (display #\tab)
   (display (list (cdr kl) (cdr l)))
   ((car kl) l))]
 
@@ -148,7 +149,7 @@
    (let ([kn+1 (cc)])
      (display #\*)
      (apply-cont kn kn+1)))
- (show-lines 5
+ (show-lines 4
   (λ ()
     (let ([kn (cc)])
       (displayln #\@)
