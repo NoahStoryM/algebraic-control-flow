@@ -24,9 +24,9 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 值。@racket[(goto l)] 跳回 @racket[l] 被创建的地方，让当初那次
 @racket[(label)] 调用再返回一次，交出的仍是这个
 @racket[l]。@racket[goto] 的返回类型是
-@defsym["⊥" "空类型，没有值；读作假"]@math{⊥}（bottom），
-一个没有值的类型：@racket[goto] 永远不会回到调用它的地方，
-控制转移到了别处。
+@defsym["⊥" "空类型，没有值；读作假"]@racket[⊥]（bottom），
+一个没有值的@defterm[#:en "empty type"]{空类型}：@racket[goto]
+永远不会回到调用它的地方，控制转移到了别处。
 
 「一等」说的是两件事。@tech{标签}和数、字符串一样是值，可以存进变量，
 传给函数，作为返回值。而且创建它的函数返回以后，
@@ -245,13 +245,12 @@ then 分支返回。两条路径都通过@tech{延续} @racket[result] 汇合，
 
 @racket[case-λ] 按参数的个数分情形定义函数，每个子句对应一种调用方式。
 一个子句也没有的 @racket[(case-λ)]，没有任何调用方式能与它匹配，
-这样的函数永远不会被调用。这正合 @math{⊥} 的情形：@math{⊥} 没有值，
-谁也交不出一个来给它。既然永远不会被调用，说它交出什么类型都不会错，
-所以 @racket[absurd] 的类型是 @math{⊥ → q}，@math{q} 任意。
-从空类型可以推出任何东西。
-
-把 @racket[absurd] 接在@tech{延续} @racket[k]
-后面，@racket[(compose absurd k)] 的类型就是 @math{p → q}。它的行为和
+这样的函数永远不会被调用。这正合 @racket[⊥] 的情形：@racket[⊥]
+没有值，谁也交不出一个来给它。既然永远不会被调用，
+说它交出什么类型都不会错，所以 @racket[absurd] 的类型是
+@math{⊥ → q}，@math{q} 任意。从@tech{空类型}可以推出任何东西。把
+@racket[absurd] 接在@tech{延续} @racket[k] 后
+面，@racket[(compose absurd k)] 的类型就是 @math{p → q}。它的行为和
 @racket[k] 完全一样：一调用，@racket[k] 就跳走，永远到不了
 @racket[absurd]。所以交给 @racket[proc] 的@tech{延续}也可以看作
 @math{p → q}，@racket[call/cc] 的类型随之变成：

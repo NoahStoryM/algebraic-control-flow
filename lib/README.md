@@ -12,6 +12,7 @@ zh/01-call-cc/main.scrbl      篇：标题，用 @include-section 串起各小�
 zh/01-call-cc/1-labels.scrbl  小篇
 zh/01-call-cc/2-logic.scrbl
 zh/01-call-cc/3-fixed-point.scrbl
+zh/01-call-cc/4-conclusion.scrbl 结论与未解的线索；附录也各自单独成文件
 ```
 
 - 每个文件以 `#lang acf/scribble` 开头（`scribble/lang/reader.rkt`、`lib/doc-lang.rkt`）：它就是 `scribble/manual` 加上 `scribble/example` 和 `acf.rkt` 的写法，不必再 `require`；`acf.rkt` 的 `defterm` 盖过 scribble/manual 自带的那个。要先 `raco pkg install --name acf`，`#lang acf/scribble` 才找得到。名字不用 `#lang acf`，把它留给以后（Noah 10/26）。
@@ -40,7 +41,7 @@ scribble --text --dest build zh/main.scrbl # 纯文本，便于通读和比对
 | `@c{#lang typed/racket/no-check}` | 读不成一个 S 表达式的代码片段，同样着色。含 `@` 时写 `@c\|{(k0 k3)@}\|` |
 | `@tt{goto}` | 不是 Racket 绑定的名字（如 C 的 `goto`），只用等宽字 |
 | `@math{¬p ∨ q}` | 行内公式（Scribble 自带），只用 Unicode；字母斜体。不另起别名（Noah 10/26） |
-| `@ty{Label}` | 公式里的类型名，排成正体：`@math{¬¬@ty{Byte} → @ty{Byte}}` |
+| `@ty{Label}` | 公式里的类型名，排成正体；单独出现时写 `@racket[Label]`：`@math{¬¬@ty{Byte} → @ty{Byte}}` |
 | `@mm{…}` | 独立成行的公式；需要空开时写 `@hspace[4]` |
 | `@bold{…}`、`@italic{…}` | 加粗、斜体（不是术语时用） |
 | `@hyperlink["url"]{文字}` | 外部链接 |
@@ -103,7 +104,7 @@ scribble --text --dest build zh/main.scrbl # 纯文本，便于通读和比对
 - 回指照正文原来的说法写，链到那一节：`@xref["01:compare"]{比较一节}`。整个第一部是一份文档，篇与篇之间也这样写。
 - 文献用 `scriblib/autobib`：在部的目录下放一个 `bib.rkt`，写 `(define-cite ~cite citet generate-bibliography #:style author+date-style)` 和各条 `make-bib`；正文 `@~cite[条目]` 或 `@citet[条目]`，部末 `@(generate-bibliography #:sec-title "参考文献")`。第一篇目前没有文献引用，所以还没建。
 - 其他文档里的术语：`@tech/refer{continuation}`（Racket Reference）、`@tech/guide{…}`（Racket Guide），写法取自 ctp。要引别的文档，在 `acf.rkt` 里用 `define-tech` 再定义一个。
-- 代码里的链接：代码块、`@racket` 和 `@c` 里的标识符按 `acf.rkt` 里 `for-label` 引入的库排版，着色并链接到它们的文档；`acf.rkt` 把这些绑定也交给引用它的文档，所以各 `.scrbl` 不用自己写 `for-label`。现在引入的有 `racket/base`、`racket/function`、`racket/control`、Typed Racket 的类型记号和 `control-context`（`label`、`goto`、`cc`……）。用到新的库，就在那里加。正文自己重新定义的名字也链接到库里对应的那一个（Noah 10/26）。
+- 代码里的链接：代码块、`@racket` 和 `@c` 里的标识符按 `acf.rkt` 里 `for-label` 引入的库排版，着色并链接到它们的文档；`acf.rkt` 把这些绑定也交给引用它的文档，所以各 `.scrbl` 不用自己写 `for-label`。现在引入的有 `racket/base`、`racket/function`、`racket/match`、`racket/control`、Typed Racket 的类型记号和 `control-context`（`label`、`goto`、`cc`……）。用到新的库，就在那里加。正文自己重新定义的名字也链接到库里对应的那一个（Noah 10/26）。
 - 不直接引用其他文档的正文（STYLE.md）。
 
 ## 注释

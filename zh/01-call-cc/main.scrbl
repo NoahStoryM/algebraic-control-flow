@@ -11,6 +11,9 @@
 可以存进变量、作为返回值，它就成了一等的值。从这样的@tech{标签}出发，
 离 @racket[call/cc] 还有多远？
 
+@table-of-contents[]
+
 @include-section["1-labels.scrbl"]
 @include-section["2-logic.scrbl"]
 @include-section["3-fixed-point.scrbl"]
+@include-section["4-conclusion.scrbl"]
