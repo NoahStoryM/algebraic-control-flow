@@ -127,26 +127,22 @@
    (list @elem{@racket[call/cc]} @elem{@math{(¬p → p) → p}} @elem{Clavius 律})
    (list @elem{@racket[absurd]} @elem{@math{⊥ → q}} @elem{爆炸原理}))]
 
-Clavius 律还有一个更一般的形式，Peirce 律
-@math{((p → q) → p) → p}，@racket[call/cc] 也有这个类型。交给
-@racket[proc] 的@tech{延续} @racket[k] 永不返回，后面接上
-@racket[absurd]，@racket[(compose absurd k)] 的行为和 @racket[k]
-一样，类型却是 @math{p → q}。
+@section[#:tag "01:other-types"]{@racket[call/cc] 的另外两种类型}
 
-这几条定律分两种。爆炸原理在直觉主义逻辑里也成立，@racket[absurd]
-只用一个空的 @racket[case-λ] 就写了出来。排中律、Clavius 律和 Peirce
-律只在经典逻辑中成立，只承认构造性证明的逻辑一般证不出它们；
-我们的操作符也正是靠捕获@tech{延续}才实现它们的。
+表里 @racket[call/cc] 只占一行。换个角度看它的签名，
+还能读出另外两种类型，各对上一条经典定律。
 
-@section[#:tag "01:invisible"]{那条看不见的延续}
+第一种放宽交给 @racket[proc] 的@tech{延续}。@tech{延续} @racket[k]
+永不返回，后面接上 @racket[absurd]，@racket[(compose absurd k)]
+的行为和 @racket[k] 一样，类型却是 @math{p → q}。所以 @racket[call/cc]
+也有类型 @math{((p → q) → p) → p}，这是 Peirce 律；令 @math{q = ⊥}，
+就回到 Clavius 律。
 
-逻辑课本里还有一条经典定律，@math{¬¬p → p}：一个命题的否定的否定为真，
-它自己就为真。@racket[call/cc] 也有这个类型吗？
-
-@racket[call/cc] 的签名说，交给它的函数可以正常返回一个 @math{p}。
-最后那版 @racket[mul] 里的 @racket[λ] 就是这样，没遇到零，
-乘积是正常返回的。而 @math{¬¬p} 是一个只等@tech{延续}、
-从不正常返回的函数。两者其实是一回事：下面两个表达式行为相同。
+第二种收紧交给 @racket[call/cc] 的函数。签名说，
+这个函数可以正常返回一个 @math{p}，最后那版 @racket[mul] 里的
+@racket[λ] 就是这样，没遇到零，乘积是正常返回的。
+可它也可以从不正常返回、只等@tech{延续}。两者其实是一回事：
+下面两个表达式行为相同。
 
 @racketblock[
 (call/cc proc)
@@ -157,14 +153,17 @@ Clavius 律还有一个更一般的形式，Peirce 律
 @racket[call/cc] 做的最后一件事，@racket[proc] 正常返回时，
 返回值也直接交到那里。所以 @racket[proc] 的结果不论经 @racket[k]
 显式交出，还是正常返回，都走到同一个出口；正常返回时隐含经过的，
-就是这条看不见的@tech{延续}。
+就是一条看不见的@tech{延续}。包了一层的 @racket[(λ (k) (k (proc k)))]
+从不正常返回，类型是 @math{(p → ⊥) → ⊥}，即 @math{¬¬p}。
+照这个读法，@racket[call/cc] 的类型是 @math{¬¬p → p}：
+交给它一个等@tech{延续}的计算，它从中把结果取出来。
+这条定律叫@defterm[#:en "Double Negation Elimination" #:abbr "DNE"]{双
+重否定消除}。
 
-包了一层的 @racket[(λ (k) (k (proc k)))] 从不正常返回，类型是
-@math{(p → ⊥) → ⊥}，即 @math{¬¬p}。照这个读法，@racket[call/cc]
-的类型就是 @math{¬¬p → p}：交给它一个等@tech{延续}的计算，
-它从中把结果取出来。这条定律
-叫@defterm[#:en "Double Negation Elimination" #:abbr "DNE"]{双重否定消
-除}，也只在经典逻辑中成立。
+这几条定律分两种。爆炸原理在直觉主义逻辑里也成立，@racket[absurd]
+只用一个空的 @racket[case-λ] 就写了出来。排中律、Clavius 律、Peirce
+律和 DNE 只在经典逻辑中成立，只承认构造性证明的逻辑一般证不出它们；
+我们的操作符也正是靠捕获@tech{延续}才实现它们的。
 
 @section[#:tag "01:where-fails"]{对应关系在哪里失效}
 
@@ -234,8 +233,7 @@ Clavius 律还有一个更一般的形式，Peirce 律
 只用函数，这一步做不到，要靠 @racket[call/cc]：
 它把当前@tech{延续}交给这个函数当作 @racket[return]，实数交到
 @racket[return] 手里，也就回到了调用 @racket[call/cc] 的地方。
-照@xref["01:invisible"]{「那条看不见的延续」}的读法，这正是
-@math{¬¬p → p}。
+照@xref["01:other-types"]{第二种类型}的读法，这正是 @math{¬¬p → p}。
 
 再进一步，连等@tech{延续}的函数也不要，直接把当前@tech{延续}拿到手里。
 这就是 @racket[(cc)]：它先交出当前@tech{延续}，等有人把实数传回来，
