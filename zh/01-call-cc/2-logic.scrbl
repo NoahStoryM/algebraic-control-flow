@@ -359,11 +359,6 @@
 这条定律叫@defterm[#:en "law of triple negation"]{三重否定律}，
 是一条直觉主义定理。
 
-要小心的是，类型相同不等于行为相同。把 @racket[call/cc] 用在 @math{¬q}
-上，得到的东西也有 @math{¬¬¬q → ¬q} 的类型，
-可它会当场运行交给它的计算；@racket[triple-negation] 却要等 @racket[q]
-交来，才去调用 @racket[kkkq]。两者在类型上可以互换，在程序里不一定。
-
 @subsubsection[#:tag "01:layers"]{数一数层数}
 
 @racket[triple-negation] 里的几个名
