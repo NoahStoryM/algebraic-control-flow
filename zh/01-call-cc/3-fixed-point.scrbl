@@ -110,6 +110,8 @@
 每一轮都比上一轮多打印一个 @racket[*]。多出来的那个 @racket[*]，
 记在了哪里？
 
+@subsubsection[#:tag "01:trace"]{追踪谜题}
+
 给每个@tech{延续}一个唯一的名字
 （@racket[k0]、@racket[k1]、@racket[k2]……），让每次
 @racket[apply-cont] 都记录哪个@tech{延续}被应用于哪个：
@@ -132,13 +134,15 @@
 @racket[let/cc]、@racket[call/cc]、@racket[cc] 是互相定义的，
 插桩时需要一个现成的起点。
 
-这里的@tech{延续}是函数和名字的 @racket[cons] 对，不能再直接调用。
-「向@tech{延续}传递一个值」也就不再只是函数调用：@racket[apply-cont]
-先拆开这个对，记下名字，再调用里面的函数。@racket[cc]
-构造@tech{延续}，@racket[apply-cont] 消费@tech{延续}。插桩版的
-@racket[cc] 在交回新@tech{延续}时，先把它交给它自己，
-所以追踪里每个@tech{延续}第一次出现都是 @racket[(kn kn)] 这样一项。
-谜题改用这两个函数来写，打印照原版：
+现在每个@tech{延续}都是一个函数和一个名字配成的 @racket[cons] 对，
+不能直接调用了，要经过 @racket[apply-cont]：它先印出谁跳向谁，
+再拆开这个对，调用里面的函数。@racket[cc] 造出带名字的@tech{延
+续}，@racket[apply-cont] 用掉它。插桩版的 @racket[cc]
+交出新@tech{延续}之前，先拿它调用它自己，所以每个@tech{延续}第一次出
+现，都是 @racket[(kn kn)] 这样一项。
+
+把谜题里的 @racket[label] 换成 @racket[cc]，调用换成
+@racket[apply-cont]，打印照旧：
 
 @examples[#:eval ev #:label #f
 (eval:alts
@@ -155,20 +159,23 @@
         (display #\*)
         (apply-cont kn kn+1))))))]
 
-追踪的每一项是一对名字：前一个是被跳向的目标，后一个是交给它的参数。
-名字 @racket[kn]、@racket[kn+1] 只是程序里的占位；追踪里出现的
-@racket[k0]、@racket[k1]、@racket[k2]……才是具体的@tech{延
-续}。@racket[k0] 由第一处 @racket[(cc)] 捕获，而且只捕获这一次；之后的
-@racket[k1]、@racket[k2]……都由第二处捕获。
+每一项是一对名字，前一个是被跳向的目标，后一个是交给它的参数。程序里的
+@racket[kn]、@racket[kn+1] 只是变量名；印出来的
+@racket[k0]、@racket[k1]、@racket[k2]……才是一条条具体的@tech{延
+续}。@racket[k0] 由第一处 @racket[(cc)] 捕获，
+只有这一条；@racket[k1]、@racket[k2]……都由第二处捕获。
 
-印出来的追踪排成了一个矩阵。每一项跳转都印在它打印的字符前面，
-所以每一行从左往右，就是执行的先后；把名字去掉，
-剩下的正是原版谜题的那一行。同一行里，交出去的参数始终是同一个：第
-@math{n} 行都是 @racket[kn]。被跳向的目标却从最新的 @racket[kn] 开始，
-一个比一个旧，一路退到 @racket[k0]，打印出 @math{n} 个 @racket[*]，
-最后在 @racket[k0] 打印一个 @c|{@}|。
+@subsubsection[#:tag "01:rules"]{读出规律}
 
-从这个矩阵读出三条规律：
+这份输出排成了一个矩阵。每一项都印在它打印的字符前面，
+所以每一行从左往右读，就是执行的先后；去掉名字，
+剩下的正是原版谜题的一行。再看名字：同一行里，
+交出去的参数始终是同一个，第 @math{n} 行都是 @racket[kn]；
+被跳向的目标从最新的 @racket[kn] 开始，一个比一个旧，一路退到
+@racket[k0]。一路上每跳一次打印一个 @racket[*]，到了 @racket[k0] 打印
+@c|{@}|。
+
+由此读出三条规律：
 
 @itemlist[#:style 'ordered
   @item{@bold{@racket[k0] 打印 @c|{@}|} 并捕获一个新的@tech{延续}
