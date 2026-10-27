@@ -231,6 +231,8 @@
 再看 DNI。给一个值 @racket[v]，要交出一个 @math{¬¬p}，也就是一个收下
 @math{¬p}、结果为 @math{⊥} 的函数。理由和刚才一样，只能写成
 @racket[(λ (kv) (kv v))]。做的还是调用，只是值先到，@tech{延续}后到。
+从 @racket[v] 得到这个函数，就是 @racket[(curryr apply-cont)]：先给定
+@racket[apply-cont] 的第二个参数。
 
 两个程序用到的@tech{延续}都是交进来的。这不是巧合：
 @xref["01:from-bottom"]{「从 ⊥ 出发」}说过，对非空的 @math{p}，只用
@@ -262,7 +264,7 @@
          @elem{@bold{@tech{矛盾律}}：@racket[apply-cont]}
          @elem{@bold{@tech{排中律}}：@racket[cc]})
    (list @elem{@math{p} 与 @math{¬¬p}}
-         @elem{@bold{DNI}：@racket[(λ (kv) (kv v))]}
+         @elem{@bold{DNI}：@racket[(curryr apply-cont)]}
          @elem{@bold{DNE}：@racket[call/cc]}))]
 
 表里每一列的上下两格是一回事。左边一列只差参数次序，@tech{矛盾律}和
