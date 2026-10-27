@@ -255,8 +255,10 @@ then 分支返回。两条路径都通过@tech{延续} @racket[result] 汇合，
 = (goto k)
 = (k k)]
 
-@racket[goto] 把 @racket[k] 交给 @racket[k] 自己，于是
-@racket[(label)] 返回的就是 @racket[k]：这个@tech{标签}就是它被创建处
+@racket[(call/cc goto)] 拿捕获的@tech{延续}当@tech{标签}，原地跳一次，
+又回到这里。@racket[goto] 并不正常返回，返回类型是 @racket[⊥] 也无妨：
+它把 @racket[k] 交给 @racket[k] 自己，@racket[(label)] 的结果经
+@racket[k] 交回来，就是 @racket[k] 本身。这个@tech{标签}就是它被创建处
 的@tech{延续}。以后 @racket[(goto l)] 再调用 @racket[(l l)]，
 跳回同一处，@racket[(label)] 又一次返回 @racket[l]。
 这正是开头为一等@tech{标签}描述的行为。
