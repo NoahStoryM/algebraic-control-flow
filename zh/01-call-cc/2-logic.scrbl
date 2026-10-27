@@ -61,14 +61,15 @@
 @examples[#:eval ev #:label #f #:no-prompt
 (define-type (¬ p) (→ p ⊥))]
 
-非空意味着为真，空意味着为假。为一个类型写出表达式，
-就是证明对应的命题。
+在这个纯函数的范围内，不依赖额外假设，写出一个类型为 @math{p}
+的表达式，就给出了 @math{p} 的证明；写出一个 @math{p → ⊥}，
+就给出了它的@tech{否定}的证明。
 
 @section[#:tag "01:types-to-logic"]{从类型到逻辑}
 
-「非空即真」的读法能推广到我们用过的其他类型构造子吗？假设有两个表达式
-@math{x} 和 @math{y}，类型分别是 @math{p} 和 @math{q}。
-从这个设定出发，我们可以构造出：
+「写出表达式就是证明」的读法能推广到我们用过的其他类型构造子吗？
+假设有两个表达式 @math{x} 和 @math{y}，类型分别是 @math{p} 和
+@math{q}。从这个设定出发，我们可以构造出：
 
 @itemlist[#:style 'ordered
   @item{@math{p → q} 类型的表达式 @racket[(λ (x) y)]，@math{y}
@@ -175,8 +176,8 @@
 类似地，内置的 @racket[exit] 的类型是
 @math{@ty{Byte} → ⊥ = ¬@ty{Byte}}。借助 @racket[exit]，我们可以为任意
 @math{p} 构造 @math{¬p}：@racket[(λ (_) (exit 0))]。@racket[raise]
-抛出异常，也永不返回，@racket[(λ (_) (raise 'oops))] 同样是一个
-@math{¬p}。任何真命题的@tech{否定}都变成了非空。
+抛出异常，也不正常返回到抛出的位置，@racket[(λ (_) (raise 'oops))]
+同样是一个 @math{¬p}。任何真命题的@tech{否定}都变成了非空。
 
 还有第三种失效。用 @math{¬} 改写，@math{@ty{Label} = @ty{Label} → ⊥}
 就是 @math{@ty{Label} = ¬@ty{Label}}：一个自身@tech{否定}的类型，
@@ -196,11 +197,11 @@
 本应为空的@tech{否定}类型有了值，本应非法的自指类型变得合法。
 不能把任意 Racket 表达式都当作证明。下面读出逻辑定律时，
 只看这里介绍的类型构造及其规则，把 @racket[cc] 和 @racket[call/cc]
-当作控制操作；无限循环、内置的 @racket[exit]、@racket[raise]
-和自指类型，不纳入这个读法。在这个范围内，程序的类型推导对应逻辑证明，
-程序用到的自由变量对应证明中的假设；加入控制操作，
-就多了@tech{排中律}、DNE 这样的推理规则。不过，类型只说明证明了什么，
-不说明程序怎样运行；由类型读出程序的行为，只是一种指引。
+当作控制操作；无限循环、内置的 @racket[exit]、抛出异常和自指类型，
+不纳入这个读法。在这个范围内，程序的类型推导对应逻辑证明，
+程序用到的自由变量对应证明中的假设；没有未解除的假设时，
+得到的才是相应命题的无条件证明。加入控制操作，就多了@tech{排中律}、DNE
+这样的推理规则。
 
 @section[#:tag "01:watershed"]{分水岭}
 
@@ -357,10 +358,13 @@
 所以程序是一个 @math{¬¬@ty{Byte}}：它等着计算终结处的那条@tech{延续}。
 多数语言本身只提供 @racket[exit]，不提供 @racket[call/cc]；有了
 @racket[call/cc]，没有 @racket[exit] 也能像上面那样模拟出来。站在 OS
-那一边看，启动程序时，这条@tech{延续}已经在那里了：OS 把 @racket[exit]
-交给程序，再收下程序交来的退出码，从 @math{¬¬@ty{Byte}} 得到
-@racket[Byte]，正是@xref["01:watershed"]{「分水岭」}里的 DNE。
-这条@tech{延续}由 OS 交来，语言里什么也不用捕获。
+那一边看，启动程序时，退出通道已经在那里了：OS 把 @racket[exit]
+交给程序，程序把退出码交给 @racket[exit]，OS 随后接管。对程序内部，
+调用 @racket[exit] 不再返回；对外部，退出码已经交到手里。
+把计算运行起来、在出口接收结果的整个过程，对
+应@xref["01:watershed"]{「分水岭」}里的 DNE：
+从等待@tech{延续}的计算中取得结果。这条@tech{延续}由 OS 交来，
+语言里什么也不用捕获。
 
 @subsection[#:tag "01:neg-q"]{代入 @math{¬q}}
 
