@@ -2,7 +2,7 @@
 
 @title[#:tag "01:3-fixed-point"]{否定的不动点}
 
-还有一个类型我们早就认识，却一直没拿来代入：@math{@ty{Label}}。
+还有一个类型我们早就认识，却一直没拿来代入：@racket[Label]。
 它是它自己的否定，层数还数得下去吗？
 
 @(define ev (make-acf-eval))
@@ -26,10 +26,10 @@
           [(thread-dead? t) (display s)]
           [else (sleep 0.01) (loop)])))]
 
-@section[#:tag "01:label-sub"]{代入 @math{@ty{Label}}}
+@section[#:tag "01:label-sub"]{代入 @racket[Label]}
 
-把 @math{@ty{Label}} 代入@tech{排中律} @math{p ∨ ¬p}。
-按定义，@math{¬@ty{Label}} 就是 @math{@ty{Label}}，
+把 @racket[Label] 代入@tech{排中律} @math{p ∨ ¬p}。
+按定义，@math{¬@ty{Label}} 就是 @racket[Label]，
 两个分支成了同一个类型：
 
 @mm{@ty{Label} ∨ ¬@ty{Label} = @ty{Label} ∨ @ty{Label}}
@@ -45,12 +45,12 @@
 
 既然两支是同一个类型，也就不必再分。@racket[mul] 当初要用
 @racket[real?] 分辨 @racket[(cc)] 交出的是值还是@tech{延续}；在
-@math{@ty{Label}} 上，不管交出哪一支，拿到的都是一个@tech{标签}，
+@racket[Label] 上，不管交出哪一支，拿到的都是一个@tech{标签}，
 既能当值存着，也能当@tech{延续}去调
 用。@xref["01:label-from-call-cc"]{「从 call/cc 定义标签」}里那句
 @racket[(define (label) (cc))]，就是这样一个不分支的 @racket[cc]。
 
-@math{@ty{Label}} 是@defterm{否定的不动点}：它的反驳就是它自己。连
+@racket[Label] 是@defterm{否定的不动点}：它的反驳就是它自己。连
 @racket[goto] 也是一个@tech{标签}：
 
 @mm{@ty{Label} → ⊥ = ¬@ty{Label} = @ty{Label}}
@@ -60,7 +60,7 @@
 @racketblock[
 (goto (label))]
 
-但既然每个 @math{@ty{Label}} 同时也是一个合法的 @math{¬@ty{Label}}，
+但既然每个 @racket[Label] 同时也是一个合法的 @math{¬@ty{Label}}，
 没有什么能阻止我们把@italic{任意}@tech{标签}传给任何其他@tech{标签}：
 
 @racketblock[
@@ -70,17 +70,16 @@
 同一个类型，既能放在参数的位置，也能放在它的否定的位置。
 层数分不清这两个角色了。这不是说@tech{标签}有了一个无穷大的层号，
 而是根本没法给它一个与否定相容的有限层号。可以把它想成一座无穷高的否定
-塔，每一层都是同一个 @math{@ty{Label}}；计数在这里失效了。
+塔，每一层都是同一个 @racket[Label]；计数在这里失效了。
 
 代价是，「有类型的程序就是证明」这个读法也失效了。有了
-@math{@ty{Label}}，只用 @racket[λ] 和函数调用的有类型程序，
-也不再保证终止：@racket[goto] 是一个 @math{@ty{Label}}，
-把它交给它自己，
+@racket[Label]，只用 @racket[λ] 和函数调用的有类型程序，
+也不再保证终止：@racket[goto] 是一个 @racket[Label]，把它交给它自己，
 
 @racketblock[
 (goto goto)]
 
-类型是 @math{⊥}，却永远算不完。这并不是说用到 @math{@ty{Label}}
+类型是 @math{⊥}，却永远算不完。这并不是说用到 @racket[Label]
 的程序都会循环。一个程序停不停，要看它自己怎样调用。
 
 @subsection[#:tag "01:yin-yang"]{阴阳谜题}

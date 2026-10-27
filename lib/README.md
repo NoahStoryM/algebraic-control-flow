@@ -41,7 +41,7 @@ scribble --text --dest build zh/main.scrbl # 纯文本，便于通读和比对
 | `@c{#lang typed/racket/no-check}` | 读不成一个 S 表达式的代码片段，同样着色。含 `@` 时写 `@c\|{(k0 k3)@}\|` |
 | `@tt{goto}` | 不是 Racket 绑定的名字（如 C 的 `goto`），只用等宽字 |
 | `@math{¬p ∨ q}` | 行内公式（Scribble 自带），只用 Unicode；字母斜体。不另起别名（Noah 10/26） |
-| `@ty{Label}` | 公式里的类型名，排成正体：`@math{¬¬@ty{Byte} → @ty{Byte}}` |
+| `@ty{Label}` | 公式里的类型名，排成正体；单独出现时写 `@racket[Label]`：`@math{¬¬@ty{Byte} → @ty{Byte}}` |
 | `@mm{…}` | 独立成行的公式；需要空开时写 `@hspace[4]` |
 | `@bold{…}`、`@italic{…}` | 加粗、斜体（不是术语时用） |
 | `@hyperlink["url"]{文字}` | 外部链接 |

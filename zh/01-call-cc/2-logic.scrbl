@@ -145,7 +145,7 @@
 它无法被一致地赋予真假值。一个类型在自己的定义里出现在否定的位置
 （@math{→} 的左侧），这样的递归类型没法当作一致的命题来解读，所以 Agda
 和 Coq 这样的一致类型论用@defterm{正性}条件禁止这类定义。Racket
-没有这个限制。悖论是合法的，我们可以构造 @math{@ty{Label}} 类型的值。
+没有这个限制。悖论是合法的，我们可以构造 @racket[Label] 类型的值。
 
 每种情况下，严格的 Curry-Howard 解读都失效了：
 本应为空的@tech{否定}类型有了值，本应非法的自指类型变得合法。
@@ -262,18 +262,17 @@
 
 @subsection[#:tag "01:program-type"]{程序的类型}
 
-先代入最朴素的一个：退出码的类型 @math{@ty{Byte}}，得到
+先代入最朴素的一个：退出码的类型 @racket[Byte]，得到
 @math{¬¬@ty{Byte} → @ty{Byte}}。光看类型，这个实例很容易
 写：@racket[(λ (kk) 0)] 就是，什么也不捕获。
-逻辑上也不奇怪：@math{@ty{Byte}} 有值，是真命题，
-从任何前提推出它都成立，丢掉前提、直接拿出一个 @math{@ty{Byte}}
-就是证明。
+逻辑上也不奇怪：@racket[Byte] 有值，是真命题，从任何前提推出它都成立，
+丢掉前提、直接拿出一个 @racket[Byte] 就是证明。
 
-可逻辑只问命题真不真，不问拿出的是哪一个 @math{@ty{Byte}}；@racket[0]
+可逻辑只问命题真不真，不问拿出的是哪一个 @racket[Byte]；@racket[0]
 和程序算出来的退出码，在它眼里没有分别。我们却在
 乎。@racket[(λ (kk) 0)] 根本不理会交给它的那个 @math{¬¬@ty{Byte}}；
 我们要的实例，得真把那个 @math{¬¬@ty{Byte}} 跑起来，交出它给出的那个
-@math{@ty{Byte}}。这是运行的行为，类型里看不出来。
+@racket[Byte]。这是运行的行为，类型里看不出来。
 
 什么样的东西是一个 @math{¬¬@ty{Byte}}？最常见的，就是一个程序：
 它算出一个退出码，交给 @racket[exit]，然后结束。要看清 @racket[exit]
@@ -307,7 +306,7 @@
 
 所以程序是一个 @math{¬¬@ty{Byte}}：它等着计算终结处的那条@tech{延续}。
 运行它，就是把这条@tech{延续}交给它，取回退出码，从 @math{¬¬@ty{Byte}}
-得到 @math{@ty{Byte}}，正是@xref["01:watershed"]{「分水岭」}里的 DNE。
+得到 @racket[Byte]，正是@xref["01:watershed"]{「分水岭」}里的 DNE。
 
 这也是@xref["01:watershed"]{「分水岭」}末尾那个问题的一个回答。
 在语言里模拟 @racket[exit]，得靠 @racket[call/cc]
@@ -315,7 +314,7 @@
 计算终结处的当前@tech{延续}已经在那里了，就是 @racket[exit]，
 直接交给程序就行，不必再用 @racket[cc] 或 @racket[call/cc] 去捕获。
 程序把退出码交给 @racket[exit]，这次调用不会回到程序里的当前位置，OS
-接到的就是退出码本身。从 @math{¬¬@ty{Byte}} 到 @math{@ty{Byte}}
+接到的就是退出码本身。从 @math{¬¬@ty{Byte}} 到 @racket[Byte]
 的这一步，在语言的边界上完成：运行一个程序，就是一次
 @math{¬¬@ty{Byte} → @ty{Byte}}。
 
@@ -375,11 +374,11 @@
 固定一个类型 @math{A}，把 @math{A} 本身算作第 0 层，@math{¬A} 算作第 1
 层，@math{¬¬A} 算作第 2 层，依此类推：多一层的类型，
 正是「接收少一层的值、结果为 @math{⊥}」的函数类型。@math{A}
-可以是任何类型，甚至可以是 @math{@ty{Label}}；
-只是谈论同一座否定塔的时候，@math{A} 要固定下来，只数它外面包了几层，
-不去拆它的内部。名字也替我们数：一个值叫 @racket[v]，
-等它的@tech{延续}就叫 @racket[kv]，等 @racket[kv] 的就叫
-@racket[kkv]，名字里有几个 @racket[k]，就比 @racket[v] 多几层。
+可以是任何类型，甚至可以是 @racket[Label]；只是谈论同一座否定塔的时
+候，@math{A} 要固定下来，只数它外面包了几层，不去拆它的内部。
+名字也替我们数：一个值叫 @racket[v]，等它的@tech{延续}就叫
+@racket[kv]，等 @racket[kv] 的就叫 @racket[kkv]，名字里有几个
+@racket[k]，就比 @racket[v] 多几层。
 
 @xref["01:watershed"]{「分水岭」}的四种情形，用层数说就是：
 

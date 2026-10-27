@@ -47,11 +47,11 @@
 (require (for-label racket/base
                     racket/function
                     racket/control
-                    (only-in typed/racket/base : ∀ ∪ U → case→ define-type Values)
+                    (only-in typed/racket/base : ∀ ∪ U → case→ define-type Values Byte Real)
                     control/context))
 ;; 同样的绑定也交给引用本模块的文档，正文里的 @racket[call/cc] 等因此能直接链接。
 (provide (for-label (all-from-out racket/base racket/function racket/control control/context)
-                    : ∀ ∪ U → case→ define-type Values))
+                    : ∀ ∪ U → case→ define-type Values Byte Real))
 
 (define label-context (quote-syntax here))
 
