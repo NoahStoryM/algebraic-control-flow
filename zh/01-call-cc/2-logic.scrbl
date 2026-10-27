@@ -379,17 +379,14 @@
 等一个 @racket[kq]，正是 @math{¬¬q}，交给 @racket[kkkq]。只有
 @racket[λ] 和函数调用，什么也没有捕获。
 
-试一试。先介绍一个写法：@racket[let/cc] 是 @racket[call/cc] 的简写，
-
-@racketblock[
-(define-syntax-rule (let/cc k body ...)
-  (call/cc (λ (k) body ...)))]
-
-@racket[(let/cc k body ...)] 就是
+@margin-note{@racket[let/cc] 是 @racket[call/cc]
+的简写：@racket[(let/cc k body ...)] 就是
 @racket[(call/cc (λ (k) body ...))]，给当前@tech{延续}起个名字
-@racket[k]。用它拿到一条真正的@tech{延续} @racket[kq]，照 DNI
-的写法包成一个 @racket[kkkq]，交给 @racket[triple-negation] 取回一个
-@math{¬q}，再把 @racket[q] 交给它：
+@racket[k]。}
+
+试一试。用 @racket[let/cc] 拿到一条真正的@tech{延续} @racket[kq]，照
+DNI 的写法包成一个 @racket[kkkq]，交给 @racket[triple-negation]
+取回一个 @math{¬q}，再把 @racket[q] 交给它：
 
 @examples[#:eval ev #:label #f
 (define q 'hello)
