@@ -172,30 +172,18 @@
 跳向一条@tech{延续}，就是调用它；捕获一条新@tech{延续}，
 就是定义一个新函数。
 
-@racketblock[
+@examples[#:eval ev #:label #f #:no-prompt
 (define (k0 kn)
   (displayln #\@)
   (define (kn+1 km)
     (display #\*)
     (kn km))
-  (kn+1 kn+1))
-(k0 k0)]
+  (kn+1 kn+1))]
 
-@racket[k0] 打印 @c|{@}|，定义一个新函数 @racket[kn+1] 打印 @racket[*]
-并委托给 @racket[kn]，然后用自身调用 @racket[kn+1]：
+@examples[#:eval ev #:label #f
+(eval:alts (k0 k0) (show-lines 5 (λ () (k0 k0))))]
 
-@itemlist[
-  @item{第一次调用时，@c{kn = k0}。打印 @c|{@}| 后，创建一个新闭包
-  @racket[kn+1]（我们叫它 @racket[k1]），它打印 @racket[*] 并委托给
-  @racket[k0]。然后 @racket[(kn+1 kn+1)] 用自身调用
-  @racket[k1]：@racket[k1] 打印 @racket[*] 并调用 @racket[(k0 k1)]。}
-  @item{现在回到 @racket[k0]，此时 @c{kn = k1}：打印 @c|{@}|，
-  创建另一个新闭包 @racket[k2]，它打印 @racket[*] 并委托给
-  @racket[k1]，然后调用 @racket[(k2 k2)]。@racket[k2] 打印 @racket[*]
-  并调用 @racket[(k1 k2)]；@racket[k1] 打印 @racket[*] 并调用
-  @racket[(k0 k2)]。}
-  @item{以此类推：每次经过 @racket[k0] 都给委托链多加一环。}]
-运行它，输出和前面一样。
+输出和原版谜题一模一样。
 
 这段代码里没有 @racket[label]、@racket[cc]，也没有 @racket[set!]。
 原来由 @racket[cc] 捕获的@tech{延续}，现在都成了显式传递的参
