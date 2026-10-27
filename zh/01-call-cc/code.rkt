@@ -223,11 +223,11 @@
       (define ln (cons kn n))
       (apply-cont ln ln)))
 
-  (define (apply-cont lm ln)
-    (match-define (cons km m) lm)
+  (define (apply-cont ln lm)
     (match-define (cons kn n) ln)
-    (display (format "  (k~a k~a)" m n))
-    (km ln))
+    (match-define (cons km m) lm)
+    (display (format "  (k~a k~a)" n m))
+    (kn lm))
   (provide (all-defined-out))
 )
 
@@ -235,9 +235,9 @@
 
   (define (k0 kn)
     (displayln #\@)
-    (define (kn+1 k)
+    (define (kn+1 km)
       (display #\*)
-      (kn k))
+      (kn km))
     (kn+1 kn+1))
   (provide (all-defined-out))
 )

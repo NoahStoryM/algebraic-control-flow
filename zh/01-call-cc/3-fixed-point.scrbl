@@ -126,12 +126,11 @@
 调用它的办法得我们自己规定。@racket[apply-cont] 拆开两个对，
 印出谁跳向谁，再调用里面的函数：
 @examples[#:eval ev #:label #f #:no-prompt
-(define (apply-cont lm ln)
-  (match-define (cons km m) lm)
+(define (apply-cont ln lm)
   (match-define (cons kn n) ln)
-  (display (format "  (k~a k~a)" m n))
-  (km ln))]
-插桩版的 @racket[cc] 交出新@tech{延续}之前，先用 @racket[apply-cont]
+  (match-define (cons km m) lm)
+  (display (format "  (k~a k~a)" n m))
+  (kn lm))]插桩版的 @racket[cc] 交出新@tech{延续}之前，先用 @racket[apply-cont]
 拿它调用它自己，所以每个@tech{延续}第一次出现，都是 @racket[(kn kn)]
 这样一项。
 
@@ -161,40 +160,24 @@
 
 @subsubsection[#:tag "01:rules"]{读出规律}
 
-挑一行来读，比如最后一行：@c|{(k3 k3)* (k2 k3)* (k1 k3)* (k0 k3)@}|。
-名字印在它打印的字符前面，从左往右就是执行的先后。@racket[k3]
-刚被捕获，先拿它调用它自己，打印一个 @racket[*]；接着跳向
-@racket[k2]，打印 @racket[*]；再跳向 @racket[k1]，打印 @racket[*]；
-最后跳向 @racket[k0]，打印 @c|{@}|。一路交出去的参数都是 @racket[k3]。
-去掉名字，剩下 @c|{***@}|，正是原版谜题的第四行。
+规律就在每一对名字里。右边是交出去的参数，总是最近捕获的那条@tech{延
+续}，记作 @racket[km]；左边是当前被调用的那条。调用的若是
+@racket[(kn+1 km)]，打印一个 @racket[*]，下一步就是 @racket[(kn km)]，
+把同一个 @racket[km] 交给前一条。调用的若是 @racket[(k0 km)]，打印
+@c|{@}|，下一步捕获一条新的 @racket[km+1]，从 @racket[(km+1 km+1)]
+开始。每到一次 @racket[k0]，就多一条@tech{延续}，下一行就要多退一步，
+多打印一个 @racket[*]。
 
-@racket[k2] 为什么会跳向 @racket[k1]？@racket[k2]
-是在它自己那一行开头，由第二处 @racket[(label)] 捕获的，那时
-@racket[yin] 绑定的是 @racket[k1]。一条@tech{延续}记下的，
-是捕获点后面剩下的程序：打印一个 @racket[*]，再把收到的值交给
-@racket[yin]，也就是 @racket[k1]。由第二处捕获的每一条都是这样，
-记着捕获时的 @racket[yin]，打印 @racket[*] 后跳向它。只有 @racket[k0]
-不同：它由第一处捕获，后面剩下的是打印 @c|{@}|，
-再捕获一条新的@tech{延续}，然后拿新的这条调用它自己。
-
-多出来的 @racket[*] 就记在这条链上：@racket[k3] 跳向
-@racket[k2]，@racket[k2] 跳向 @racket[k1]，@racket[k1] 跳向
-@racket[k0]。每到一次 @racket[k0]，就多捕获一条@tech{延续}，
-链长出一节，下一行就多一个 @racket[*]。
-
-这些规律只说@tech{延续}之间谁调用谁、交出的是什么，照着写成函数就行：
+这条规律只说@tech{延续}之间谁调用谁、交出的是什么，照着写成函数就行：
 跳向一条@tech{延续}，就是调用它；捕获一条新@tech{延续}，
-就是定义一个新函数。记着 @racket[kn] 的那条 @racket[kn+1]，收到
-@racket[k] 以后打印 @racket[*]，再调用 @racket[(kn k)]；@racket[k0]
-收到 @racket[kn] 以后打印 @c|{@}|，定义一个新的 @racket[kn+1]，
-再拿它调用它自己：
+就是定义一个新函数。
 
 @racketblock[
 (define (k0 kn)
   (displayln #\@)
-  (define (kn+1 k)
+  (define (kn+1 km)
     (display #\*)
-    (kn k))
+    (kn km))
   (kn+1 kn+1))
 (k0 k0)]
 
@@ -216,7 +199,7 @@
 
 这段代码里没有 @racket[label]、@racket[cc]，也没有 @racket[set!]。
 原来由 @racket[cc] 捕获的@tech{延续}，现在都成了显式传递的参
-数：@racket[k0] 收到 @racket[kn]，@racket[kn+1] 收到 @racket[k]，
+数：@racket[k0] 收到 @racket[kn]，@racket[kn+1] 收到 @racket[km]，
 每一次跳转都是把@tech{延续}交给下一个函数的尾调用。
 这种把@tech{延续}作为参数传递的写法，叫
 做@defterm[#:en "Continuation-Passing Style" #:abbr "CPS"]{延续传递风
