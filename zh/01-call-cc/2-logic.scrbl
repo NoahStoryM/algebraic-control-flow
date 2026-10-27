@@ -104,9 +104,10 @@
 实数和函数本来就不相交，那版 @racket[mul] 用谓词 @racket[real?]
 一问就知道。@racket[call/cc] 不知道结果会是什么，结果也可能是函数，
 就把传回的结果包进列表，用 @racket[list?] 区分，
-这就是打标签。@racket[cc] 里看 @racket[saved] 是不是 @racket[#f]，
-最早那版 @racket[mul] 看标志 @racket[first?]，也都是标签。下面把
-@racket[∪] 读作 @math{∨}，说的都是这样分得开两边的联合。
+这就是打标签。@racket[cc] 自己要决定交出哪一支，看的是 @racket[saved]
+是不是 @racket[#f]，最早那版 @racket[mul] 看的是标志 @racket[first?]：
+这两处靠另记一个状态来分辨，不是给值打标签。下面把 @racket[∪] 读作
+@math{∨}，说的都是这样分得开两边的联合。
 
 每个类型构造子都对应一个逻辑连接词。类型是命题，表达式是证明，
 构造程序就是构造证明。这个对应关系有一个名字：@defterm{Curry-Howard
@@ -199,7 +200,8 @@
 本应为空的@tech{否定}类型有了值，本应非法的自指类型变得合法。
 不能把任意 Racket 表达式都当作证明。下面读出逻辑定律时，
 只看这里介绍的类型构造及其规则，把 @racket[cc] 和 @racket[call/cc]
-当作控制操作；无限循环、内置的 @racket[exit]、抛出异常和自指类型，
+当作控制操作，按给定的类型使用它们，不把前面实现它们的过程一并当作证
+明；无限循环、内置的 @racket[exit]、抛出异常和自指类型，
 不纳入这个读法。在这个范围内，程序的类型推导对应逻辑证明，
 程序用到的自由变量对应证明中的假设；没有未解除的假设时，
 得到的才是相应命题的无条件证明。加入控制操作，就多了@tech{排中律}、DNE
@@ -310,6 +312,7 @@
 
 @subsection[#:tag "01:program-type"]{程序的类型}
 
+这一节要看的是：@tech{延续}不一定靠捕获，也可以由运行环境交来。
 先代入最朴素的一个：退出码的类型 @racket[Byte]，得到
 @math{¬¬@ty{Byte} → @ty{Byte}}。选它，是因为程序最后交出的就是退出码。
 这一回既看类型能不能填上，也看能不能留住交进来的计算的行为。
@@ -325,7 +328,9 @@
 @racket[Byte]。这是运行的行为，类型里看不出来。
 
 要找这样的实例，先得知道一个 @math{¬¬@ty{Byte}} 长什么样。最常见的，
-就是一个程序：它算出一个退出码，交给 @racket[exit]，然后结束。要看清
+就是一个程序：它算出一个退出码，交给 @racket[exit]，然后结束。
+@xref["01:where-fails"]{「对应关系在哪里失效」}拿 @racket[exit] 给任意
+@math{p} 造出 @math{¬p}；这里只看它作为程序出口的那一种用法。要看清
 @racket[exit] 从哪里来，假设我们的语言有 @racket[call/cc] 但没有内置的
 @racket[exit]，把整个程序包在 @racket[call/cc] 里：
 
@@ -338,8 +343,6 @@
 整个计算到此结束。这就是 @racket[exit]，计算终结时的当前@tech{延续}。
 程序体里任何地方调用 @racket[(exit 0)]，都直接跳到终点；
 程序体正常算完，结果也经外层的 @racket[exit] 交过去。
-@xref["01:where-fails"]{「对应关系在哪里失效」}拿 @racket[exit] 给任意
-@math{p} 造出 @math{¬p}；这里只看它作为程序出口的那一种用法。
 
 @racket[exit] 等一个退出码，类型是
 @math{¬@ty{Byte}}。@racket[(λ (exit) (exit ...))] 等一个
@@ -364,8 +367,8 @@
 
 @subsection[#:tag "01:neg-q"]{代入 @math{¬q}}
 
-再换一个类型。不代入一个光秃秃的类型，而是代入一个本身就是否定的类型
-@math{¬q}：
+再换一个类型，看看否定叠起来时会怎样。不代入一个光秃秃的类型，
+而是代入一个本身就是否定的类型 @math{¬q}：
 
 @mm{¬¬¬q → ¬q}
 
@@ -416,7 +419,7 @@ DNI 的写法包成一个 @racket[kkkq]，交给 @racket[triple-negation]
 @math{¬¬¬q → ¬q} 这条定律叫@defterm[#:en "law of triple negation"]{三
 重否定律}，是一条直觉主义定理。
 
-@subsubsection[#:tag "01:layers"]{数一数层数}
+@section[#:tag "01:layers"]{否定塔}
 
 @racket[triple-negation] 里的几个名
 字，@racket[q]、@racket[kq]、@racket[kkq]、@racket[kkkq]，
@@ -472,5 +475,17 @@ OS 交来；@racket[triple-negation] 更省事，不需要另外交来一条
   1 层；把其中的 @math{q} 换成 @math{¬A}，就从第 4 层回到第 2 层；
   依此类推，只有第 0 层回不去。塔分成三类：第 0 层，奇数层，第 2
   层起的偶数层。}]
+最低的五层排出来：
+
+@tabular[#:style 'boxed #:row-properties '(bottom-border ())
+  (list
+   (list @elem{层} @elem{经典逻辑} @elem{直觉主义逻辑})
+   (list @elem{0} @elem{偶数层：与 2、4 层经 DNI、DNE 互推}
+         @elem{单独一类：DNI 升到第 2 层，回不来})
+   (list @elem{1} @elem{奇数层} @elem{奇数层：DNI 升到第 3 层，三重否定律落回})
+   (list @elem{2} @elem{偶数层} @elem{偶数层：与第 4 层互推})
+   (list @elem{3} @elem{奇数层} @elem{奇数层})
+   (list @elem{4} @elem{偶数层} @elem{偶数层：三重否定律落回第 2 层}))]
+
 在这座否定塔上，两种逻辑的区别，就在第 0 层是否与其余的偶数层合并。
 

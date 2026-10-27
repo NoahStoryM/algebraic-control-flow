@@ -197,10 +197,11 @@
 @racket[k1]，@racket[yang] 收到这次交来的
 @racket[k2]。@racket[(k2 k2)] 打印 @racket[*] 之后，下一步就是
 @racket[(k1 k2)]；@racket[k1] 被捕获时 @racket[yin] 绑的是
-@racket[k0]，于是接着是 @racket[(k0 k2)]。一般地，右边是交出去的参数，
-总是最近捕获的那条@tech{延续}，记作 @racket[km]；
-左边是当前被调用的那条。调用的若是 @racket[(kn+1 km)]，打印一个
-@racket[*]，下一步就是 @racket[(kn km)]，把同一个 @racket[km]
+@racket[k0]，于是接着是 @racket[(k0 k2)]。
+
+一般地，右边是交出去的参数，总是最近捕获的那条@tech{延续}，记作
+@racket[km]；左边是当前被调用的那条。调用的若是 @racket[(kn+1 km)]，
+打印一个 @racket[*]，下一步就是 @racket[(kn km)]，把同一个 @racket[km]
 交给前一条：@racket[kn+1] 被捕获时，@racket[yin] 绑的正是
 @racket[kn]，它记下的就是这一条。调用的若是 @racket[(k0 km)]，打印
 @c|{@}|，下一步捕获一条新的 @racket[km+1]，从 @racket[(km+1 km+1)]
