@@ -19,6 +19,7 @@
 - 删去（Noah 10/26 同意）：写作缘起与此前的知乎回答，以后放进后记。
 - 读者须知（预备知识、Racket 版本、`typed/racket/no-check` 的说明）挪到系列前言 `zh/main.scrbl`（Noah 10/26）；`control-context` 包不再特意介绍，代码里的名字已经链接到它的文档（Claude 判断，Noah 10/26 授权）。
 - 补（#87 零星，Noah 10/24 定）：一句说明前置知识：能读 Scheme 的 λ、`let` 与基本递归，特殊语法在出现处解释。
+- 改（Noah 10/27）：读者预设熟悉 Racket，也不陌生 Typed Racket 的类型标注语法；删去系列前言里讲类型标注读法的旁注。
 
 ## 1. 引言
 
