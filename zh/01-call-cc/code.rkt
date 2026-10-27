@@ -229,7 +229,7 @@
       (define ln (cons kn n))
       (apply-cont ln ln)))
 
-  (: apply-cont (∀ (p) (→ (¬ p) p ⊥)))
+  (: apply-cont (→ (¬ Label) Label ⊥))
   (define (apply-cont ln lm)
     (match-define (cons kn n) ln)
     (match-define (cons km m) lm)
@@ -300,5 +300,5 @@
                "  (k0 k0)@\n  (k1 k1)*  (k0 k1)@\n  (k2 k2)*  (k1 k2)*  (k0 k2)@\n"))
   (check-true (output-starts-with? (λ () (yin:k0 yin:k0)) "@\n*@\n**@\n***@"))
   ;; 三重否定律：把 DNI 升两层的延续降回来，行为和原来的一样，什么也不捕获
-  (check-equal? (let/cc kq (define (kkkq kkq) (kkq kq)) (let ([kq (tn:triple-negation kkkq)]) (kq 'hello))) 'hello)
+  (check-equal? (let/cc k (define (kkkq kkq) (kkq k)) (let ([kq (tn:triple-negation kkkq)]) (kq 'hello))) 'hello)
   (check-equal? ((tn:triple-negation (λ (kkq) (kkq (λ (q) (list 'got q))))) 7) '(got 7)))

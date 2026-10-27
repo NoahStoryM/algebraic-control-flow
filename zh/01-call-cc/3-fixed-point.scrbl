@@ -122,8 +122,9 @@
 @subsection[#:tag "01:trace"]{追踪谜题}
 
 要回答这个问题，得看清每一步跳向了谁。给每个@tech{延续}起一个名
-字：@racket[k0]、@racket[k1]、@racket[k2]……为此先换一种否定类型：
-@tech{延续}带上一个编号，装进 @racket[cons] 对。
+字：@racket[k0]、@racket[k1]、@racket[k2]……为此，
+这一节里先换一种否定类型：@tech{延续}带上一个编号，装进 @racket[cons]
+对。
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define-type (¬ p) (Pair (→ p ⊥) Natural))
@@ -143,13 +144,13 @@
 
 交出去的 @racket[ln] 装着第 @racket[n] 条@tech{延续} @racket[kn]
 和它的编号 @racket[n]，不再是能直接调用的函数，
-调用它的办法得我们自己规定。@racket[apply-cont] 的签名却一字不改：
-向一个@tech{否定}交一个值，不管@tech{否定}怎样表示，都是这个操作。
-插桩版用 @racket[match-define] 拆开两个对，印出谁跳向谁，
-再调用里面的函数：
+调用它的办法得我们自己规定。@racket[apply-cont] 的签名还是那一个，
+只是这里 @math{p} 取 @racket[Label]：向一个@tech{否定}交一个值，
+不管@tech{否定}怎样表示，都是这个操作。插桩版要印出两边的编号，所以用
+@racket[match-define] 拆开两个对，印出谁跳向谁，再调用里面的函数：
 
 @examples[#:eval ev #:label #f #:no-prompt
-(: apply-cont (∀ (p) (→ (¬ p) p ⊥)))
+(: apply-cont (→ (¬ Label) Label ⊥))
 (define (apply-cont ln lm)
   (match-define (cons kn n) ln)
   (match-define (cons km m) lm)
@@ -186,18 +187,20 @@
 
 @subsection[#:tag "01:rules"]{读出规律}
 
-规律就在每一对名字里。右边是交出去的参数，总是最近捕获的那条@tech{延
-续}，记作 @racket[km]；左边是当前被调用的那条。调用的若是
-@racket[(kn+1 km)]，打印一个 @racket[*]，下一步就是 @racket[(kn km)]，
-把同一个 @racket[km] 交给前一条：@racket[kn+1] 被捕获时，@racket[yin]
-绑的正是 @racket[kn]，它记下的就是这一条。比如第三行，捕获 @racket[k2]
-时 @racket[yin] 绑的是 @racket[k1]，所以 @racket[(k2 k2)] 打印
-@racket[*] 之后，下一步是 @racket[(k1 k2)]。调用的若是
-@racket[(k0 km)]，打印 @c|{@}|，下一步捕获一条新的 @racket[km+1]，从
-@racket[(km+1 km+1)] 开始。每到一次 @racket[k0]，就多一条@tech{延续}，
-下一行就要多退一步，多打印一个 @racket[*]。多出来的那个 @racket[*]，
-就记在@tech{延续}里：每条 @racket[kn+1] 都记着前一条 @racket[kn]，
-一条接一条连成链。
+规律就在每一对名字里。先看第三行 @c|{(k2 k2)* (k1 k2)* (k0 k2)@}|：
+右边总是 @racket[k2]，最近捕获的那条；左边一步步往回退。@racket[k2]
+被捕获时，@racket[yin] 绑的是 @racket[k1]，所以 @racket[(k2 k2)] 打印
+@racket[*] 之后，下一步是 @racket[(k1 k2)]；@racket[k1] 被捕获时
+@racket[yin] 绑的是 @racket[k0]，于是接着是 @racket[(k0 k2)]。一般地，
+右边是交出去的参数，总是最近捕获的那条@tech{延续}，记作 @racket[km]；
+左边是当前被调用的那条。调用的若是 @racket[(kn+1 km)]，打印一个
+@racket[*]，下一步就是 @racket[(kn km)]，把同一个 @racket[km]
+交给前一条：@racket[kn+1] 被捕获时，@racket[yin] 绑的正是
+@racket[kn]，它记下的就是这一条。调用的若是 @racket[(k0 km)]，打印
+@c|{@}|，下一步捕获一条新的 @racket[km+1]，从 @racket[(km+1 km+1)]
+开始。每到一次 @racket[k0]，就多一条@tech{延续}，下一行就要多退一步，
+多打印一个 @racket[*]。多出来的那个 @racket[*]，就记在@tech{延续}里：
+每条 @racket[kn+1] 都记着前一条 @racket[kn]，一条接一条连成链。
 
 这条规律只说@tech{延续}之间谁调用谁、交出的是什么，照着写成函数就行：
 跳向一条@tech{延续}，就是调用它；捕获一条新@tech{延续}，

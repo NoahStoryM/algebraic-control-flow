@@ -48,8 +48,8 @@
 
 那么非空类型的否定呢？类型 @math{@ty{Real} → ⊥}
 是一个接受实数且永不返回的函数。我们能构造出具有该类型的表达式吗？
-只用普通的 @racket[λ] 和函数调用，并且暂不考虑永不终止的程序，
-写不出来：函数体最终要交出一个值，而 @racket[⊥] 没有值可交。
+只用普通的 @racket[λ] 和函数调用，并且暂不考虑永不终止或抛出异常的程
+序，写不出来：函数体最终要交出一个值，而 @racket[⊥] 没有值可交。
 前面见到的@tech{延续}，都是 @racket[cc]、@racket[call/cc]
 这样的控制操作符在运行时捕获出来的，不是用 λ 写出来的。
 
@@ -71,9 +71,10 @@
 从这个设定出发，我们可以构造出：
 
 @itemlist[#:style 'ordered
-  @item{@math{p → q} 类型的表达式 @racket[(λ (x) y)]：给定一个
-  @math{p}，就能产出一个 @math{q}。也就是说：如果 @math{p} 成立，那么
-  @math{q} 成立。这是@defterm{蕴含}，写作
+  @item{@math{p → q} 类型的表达式 @racket[(λ (x) y)]，@math{y}
+  可以用到 @math{x}：给定一个 @math{p}，就能产出一个 @math{q}。
+  也就是说：如果 @math{p} 成立，那么 @math{q} 成立。
+  这是@defterm{蕴含}，写作
   @defsym["p → q" "蕴含；函数类型"]@math{→}。}
   @item{@math{p × q} 类型的表达式 @racket[(values x y)]：把 @math{x}
   和 @math{y} 打包在一起。也就是说：@math{p} 和 @math{q} 同时成立。
@@ -173,8 +174,9 @@
 
 类似地，内置的 @racket[exit] 的类型是
 @math{@ty{Byte} → ⊥ = ¬@ty{Byte}}。借助 @racket[exit]，我们可以为任意
-@math{p} 构造 @math{¬p}：@racket[(λ (_) (exit 0))]。
-任何真命题的@tech{否定}都变成了非空。
+@math{p} 构造 @math{¬p}：@racket[(λ (_) (exit 0))]。@racket[raise]
+抛出异常，也永不返回，@racket[(λ (_) (raise 'oops))] 同样是一个
+@math{¬p}。任何真命题的@tech{否定}都变成了非空。
 
 还有第三种失效。用 @math{¬} 改写，@math{@ty{Label} = @ty{Label} → ⊥}
 就是 @math{@ty{Label} = ¬@ty{Label}}：一个自身@tech{否定}的类型，
@@ -194,8 +196,8 @@
 本应为空的@tech{否定}类型有了值，本应非法的自指类型变得合法。
 不能把任意 Racket 表达式都当作证明。下面读出逻辑定律时，
 只看这里介绍的类型构造及其规则，把 @racket[cc] 和 @racket[call/cc]
-当作控制操作；无限循环、内置的 @racket[exit] 和自指类型，
-不纳入这个读法。在这个范围内，程序的类型推导对应逻辑证明，
+当作控制操作；无限循环、内置的 @racket[exit]、@racket[raise]
+和自指类型，不纳入这个读法。在这个范围内，程序的类型推导对应逻辑证明，
 程序用到的自由变量对应证明中的假设；加入控制操作，
 就多了@tech{排中律}、DNE 这样的推理规则。不过，类型只说明证明了什么，
 不说明程序怎样运行；由类型读出程序的行为，只是一种指引。
@@ -291,8 +293,9 @@
 
 @section[#:tag "01:substitute"]{代入不同的类型}
 
-@xref["01:watershed"]{「分水岭」}第一次反过来用对应关系：
-从定律出发找程序。这里接着反过来用，换一个办法：代入。
+@xref["01:watershed"]{「分水岭」}从定律出发找程序，留下一个问题：从
+@math{¬¬p} 取出 @math{p}，非得凭空拿到一个@tech{延续}不可吗？
+这一节接着从定律出发，换一个办法：代入。
 
 逻辑里，一条定律对任何命题都成立；把一个具体的命题代进去，
 就得到它的一个实例。在程序里，就是给类型参数 @math{p}
@@ -304,12 +307,13 @@
 
 @subsection[#:tag "01:program-type"]{程序的类型}
 
-先代入最朴素的一个：退出码的类型 @racket[Byte]，得到
-@math{¬¬@ty{Byte} → @ty{Byte}}。选它，是因为程序最后交出的就是退出码。
-这个类型很容易填上，可要留住程序原来的行为，就得另看。
-光看类型，@racket[(λ (kk) 0)] 就填上了，什么也不捕获。
-逻辑上也不奇怪：@racket[Byte] 有值，是真命题，从任何前提推出它都成立，
-丢掉前提、直接拿出一个 @racket[Byte] 就是证明。
+这一回先站到运行整个程序的一侧。代入最朴素的一个：退出码的类型
+@racket[Byte]，得到 @math{¬¬@ty{Byte} → @ty{Byte}}。选它，
+是因为程序最后交出的就是退出码。这个类型很容易填上，
+可要留住程序原来的行为，就得另看。光看类型，@racket[(λ (kk) 0)]
+就填上了，什么也不捕获。逻辑上也不奇怪：@racket[Byte] 有值，是真命题，
+从任何前提推出它都成立，丢掉前提、直接拿出一个 @racket[Byte]
+就是证明。
 
 可逻辑只问命题真不真，不问拿出的是哪一个 @racket[Byte]；@racket[0]
 和程序算出来的退出码，在它眼里没有分别。我们却在乎。
@@ -391,27 +395,21 @@
 @racket[(call/cc (λ (k) body ...))]，给当前@tech{延续}起个名字
 @racket[k]。}
 
-试一试。用 @racket[let/cc] 拿到一条真正的@tech{延续} @racket[kq]，照
+试一试。用 @racket[let/cc] 拿到一条真正的@tech{延续} @racket[k]，照
 DNI 的写法包成一个 @racket[kkkq]，交给 @racket[triple-negation]
 取回一个 @math{¬q}，再把 @racket[q] 交给它：
 
 @examples[#:eval ev #:label #f
 (define q 'hello)
-(let/cc kq
-  (define (kkkq kkq) (kkq kq))
+(let/cc k
+  (define (kkkq kkq) (kkq k))
   (let ([kq (triple-negation kkkq)])
     (kq q)))]
 
 @racket[q] 经取回的 @racket[kq] 交到了 @racket[let/cc] 返回的地方。
-外层的 @racket[kq] 是捕获来的@tech{延续}，@racket[let] 里重新绑定的
-@racket[kq] 是取回的函数。两个不是同一个值，行为却一样：调用取回的
-@racket[kq]，它把 @racket[q] 包成 @racket[kkq] 交给 @racket[kkkq]，
-@racket[kkkq] 又把外层的 @racket[kq] 交给 @racket[kkq]，@racket[q]
-最终交到外层的 @racket[kq] 手里。先用 DNI 包一层，再用三重否定律取回，
-回到了原样。@racket[triple-negation] 里 @racket[kkq] 的形参也叫
-@racket[kq]，在这个例子里，它收到的正是外层那条@tech{延续}。
-因而在这次演示里，形参收到的那条@tech{延续}，和整个取回的 @racket[kq]
-有相同的调用行为。
+取回的 @racket[kq] 和 @racket[k] 不是同一个值，行为却一样：先用 DNI
+包一层，再用三重否定律取回，回到了原样。定义里 @racket[kkq] 的形参
+@racket[kq]，这次收到的也正是 @racket[k]。
 
 @math{¬¬¬q → ¬q} 这条定律叫@defterm[#:en "law of triple negation"]{三
 重否定律}，是一条直觉主义定理。
@@ -459,7 +457,8 @@ OS 交来；@racket[triple-negation] 更省事，不需要另外交来一条
 用层数说，区别在要交出的东西落在哪一层。落在第 1 层或更高，
 要交出的是一个函数，可以先交出去，等下一层的值来了再算。落到第 0 层，
 就得当场交出一个值，这时就没有对任何类型都适用的纯 λ 写法了；
-要把计算真的跑起来，得像运行程序那样，由外面交来一条@tech{延续}。
+要把计算真的跑起来，又不捕获，就得像运行程序那样，
+由外面交来一条@tech{延续}。
 
 层数也照出了两种逻辑的分别。把能互相推出的层归为一类：
 
