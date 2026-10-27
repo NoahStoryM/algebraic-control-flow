@@ -143,7 +143,7 @@
 
 交出去的 @racket[ln] 装着第 @racket[n] 条@tech{延续} @racket[kn]
 和它的编号 @racket[n]，不再是能直接调用的函数，
-调用它的办法得我们自己规定。 @racket[apply-cont] 的签名却一字不改：
+调用它的办法得我们自己规定。@racket[apply-cont] 的签名却一字不改：
 向一个@tech{否定}交一个值，不管@tech{否定}怎样表示，都是这个操作。
 插桩版用 @racket[match-define] 拆开两个对，印出谁跳向谁，
 再调用里面的函数：
