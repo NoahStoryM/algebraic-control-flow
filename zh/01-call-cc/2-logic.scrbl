@@ -240,12 +240,13 @@
 两个程序都只用交到手里的东西，是@defterm[#:en "constructive"]{构造
 性}的：结论里的每样东西，都由交到手里的东西做成。
 
-用同样的办法试经典的两条。DNE 给一个等@tech{延续}的函数 @racket[kk]，
-要交出一个 @math{p}。能对 @racket[kk] 做的只有调用它，
-缺的是交给它的那个 @math{¬p}：有了它，调用 @racket[kk] 得到 @math{⊥}，
-再交给 @racket[absurd] 就能当作 @math{p}。可是没有人交来，
-自己又写不出。@tech{排中律}更彻底：什么也没给，要交出一个 @math{p}
-或一个 @math{¬p}，两样都写不出。
+用同样的办法试经典的两条。DNE 给一个等@tech{延续}的函数 @racket[kkp]，
+要交出一个 @math{p}。能对 @racket[kkp] 做的只有调用它，调用它却要一个
+@math{¬p} 类型的 @racket[kp]：有了 @racket[kp]，调用 @racket[kkp] 得到
+@math{⊥}，再交给 @racket[absurd] 就能当作 @math{p}。可是没有人交来
+@racket[kp]，自己又构造不出，也就无法调用 @racket[kkp]。@tech{排中
+律}更彻底：什么也没给，要交出一个 @math{p} 或一个 @math{¬p}，
+两样都写不出。
 
 @racket[call/cc] 和 @racket[cc] 补上的，正是这个缺口：
 它们凭空提供了一个@tech{延续}，就是当前@tech{延续}。@racket[call/cc]
