@@ -40,8 +40,11 @@
 
 @mm{@ty{Label} ∪ @ty{Label} = @ty{Label}}
 
-要是换成@tech{不相交的联合}，每个值都记着自己来自哪一支，
-两支就不会并成一支。坍缩，是因为分支的记号被忘掉了。
+换成@tech{带标签的联合} @math{@ty{Label} + @ty{Label}}，
+每个@tech{标签} @math{l} 有 @math{(l, 0)}、@math{(l, 1)} 两份，
+记着自己来自哪一支。丢掉标签，从 @math{@ty{Label} + @ty{Label}} 到
+@math{@ty{Label} ∪ @ty{Label}} 的映射把两份并成一个 @math{l}。
+坍缩就是这一步。
 
 既然两支是同一个类型，也就不必再分。@racket[mul] 当初要用
 @racket[real?] 分辨 @racket[(cc)] 交出的是值还是@tech{延续}；在

@@ -89,8 +89,9 @@
 给元素打上标签再并起
 来，@math{X + Y = X × {0} ∪ Y × {1} = {(a, 0), (b, 0), (b, 1), (c, 1)}}，
 看标签是 0 还是 1 就分得开，检查标签就是一个谓词。@math{X + Y}
-叫@defterm[#:en "tagged union"]{带标签的联合}。要是 @math{X ∩ Y = ∅}，
-并集本来就分得开，用不着标签。}
+叫@defterm[#:en "tagged union"]{带标签的联合}。丢掉标签，总有一个从
+@math{X + Y} 到 @math{X ∪ Y} 的映射；@math{X ∩ Y = {}}
+时它是一一对应，直接拿并集来用就行，用不着标签。}
 
 这里要把两样东西分开。逻辑里证明「@math{p} 或 @math{q}」，
 总要说清是哪一支成立。对应的是@defterm[#:en "disjoint union"]{不相交的
