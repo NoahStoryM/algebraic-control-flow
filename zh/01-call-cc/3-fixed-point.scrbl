@@ -172,15 +172,13 @@
 跳向一条@tech{延续}，就是调用它；捕获一条新@tech{延续}，
 就是定义一个新函数。
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:label #f
 (define (k0 kn)
   (displayln #\@)
   (define (kn+1 km)
     (display #\*)
     (kn km))
-  (kn+1 kn+1))]
-
-@examples[#:eval ev #:label #f
+  (kn+1 kn+1))
 (eval:alts (k0 k0) (show-lines 5 (λ () (k0 k0))))]
 
 输出和原版谜题一模一样。
