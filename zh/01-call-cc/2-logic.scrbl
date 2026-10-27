@@ -79,13 +79,16 @@
   和 @math{y} 打包在一起。也就是说：@math{p} 和 @math{q} 同时成立。
   这是@defterm{合取}，写作
   @defsym["p ∧ q" "合取；多个结果 p × q"]@math{∧}。}
-  @item{@math{p ∪ q} 类型的表达式：@math{x} 本身就可以视为这个类型
-  （@math{y} 也一样）。也就是说：@math{p} 或 @math{q} 成立。
-  这是@defterm{析取}，写作
+  @item{@math{p ∪ q} 类型的表达式：@math{x} 和 @math{y}
+  都可以是这个类型。也就是说：@math{p} 和 @math{q}
+  只要有一个成立，@math{p} 或 @math{q} 就成立。这是@defterm{析取}，
+  写作
   @defsym["p ∨ q" "析取；联合类型 p ∪ q"]@math{∨}。}]
-Typed Racket 的 @racket[∪] 是普通的并集：一个值属于 @math{p ∪ q}，
-并不记录它来自哪一边，要分清两边，得自己用 @racket[real?]
-这样的谓词去问。
+这里有一点和逻辑课本不同。逻辑里证明「@math{p} 或 @math{q}」，
+总要说清是哪一支成立；Typed Racket 的 @racket[∪] 却只是普通的并集，
+一个值属于 @math{p ∪ q}，并不记着它来自哪一边。@racket[(cc)] 交出的
+@math{p ∪ ¬p} 就是这样：拿到手的是实数还是@tech{延续}，得自己用
+@racket[real?] 去问，就像那版 @racket[mul] 做的那样。
 
 每个类型构造子都对应一个逻辑连接词。类型是命题，表达式是证明，
 构造程序就是构造证明。这个对应关系有一个名字：@defterm{Curry-Howard
