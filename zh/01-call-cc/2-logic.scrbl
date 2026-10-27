@@ -207,7 +207,7 @@
 
 这两条经典定律，各有一条与之相对的定律，在直觉主义逻辑里照样成立。
 @tech{排中律}说 @math{p} 与 @math{¬p} 至少有一个成立；
-说两者不能同时成立，就是@defterm{矛盾律} @math{¬(p ∧ ¬p)}。DNE 从
+说两者不能同时成立，就是@defterm{矛盾律} @math{¬(¬p ∧ p)}。DNE 从
 @math{¬¬p} 推出 @math{p}；箭头反过来，从 @math{p} 推出 @math{¬¬p}，
 就是@defterm[#:en "Double Negation Introduction" #:abbr "DNI"]{双重否
 定引入}。
@@ -215,7 +215,7 @@
 成立的命题，照 @tech{Curry-Howard 对应}应该写得出程序。
 前面是从程序读出命题，这回反过来，从命题出发找程序。
 
-先看@tech{矛盾律}。@math{p ∧ ¬p} 是一个 @math{p} 和一个 @math{¬p}
+先看@tech{矛盾律}。@math{¬p ∧ p} 是一个 @math{¬p} 和一个 @math{p}
 放在一起，对应函数的两个参数；整体取否定，结果是 @math{⊥}。
 所以要写的是这样一个函数：收下一个@tech{延续} @racket[kv] 和一个值
 @racket[v]，得到 @math{⊥}。手里能产生 @math{⊥} 的只有 @racket[kv]，
