@@ -29,6 +29,7 @@ export LC_ALL=C.UTF-8
 raco pkg install --name acf   # 在仓库根目录：装上依赖、编译、生成文档，打开 doc/acf-zh/index.html
 raco setup --pkgs acf         # 之后改了正文，重新生成
 scribble --text --dest build zh/main.scrbl # 纯文本，便于通读和比对
+scribble --markdown ++xref-in setup/xref load-collections-xref --dest out zh/main.scrbl # 整部排成一个 Markdown 文件 out/main.md，发给读者（包括 AI）盲读用
 ```
 
 直接用 `scribble --htmls` 也能排，但要加 `++xref-in setup/xref load-collections-xref`，代码里的链接才找得到别的文档。
