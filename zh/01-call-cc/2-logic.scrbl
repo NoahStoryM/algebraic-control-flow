@@ -25,8 +25,8 @@
 @section[#:tag "01:from-bottom"]{从 @math{⊥} 出发}
 
 在这个类比中，没有值的@tech{空类型} @racket[⊥] 应该对应假：
-不存在该类型的表达式。如果这个类比成立，那么 @math{p → ⊥}
-就对应逻辑中的否定：给定 @math{p} 的证明，推出假。
+假命题没有证明，@racket[⊥] 也没有值。如果这个类比成立，那么
+@math{p → ⊥} 就对应逻辑中的否定：给定 @math{p} 的证明，推出假。
 而@tech{延续}的类型正是 @math{p → ⊥}。
 
 验证一下。@math{⊥} 的否定是 @math{⊥ → ⊥}。恒等函数就具有这个类型。
@@ -100,14 +100,15 @@
 构造程序就是构造证明。这个对应关系有一个名字：@defterm{Curry-Howard
 对应}。
 
-有了 @racket[absurd]，@racket[call/cc] 的签名还可以放宽。交给
-@racket[proc] 的@tech{延续}，类型是 @math{p → ⊥}。把 @racket[absurd]
-接在@tech{延续} @racket[k] 后面，@racket[(compose absurd k)]
-的类型就是 @math{p → q}。它的行为和 @racket[k] 完全一样：
-一调用，@racket[k] 就跳走，永远到不了 @racket[absurd]。所以交给
-@racket[proc] 的@tech{延续}也可以看作 @math{p → q}，@racket[call/cc]
-的类型随之变成 @math{((p → q) → p) → p}；令 @math{q = ⊥}，
-就回到原来的类型。
+逻辑课本里和这些签名长得像的定律，还有一条 Peirce 律，比
+@racket[call/cc] 的签名多一个变量。借 @racket[absurd]，
+签名正好可以放宽成那个样子。交给 @racket[proc] 的@tech{延续}，类型是
+@math{p → ⊥}。把 @racket[absurd] 接在@tech{延续} @racket[k]
+后面，@racket[(compose absurd k)] 的类型就是 @math{p → q}。它的行为和
+@racket[k] 完全一样：一调用，@racket[k] 就跳走，永远到不了
+@racket[absurd]。所以交给 @racket[proc] 的@tech{延续}也可以看作
+@math{p → q}，@racket[call/cc] 的类型随之变成
+@math{((p → q) → p) → p}；令 @math{q = ⊥}，就回到原来的类型。
 
 用 @math{¬} 和 @math{∨} 改写，这些签名都成了命题，各自对上一条定律：
 @tabular[#:style 'boxed #:row-properties '(bottom-border ())
@@ -146,16 +147,17 @@
 任何真命题的@tech{否定}都变成了非空。
 
 还有第三种失效。我们的类型 @math{@ty{Label} = ¬@ty{Label}}
-是一个自身@tech{否定}的类型。把它读作命题：如果它为真（非空），那么
-@math{¬@ty{Label}} 也非空，它的@tech{否定}为真，说的正是它为假。
-如果它为假（空），它的@tech{否定}反倒有值：空类型出发的函数总写得出
-来，就像 @racket[absurd] 填充了 @math{⊥ → p}；可
+是一个自身@tech{否定}的类型，读作命题，就是一句「这句话是假的」。
+推一推：如果它为真（非空），那么 @math{¬@ty{Label}} 也非空，
+它的@tech{否定}为真，说的正是它为假。如果它为假（空），
+它的@tech{否定}反倒有值：空类型出发的函数总写得出来，就像
+@racket[absurd] 填充了 @math{⊥ → p}；可
 @math{¬@ty{Label} = @ty{Label}}，于是它又有了值，变成了真。
 
-这就是@defterm{说谎者悖论}：「这句话是假的。」
-它无法被一致地赋予真假值。一个类型在自己的定义里出现在否定的位置
-（@math{→} 的左侧），这样的递归类型没法当作一致的命题来解读，所以 Agda
-和 Coq 这样的一致类型论用@defterm{正性}条件禁止这类定义。Racket
+这就是@defterm{说谎者悖论}，它无法被一致地赋予真假值。
+一个类型在自己的定义里出现在否定的位置（@math{→} 的左侧），
+这样的递归类型没法当作一致的命题来解读，所以 Agda 和 Coq
+这样的一致类型论用@defterm{正性}条件禁止这类定义。Racket
 没有这个限制。悖论是合法的，我们可以构造 @racket[Label] 类型的值。
 
 每种情况下，严格的 Curry-Howard 解读都失效了：
@@ -247,10 +249,10 @@
 @tabular[#:style 'boxed #:row-properties '(bottom-border ())
   (list
    (list "" @elem{构造性} @elem{经典})
-   (list @elem{@math{¬p} 遇上 @math{p}}
+   (list @elem{@math{p} 与 @math{¬p}}
          @elem{@bold{@tech{矛盾律}}：@racket[apply-cont]（函数调用）}
          @elem{@bold{@tech{排中律}}：@racket[cc]（捕获@tech{延续}）})
-   (list @elem{@math{¬¬p} 遇上 @math{p}}
+   (list @elem{@math{p} 与 @math{¬¬p}}
          @elem{@bold{DNI}：@racket[(λ (k) (k v))]}
          @elem{@bold{DNE}：@racket[call/cc]（捕获@tech{延续}）}))]
 
@@ -260,13 +262,14 @@
 右边一列都是提供当前@tech{延续}，只差交给一个函数还是交到手
 里。@racket[cc] 能@xref["01:label-from-call-cc"]{用 @racket[call/cc]
 写出}，就是 @racket[(call/cc values)]；@racket[call/cc]
-也能@xref["01:call-cc"]{用 @racket[cc] 写出}，把 @racket[proc]
-读成一个等@tech{延续}的函数，那段代码读起来正是由@tech{排中律}推出
-DNE：@racket[(cc)] 交出 @math{p} 那一支，就直接交出；交出 @math{¬p}
-那一支，就交给 @racket[proc]，得到的 @math{⊥}
-照爆炸原理（@racket[absurd]）可以当作任何类型。@tech{排中律}和 DNE
-作为对任意类型都成立的原则，同样互相推得出，
-经典的成分只在提供当前@tech{延续}的那一步。
+也能@xref["01:call-cc"]{用 @racket[cc] 写出}，那段代码先调用
+@racket[(cc)]，拿到传回的结果就交出，拿到@tech{延续}就交给
+@racket[proc]。把 @racket[proc] 读成一个等@tech{延续}的函数，
+它读起来正是由@tech{排中律}推出 DNE：@racket[(cc)] 交出 @math{p}
+那一支，就直接交出；交出 @math{¬p} 那一支，就交给 @racket[proc]，
+得到的 @math{⊥} 照爆炸原理（@racket[absurd]）
+可以当作任何类型。@tech{排中律}和 DNE 作为对任意类型都成立的原则，
+同样互相推得出，经典的成分只在提供当前@tech{延续}的那一步。
 
 @bold{练习}：@italic{实质条件} @math{¬p ∨ q} 是经典逻辑中 @math{p → q}
 的另一种编码。试着实现 @c{material->procedure : (¬p ∨ q) → p → q} 和
@@ -299,8 +302,9 @@ DNE：@racket[(cc)] 交出 @math{p} 那一支，就直接交出；交出 @math{�
 丢掉前提、直接拿出一个 @racket[Byte] 就是证明。
 
 可逻辑只问命题真不真，不问拿出的是哪一个 @racket[Byte]；@racket[0]
-和程序算出来的退出码，在它眼里没有分别。我们却在
-乎。@racket[(λ (kk) 0)] 根本不理会交给它的那个 @math{¬¬@ty{Byte}}；
+和程序算出来的退出码，在它眼里没有分别。我们却在乎。
+
+@racket[(λ (kk) 0)] 根本不理会交给它的那个 @math{¬¬@ty{Byte}}；
 我们要的实例，得真把那个 @math{¬¬@ty{Byte}} 跑起来，交出它给出的那个
 @racket[Byte]。这是运行的行为，类型里看不出来。
 
@@ -339,15 +343,13 @@ DNE：@racket[(cc)] 交出 @math{p} 那一支，就直接交出；交出 @math{�
 再收下它交来的退出码，从 @math{¬¬@ty{Byte}} 得到 @racket[Byte]，
 正是@xref["01:watershed"]{「分水岭」}里的 DNE。
 
-这也是@xref["01:watershed"]{「分水岭」}末尾那个问题的一个回答。
 在语言里模拟 @racket[exit]，得靠 @racket[call/cc]
-捕获当前@tech{延续}；真实的程序却用不着。OS 启动程序时，
+捕获当前@tech{延续}；真实的程序却不用自己捕获。OS 启动程序时，
 计算终结处的当前@tech{延续}已经在那里了，就是 @racket[exit]，
 直接交给程序就行，不必再用 @racket[cc] 或 @racket[call/cc] 去捕获。
 程序把退出码交给 @racket[exit]，这次调用不会回到程序里的当前位置，OS
 接到的就是退出码本身。从 @math{¬¬@ty{Byte}} 到 @racket[Byte]
-的这一步，在语言的边界上完成：运行一个程序，就是一次
-@math{¬¬@ty{Byte} → @ty{Byte}}。
+的这一步，在语言的边界上完成。
 
 @subsection[#:tag "01:neg-q"]{代入 @math{¬q}}
 
@@ -365,15 +367,17 @@ DNE：@racket[(cc)] 交出 @math{p} 那一支，就直接交出；交出 @math{�
 (define-type (¬¬¬ q) (¬ (¬¬ q)))
 
 (: triple-negation (∀ (q) (→ (¬¬¬ q) (¬ q))))
-(define ((triple-negation kkkq) q)
-  (define (kkq kq) (kq q))
-  (kkkq kkq))]
+(define (triple-negation kkkq)
+  (define (kq q)
+    (define (kkq kq) (kq q))
+    (kkkq kkq))
+  kq)]
 
-等 @racket[q] 交来，手里就有了 @racket[q] 和
-@racket[kkkq]。@racket[kkkq] 等的是一个 @math{¬¬q}，@racket[q]
-还差两个否定；照 DNI 的写法包一层，@racket[kkq] 等一个 @racket[kq]，
-正是 @math{¬¬q}，交给 @racket[kkkq]。只有 @racket[λ] 和函数调用，
-什么也没有捕获。
+交出去的 @racket[kq] 等一个 @racket[q]。等 @racket[q] 交来，手里就有了
+@racket[q] 和 @racket[kkkq]。@racket[kkkq] 等的是一个
+@math{¬¬q}，@racket[q] 还差两个否定；照 DNI 的写法包一层，@racket[kkq]
+等一个 @racket[kq]，正是 @math{¬¬q}，交给 @racket[kkkq]。只有
+@racket[λ] 和函数调用，什么也没有捕获。
 
 试一试。用 @racket[call/cc] 拿到一条真正的@tech{延续} @racket[k]，
 当作一个 @math{¬q}；照 DNI 的写法把它包成一个 @math{¬¬¬q}，再交给
@@ -397,8 +401,7 @@ DNE：@racket[(cc)] 交出 @math{p} 那一支，就直接交出；交出 @math{�
 
 @racket[triple-negation] 里的几个名
 字，@racket[q]、@racket[kq]、@racket[kkq]、@racket[kkkq]，
-差的只是外面叠了几个否定。数一数，刚才的做法能说得更清
-楚，@xref["01:watershed"]{「分水岭」}留下的问题也有了回答。
+差的只是外面叠了几个否定。数一数，刚才的做法能说得更清楚。
 
 固定一个类型 @math{A}，把 @math{A} 本身算作第 0 层，@math{¬A} 算作第 1
 层，@math{¬¬A} 算作第 2 层，依此类推：多一层的类型，
@@ -447,6 +450,4 @@ OS 交来；@racket[triple-negation] 更省事，连交来的@tech{延续}也不
   1 层，从第 4 层回到第 2 层……只有第 0 层回不去。塔分成三类：第 0 层，
   奇数层，第 2 层起的偶数层。}]
 在这座否定塔上，两种逻辑的区别，就在第 0 层是否与其余的偶数层合并。
-代入具体的类型以后，类别还可能再合并：底类型本身是 @math{¬q} 时，第 0
-层就是 @math{¬q}，第 2 层是 @math{¬¬¬q}，三重否定律已经把它们合在了一
-起。
+

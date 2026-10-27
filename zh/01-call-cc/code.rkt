@@ -207,16 +207,18 @@
   (define-type (¬¬¬ q) (¬ (¬¬ q)))
 
   (: triple-negation (∀ (q) (→ (¬¬¬ q) (¬ q))))
-  (define ((triple-negation kkkq) q)
-    (define (kkq kq) (kq q))
-    (kkkq kkq))
+  (define (triple-negation kkkq)
+    (define (kq q)
+      (define (kkq kq) (kq q))
+      (kkkq kkq))
+    kq)
   (provide (all-defined-out))
 )
 
 (module stage-18 racket
 
   (define n -1)
-  (define (cc)
+  (define (label)
     (set! n (+ n 1))
     (let/cc kn
       (define ln (cons kn n))
@@ -284,9 +286,9 @@
   (check-equal? (count-to-seven primitive:label primitive:goto) 7)
   (check-equal? (elimination:call/cc (λ (k) (+ 10 (k 4)))) 4)
   (check-true (output-starts-with?
-               (λ () (let ([kn (trace:cc)])
+               (λ () (let ([kn (trace:label)])
                        (displayln #\@)
-                       (let ([kn+1 (trace:cc)])
+                       (let ([kn+1 (trace:label)])
                          (display #\*)
                          (trace:apply-cont kn kn+1))))
                "  (k0 k0)@\n  (k1 k1)*  (k0 k1)@\n  (k2 k2)*  (k1 k2)*  (k0 k2)@\n"))

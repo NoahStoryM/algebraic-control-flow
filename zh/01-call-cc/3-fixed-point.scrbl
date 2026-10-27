@@ -68,12 +68,14 @@
 @racketblock[
 ((label) (label))]
 
-再数一数层数。假如给@tech{标签}定一个层号，比如第 @math{n} 层；可
-@math{@ty{Label} = ¬@ty{Label}}，它同时也在第 @math{n+1} 层，
-再往上又在第 @math{n+2} 层……层号还数得出来，
-可数出来的层号分不出任何东西。可以把它想成一座无穷高的否定塔，
-每一层都是同一个 @racket[Label]；层数在这里不再能区分角色，
-分不清一个@tech{标签}是被调用的那个，还是交出去的那个。
+它和 @racket[(goto (label))] 一样，会一直回跳下去。
+
+再数一数层数。以 @racket[Label] 为底，它外面包一层否定，得到的
+@math{¬@ty{Label}} 还是 @racket[Label]；再包一层，还是
+@racket[Label]。层号照样数得下去，可每一层都是同一个类型。
+可以把它想成一座无穷高的否定塔，每一层都是同一个 @racket[Label]；
+层数在这里不再能区分角色，分不清一个@tech{标签}是被调用的那个，
+还是交出去的那个。
 
 代价是，「有类型的程序就是证明」这个读法也失效了。有了
 @racket[Label]，只用 @racket[λ] 和函数调用的有类型程序，
@@ -116,54 +118,61 @@
 
 要回答这个问题，得看清每一步跳向了谁。给每个@tech{延续}起一个名
 字：@racket[k0]、@racket[k1]、@racket[k2]……先写一个插桩版的
-@racket[cc]，每捕获一个@tech{延续}，就给它配上一个新编号：
+@racket[label]，每捕获一个@tech{延续}，就给它配上一个新编号：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define n -1)
-(define (cc)
+(define (label)
   (set! n (+ n 1))
-  (let/cc kn    (define ln (cons kn n))
+  (let/cc kn
+    (define ln (cons kn n))
     (apply-cont ln ln)))]
 
 这里的 @racket[let/cc] 是 @racket[call/cc] 的简
 写：@racket[(let/cc kn body ...)] 就是
 @racket[(call/cc (λ (kn) body ...))]，给当前@tech{延续}起个名字
-@racket[kn]。这样的@tech{延续}是一个 @racket[cons] 对，
+@racket[kn]。
+
+现在交出去的@tech{延续}是一个 @racket[cons] 对，
 不再是能直接调用的函数，调用它的办法得我们自己规定。这也是当初单独给
 @racket[apply-cont] 起名字的用意：「向@tech{延续}传一个值」
-是一个独立的操作，@tech{延续}换一种表示，它就不再只是函数调
-用。@racket[apply-cont] 拆开两个对，印出谁跳向谁，再调用里面的函数：
+是一个独立的操作，@tech{延续}换一种表示，它就不再只是函数调用。
+插桩版的 @racket[apply-cont] 用 @racket[match-define] 拆开两个对，
+印出谁跳向谁，再调用里面的函数：
+
 @examples[#:eval ev #:label #f #:no-prompt
 (define (apply-cont ln lm)
   (match-define (cons kn n) ln)
   (match-define (cons km m) lm)
   (display (format "  (k~a k~a)" n m))
-  (kn lm))]插桩版的 @racket[cc] 交出新@tech{延续}之前，先用 @racket[apply-cont]
-拿它调用它自己，所以每个@tech{延续}第一次出现，都是 @racket[(kn kn)]
-这样一项。
+  (kn lm))]
 
-把谜题里的 @racket[label] 换成 @racket[cc]，调用换成
-@racket[apply-cont]，打印照旧：
+插桩版的 @racket[label] 和@xref["01:label-from-call-cc"]{原来那个}一
+样，捕获@tech{延续}之后先拿它调用它自己，只是这一次经过
+@racket[apply-cont]，所以每个@tech{延续}第一次出现，都是
+@racket[(kn kn)] 这样一项。
+
+谜题里的 @racket[(yin yang)] 换成 @racket[apply-cont]，打印照旧：
 
 @examples[#:eval ev #:label #f
 (eval:alts
- (let ([kn (cc)])
+ (let ([kn (label)])
    (displayln #\@)
-   (let ([kn+1 (cc)])
+   (let ([kn+1 (label)])
      (display #\*)
      (apply-cont kn kn+1)))
  (show-lines 4
   (λ ()
-    (let ([kn (cc)])
+    (let ([kn (label)])
       (displayln #\@)
-      (let ([kn+1 (cc)])
+      (let ([kn+1 (label)])
         (display #\*)
         (apply-cont kn kn+1))))))]
 
 每一项是一对名字，前一个是被跳向的目标，后一个是交给它的参数。程序里的
 @racket[kn]、@racket[kn+1] 只是变量名；印出来的
 @racket[k0]、@racket[k1]、@racket[k2]……才是一条条具体的@tech{延
-续}。@racket[k0] 由第一处 @racket[(cc)] 捕获，
+续}。@racket[k0] 由第一处 @racket[(label)] 捕获，
 只有这一条；@racket[k1]、@racket[k2]……都由第二处捕获。
 
 @subsubsection[#:tag "01:rules"]{读出规律}
@@ -201,7 +210,7 @@
 格}；把程序改写成这种写法，就是 @defterm{CPS 变换}。
 
 反过来看，原来的谜题就是这组@bold{互递归调用}，只是其中的@tech{延续}由
-@racket[(label)] 在运行时捕获，而不是作为参数传进来。回忆我们说过的
-@math{@ty{Label} = ¬@ty{Label}}，它是@tech{说谎者悖论}，
-一个既不能判真也不能判假的命题。阴阳谜题就是那个悖论运行起来的样子：
-同一个@tech{标签}一会儿被调用，一会儿被交出去，永远落不了地。
+@racket[(label)] 在运行时捕获，而不是作为参数传进
+来。@math{@ty{Label} = ¬@ty{Label}} 是@tech{说谎者悖论}，
+阴阳谜题就是它运行起来的样子：同一个@tech{标签}一会儿被调用，
+一会儿被交出去，永远落不了地。
