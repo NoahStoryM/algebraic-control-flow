@@ -160,11 +160,6 @@
 这条定律叫@defterm[#:en "Double Negation Elimination" #:abbr "DNE"]{双
 重否定消除}。
 
-这几条定律分两种。爆炸原理在直觉主义逻辑里也成立，@racket[absurd]
-只用一个空的 @racket[case-λ] 就写了出来。排中律、Clavius 律、Peirce
-律和 DNE 只在经典逻辑中成立，只承认构造性证明的逻辑一般证不出它们；
-我们的操作符也正是靠捕获@tech{延续}才实现它们的。
-
 @section[#:tag "01:where-fails"]{对应关系在哪里失效}
 
 @tech{Curry-Howard 对应}在纯粹的全函数语言（如 Agda 和 Coq）
