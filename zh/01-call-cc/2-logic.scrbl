@@ -91,10 +91,12 @@
 
 @mm{X + Y = X × {0} ∪ Y × {1} = {(a, 0), (b, 0), (b, 1), (c, 1)}}
 
-两个 @math{b} 就分开了。@math{X + Y} 叫带标签的联合（@italic{tagged
-union}）。要是 @math{X ∩ Y = ∅}，两边本来就没有公共元素，
-并集里每个元素来自哪一边本来就清楚，@math{X ∪ Y} 和 @math{X + Y}
-的元素一一对应，直接拿并集来用就行，用不着标签。
+两个 @math{b} 就分开了：看一个元素的标签是 0 还是 1，就知道它来自
+@math{X} 还是 @math{Y}，检查标签就是一个谓词。@math{X + Y}
+叫带标签的联合（@italic{tagged union}）。要是 @math{X ∩ Y = ∅}，
+两边本来就没有公共元素，并集里每个元素来自哪一边本来就清
+楚，@math{X ∪ Y} 和 @math{X + Y} 的元素一一对应，直接拿并集来用就行，
+用不着标签。
 
 逻辑里证明「@math{p} 或 @math{q}」，总要说清是哪一支成立。
 对应的是@defterm[#:en "disjoint union"]{不相交的联合}：
@@ -103,7 +105,7 @@ union}）。要是 @math{X ∩ Y = ∅}，两边本来就没有公共元素，
 @math{q} 本身。
 
 前面其实一直在设法分开两边。@racket[(cc)] 交出的 @math{p ∪ ¬p} 里，
-实数和函数本来就不相交，那版 @racket[mul] 用 @racket[real?]
+实数和函数本来就不相交，那版 @racket[mul] 用谓词 @racket[real?]
 一问就知道。@racket[call/cc] 不知道结果会是什么，结果也可能是函数，
 就把传回的结果包进列表，用 @racket[list?] 区分，
 这就是打标签。@racket[cc] 里看 @racket[saved] 是不是 @racket[#f]，
