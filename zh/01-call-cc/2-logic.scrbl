@@ -85,18 +85,22 @@
   写作
   @defsym["p ∨ q" "析取；联合类型 p ∪ q"]@math{∨}。}]
 这里要把两样东西分开。看两个集合
-@math{X = {a, b}}、@math{Y = {b, c}}。它们的并集（@italic{union}）是
-@math{{a, b, c}}：@math{b} 两边都有，并进来只剩一个，拿到 @math{b}，
-说不清它来自哪一边。给元素打上标签再并起来，得到
-@math{{(a, 0), (b, 0), (b, 1), (c, 1)}}，两个 @math{b} 就分开了，
-这叫带标签的联合（@italic{tagged union}）。要是 @math{X} 和 @math{Y}
-本来就没有公共元素，并集里每个元素来自哪一边本来就清楚，用不着标签。
+@math{X = {a, b}}、@math{Y = {b, c}}。它们的并集
+@math{X ∪ Y = {a, b, c}}：@math{b} 两边都有，并进来只剩一个，拿到
+@math{b}，说不清它来自哪一边。给元素打上标签再并起来，
+
+@mm{X + Y = X × {0} ∪ Y × {1} = {(a, 0), (b, 0), (b, 1), (c, 1)}}
+
+两个 @math{b} 就分开了。@math{X + Y} 叫带标签的联合（@italic{tagged
+union}）。要是 @math{X ∩ Y = ∅}，两边本来就没有公共元素，
+并集里每个元素来自哪一边本来就清楚，@math{X ∪ Y} 和 @math{X + Y}
+的元素一一对应，直接拿并集来用就行，用不着标签。
 
 逻辑里证明「@math{p} 或 @math{q}」，总要说清是哪一支成立。
 对应的是@defterm[#:en "disjoint union"]{不相交的联合}：
 两边的元素分得开。打标签只是做到不相交的一种办法。Typed Racket 的
-@racket[∪] 是普通的并集，两边分不分得开，要看 @math{p} 和 @math{q}
-本身。
+@racket[∪] 是普通的并集 @math{p ∪ q}，两边分不分得开，要看 @math{p} 和
+@math{q} 本身。
 
 前面其实一直在设法分开两边。@racket[(cc)] 交出的 @math{p ∪ ¬p} 里，
 实数和函数本来就不相交，那版 @racket[mul] 用 @racket[real?]
