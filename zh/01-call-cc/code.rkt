@@ -293,11 +293,11 @@
   (check-equal? (count-to-seven primitive:label primitive:goto) 7)
   (check-equal? (elimination:call/cc (λ (k) (+ 10 (k 4)))) 4)
   (check-true (output-starts-with?
-               (λ () (let ([kn (trace:label)])
+               (λ () (let ([yin (trace:label)])
                        (displayln #\@)
-                       (let ([kn+1 (trace:label)])
+                       (let ([yang (trace:label)])
                          (display #\*)
-                         (trace:apply-cont kn kn+1))))
+                         (trace:apply-cont yin yang))))
                "  (k0 k0)@\n  (k1 k1)*  (k0 k1)@\n  (k2 k2)*  (k1 k2)*  (k0 k2)@\n"))
   (check-true (output-starts-with? (λ () (yin:k0 yin:k0)) "@\n*@\n**@\n***@"))
   ;; 三重否定律：把 DNI 升两层的延续降回来，行为和原来的一样，什么也不捕获

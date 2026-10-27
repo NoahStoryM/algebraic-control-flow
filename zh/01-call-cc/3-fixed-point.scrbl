@@ -169,21 +169,21 @@
 
 @examples[#:eval ev #:label #f
 (eval:alts
- (let ([kn (label)])
+ (let ([yin (label)])
    (displayln #\@)
-   (let ([kn+1 (label)])
+   (let ([yang (label)])
      (display #\*)
-     (apply-cont kn kn+1)))
+     (apply-cont yin yang)))
  (show-lines 4
   (λ ()
-    (let ([kn (label)])
+    (let ([yin (label)])
       (displayln #\@)
-      (let ([kn+1 (label)])
+      (let ([yang (label)])
         (display #\*)
-        (apply-cont kn kn+1))))))]
+        (apply-cont yin yang))))))]
 
 每一项是一对名字，前一个是被跳向的目标，后一个是交给它的参数。程序里的
-@racket[kn]、@racket[kn+1] 只是变量名；印出来的
+@racket[yin]、@racket[yang] 只是变量名；印出来的
 @racket[k0]、@racket[k1]、@racket[k2]……才是一条条具体的@tech{延
 续}。@racket[k0] 由第一处 @racket[(label)] 捕获，
 只有这一条；@racket[k1]、@racket[k2]……都由第二处捕获。
@@ -199,9 +199,10 @@
 @racket[(k1 k2)]；@racket[k1] 被捕获时 @racket[yin] 绑的是
 @racket[k0]，于是接着是 @racket[(k0 k2)]。
 
-一般地，右边是交出去的参数，总是最近捕获的那条@tech{延续}，记作
-@racket[km]；左边是当前被调用的那条。调用的若是 @racket[(kn+1 km)]，
-打印一个 @racket[*]，下一步就是 @racket[(kn km)]，把同一个 @racket[km]
+一般地，把第 @math{n} 条@tech{延续}记作 @racket[kn]。
+右边是交出去的参数，总是最近捕获的那条@tech{延续}，记作 @racket[km]；
+左边是当前被调用的那条。调用的若是 @racket[(kn+1 km)]，打印一个
+@racket[*]，下一步就是 @racket[(kn km)]，把同一个 @racket[km]
 交给前一条：@racket[kn+1] 被捕获时，@racket[yin] 绑的正是
 @racket[kn]，它记下的就是这一条。调用的若是 @racket[(k0 km)]，打印
 @c|{@}|，下一步捕获一条新的 @racket[km+1]，从 @racket[(km+1 km+1)]
