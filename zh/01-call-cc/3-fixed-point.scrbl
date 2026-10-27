@@ -112,9 +112,9 @@
 
 @subsubsection[#:tag "01:trace"]{追踪谜题}
 
-给每个@tech{延续}一个唯一的名字
-（@racket[k0]、@racket[k1]、@racket[k2]……），让每次
-@racket[apply-cont] 都记录哪个@tech{延续}被应用于哪个：
+要回答这个问题，得看清每一步跳向了谁。给每个@tech{延续}起一个名
+字：@racket[k0]、@racket[k1]、@racket[k2]……先写一个插桩版的
+@racket[cc]，每捕获一个@tech{延续}，就把它和一个新名字配成一对：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define n -1)
@@ -124,22 +124,21 @@
     (define l
       (cons k (string->symbol
                (string-append "k" (number->string n)))))
-    (apply-cont l l)))
+    (apply-cont l l)))]
+
+这样的@tech{延续}是一个 @racket[cons] 对，不再是能直接调用的函数，
+调用它的办法得我们自己规定。@racket[apply-cont] 先印出谁跳向谁，
+再拆开这个对，调用里面的函数：
+
+@examples[#:eval ev #:label #f #:no-prompt
 (define (apply-cont kl l)
   (display #\tab)
   (display (list (cdr kl) (cdr l)))
   ((car kl) l))]
 
-这里的 @racket[let/cc] 借的是 Racket 自带的那一个。前文的
-@racket[let/cc]、@racket[call/cc]、@racket[cc] 是互相定义的，
-插桩时需要一个现成的起点。
-
-现在每个@tech{延续}都是一个函数和一个名字配成的 @racket[cons] 对，
-不能直接调用了，要经过 @racket[apply-cont]：它先印出谁跳向谁，
-再拆开这个对，调用里面的函数。@racket[cc] 造出带名字的@tech{延
-续}，@racket[apply-cont] 用掉它。插桩版的 @racket[cc]
-交出新@tech{延续}之前，先拿它调用它自己，所以每个@tech{延续}第一次出
-现，都是 @racket[(kn kn)] 这样一项。
+插桩版的 @racket[cc] 交出新@tech{延续}之前，先用 @racket[apply-cont]
+拿它调用它自己，所以每个@tech{延续}第一次出现，都是 @racket[(kn kn)]
+这样一项。
 
 把谜题里的 @racket[label] 换成 @racket[cc]，调用换成
 @racket[apply-cont]，打印照旧：
