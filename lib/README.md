@@ -12,6 +12,7 @@ zh/01-call-cc/main.scrbl      篇：标题，用 @include-section 串起各小�
 zh/01-call-cc/1-labels.scrbl  小篇
 zh/01-call-cc/2-logic.scrbl
 zh/01-call-cc/3-fixed-point.scrbl
+zh/01-call-cc/4-conclusion.scrbl 结论与未解的线索；附录也各自单独成文件
 ```
 
 - 每个文件以 `#lang acf/scribble` 开头（`scribble/lang/reader.rkt`、`lib/doc-lang.rkt`）：它就是 `scribble/manual` 加上 `scribble/example` 和 `acf.rkt` 的写法，不必再 `require`；`acf.rkt` 的 `defterm` 盖过 scribble/manual 自带的那个。要先 `raco pkg install --name acf`，`#lang acf/scribble` 才找得到。名字不用 `#lang acf`，把它留给以后（Noah 10/26）。
