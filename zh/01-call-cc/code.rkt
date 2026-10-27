@@ -218,7 +218,7 @@
 
 (module stage-18 typed/racket/no-check
   (define-type ⊥ (∪))
-  (define-type (¬ p) (Pairof (→ p ⊥) Natural))
+  (define-type (¬ p) (Pair (→ p ⊥) Natural))
   (define-type Label (¬ Label))
 
   (define n -1)

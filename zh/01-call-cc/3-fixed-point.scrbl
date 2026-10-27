@@ -126,7 +126,7 @@
 @tech{延续}带上一个编号，装进 @racket[cons] 对。
 
 @examples[#:eval ev #:label #f #:no-prompt
-(define-type (¬ p) (Pairof (→ p ⊥) Natural))
+(define-type (¬ p) (Pair (→ p ⊥) Natural))
 (define-type Label (¬ Label))]
 
 @racket[Label] 照旧是它自己的否定，只是否定换了表示。插桩版的
