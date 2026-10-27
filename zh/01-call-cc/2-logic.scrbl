@@ -259,11 +259,11 @@
   (list
    (list "" @elem{构造性} @elem{经典})
    (list @elem{@math{p} 与 @math{¬p}}
-         @elem{@bold{@tech{矛盾律}}：@racket[apply-cont]（函数调用）}
-         @elem{@bold{@tech{排中律}}：@racket[cc]（捕获@tech{延续}）})
+         @elem{@bold{@tech{矛盾律}}：@racket[apply-cont]}
+         @elem{@bold{@tech{排中律}}：@racket[cc]})
    (list @elem{@math{p} 与 @math{¬¬p}}
          @elem{@bold{DNI}：@racket[(λ (kv) (kv v))]}
-         @elem{@bold{DNE}：@racket[call/cc]（捕获@tech{延续}）}))]
+         @elem{@bold{DNE}：@racket[call/cc]}))]
 
 表里每一列的上下两格是一回事。左边一列只差参数次序，@tech{矛盾律}和
 DNI 互相推得出。右边一列都是提供当前@tech{延续}：@racket[cc] 就是
