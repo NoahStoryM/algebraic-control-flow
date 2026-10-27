@@ -379,16 +379,26 @@
 等一个 @racket[kq]，正是 @math{¬¬q}，交给 @racket[kkkq]。只有
 @racket[λ] 和函数调用，什么也没有捕获。
 
-试一试。用 @racket[call/cc] 拿到一条真正的@tech{延续} @racket[k]，
-当作一个 @math{¬q}；照 DNI 的写法把它包成一个 @math{¬¬¬q}，再交给
-@racket[triple-negation] 取回 @math{¬q}，把 @racket['hello] 交给它：
+试一试。先介绍一个写法：@racket[let/cc] 是 @racket[call/cc] 的简写，
+
+@racketblock[
+(define-syntax-rule (let/cc k body ...)
+  (call/cc (λ (k) body ...)))]
+
+@racket[(let/cc k body ...)] 就是
+@racket[(call/cc (λ (k) body ...))]，给当前@tech{延续}起个名字
+@racket[k]。用它拿到一条真正的@tech{延续} @racket[kq]，照 DNI
+的写法包成一个 @racket[kkkq]，交给 @racket[triple-negation] 取回一个
+@math{¬q}，再把 @racket[q] 交给它：
 
 @examples[#:eval ev #:label #f
-(call/cc
- (λ (k)
-   ((triple-negation (λ (kkq) (kkq k))) 'hello)))]
+(define q 'hello)
+(let/cc kq
+  (define (kkkq kkq) (kkq kq))
+  (let ([kq (triple-negation kkkq)])
+    (kq q)))]
 
-@racket['hello] 经 @racket[k] 交到了 @racket[call/cc] 返回的地方。
+@racket[q] 经取回的 @racket[kq] 交到了 @racket[let/cc] 返回的地方。
 
 为什么这一次不用捕获？要交出的结果本身也是一个函数，
 就可以先把它交出去；等它收到 @racket[q]，再用 @racket[q]

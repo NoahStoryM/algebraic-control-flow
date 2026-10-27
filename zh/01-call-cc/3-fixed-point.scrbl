@@ -128,11 +128,6 @@
     (define ln (cons kn n))
     (apply-cont ln ln)))]
 
-这里的 @racket[let/cc] 是 @racket[call/cc] 的简
-写：@racket[(let/cc kn body ...)] 就是
-@racket[(call/cc (λ (kn) body ...))]，给当前@tech{延续}起个名字
-@racket[kn]。
-
 现在交出去的@tech{延续}是一个 @racket[cons] 对，
 不再是能直接调用的函数，调用它的办法得我们自己规定。这也是当初单独给
 @racket[apply-cont] 起名字的用意：「向@tech{延续}传一个值」
