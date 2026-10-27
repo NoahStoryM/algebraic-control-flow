@@ -83,51 +83,63 @@
   （@math{y} 也一样）。也就是说：@math{p} 或 @math{q} 成立。
   这是@defterm{析取}，写作
   @defsym["p ∨ q" "析取；联合类型 p ∪ q"]@math{∨}。}]
-有一点要单独说清：Typed Racket 的 @racket[∪] 是普通的并集，
-不是不相交的联合。一个值属于 @math{p ∪ q}，并不记录它是从哪一边来的；
-要分清两边，程序员得自己用 @racket[real?] 这样的谓词去问。
-后面讨论@tech{析取}时，两个分支能不能分开，正取决于这一点。
-
-@tech{合取}和@tech{析取}各有一个单位元。@tech{合取}的单位元是
-@defsym["⊤" "真，合取的单位元；Typed Racket 的 (Values)"]@math{⊤}，
-对应 Typed Racket 中的 @racket[(Values)] 类型：它只有一个元素，
-就是什么也不交出的 @racket[(values)]。把它和别的结果放在一起，
-等于什么也没加，所以 @math{p ∧ ⊤ = ⊤ ∧ p = p}。@tech{析取}的单位元是
-@math{⊥}，也就是 @racket[(∪)] 类型：它没有任何值，并进去也什么都不多，
-所以 @math{p ∨ ⊥ = ⊥ ∨ p = p}。
+Typed Racket 的 @racket[∪] 是普通的并集：一个值属于 @math{p ∪ q}，
+并不记录它来自哪一边，要分清两边，得自己用 @racket[real?]
+这样的谓词去问。
 
 每个类型构造子都对应一个逻辑连接词。类型是命题，表达式是证明，
 构造程序就是构造证明。这个对应关系有一个名字：@defterm{Curry-Howard
 对应}。
 
-逻辑课本里和这些签名长得像的定律，还有一条 Peirce 律，比
-@racket[call/cc] 的签名多一个变量。借 @racket[absurd]，
-签名正好可以放宽成那个样子。交给 @racket[proc] 的@tech{延续}，类型是
-@math{p → ⊥}。把 @racket[absurd] 接在@tech{延续} @racket[k]
-后面，@racket[(compose absurd k)] 的类型就是 @math{p → q}。它的行为和
-@racket[k] 完全一样：一调用，@racket[k] 就跳走，永远到不了
-@racket[absurd]。所以交给 @racket[proc] 的@tech{延续}也可以看作
-@math{p → q}，@racket[call/cc] 的类型随之变成
-@math{((p → q) → p) → p}；令 @math{q = ⊥}，就回到原来的类型。
+用 @math{¬} 和 @math{∨} 改写，开头那两个签名都成了命题，
+对上逻辑课本里两条有名字的定律；@racket[absurd] 的签名也是一条：
 
-用 @math{¬} 和 @math{∨} 改写，这些签名都成了命题，各自对上一条定律：
 @tabular[#:style 'boxed #:row-properties '(bottom-border ())
   (list
    (list @elem{操作符} @elem{命题} @elem{定律})
    (list @elem{@racket[cc]} @elem{@math{p ∨ ¬p}}
          @elem{@defterm[#:en "law of excluded middle"]{排中律}})
    (list @elem{@racket[call/cc]} @elem{@math{(¬p → p) → p}} @elem{Clavius 律})
-   (list @elem{@racket[call/cc]} @elem{@math{((p → q) → p) → p}}
-         @elem{Peirce 律})
    (list @elem{@racket[absurd]} @elem{@math{⊥ → q}} @elem{爆炸原理}))]
 
-而 @math{@ty{Label} = @ty{Label} → ⊥} 变成
-@math{@ty{Label} = ¬@ty{Label}}：一个自身@tech{否定}的类型。
+Clavius 律还有一个更一般的形式，Peirce 律
+@math{((p → q) → p) → p}，@racket[call/cc] 也有这个类型。交给
+@racket[proc] 的@tech{延续} @racket[k] 永不返回，后面接上
+@racket[absurd]，@racket[(compose absurd k)] 的行为和 @racket[k]
+一样，类型却是 @math{p → q}。
 
-表里的定律分两种。爆炸原理在直觉主义逻辑里也成立，@racket[absurd]
-也确实只用一个空的 @racket[case-λ] 就写了出来。
-其余三条只在经典逻辑中成立，只承认构造性证明的逻辑一般证不出它们；
+这几条定律分两种。爆炸原理在直觉主义逻辑里也成立，@racket[absurd]
+只用一个空的 @racket[case-λ] 就写了出来。排中律、Clavius 律和 Peirce
+律只在经典逻辑中成立，只承认构造性证明的逻辑一般证不出它们；
 我们的操作符也正是靠捕获@tech{延续}才实现它们的。
+
+@section[#:tag "01:invisible"]{那条看不见的延续}
+
+逻辑课本里还有一条经典定律，@math{¬¬p → p}：一个命题的否定的否定为真，
+它自己就为真。@racket[call/cc] 也有这个类型吗？
+
+@racket[call/cc] 的签名说，交给它的函数可以正常返回一个 @math{p}。
+最后那版 @racket[mul] 里的 @racket[λ] 就是这样，没遇到零，
+乘积是正常返回的。而 @math{¬¬p} 是一个只等@tech{延续}、
+从不正常返回的函数。两者其实是一回事：下面两个表达式行为相同。
+
+@racketblock[
+(call/cc proc)
+(call/cc (λ (k) (k (proc k))))]
+
+@racket[call/cc] 交给 @racket[proc] 的 @racket[k]，通向的是
+@racket[call/cc] 返回之后的地方。调用 @racket[proc] 又是
+@racket[call/cc] 做的最后一件事，@racket[proc] 正常返回时，
+返回值也直接交到那里。所以 @racket[proc] 的结果不论经 @racket[k]
+显式交出，还是正常返回，都走到同一个出口；正常返回时隐含经过的，
+就是这条看不见的@tech{延续}。
+
+包了一层的 @racket[(λ (k) (k (proc k)))] 从不正常返回，类型是
+@math{(p → ⊥) → ⊥}，即 @math{¬¬p}。照这个读法，@racket[call/cc]
+的类型就是 @math{¬¬p → p}：交给它一个等@tech{延续}的计算，
+它从中把结果取出来。这条定律
+叫@defterm[#:en "Double Negation Elimination" #:abbr "DNE"]{双重否定消
+除}，也只在经典逻辑中成立。
 
 @section[#:tag "01:where-fails"]{对应关系在哪里失效}
 
@@ -135,7 +147,9 @@
 中是精确的：对任意非空的 @math{p}，@math{¬p} 确实是空的。
 真实的编程语言打破了这一点。
 
-考虑 @racket[(define (loop) (loop))]。它的类型是 @math{→ ⊥}，即
+考虑 @racket[(define (loop) (loop))]。它的类型是 @math{→ ⊥}：
+不收参数的函数，可以看成从只有一个元素的类型
+@defsym["⊤" "真，只有一个元素的类型"]@math{⊤}（真）出发，即
 @math{⊤ → ⊥ = ¬⊤}：真的@tech{否定}。在纯粹理论中，@math{¬⊤}
 应该是空的，因为真不可反驳。但 @racket[loop]
 是这个类型下合法的表达式，只不过一调用就永不终止。在非全函数语言中，
@@ -146,19 +160,17 @@
 @math{p} 构造 @math{¬p}：@racket[(λ (_) (exit 0))]。
 任何真命题的@tech{否定}都变成了非空。
 
-还有第三种失效。我们的类型 @math{@ty{Label} = ¬@ty{Label}}
-是一个自身@tech{否定}的类型，读作命题，就是一句「这句话是假的」。
-推一推：如果它为真（非空），那么 @math{¬@ty{Label}} 也非空，
-它的@tech{否定}为真，说的正是它为假。如果它为假（空），
-它的@tech{否定}反倒有值：空类型出发的函数总写得出来，就像
-@racket[absurd] 填充了 @math{⊥ → p}；可
+还有第三种失效。用 @math{¬} 改写，@math{@ty{Label} = @ty{Label} → ⊥}
+就是 @math{@ty{Label} = ¬@ty{Label}}：一个自身@tech{否定}的类型，
+读作命题，就是一句「这句话是假的」。推一推：如果它为真（非空），那么
+@math{¬@ty{Label}} 也非空，它的@tech{否定}为真，说的正是它为假。
+如果它为假（空），它的@tech{否定}反倒有值：空类型出发的函数总写得出
+来，就像 @racket[absurd] 填充了 @math{⊥ → p}；可
 @math{¬@ty{Label} = @ty{Label}}，于是它又有了值，变成了真。
 
-这就是@defterm{说谎者悖论}，它无法被一致地赋予真假值。
-一个类型在自己的定义里出现在否定的位置（@math{→} 的左侧），
-这样的递归类型没法当作一致的命题来解读，所以 Agda 和 Coq
-这样的一致类型论用@defterm{正性}条件禁止这类定义。Racket
-没有这个限制。悖论是合法的，我们可以构造 @racket[Label] 类型的值。
+这就是@defterm{说谎者悖论}，它无法被一致地赋予真假值。Agda 和 Coq
+这样的一致类型论禁止这类定义；Racket 没有这个限制，我们可以构造
+@racket[Label] 类型的值。
 
 每种情况下，严格的 Curry-Howard 解读都失效了：
 本应为空的@tech{否定}类型有了值，本应非法的自指类型变得合法。
@@ -197,25 +209,8 @@
 只用函数，这一步做不到，要靠 @racket[call/cc]：
 它把当前@tech{延续}交给这个函数当作 @racket[return]，实数交到
 @racket[return] 手里，也就回到了调用 @racket[call/cc] 的地方。
-
-可 @racket[call/cc] 的签名说，交给它的函数可以正常返回一个 @math{p}。
-最后那版 @racket[mul] 里的 @racket[λ] 就是这样，没遇到零，
-乘积是正常返回的。这和一个只等@tech{延续}、从不正常返回的函数是一回事
-吗？是一回事。下面两个表达式行为相同：
-
-@racketblock[
-(call/cc proc)
-(call/cc (λ (k) (k (proc k))))]
-
-@racket[call/cc] 交给 @racket[proc] 的 @racket[k]，通向的是
-@racket[call/cc] 返回之后的地方。而调用 @racket[proc] 是
-@racket[call/cc] 做的最后一件事，@racket[proc] 正常返回时，
-返回值也直接交到那里。所以 @racket[proc] 的结果不论经 @racket[k]
-显式交出，还是正常返回，都走到同一个出口；正常返回时隐含经过的，
-就是这条看不见的@tech{延续}。包了一层的 @racket[(λ (k) (k (proc k)))]
-从不正常返回，类型是 @math{(p → ⊥) → ⊥}，即 @math{¬¬p}。
-照这个读法，@racket[call/cc] 的类型是 @math{¬¬p → p}：
-交给它一个等@tech{延续}的计算，它从中把结果取出来。
+照@xref["01:invisible"]{「那条看不见的延续」}的读法，这正是
+@math{¬¬p → p}。
 
 再进一步，连等@tech{延续}的函数也不要，直接把当前@tech{延续}拿到手里。
 这就是 @racket[(cc)]：它先交出当前@tech{延续}，等有人把实数传回来，
@@ -238,11 +233,11 @@
 后两步不一样。@racket[call/cc] 和 @racket[cc]
 凭空提供了一个@tech{延续}，就是当前@tech{延续}。@racket[call/cc]
 把它交给一个等着的函数，从 @math{¬¬p} 得到 @math{p}，
-这是@defterm[#:en "Double Negation Elimination" #:abbr "DNE"]{双重否定
-消除}。@racket[cc] 干脆把它交到我们手里；以后可能经由它跳回来，让
-@racket[(cc)] 再返回一次，所以交出的东西得容得下两种情况：
-第一次是@tech{延续}，跳回来时是值，于是成了 @math{p ∨ ¬p}，
-这是@tech{排中律}。凭空提供一个@tech{延续}，这是经典的。
+这是@tech{双重否定消除}。@racket[cc] 干脆把它交到我们手里；
+以后可能经由它跳回来，让 @racket[(cc)] 再返回一次，
+所以交出的东西得容得下两种情况：第一次是@tech{延续}，跳回来时是值，
+于是成了 @math{p ∨ ¬p}，这是@tech{排中律}。凭空提供一个@tech{延续}，
+这是经典的。
 
 排成一张表：
 
@@ -256,20 +251,15 @@
          @elem{@bold{DNI}：@racket[(λ (k) (k v))]}
          @elem{@bold{DNE}：@racket[call/cc]（捕获@tech{延续}）}))]
 
-表里每一列的上下两格，其实是一回事。左边一列都是调用@tech{延续}，
-只差值和@tech{延续}谁先到：@math{¬p → p → ⊥} 和 @math{p → ¬p → ⊥}
-只差参数的次序，@tech{矛盾律}和 DNI 互相推得出。
-右边一列都是提供当前@tech{延续}，只差交给一个函数还是交到手
-里。@racket[cc] 能@xref["01:label-from-call-cc"]{用 @racket[call/cc]
-写出}，就是 @racket[(call/cc values)]；@racket[call/cc]
-也能@xref["01:call-cc"]{用 @racket[cc] 写出}，那段代码先调用
-@racket[(cc)]，拿到传回的结果就交出，拿到@tech{延续}就交给
-@racket[proc]。把 @racket[proc] 读成一个等@tech{延续}的函数，
-它读起来正是由@tech{排中律}推出 DNE：@racket[(cc)] 交出 @math{p}
-那一支，就直接交出；交出 @math{¬p} 那一支，就交给 @racket[proc]，
-得到的 @math{⊥} 照爆炸原理（@racket[absurd]）
-可以当作任何类型。@tech{排中律}和 DNE 作为对任意类型都成立的原则，
-同样互相推得出，经典的成分只在提供当前@tech{延续}的那一步。
+表里每一列的上下两格是一回事。左边一列都是调用@tech{延续}，
+只差值和@tech{延续}谁先到，@tech{矛盾律}和 DNI 互相推得出。
+右边一列都是提供当前@tech{延续}：@racket[cc] 就是
+@racket[(call/cc values)]；反过来，@xref["01:call-cc"]{用 @racket[cc]
+写出的 @racket[call/cc]} 先调用 @racket[(cc)]，拿到值就交出，
+拿到@tech{延续}就交给 @racket[proc]，这正是由@tech{排中律}推出
+DNE，@racket[proc] 那一支得到的 @math{⊥} 照爆炸原理可以当作任何类型。
+作为对任意类型都成立的原则，@tech{排中律}和 DNE 互相推得出，
+经典的成分只在提供当前@tech{延续}的那一步。
 
 @bold{练习}：@italic{实质条件} @math{¬p ∨ q} 是经典逻辑中 @math{p → q}
 的另一种编码。试着实现 @c{material->procedure : (¬p ∨ q) → p → q} 和
