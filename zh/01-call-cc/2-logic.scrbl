@@ -84,9 +84,9 @@
   只要有一个成立，@math{p} 或 @math{q} 就成立。这是@defterm{析取}，
   写作
   @defsym["p ∨ q" "析取；联合类型 p ∪ q"]@math{∨}。}]
-@margin-note{看两个集合 @math{X = {a, b}}、@math{Y = {b, c}}。并集
-@math{X ∪ Y = {a, b, c}}，拿到 @math{b}，说不清它来自哪一边。
-给元素打上标签再并起
+@margin-note{@racket[∪] 有一个容易误读的地方。看两个集合
+@math{X = {a, b}}、@math{Y = {b, c}}。并集 @math{X ∪ Y = {a, b, c}}，
+拿到 @math{b}，说不清它来自哪一边。给元素打上标签再并起
 来，@math{X + Y = X × {0} ∪ Y × {1} = {(a, 0), (b, 0), (b, 1), (c, 1)}}，
 看标签是 0 还是 1 就分得开，检查标签就是一个谓词。@math{X + Y}
 叫@defterm[#:en "tagged union"]{带标签的联合}。丢掉标签，总有一个从
@@ -160,9 +160,9 @@
 
 @section[#:tag "01:where-fails"]{对应关系在哪里失效}
 
-@tech{Curry-Howard 对应}在纯粹的全函数语言（如 Agda 和 Coq）
-中是精确的：对任意非空的 @math{p}，@math{¬p} 确实是空的。
-真实的编程语言打破了这一点。
+@tech{Curry-Howard 对应}在纯粹的全函数语言（每个函数都会终止并交出值，
+如 Agda 和 Coq）中是精确的：对任意非空的 @math{p}，@math{¬p}
+确实是空的。真实的编程语言打破了这一点。
 
 考虑 @racket[(define (loop) (loop))]。它的类型是 @math{→ ⊥}：
 不收参数的函数，可以看成从只有一个元素的类型
@@ -195,7 +195,9 @@
 本应为空的@tech{否定}类型有了值，本应非法的自指类型变得合法。
 我们把这个对应关系当作结构性的指引：类型的结构映射到逻辑连接词的结构，
 即便严格的逻辑解读不再精确。由类型读出程序会做什么，
-也是这种意义上的指引，不是可靠的逻辑推导。
+也是这种意义上的指引，不是可靠的逻辑推导。除非特别指出，
+下面照旧只看不含无限循环、@racket[exit] 和自指类型的程序；
+前面读出的定律对应，在这个范围里成立。
 
 @section[#:tag "01:watershed"]{分水岭}
 
@@ -346,12 +348,12 @@ DNI 互相推得出。右边一列都是提供当前@tech{延续}：@racket[cc] 
 @racket[(exit …)]。
 
 所以程序是一个 @math{¬¬@ty{Byte}}：它等着计算终结处的那条@tech{延续}。
-在语言里模拟 @racket[exit]，得靠 @racket[call/cc]
-捕获当前@tech{延续}；OS 启动程序时，这条@tech{延续}已经在那里了，就是
-@racket[exit]，直接交给程序就行。程序把退出码交给 @racket[exit]，OS
-接到的就是退出码本身：从 @math{¬¬@ty{Byte}} 得到 @racket[Byte]，
-正是@xref["01:watershed"]{「分水岭」}里的 DNE。
-这一步在语言的边界上完成，什么也不用捕获。
+多数语言本身只提供 @racket[exit]，不提供 @racket[call/cc]；有了
+@racket[call/cc]，没有 @racket[exit] 也能像上面那样模拟出来。站在 OS
+那一边看，启动程序时，这条@tech{延续}已经在那里了：OS 把 @racket[exit]
+交给程序，再收下程序交来的退出码，从 @math{¬¬@ty{Byte}} 得到
+@racket[Byte]，正是@xref["01:watershed"]{「分水岭」}里的 DNE。
+这条@tech{延续}由 OS 交来，语言里什么也不用捕获。
 
 @subsection[#:tag "01:neg-q"]{代入 @math{¬q}}
 
@@ -399,7 +401,12 @@ DNI 的写法包成一个 @racket[kkkq]，交给 @racket[triple-negation]
 
 @racket[q] 经取回的 @racket[kq] 交到了 @racket[let/cc] 返回的地方。
 外层的 @racket[kq] 是捕获来的@tech{延续}，@racket[let] 里重新绑定的
-@racket[kq] 是取回的函数，两个同名，因为类型一样，都是 @math{¬q}。
+@racket[kq] 是取回的函数。两个不是同一个值，行为却一样：调用取回的
+@racket[kq]，它把 @racket[q] 包成 @racket[kkq] 交给 @racket[kkkq]，
+@racket[kkkq] 又把外层的 @racket[kq] 交给 @racket[kkq]，@racket[q]
+最终交到外层的 @racket[kq] 手里。先用 DNI 包一层，再用三重否定律取回，
+回到了原样。@racket[triple-negation] 里 @racket[kkq] 的形参也叫
+@racket[kq]，在这个例子里，它收到的正是外层那条@tech{延续}。
 
 @math{¬¬¬q → ¬q} 这条定律叫@defterm[#:en "law of triple negation"]{三
 重否定律}，是一条直觉主义定理。
@@ -434,14 +441,15 @@ DNI 的写法包成一个 @racket[kkkq]，交给 @racket[triple-negation]
 层数还带出一个规律。DNI、DNE 一次加减两层，不改变奇偶，@tech{矛盾律}却
 要一奇一偶。奇偶不同的两个值，把低的那个反复做 DNI，
 总能升到与另一个相邻，再调用，@racket[triple-negation] 就是这样做的。
-从 @math{p ∨ ¬p} 出发，两支各做几次 DNI，也就得到任意的「偶数层 ∨
-奇数层」，用不着 DNE。奇偶相同的两个，只靠 DNI、DNE 凑不成相邻。
+从 @math{p ∨ ¬p} 出发，左支做一次 DNI，就得到 @math{¬¬p ∨ ¬p}，第 2
+层或第 1 层；两支各做几次 DNI，也就得到任意的「偶数层 ∨ 奇数层」，
+用不着 DNE。奇偶相同的两个，只靠 DNI、DNE 凑不成相邻。
 
 回到@xref["01:watershed"]{「分水岭」}留下的问题：从 @math{¬¬p} 取出
 @math{p}，非得凭空拿到一个@tech{延续}不可吗？
 不一定。@xref["01:program-type"]{「程序的类型」}里，那条@tech{延续}由
-OS 交来；@racket[triple-negation] 更省事，连交来的@tech{延续}也不需
-要，它交出的 @math{¬q}，用交进来的 @racket[kkkq] 就做成了。
+OS 交来；@racket[triple-negation] 更省事，不需要另外交来一条
+@math{¬q}，它交出的 @math{¬q}，用交进来的 @racket[kkkq] 就做成了。
 
 用层数说，区别在要交出的东西落在哪一层。落在第 1 层或更高，
 要交出的是一个函数，可以先交出去，等下一层的值来了再算。落到第 0 层，

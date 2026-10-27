@@ -132,7 +132,8 @@
     (define ln (cons kn n))
     (apply-cont ln ln)))]
 
-现在交出去的@tech{延续}是一个 @racket[cons] 对，
+现在交出去的是一个 @racket[cons] 对 @racket[ln]，装着第 @racket[n]
+条@tech{延续} @racket[kn] 和它的编号 @racket[n]，
 不再是能直接调用的函数，调用它的办法得我们自己规定。这也是当初单独给
 @racket[apply-cont] 起名字的用意：「向@tech{延续}传一个值」
 是一个独立的操作，@tech{延续}换一种表示，它就不再只是函数调用。

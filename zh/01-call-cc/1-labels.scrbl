@@ -190,16 +190,22 @@ then 分支返回。两条路径都通过@tech{延续} @racket[result] 汇合，
 @racket[proc]，而是包上一层：@racket[(λ args (x args))]
 把收到的参数收成列表 @racket[args]，再交给 @racket[x]。
 
-@racket[proc] 拿到这个包装好的@tech{延续}。它若在某处调用@tech{延
-续}，@racket[cc] 的@tech{延续}收到那张列表。@racket[cc] 自己的
-@racket[(λ args …)] 又把它收进一层列表存进
-@racket[saved]；@racket[(cc)] 再次返回时，@c{apply values}
-剥掉这一层，@racket[x] 绑定到的正是 @racket[call/cc] 包的那张列表。
-@racket[(list? x)] 为真，@racket[(apply values x)]
-把列表拆开交回。@racket[call/cc] 的调用者收到了传给@tech{延续}的
-值，@racket[proc] 里剩下的工作被跳过。@racket[proc]
-若不调用@tech{延续}而正常返回，它的返回值就是 @racket[call/cc]
-的结果。
+@racket[proc] 拿到这个包装好的@tech{延续}，记作 @racket[k]。
+拿一个值走一遍，看 @racket[proc] 调用 @racket[(k 5)] 时发生什么：
+
+@itemlist[#:style 'ordered
+  @item{包装 @racket[(λ args (x args))] 收到 @racket[5]，@racket[args]
+  是 @racket[(5)]，交给 @racket[x]。}
+  @item{@racket[x] 是 @racket[cc] 的@tech{延续}，它的
+  @racket[(λ args …)] 收到 @racket[(5)]，@racket[args] 是
+  @racket[((5))]，存进 @racket[saved]，跳回 @racket[cc] 里面。}
+  @item{@racket[(cc)] 再次返回，@c{apply values} 剥掉一层，交出
+  @racket[(5)]，@racket[x] 绑定到它。}
+  @item{@racket[(list? x)] 为真，@racket[(apply values x)] 再剥一层，
+  交回 @racket[5]。}]
+@racket[call/cc] 的调用者收到了传给@tech{延续}的值，@racket[proc]
+里剩下的工作被跳过。@racket[proc] 若不调用@tech{延续}而正常返回，
+它的返回值就是 @racket[call/cc] 的结果。
 
 有了 @racket[call/cc]，@racket[mul] 可以再写一次：
 
@@ -299,7 +305,7 @@ then 分支返回。两条路径都通过@tech{延续} @racket[result] 汇合，
          @elem{是：必须用 @racket[set!] 在跳转间传递信息}
          @elem{否}
          @elem{否})
-   (list @elem{@bold{需要手动分支？}}
+   (list @elem{@bold{要分辨返回值？}}
          @elem{否}
          @elem{是：必须区分 @math{p} 和 @math{p → ⊥}}
          @elem{否}))]
