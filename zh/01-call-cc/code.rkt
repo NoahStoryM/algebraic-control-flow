@@ -210,7 +210,6 @@
   (define ((triple-negation kkkq) q)
     (define (kkq kq) (kq q))
     (kkkq kkq))
-  (define (kkkq kkq) (kkq displayln))
   (provide (all-defined-out))
 )
 
@@ -293,5 +292,5 @@
                "  (k0 k0)@\n  (k1 k1)*  (k0 k1)@\n  (k2 k2)*  (k1 k2)*  (k0 k2)@\n"))
   (check-true (output-starts-with? (λ () (yin:k0 yin:k0)) "@\n*@\n**@\n***@"))
   ;; 三重否定律：把 DNI 升两层的延续降回来，行为和原来的一样，什么也不捕获
-  (check-equal? (with-output-to-string (λ () ((tn:triple-negation tn:kkkq) 'hello))) "hello\n")
+  (check-equal? (call/cc (λ (k) ((tn:triple-negation (λ (kkq) (kkq k))) 'hello))) 'hello)
   (check-equal? ((tn:triple-negation (λ (kkq) (kkq (λ (q) (list 'got q))))) 7) '(got 7)))

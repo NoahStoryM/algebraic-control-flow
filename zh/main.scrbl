@@ -12,6 +12,11 @@
 类型标注使用 Typed Racket 语法，但不会被类型检查器验证。
 这些标注是描述预期契约的设计文档，并非机器检查的断言。}
 
+@margin-note{类型标注的读法：@racket[(: f (→ A B))] 说 @racket[f]
+接受一个 @racket[A]、交出一个 @racket[B]；@racket[(→ B)]
+是不收参数的函数；@racket[(∀ (p) …)] 引入类型变量
+@racket[p]；@racket[(∪ A B)] 是 @racket[A] 与 @racket[B] 的联合。}
+
 读这本书只需要能读 Scheme：@racket[λ]、@racket[let]、基本的递归。
 别的写法，用到的地方会交代。书中的例子都在生成这份文档时实际运行过，
 打印和结果照录。

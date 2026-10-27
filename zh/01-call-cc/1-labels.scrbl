@@ -221,84 +221,6 @@ then 分支返回。两条路径都通过@tech{延续} @racket[result] 汇合，
 许多语言里内建的那个 @racket[return]，在这里是一个普通的值，由
 @racket[call/cc] 交到我们手上。
 
-@racket[proc] 常常只是这样一个给当前@tech{延续}起名字的 @racket[λ]。
-定义一个宏，省去这层包装：
-
-@examples[#:eval ev #:label #f #:no-prompt
-(define-syntax-rule (let/cc k body ...)
-  (call/cc (λ (k) body ...)))]
-
-@racket[define-syntax-rule] 定义一个宏：@racket[(let/cc k body ...)]
-在展开时改写成 @racket[(call/cc (λ (k) body ...))]。@racket[mul]
-的主体于是可以写成 @racket[(let/cc return …)]。
-
-@bold{练习}：用 @racket[let/cc] 定义 @racket[call/cc]。
-
-@subsection[#:tag "01:general-type"]{更一般的延续类型}
-
-交给 @racket[proc] 的@tech{延续}，类型是 @math{p → ⊥}。
-这个类型还可以放宽。先看一个奇怪的函数：
-
-@examples[#:eval ev #:label #f #:no-prompt
-(: absurd (∀ (q) (→ ⊥ q)))
-(define absurd (case-λ))]
-
-@racket[case-λ] 按参数的个数分情形定义函数，每个子句对应一种调用方式。
-一个子句也没有的 @racket[(case-λ)]，没有任何调用方式能与它匹配，
-这样的函数永远不会被调用。这正合 @racket[⊥] 的情形：@racket[⊥]
-没有值，谁也交不出一个来给它。既然永远不会被调用，
-说它交出什么类型都不会错，所以 @racket[absurd] 的类型是
-@math{⊥ → q}，@math{q} 任意。从@tech{空类型}可以推出任何东西。把
-@racket[absurd] 接在@tech{延续} @racket[k] 后
-面，@racket[(compose absurd k)] 的类型就是 @math{p → q}。它的行为和
-@racket[k] 完全一样：一调用，@racket[k] 就跳走，永远到不了
-@racket[absurd]。所以交给 @racket[proc] 的@tech{延续}也可以看作
-@math{p → q}，@racket[call/cc] 的类型随之变成：
-
-@mm{((p → q) → p) → p}
-
-令 @math{q = ⊥}，就回到原来的类型。原来的版本更直接地说出了@tech{延
-续}是什么：一个接收 @math{p}、永不返回的函数。
-
-@subsection[#:tag "01:invisible"]{那条看不见的延续}
-
-@racket[k] 和 @racket[(compose absurd k)] 行为一样，因为 @racket[k]
-不会返回，后面接了什么都不会执行。@racket[call/cc]
-里也有一处类似的等价，下面两个表达式行为相同：
-
-@racketblock[
-(call/cc proc)
-(call/cc (λ (k) (k (proc k))))]
-
-这里要分清三样东西：@racket[proc] 自己；第二行里包了一层的函数
-@racket[(λ (k) (k (proc k)))]；还有 @racket[proc] 正常返回时，
-返回值要去的地方。
-
-先看运行路线。@racket[call/cc] 的第一行 @racket[(define x (cc))]
-捕获了一个@tech{延续}。这个@tech{延续}收到值以后做什么？走完
-@racket[if]，从 @racket[call/cc] 返回，接着做 @racket[call/cc]
-调用之后的事。所以它就是 @racket[call/cc] 自己的@tech{延续}，交给
-@racket[proc] 的 @racket[k] 通向的也是这里。再看
-@racket[(proc (λ args (x args)))]：它处在 @racket[call/cc]
-的尾位置，@racket[proc] 正常返回时，返回值同样直接交给
-@racket[call/cc] 的@tech{延续}。
-
-于是两条路汇入同一个出口。第二行里，@racket[proc] 的结果经 @racket[k]
-显式地交出去；第一行里，它经正常返回走到同一个地方。
-正常返回时隐含经过的，就是这条看不见的@tech{延续}。
-
-再看类型。@racket[proc] 自己的类型是 @math{(p → ⊥) → p}，
-它可以正常返回一个 @math{p}，@racket[call/cc] 的类型就照这个读法写成。
-包了一层的 @racket[(λ (k) (k (proc k)))] 则从不正常返回，结果总是经
-@racket[k] 交出，它的类型是 @math{(p → ⊥) → ⊥}。两者交给
-@racket[call/cc]，行为相同。也可以干脆要求 @racket[proc]
-本身就从不正常返回，它的类型便是 @math{(p → ⊥) → ⊥}。
-照这个读法，@racket[call/cc] 的类型是：
-
-@mm{((p → ⊥) → ⊥) → p}
-
-输入一个借@tech{延续}来交付结果的计算，从中把结果取出来。
-
 @section[#:tag "01:label-from-call-cc"]{从 @racket[call/cc] 定义标签}
 
 令 @math{p = @ty{Label}}，@racket[call/cc] 交给 @racket[proc]
@@ -329,13 +251,6 @@ then 分支返回。两条路径都通过@tech{延续} @racket[result] 汇合，
 的@tech{延续}。以后 @racket[(goto l)] 再调用 @racket[(l l)]，
 跳回同一处，@racket[(label)] 又一次返回 @racket[l]。
 这正是开头为一等@tech{标签}描述的行为。
-
-这里的 @racket[call/cc] 要当作现成的原语，比如 Racket 自带的那一个。
-若接上前面那个由@tech{标签}造出来的 @racket[call/cc]，
-就绕成了一个圈：@racket[label] 调用 @racket[call/cc]，@racket[call/cc]
-调用 @racket[cc]，@racket[cc] 又调用 @racket[label]，永远转下去。
-互相定义的意思是，每一个都能以另一个为原语写出来，
-而不是把这些定义放进同一个程序。
 
 顺序也可以反过来。以@tech{标签}为原语，先得到 @racket[call/cc]，
 再由它得到 @racket[cc]：
@@ -379,9 +294,7 @@ then 分支返回。两条路径都通过@tech{延续} @racket[result] 汇合，
    (list @elem{@bold{涉及的类型}}
          @elem{只有 @racket[Label]}
          @elem{联合类型 @math{p ∪ (p → ⊥)}}
-         @elem{高阶：@math{((p → ⊥) → p) → p} 或
-               @math{((p → ⊥) → ⊥) → p}})
-   (list @elem{@bold{需要可变状态？}}
+         @elem{高阶：@math{((p → ⊥) → p) → p}})   (list @elem{@bold{需要可变状态？}}
          @elem{是：必须用 @racket[set!] 在跳转间传递信息}
          @elem{否}
          @elem{否})
@@ -391,8 +304,7 @@ then 分支返回。两条路径都通过@tech{延续} @racket[result] 汇合，
          @elem{否}))]
 
 三种风格能做到的事没有区别，力量的来源也是同一个：跳转目标成为了值。在
-C 中，label 是代码中的固定位置，不能存入变量、不能传给函数、
-不能作为返回值。label 成为值的那一刻，@racket[goto] 就获得了
-@racket[call/cc] 的全部力量。这一步之后的一切都是易用性方面的取舍：
-每种风格为更方便地管理同一种能力付出不同的代价（可变状态、分支、
+C 中，label 只是代码中的一个固定位置；它成为值的那一刻，@racket[goto]
+就获得了 @racket[call/cc] 的全部力量。这一步之后的一切都是易用性方面的
+取舍：每种风格为更方便地管理同一种能力付出不同的代价（可变状态、分支、
 高阶类型）。
