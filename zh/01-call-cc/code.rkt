@@ -220,8 +220,8 @@
   (define (cc)
     (set! n (+ n 1))
     (let/cc kn
-      (define l (cons kn n))
-      (apply-cont l l)))
+      (define ln (cons kn n))
+      (apply-cont ln ln)))
 
   (define (apply-cont lm ln)
     (match-define (cons km m) lm)

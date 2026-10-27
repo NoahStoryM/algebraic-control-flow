@@ -120,8 +120,8 @@
 (define (cc)
   (set! n (+ n 1))
   (let/cc kn
-    (define l (cons kn n))
-    (apply-cont l l)))]
+    (define ln (cons kn n))
+    (apply-cont ln ln)))]
 这样的@tech{延续}是一个 @racket[cons] 对，不再是能直接调用的函数，
 调用它的办法得我们自己规定。@racket[apply-cont] 拆开两个对，
 印出谁跳向谁，再调用里面的函数：
