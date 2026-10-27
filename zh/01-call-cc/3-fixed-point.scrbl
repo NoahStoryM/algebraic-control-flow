@@ -50,25 +50,11 @@
 用。@xref["01:label-from-call-cc"]{「从 call/cc 定义标签」}里那句
 @racket[(define (label) (cc))]，就是这样一个不分支的 @racket[cc]。
 
-@racket[Label] 是@defterm{否定的不动点}：它的反驳就是它自己。连
-@racket[goto] 也是一个@tech{标签}：
+@racket[Label] 是@defterm{否定的不动点}，就
+是@xref["01:where-fails"]{「对应关系在哪里失效」}里那个自身否定的类
+型。连 @racket[goto] 也是一个@tech{标签}：
 
 @mm{@ty{Label} → ⊥ = ¬@ty{Label} = @ty{Label}}
-
-之前的例子里，我们总是先用 @racket[(label)] 造一个@tech{标签}，
-存进变量，再交给 @racket[goto] 跳回去。省掉中间的变量，就是：
-
-@racketblock[
-(goto (label))]
-
-@tech{标签}在这里只当跳转的目标。但既然每个 @racket[Label]
-同时也是一个合法的 @math{¬@ty{Label}}，没有什么能阻止我们把@italic{任
-意}@tech{标签}传给任何其他@tech{标签}：
-
-@racketblock[
-((label) (label))]
-
-它和 @racket[(goto (label))] 一样，会一直回跳下去。
 
 再数一数层数。以 @racket[Label] 为底，它外面包一层否定，得到的
 @math{¬@ty{Label}} 还是 @racket[Label]；再包一层，还是
@@ -86,9 +72,28 @@
 
 类型是 @racket[⊥]，却永远算不完。
 
-@subsection[#:tag "01:yin-yang"]{阴阳谜题}
+@subsection[#:tag "01:yin-yang"]{把标签交给标签}
 
-把@tech{标签}直接交给@tech{标签}，就得到 David Madore 的阴阳谜题：
+之前的例子里，我们总是先用 @racket[(label)] 造一个@tech{标签}，
+存进变量，再交给 @racket[goto] 跳回去。省掉中间的变量，就是：
+
+@racketblock[
+(goto (label))]
+
+@racket[goto] 跳回 @racket[(label)]，它再次交出同一个@tech{标签}，
+又交给 @racket[goto]，一直回跳下去。
+
+@racket[goto] 本身也是一个@tech{标签}。既然每个 @racket[Label]
+同时也是一个合法的 @math{¬@ty{Label}}，没有什么能阻止我们把它也换成一
+个新捕获的@tech{标签}：
+
+@racketblock[
+((label) (label))]
+
+这回会怎样运行？光看这一行看不出来。Racket 从左往右求值，
+先捕获前一个@tech{标签}，再捕获后一个。用 @racket[let]
+把这个次序写明，给两个@tech{标签}起名 @racket[yin]、@racket[yang]，
+再在中间打印点什么：
 
 @examples[#:eval ev #:label #f
 (eval:alts
@@ -105,9 +110,10 @@
         (display #\*)
         (yin yang))))))]
 
-两次 @racket[(label)] 交出的都是@tech{标签}。@racket[(yin yang)]
-就是一次函数调用：同一个类型，@racket[yin] 当作@tech{延
-续}，@racket[yang] 当作交给它的值。
+这就是 David Madore 的阴阳谜题。两次 @racket[(label)]
+交出的都是@tech{标签}。@racket[(yin yang)] 就是一次函数调用：
+同一个类型，@racket[yin] 当作@tech{延续}，@racket[yang]
+当作交给它的值。
 
 程序里没有循环，没有计数器，也没有 @racket[set!]：只有两次
 @racket[(label)]、两次打印和一次调用。输出却是一道无限增长的阶梯，
@@ -179,7 +185,9 @@
 绑的正是 @racket[kn]，它记下的就是这一条。调用的若是
 @racket[(k0 km)]，打印 @c|{@}|，下一步捕获一条新的 @racket[km+1]，从
 @racket[(km+1 km+1)] 开始。每到一次 @racket[k0]，就多一条@tech{延续}，
-下一行就要多退一步，多打印一个 @racket[*]。
+下一行就要多退一步，多打印一个 @racket[*]。多出来的那个 @racket[*]，
+就记在@tech{延续}里：每条 @racket[kn+1] 都记着前一条 @racket[kn]，
+一条接一条连成链。
 
 这条规律只说@tech{延续}之间谁调用谁、交出的是什么，照着写成函数就行：
 跳向一条@tech{延续}，就是调用它；捕获一条新@tech{延续}，
@@ -207,5 +215,5 @@
 反过来看，原来的谜题就是这组@bold{互递归调用}，只是其中的@tech{延续}由
 @racket[(label)] 在运行时捕获，而不是作为参数传进
 来。@math{@ty{Label} = ¬@ty{Label}} 是@tech{说谎者悖论}，
-阴阳谜题就是它运行起来的样子：同一个@tech{标签}一会儿被调用，
+阴阳谜题就像让它运行了起来：同一个@tech{标签}一会儿被调用，
 一会儿被交出去，永远落不了地。

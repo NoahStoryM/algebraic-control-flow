@@ -191,12 +191,15 @@ then 分支返回。两条路径都通过@tech{延续} @racket[result] 汇合，
 把收到的参数收成列表 @racket[args]，再交给 @racket[x]。
 
 @racket[proc] 拿到这个包装好的@tech{延续}。它若在某处调用@tech{延
-续}，@racket[cc] 的@tech{延续}收到那张列表，@racket[(cc)]
-再次返回，@racket[x] 绑定到列表，@racket[(list? x)]
-为真，@racket[(apply values x)] 把列表拆开交回。@racket[call/cc]
-的调用者收到了传给@tech{延续}的值，@racket[proc]
-里剩下的工作被跳过。@racket[proc] 若不调用@tech{延续}而正常返回，
-它的返回值就是 @racket[call/cc] 的结果。
+续}，@racket[cc] 的@tech{延续}收到那张列表。@racket[cc] 自己的
+@racket[(λ args …)] 又把它收进一层列表存进
+@racket[saved]；@racket[(cc)] 再次返回时，@c{apply values}
+剥掉这一层，@racket[x] 绑定到的正是 @racket[call/cc] 包的那张列表。
+@racket[(list? x)] 为真，@racket[(apply values x)]
+把列表拆开交回。@racket[call/cc] 的调用者收到了传给@tech{延续}的
+值，@racket[proc] 里剩下的工作被跳过。@racket[proc]
+若不调用@tech{延续}而正常返回，它的返回值就是 @racket[call/cc]
+的结果。
 
 有了 @racket[call/cc]，@racket[mul] 可以再写一次：
 
@@ -270,8 +273,7 @@ then 分支返回。两条路径都通过@tech{延续} @racket[result] 汇合，
 
 (define (cc) (call/cc values))]
 
-这个 @racket[call/cc] 手边没有 @racket[cc]，就直接用@tech{标签}和
-@racket[set!]，写法和 @racket[cc] 一样，只是把@tech{延续}交给
+这个 @racket[call/cc] 的写法和 @racket[cc] 一样，只是把@tech{延续}交给
 @racket[proc]，而不是交给调用者。以 @racket[cc]
 为原语，@tech{标签}就是 @racket[(cc)] 第一次交出的那个@tech{延续}：
 
@@ -279,9 +281,8 @@ then 分支返回。两条路径都通过@tech{延续} @racket[result] 汇合，
 (define (label) (cc))
 (define (goto l) (l l))]
 
-以后 @racket[(goto l)] 把 @racket[l] 交给它自己，@racket[(cc)]
-再次返回，交出的还是 @racket[l]。无论从哪一个出发，
-另外两个都写得出来：三种表述在@bold{表达能力上等价}。
+无论从哪一个出发，另外两个都写得出来：三种表述在@bold{表达能力上等
+价}。
 
 @section[#:tag "01:compare"]{比较}
 
@@ -304,7 +305,5 @@ then 分支返回。两条路径都通过@tech{延续} @racket[result] 汇合，
          @elem{否}))]
 
 三种风格力量的来源是同一个：跳转目标成为了值。
-跳转目标成为值的那一刻，@racket[goto] 就获得了 @racket[call/cc]
-的全部力量。这一步之后的一切都是易用性方面的取舍：
-每种风格为更方便地管理同一种能力付出不同的代价（可变状态、分支、
-高阶类型）。
+之后的一切都是易用性的取舍，每种风格为管理同一种能力，付出不同的代价：
+可变状态、分支、高阶类型。
