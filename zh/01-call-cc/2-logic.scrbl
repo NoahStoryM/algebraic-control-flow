@@ -223,7 +223,7 @@
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: apply-cont (∀ (p) (→ (¬ p) p ⊥)))
-(define (apply-cont kv . v*) (apply kv v*))]
+(define (apply-cont kv v) (kv v))]
 
 这就是调用@tech{延续}。最后那版 @racket[mul] 里的
 @racket[(return r)]，就是一次 @racket[apply-cont]。

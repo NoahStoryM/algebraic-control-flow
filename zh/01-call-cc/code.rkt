@@ -194,7 +194,7 @@
   (define-type (¬¬ p) (¬ (¬ p)))
   (: apply-cont (∀ (p) (→ (¬ p) p ⊥)))
 
-  (define (apply-cont kv . v*) (apply kv v*))
+  (define (apply-cont kv v) (kv v))
   (provide (all-defined-out))
 )
 
@@ -202,7 +202,7 @@
   (define-type ⊥ (∪))
   (define-type (¬ p) (→ p ⊥))
   (: apply-cont (∀ (p) (→ (¬ p) p ⊥)))
-  (define (apply-cont kv . v*) (apply kv v*))
+  (define (apply-cont kv v) (kv v))
   (define-type (¬¬  q) (¬ (¬  q)))
   (define-type (¬¬¬ q) (¬ (¬¬ q)))
 
