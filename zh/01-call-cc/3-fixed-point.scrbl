@@ -34,24 +34,22 @@
 
 @mm{@ty{Label} ∨ ¬@ty{Label} = @ty{Label} ∨ @ty{Label}}
 
-一真一假的两支，在这里分不出真假。@xref["01:types-to-logic"]{「从类型
-到逻辑」}说过，Typed Racket 的 @racket[∪] 是普通的并集，
-不记录值从哪一边来；两边既然是同一个类型，并起来就只剩它自己：
+一真一假的两支，在这里分不出真假。要是用@tech{带标签的联合}
+@math{@ty{Label} + @ty{Label}}，每个@tech{标签} @math{l} 还有
+@math{(l, 0)}、@math{(l, 1)} 两份，记着自己来自哪一支。
+可是@xref["01:types-to-logic"]{「从类型到逻辑」}说过，Typed Racket 的
+@racket[∪] 是普通的并集，不记录值从哪一边来，
+就像经过那个丢掉标签的映射，两份并成一个 @math{l}。
+两支就坍缩成了一支：
 
 @mm{@ty{Label} ∪ @ty{Label} = @ty{Label}}
 
-换成@tech{带标签的联合} @math{@ty{Label} + @ty{Label}}，
-每个@tech{标签} @math{l} 有 @math{(l, 0)}、@math{(l, 1)} 两份，
-记着自己来自哪一支。丢掉标签，从 @math{@ty{Label} + @ty{Label}} 到
-@math{@ty{Label} ∪ @ty{Label}} 的映射把两份并成一个 @math{l}。
-坍缩就是这一步。
-
-既然两支是同一个类型，也就不必再分。@racket[mul] 当初要用
-@racket[real?] 分辨 @racket[(cc)] 交出的是值还是@tech{延续}；在
-@racket[Label] 上，不管交出哪一支，拿到的都是一个@tech{标签}，
-既能当值存着，也能当@tech{延续}去调
-用。@xref["01:label-from-call-cc"]{「从 call/cc 定义标签」}里那句
-@racket[(define (label) (cc))]，就是这样一个不分支的 @racket[cc]。
+既然只剩一支，也就不必再分。@racket[mul] 当初要用 @racket[real?] 分辨
+@racket[(cc)] 交出的是值还是@tech{延续}；在 @racket[Label] 上，
+不管交出哪一支，拿到的都是一个@tech{标签}，既能当值存着，
+也能当@tech{延续}去调用。@xref["01:label-from-call-cc"]{「从 call/cc
+定义标签」}里那句 @racket[(define (label) (cc))]，就是这样一个不分支的
+@racket[cc]。
 
 @racket[Label] 是@defterm{否定的不动点}，就
 是@xref["01:where-fails"]{「对应关系在哪里失效」}里那个自身否定的类
