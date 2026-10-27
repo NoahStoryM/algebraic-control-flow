@@ -222,6 +222,7 @@
   (define-type Label (¬ Label))
 
   (define n -1)
+
   (: label (→ Label))
   (define (label)
     (set! n (+ n 1))

@@ -135,6 +135,7 @@
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define n -1)
+
 (: label (→ Label))
 (define (label)
   (set! n (+ n 1))
