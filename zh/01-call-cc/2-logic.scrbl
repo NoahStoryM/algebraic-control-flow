@@ -199,65 +199,63 @@
 
 @section[#:tag "01:watershed"]{分水岭}
 
-在引入 @racket[cc] 和 @racket[call/cc] 之前，我们拥有的一切（函数、
-积、联合、@math{⊤}、@math{⊥}）都属于@defterm{直觉主义逻辑}：
-构造性类型系统所自然栖居的逻辑。那么 @racket[cc] 和 @racket[call/cc]
-到底添加了什么？
+@racket[cc] 对上的@tech{排中律}，@racket[call/cc] 对上的 DNE，
+逻辑课本说都只在@defterm{经典逻辑}中成立。不承认它们，
+只承认构造出来的证明，就是@defterm{直觉主义逻辑}。在引入 @racket[cc]
+和 @racket[call/cc] 之前，我们用到的函数、积、
+联合、@math{⊤}、@math{⊥}，都没有越出它的范围。
 
-换个问法：只用函数，我们能拿@tech{延续}做什么？回到最后那版
-@racket[mul]。里面有一个实数 @racket[r]，还有一个@tech{延续}
-@racket[return]，它等一个实数，类型是 @math{¬@ty{Real}}。
+这两条经典定律，各有一条与之相对的定律，在直觉主义逻辑里照样成立。
+@tech{排中律}说 @math{p} 与 @math{¬p} 至少有一个成立；
+说两者不能同时成立，就是@defterm{矛盾律} @math{¬(p ∧ ¬p)}。DNE 从
+@math{¬¬p} 推出 @math{p}；箭头反过来，从 @math{p} 推出 @math{¬¬p}，
+就是@defterm[#:en "Double Negation Introduction" #:abbr "DNI"]{双重否
+定引入}。
 
-最直接的是调用：@racket[(return r)]，把实数交给等着它的@tech{延续}。
-给这个操作起个名字：
+成立的命题，照 @tech{Curry-Howard 对应}应该写得出程序。
+前面是从程序读出命题，这回反过来，从命题出发找程序。
+
+先看@tech{矛盾律}。@math{p ∧ ¬p} 是一个 @math{p} 和一个 @math{¬p}
+放在一起，对应函数的两个参数；整体取否定，结果是 @math{⊥}。
+所以要写的是这样一个函数：收下一个@tech{延续} @racket[kv] 和一个值
+@racket[v]，得到 @math{⊥}。手里能产生 @math{⊥} 的只有 @racket[kv]，
+能交给它的只有 @racket[v]，写法几乎是被类型逼出来的：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: apply-cont (∀ (p) (→ (¬ p) p ⊥)))
 (define (apply-cont kv . v*) (apply kv v*))]
 
-@tech{延续}是函数，所以它就是函数调用。
+这就是调用@tech{延续}。最后那版 @racket[mul] 里的
+@racket[(return r)]，就是一次 @racket[apply-cont]。
 
-要是@tech{延续}还没来，手里只有 @racket[r] 呢？调用不了，
-但可以先写一个函数等
-着：@racket[(λ (return) (return r))]，@racket[return] 一来，就把
-@racket[r] 交给它。它等的是一个 @math{¬@ty{Real}}，类型是
-@math{¬¬@ty{Real}}。做的还是调用，只是值先到，@tech{延续}后到。
+再看 DNI。给一个值 @racket[v]，要交出一个 @math{¬¬p}，也就是一个收下
+@math{¬p}、结果为 @math{⊥} 的函数。等来的@tech{延续} @racket[kv]
+是唯一能产生 @math{⊥} 的东西，能交给它的还是只有
+@racket[v]：@racket[(λ (kv) (kv v))]。做的还是调用，
+只是值先到，@tech{延续}后到。
 
-反过来，要是手里只有这样一个等@tech{延续}的函数，
-想要的却是里面的实数呢？它在等一个 @racket[return]，可是没有人交给它。
-只用函数，这一步做不到，要靠 @racket[call/cc]：
-它把当前@tech{延续}交给这个函数当作 @racket[return]，实数交到
-@racket[return] 手里，也就回到了调用 @racket[call/cc] 的地方。
-照@xref["01:other-types"]{第二种类型}的读法，这正是 @math{¬¬p → p}。
+两个程序有一个共同点：用到的@tech{延续}都是别人交进来的。这不是巧合。
+回想@xref["01:from-bottom"]{「从 ⊥ 出发」}：对非空的 @math{p}，只用
+@racket[λ]，凭空写不出一个 @math{¬p}，@tech{延续}只能由别人交来。
+两个程序都只用交到手里的东西，是@defterm[#:en "constructive"]{构造
+性}的：结论里的每样东西，都由交到手里的东西做成。
 
-再进一步，连等@tech{延续}的函数也不要，直接把当前@tech{延续}拿到手里。
-这就是 @racket[(cc)]：它先交出当前@tech{延续}，等有人把实数传回来，
-再交出那个实数。手里原本什么也没有，它交出的却总是两者之一，一个实数，
-或者一个等实数的@tech{延续}，事先不要求谁给出任何一支。
+用同样的办法试经典的两条。DNE 给一个等@tech{延续}的函数 @racket[kk]，
+要交出一个 @math{p}。能对 @racket[kk] 做的只有调用它，
+缺的是交给它的那个 @math{¬p}：有了它，调用 @racket[kk] 得到 @math{⊥}，
+再交给 @racket[absurd] 就能当作 @math{p}。可是没有人交来，
+自己又写不出。@tech{排中律}更彻底：什么也没给，要交出一个 @math{p}
+或一个 @math{¬p}，两样都写不出。
 
-这四步，逻辑里各有一个名字。调用@tech{延续}，就是@defterm{矛盾律}：
-一个 @math{¬p} 和一个 @math{p} 放在一起，得到 @math{⊥}。
-先写一个函数等着@tech{延续}，就
-是@defterm[#:en "Double Negation Introduction" #:abbr "DNI"]{双重否定
-引入}：从 @math{p} 得到 @math{¬¬p}。
-
-这两步只用函数就够了。回想@xref["01:from-bottom"]{「从 ⊥ 出发」}一节：
-对非空的 @math{p}，只用 @racket[λ]，凭空写不出一个
-@math{¬p}，@tech{延续}只能由别人交来。调用用的是手里现成的
-@racket[return]；先写一个函数等着，是等别人把 @racket[return] 交进来。
-两步都只用交到手里的东西，是@defterm[#:en "constructive"]{构造性}的：
-结论里的每样东西，都由交到手里的东西做成。
-
-后两步不一样。@racket[call/cc] 和 @racket[cc]
-凭空提供了一个@tech{延续}，就是当前@tech{延续}。@racket[call/cc]
-把它交给一个等着的函数，从 @math{¬¬p} 得到 @math{p}，
-这是@tech{双重否定消除}。@racket[cc] 干脆把它交到我们手里；
-以后可能经由它跳回来，让 @racket[(cc)] 再返回一次，
-所以交出的东西得容得下两种情况：第一次是@tech{延续}，跳回来时是值，
-于是成了 @math{p ∨ ¬p}，这是@tech{排中律}。凭空提供一个@tech{延续}，
+@racket[call/cc] 和 @racket[cc] 补上的，正是这个缺口：
+它们凭空提供了一个@tech{延续}，就是当前@tech{延续}。@racket[call/cc]
+把它交给等着的函数，从 @math{¬¬p} 得到 @math{p}。@racket[cc]
+干脆把它交到我们手里；以后可能经由它跳回来，让 @racket[(cc)]
+再返回一次，所以交出的东西得容得下两种情况：第一次是@tech{延续}，
+跳回来时是值，于是成了 @math{p ∨ ¬p}。凭空提供一个@tech{延续}，
 这是经典的。
 
-排成一张表：
+排成一张表，每一行是一对相对的定律：
 
 @tabular[#:style 'boxed #:row-properties '(bottom-border ())
   (list
@@ -266,7 +264,7 @@
          @elem{@bold{@tech{矛盾律}}：@racket[apply-cont]（函数调用）}
          @elem{@bold{@tech{排中律}}：@racket[cc]（捕获@tech{延续}）})
    (list @elem{@math{p} 与 @math{¬¬p}}
-         @elem{@bold{DNI}：@racket[(λ (k) (k v))]}
+         @elem{@bold{DNI}：@racket[(λ (kv) (kv v))]}
          @elem{@bold{DNE}：@racket[call/cc]（捕获@tech{延续}）}))]
 
 表里每一列的上下两格是一回事。左边一列都是调用@tech{延续}，
@@ -426,7 +424,7 @@ DNI 的写法包成一个 @racket[kkkq]，交给 @racket[triple-negation]
 等它的@tech{延续}就叫 @racket[kv]，等 @racket[kv] 的就叫
 @racket[kkv]，名字里有几个 @racket[k]，就比 @racket[v] 多几层。
 
-@xref["01:watershed"]{「分水岭」}的四种情形，用层数说就是：
+@xref["01:watershed"]{「分水岭」}里的四条定律，用层数说就是：
 
 @itemlist[
   @item{@tech{矛盾律}：第 @math{n+1} 层与第 @math{n} 层相遇，得到
