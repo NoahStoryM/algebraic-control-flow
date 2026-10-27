@@ -106,8 +106,8 @@
 就把传回的结果包进列表，用 @racket[list?] 区分，
 这就是打标签。@racket[cc] 自己要决定交出哪一支，看的是 @racket[saved]
 是不是 @racket[#f]，最早那版 @racket[mul] 看的是标志 @racket[first?]：
-这两处靠另记一个状态来分辨，不是给值打标签。下面把 @racket[∪] 读作
-@math{∨}，说的都是这样分得开两边的联合。
+这两处靠另记一个状态来分辨，不是在交给调用者的结果上添标记。下面把
+@racket[∪] 读作 @math{∨}，说的都是这样分得开两边的联合。
 
 每个类型构造子都对应一个逻辑连接词。类型是命题，表达式是证明，
 构造程序就是构造证明。这个对应关系有一个名字：@defterm{Curry-Howard
@@ -254,9 +254,10 @@
 @math{¬p} 类型的 @racket[kp]：有了 @racket[kp]，调用 @racket[kkp] 得到
 @math{⊥}，再交给 @racket[absurd] 就能当作 @math{p}。可是没有人交来
 @racket[kp]，自己又构造不出，也就无法调用 @racket[kkp]。
-这不只是试不出来：纯 @racket[λ] 写不出对任意 @math{p} 都成立的
-@math{¬¬p → p}，这是一条定理。@tech{排中律}更彻底：什么也没给，
-要交出一个 @math{p} 或一个 @math{¬p}，两样都写不出。
+这不只是试不出来：在上述纯函数的类型规则下，不借助额外假设，
+就不存在对任意 @math{p} 都适用的 @math{¬¬p → p} 实现，
+这是一条不可定义性定理。@tech{排中律}更彻底：什么也没给，要交出一个
+@math{p} 或一个 @math{¬p}，两样都写不出。
 
 @racket[call/cc] 和 @racket[cc] 补上的，正是这个缺口：
 它们凭空提供了一个@tech{延续}，就是当前@tech{延续}。@racket[call/cc]
@@ -353,17 +354,24 @@
 @math{¬@ty{Byte} → @ty{Byte}}，而不是 @math{¬@ty{Byte} → ⊥}，
 也就不再是 @math{¬¬@ty{Byte}}。
 
+把等着出口的计算记作 @racket[program]，上面的做法就是
+@racket[(λ (program) (call/cc program))]：它把当前@tech{延续}作为
+@racket[exit] 交给 @racket[program]，并在这里接到退出码。
+
 所以程序是一个 @math{¬¬@ty{Byte}}：它等着计算终结处的那条@tech{延续}。
 真实的操作系统也是这样运行程序的：启动一个程序时，
 退出通道已经在那里了，就是 @racket[exit]。程序交回退出码有两种方式：
 显式地调用 @racket[exit]，或者从 @racket[main] 返回；C
 语言规定后者等于拿返回值调用 @racket[exit]，正是上面外层那个
 @racket[(exit …)]。对程序内部，调用 @racket[exit] 不再返回；对外部，OS
-接到了退出码。把计算运行起来、在出口接收结果的整个过程，
-对应@xref["01:watershed"]{「分水岭」}里的 DNE。和 @racket[call/cc]
-的区别，在谁来提供这条@tech{延续}：多数语言本身只提供 @racket[exit]，
-由 OS 从外面交来，语言里什么也不用捕获；有了 @racket[call/cc]，没有
-@racket[exit] 也能像上面那样自己捕获出来。
+接到了退出码。OS 承担的是外部运行环境的角色：提供出口，
+接收结果。@racket[exit] 在程序体里是交来的假设，在
+@racket[(λ (exit) …)] 里则被绑定。把计算运行起来、
+在出口接收结果的整个过程，对应@xref["01:watershed"]{「分水岭」}里的
+DNE。和 @racket[call/cc] 的区别，在谁来提供这条@tech{延续}：
+多数语言本身只提供 @racket[exit]，由 OS 从外面交来，
+语言里什么也不用捕获；有了 @racket[call/cc]，没有 @racket[exit]
+也能像上面那样自己捕获出来。
 
 @subsection[#:tag "01:neg-q"]{代入 @math{¬q}}
 
@@ -473,19 +481,20 @@ OS 交来；@racket[triple-negation] 更省事，不需要另外交来一条
   一座塔只剩两类：偶数层，奇数层。}
   @item{直觉主义逻辑里，DNE 一般不成立，但三重否定律能从第 3 层回到第
   1 层；把其中的 @math{q} 换成 @math{¬A}，就从第 4 层回到第 2 层；
-  依此类推，只有第 0 层回不去。塔分成三类：第 0 层，奇数层，第 2
+  依此类推，只有第 0 层一般回不去。塔分成三类：第 0 层，奇数层，第 2
   层起的偶数层。}]
-最低的五层排出来：
+这里按对任意底类型 @math{A} 都成立的互推来归类，不利用 @math{A}
+的额外性质。最低的五层排出来：
 
 @tabular[#:style 'boxed #:row-properties '(bottom-border ())
   (list
    (list @elem{层} @elem{经典逻辑} @elem{直觉主义逻辑})
    (list @elem{0} @elem{偶数层：与 2、4 层经 DNI、DNE 互推}
-         @elem{单独一类：DNI 升到第 2 层，回不来})
+         @elem{单独一类：DNI 升到第 2 层，一般不能落回})
    (list @elem{1} @elem{奇数层} @elem{奇数层：DNI 升到第 3 层，三重否定律落回})
-   (list @elem{2} @elem{偶数层} @elem{偶数层：与第 4 层互推})
+   (list @elem{2} @elem{偶数层} @elem{第 2 层起的偶数层：与第 4 层互推})
    (list @elem{3} @elem{奇数层} @elem{奇数层})
-   (list @elem{4} @elem{偶数层} @elem{偶数层：三重否定律落回第 2 层}))]
+   (list @elem{4} @elem{偶数层} @elem{第 2 层起的偶数层：三重否定律落回第 2 层}))]
 
 在这座否定塔上，两种逻辑的区别，就在第 0 层是否与其余的偶数层合并。
 
