@@ -233,9 +233,11 @@ then 分支返回。两条路径都通过@tech{延续} @racket[result] 汇合，
 
 @section[#:tag "01:label-from-call-cc"]{从 @racket[call/cc] 定义标签}
 
-这里的 @racket[call/cc] 用 Racket 自带的，还是上一节由 @racket[cc]
-写出的，都可以，只要不是由@tech{标签}写出的那个，免得定义绕成圈。令
-@math{p = @ty{Label}}，@racket[call/cc] 交给 @racket[proc]
+@margin-note{这里用哪个 @racket[call/cc] 都行：Racket 自带的，
+或者上一节由 @racket[cc] 写出的。只要它不是由@tech{标签}写出的，
+定义就不会绕回自己。}
+
+令 @math{p = @ty{Label}}，@racket[call/cc] 交给 @racket[proc]
 的@tech{延续}类型就是 @math{@ty{Label} → ⊥}，
 恰好是一个@tech{标签}。@tech{标签}因此可以直接由 @racket[call/cc]
 定义：
