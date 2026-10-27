@@ -80,8 +80,7 @@
 @racketblock[
 (goto goto)]
 
-类型是 @math{⊥}，却永远算不完。
-
+类型是 @racket[⊥]，却永远算不完。
 @subsection[#:tag "01:yin-yang"]{阴阳谜题}
 
 把@tech{标签}直接交给@tech{标签}，就得到 David Madore 的阴阳谜题：
