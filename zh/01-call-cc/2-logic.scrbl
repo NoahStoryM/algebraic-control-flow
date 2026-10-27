@@ -84,20 +84,27 @@
   只要有一个成立，@math{p} 或 @math{q} 就成立。这是@defterm{析取}，
   写作
   @defsym["p ∨ q" "析取；联合类型 p ∪ q"]@math{∨}。}]
-这里要把两样东西分开。逻辑里证明「@math{p} 或 @math{q}」，
-总要说清是哪一支成立；对应的类型是@defterm[#:en "disjoint union"]{不相
-交的联合}：每个值带着一个标签，说明自己来自哪一边，
-所以也叫带标签的联合（@italic{tagged union}）。Typed Racket 的
-@racket[∪] 却是集合意义上的并集（@italic{union}）：一个值属于
-@math{p ∪ q}，并不记着它来自哪一边，两边是同一个类型时，
-干脆就合成了一个。
+这里要把两样东西分开。看两个集合
+@math{X = {a, b}}、@math{Y = {b, c}}。它们的并集（@italic{union}）是
+@math{{a, b, c}}：@math{b} 两边都有，并进来只剩一个，拿到 @math{b}，
+说不清它来自哪一边。给元素打上标签再并起来，得到
+@math{{(a, 0), (b, 0), (b, 1), (c, 1)}}，两个 @math{b} 就分开了，
+这叫带标签的联合（@italic{tagged union}）。要是 @math{X} 和 @math{Y}
+本来就没有公共元素，并集里每个元素来自哪一边本来就清楚，用不着标签。
 
-要分清两边，就得自己补上标签。前面其实一直在这样做：@racket[(cc)]
-交出的 @math{p ∪ ¬p}，那版 @racket[mul] 靠 @racket[real?]
-去问；@racket[call/cc] 把传回的结果包进列表，靠 @racket[list?]
-区分；@racket[cc] 里看 @racket[saved] 是不是 @racket[#f]，最早那版
-@racket[mul] 看标志 @racket[first?]，也都是标签。下面把 @racket[∪]
-读作 @math{∨}，说的都是这样分得开两边的联合。
+逻辑里证明「@math{p} 或 @math{q}」，总要说清是哪一支成立。
+对应的是@defterm[#:en "disjoint union"]{不相交的联合}：
+两边的元素分得开。打标签只是做到不相交的一种办法。Typed Racket 的
+@racket[∪] 是普通的并集，两边分不分得开，要看 @math{p} 和 @math{q}
+本身。
+
+前面其实一直在设法分开两边。@racket[(cc)] 交出的 @math{p ∪ ¬p} 里，
+实数和函数本来就不相交，那版 @racket[mul] 用 @racket[real?]
+一问就知道。@racket[call/cc] 不知道结果会是什么，结果也可能是函数，
+就把传回的结果包进列表，用 @racket[list?] 区分，
+这就是打标签。@racket[cc] 里看 @racket[saved] 是不是 @racket[#f]，
+最早那版 @racket[mul] 看标志 @racket[first?]，也都是标签。下面把
+@racket[∪] 读作 @math{∨}，说的都是这样分得开两边的联合。
 
 每个类型构造子都对应一个逻辑连接词。类型是命题，表达式是证明，
 构造程序就是构造证明。这个对应关系有一个名字：@defterm{Curry-Howard
