@@ -216,15 +216,20 @@
   (provide (all-defined-out))
 )
 
-(module stage-18 racket
+(module stage-18 typed/racket/no-check
+  (define-type ⊥ (∪))
+  (define-type (¬ p) (Pairof (→ p ⊥) Natural))
+  (define-type Label (¬ Label))
 
   (define n -1)
+  (: label (→ Label))
   (define (label)
     (set! n (+ n 1))
     (let/cc kn
       (define ln (cons kn n))
       (apply-cont ln ln)))
 
+  (: apply-cont (∀ (p) (→ (¬ p) p ⊥)))
   (define (apply-cont ln lm)
     (match-define (cons kn n) ln)
     (match-define (cons km m) lm)

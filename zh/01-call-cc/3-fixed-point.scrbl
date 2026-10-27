@@ -122,26 +122,34 @@
 @subsection[#:tag "01:trace"]{追踪谜题}
 
 要回答这个问题，得看清每一步跳向了谁。给每个@tech{延续}起一个名
-字：@racket[k0]、@racket[k1]、@racket[k2]……先写一个插桩版的
-@racket[label]，每捕获一个@tech{延续}，就给它配上一个新编号：
+字：@racket[k0]、@racket[k1]、@racket[k2]……为此先换一种否定类型：
+@tech{延续}带上一个编号，装进 @racket[cons] 对。
+
+@examples[#:eval ev #:label #f #:no-prompt
+(define-type (¬ p) (Pairof (→ p ⊥) Natural))
+(define-type Label (¬ Label))]
+
+@racket[Label] 照旧是它自己的否定，只是否定换了表示。插桩版的
+@racket[label] 每捕获一个@tech{延续}，就给它配上一个新编号：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define n -1)
+(: label (→ Label))
 (define (label)
   (set! n (+ n 1))
   (let/cc kn
     (define ln (cons kn n))
     (apply-cont ln ln)))]
 
-现在交出去的是一个 @racket[cons] 对 @racket[ln]，装着第 @racket[n]
-条@tech{延续} @racket[kn] 和它的编号 @racket[n]，
-不再是能直接调用的函数，调用它的办法得我们自己规定。这也是当初单独给
-@racket[apply-cont] 起名字的用意：「向@tech{延续}传一个值」
-是一个独立的操作，@tech{延续}换一种表示，它就不再只是函数调用。
-插桩版的 @racket[apply-cont] 用 @racket[match-define] 拆开两个对，
-印出谁跳向谁，再调用里面的函数：
+交出去的 @racket[ln] 装着第 @racket[n] 条@tech{延续} @racket[kn]
+和它的编号 @racket[n]，不再是能直接调用的函数，
+调用它的办法得我们自己规定。 @racket[apply-cont] 的签名却一字不改：
+向一个@tech{否定}交一个值，不管@tech{否定}怎样表示，都是这个操作。
+插桩版用 @racket[match-define] 拆开两个对，印出谁跳向谁，
+再调用里面的函数：
 
 @examples[#:eval ev #:label #f #:no-prompt
+(: apply-cont (∀ (p) (→ (¬ p) p ⊥)))
 (define (apply-cont ln lm)
   (match-define (cons kn n) ln)
   (match-define (cons km m) lm)
