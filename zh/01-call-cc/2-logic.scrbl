@@ -229,16 +229,13 @@
 @racket[(return r)]，就是一次 @racket[apply-cont]。
 
 再看 DNI。给一个值 @racket[v]，要交出一个 @math{¬¬p}，也就是一个收下
-@math{¬p}、结果为 @math{⊥} 的函数。等来的@tech{延续} @racket[kv]
-是唯一能产生 @math{⊥} 的东西，能交给它的还是只有
-@racket[v]：@racket[(λ (kv) (kv v))]。做的还是调用，
-只是值先到，@tech{延续}后到。
+@math{¬p}、结果为 @math{⊥} 的函数。理由和刚才一样，只能写成
+@racket[(λ (kv) (kv v))]。做的还是调用，只是值先到，@tech{延续}后到。
 
-两个程序有一个共同点：用到的@tech{延续}都是别人交进来的。这不是巧合。
-回想@xref["01:from-bottom"]{「从 ⊥ 出发」}：对非空的 @math{p}，只用
-@racket[λ]，凭空写不出一个 @math{¬p}，@tech{延续}只能由别人交来。
-两个程序都只用交到手里的东西，是@defterm[#:en "constructive"]{构造
-性}的：结论里的每样东西，都由交到手里的东西做成。
+两个程序用到的@tech{延续}都是交进来的。这不是巧合：
+@xref["01:from-bottom"]{「从 ⊥ 出发」}说过，对非空的 @math{p}，只用
+@racket[λ] 凭空写不出一个 @math{¬p}。结论里的每样东西都由交到手里的东
+西做成，这样的程序是@defterm[#:en "constructive"]{构造性}的。
 
 用同样的办法试经典的两条。DNE 给一个等@tech{延续}的函数 @racket[kkp]，
 要交出一个 @math{p}。能对 @racket[kkp] 做的只有调用它，调用它却要一个
@@ -268,15 +265,12 @@
          @elem{@bold{DNI}：@racket[(λ (kv) (kv v))]}
          @elem{@bold{DNE}：@racket[call/cc]（捕获@tech{延续}）}))]
 
-表里每一列的上下两格是一回事。左边一列都是调用@tech{延续}，
-只差值和@tech{延续}谁先到，@tech{矛盾律}和 DNI 互相推得出。
-右边一列都是提供当前@tech{延续}：@racket[cc] 就是
+表里每一列的上下两格是一回事。左边一列只差参数次序，@tech{矛盾律}和
+DNI 互相推得出。右边一列都是提供当前@tech{延续}：@racket[cc] 就是
 @racket[(call/cc values)]；反过来，@xref["01:call-cc"]{用 @racket[cc]
 写出的 @racket[call/cc]} 先调用 @racket[(cc)]，拿到值就交出，
-拿到@tech{延续}就交给 @racket[proc]，这正是由@tech{排中律}推出
-DNE，@racket[proc] 那一支得到的 @math{⊥} 照爆炸原理可以当作任何类型。
-作为对任意类型都成立的原则，@tech{排中律}和 DNE 互相推得出，
-经典的成分只在提供当前@tech{延续}的那一步。
+拿到@tech{延续}就交给 @racket[proc]，这正是由@tech{排中律}推出 DNE。
+作为对任意类型都成立的原则，两者互相推得出。
 
 @bold{练习}：@italic{实质条件} @math{¬p ∨ q} 是经典逻辑中 @math{p → q}
 的另一种编码。试着实现 @c{material->procedure : (¬p ∨ q) → p → q} 和
