@@ -3,7 +3,7 @@
 @title[#:tag "01:conclusion"]{结论}
 
 @tech{标签}、@racket[cc]、@racket[call/cc] 交出的都是@tech{延续}，
-而只用 @racket[λ] 和函数调用，又不靠永不终止的程序，
+而只用 @racket[λ] 和函数调用，不靠永不终止的程序，也不用自指类型，
 凭空写不出一个非空类型的@tech{延续}。@xref["01:watershed"]{「分水
 岭」}沿着这条线分成两列：调用@tech{延续}、写一个函数等着@tech{延续}，
 只用交到手里的那条；@racket[call/cc] 和 @racket[cc]

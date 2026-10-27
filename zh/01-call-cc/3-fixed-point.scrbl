@@ -53,8 +53,9 @@
 
 @mm{@ty{Label} ∨ ¬@ty{Label} = @ty{Label} ∨ @ty{Label}}
 
-一真一假的两支，在这里分不出真假。要是用@tech{带标签的联合}
-@math{@ty{Label} + @ty{Label}}，每个@tech{标签} @math{l} 还有
+一真一假的两支，在这里分不出真假。要让两支成为@tech{不相交的联合}，
+同一个类型的两支只能靠打标签分开：在@tech{带标签的联合}
+@math{@ty{Label} + @ty{Label}} 里，每个@tech{标签} @math{l} 有
 @math{(l, 0)}、@math{(l, 1)} 两份，记着自己来自哪一支。
 可是@xref["01:types-to-logic"]{「从类型到逻辑」}说过，Typed Racket 的
 @racket[∪] 是普通的并集，不记录值从哪一边来，
@@ -181,7 +182,9 @@
 续}，记作 @racket[km]；左边是当前被调用的那条。调用的若是
 @racket[(kn+1 km)]，打印一个 @racket[*]，下一步就是 @racket[(kn km)]，
 把同一个 @racket[km] 交给前一条：@racket[kn+1] 被捕获时，@racket[yin]
-绑的正是 @racket[kn]，它记下的就是这一条。调用的若是
+绑的正是 @racket[kn]，它记下的就是这一条。比如第三行，捕获 @racket[k2]
+时 @racket[yin] 绑的是 @racket[k1]，所以 @racket[(k2 k2)] 打印
+@racket[*] 之后，下一步是 @racket[(k1 k2)]。调用的若是
 @racket[(k0 km)]，打印 @c|{@}|，下一步捕获一条新的 @racket[km+1]，从
 @racket[(km+1 km+1)] 开始。每到一次 @racket[k0]，就多一条@tech{延续}，
 下一行就要多退一步，多打印一个 @racket[*]。多出来的那个 @racket[*]，

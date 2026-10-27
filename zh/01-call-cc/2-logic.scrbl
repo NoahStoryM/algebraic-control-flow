@@ -84,14 +84,12 @@
   只要有一个成立，@math{p} 或 @math{q} 就成立。这是@defterm{析取}，
   写作
   @defsym["p ∨ q" "析取；联合类型 p ∪ q"]@math{∨}。}]
-@margin-note{@racket[∪] 有一个容易误读的地方。看两个集合
-@math{X = {a, b}}、@math{Y = {b, c}}。并集 @math{X ∪ Y = {a, b, c}}，
-拿到 @math{b}，说不清它来自哪一边。给元素打上标签再并起
-来，@math{X + Y = X × {0} ∪ Y × {1} = {(a, 0), (b, 0), (b, 1), (c, 1)}}，
-看标签是 0 还是 1 就分得开，检查标签就是一个谓词。@math{X + Y}
-叫@defterm[#:en "tagged union"]{带标签的联合}。丢掉标签，总有一个从
-@math{X + Y} 到 @math{X ∪ Y} 的映射；@math{X ∩ Y = {}}
-时它是一一对应，直接拿并集来用就行，用不着标签。}
+@margin-note{@racket[∪] 有一个容易误读的地方。集合 @math{X = {a, b}}、
+@math{Y = {b, c}} 的并集里，@math{b} 说不清来自哪一边。
+打上标签再并起来，@math{X + Y = X × {0} ∪ Y × {1}}，两边就不相交了，
+检查标签就是一个谓词；@math{X + Y} 叫@defterm[#:en "tagged union"]{带
+标签的联合}。丢掉标签，总有一个从 @math{X + Y} 到 @math{X ∪ Y}
+的映射；@math{X ∩ Y = {}} 时它是一一对应，用不着标签。}
 
 这里要把两样东西分开。逻辑里证明「@math{p} 或 @math{q}」，
 总要说清是哪一支成立。对应的是@defterm[#:en "disjoint union"]{不相交的
@@ -112,8 +110,9 @@
 构造程序就是构造证明。这个对应关系有一个名字：@defterm{Curry-Howard
 对应}。
 
-用 @math{¬} 和 @math{∨} 改写，开头那两个签名都成了命题，
-对上逻辑课本里两条有名字的定律；@racket[absurd] 的签名也是一条：
+用 @math{¬} 和 @math{∨} 改写（@racket[cc] 不收参数，只看它交出什么），
+开头那两个签名都成了命题，对上逻辑课本里两条有名字的定
+律；@racket[absurd] 的签名也是一条：
 
 @tabular[#:style 'boxed #:row-properties '(bottom-border ())
   (list
@@ -266,7 +265,7 @@
 @c{procedure->material : (p → q) → ¬p ∨ q}。你会发现其中一个方向需要
 @racket[cc]，是哪一个？
 
-排成一张表，每一行是一对相对的定律：
+排成一张表，每一行是一对相对的定律，每一列上下两格互相推得出：
 
 @tabular[#:style 'boxed #:row-properties '(bottom-border ())
   (list
@@ -278,8 +277,8 @@
          @elem{@bold{DNI}：@racket[(curryr apply-cont)]}
          @elem{@bold{DNE}：@racket[call/cc]}))]
 
-表里每一列的上下两格是一回事。左边一列只差参数次序，@tech{矛盾律}和
-DNI 互相推得出。右边一列都是提供当前@tech{延续}：@racket[cc] 就是
+左边一列只差参数次序，@tech{矛盾律}和 DNI 互相推得出。
+右边一列都是提供当前@tech{延续}：@racket[cc] 就是
 @racket[(call/cc values)]；反过来，@xref["01:call-cc"]{用 @racket[cc]
 写出的 @racket[call/cc]} 先调用 @racket[(cc)]，
 拿到包在列表里的结果就拆开交出，拿到@tech{延续}就交给 @racket[proc]，
@@ -304,11 +303,11 @@ DNI 互相推得出。右边一列都是提供当前@tech{延续}：@racket[cc] 
 @subsection[#:tag "01:program-type"]{程序的类型}
 
 先代入最朴素的一个：退出码的类型 @racket[Byte]，得到
-@math{¬¬@ty{Byte} → @ty{Byte}}。这一回要看的不只是签名写不写得出，
-还有它运行起来做什么。光看类型，这个实例很容易写：@racket[(λ (kk) 0)]
-就是，什么也不捕获。逻辑上也不奇怪：@racket[Byte] 有值，是真命题，
-从任何前提推出它都成立，丢掉前提、直接拿出一个 @racket[Byte]
-就是证明。
+@math{¬¬@ty{Byte} → @ty{Byte}}。选它，是因为程序最后交出的就是退出码。
+这个类型很容易填上，可要留住程序原来的行为，就得另看。
+光看类型，@racket[(λ (kk) 0)] 就填上了，什么也不捕获。
+逻辑上也不奇怪：@racket[Byte] 有值，是真命题，从任何前提推出它都成立，
+丢掉前提、直接拿出一个 @racket[Byte] 就是证明。
 
 可逻辑只问命题真不真，不问拿出的是哪一个 @racket[Byte]；@racket[0]
 和程序算出来的退出码，在它眼里没有分别。我们却在乎。
@@ -331,6 +330,8 @@ DNI 互相推得出。右边一列都是提供当前@tech{延续}：@racket[cc] 
 整个计算到此结束。这就是 @racket[exit]，计算终结时的当前@tech{延续}。
 程序体里任何地方调用 @racket[(exit 0)]，都直接跳到终点；
 程序体正常算完，结果也经外层的 @racket[exit] 交过去。
+@xref["01:where-fails"]{「对应关系在哪里失效」}拿 @racket[exit] 给任意
+@math{p} 造出 @math{¬p}；这里只看它作为程序出口的那一种用法。
 
 @racket[exit] 等一个退出码，类型是
 @math{¬@ty{Byte}}。@racket[(λ (exit) (exit ...))] 等一个
