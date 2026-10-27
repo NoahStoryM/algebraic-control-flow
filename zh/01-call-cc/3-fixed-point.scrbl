@@ -110,8 +110,6 @@
 每一轮都比上一轮多打印一个 @racket[*]。多出来的那个 @racket[*]，
 记在了哪里？
 
-@subsubsection[#:tag "01:trace"]{追踪谜题}
-
 给每个@tech{延续}一个唯一的名字
 （@racket[k0]、@racket[k1]、@racket[k2]……），让每次
 @racket[apply-cont] 都记录哪个@tech{延续}被应用于哪个：
@@ -163,29 +161,14 @@
 续}。@racket[k0] 由第一处 @racket[(cc)] 捕获，而且只捕获这一次；之后的
 @racket[k1]、@racket[k2]……都由第二处捕获。
 
-@subsubsection[#:tag "01:matrix"]{读矩阵}
+印出来的追踪排成了一个矩阵。每一项跳转都印在它打印的字符前面，
+所以每一行从左往右，就是执行的先后；把名字去掉，
+剩下的正是原版谜题的那一行。同一行里，交出去的参数始终是同一个：第
+@math{n} 行都是 @racket[kn]。被跳向的目标却从最新的 @racket[kn] 开始，
+一个比一个旧，一路退到 @racket[k0]，打印出 @math{n} 个 @racket[*]，
+最后在 @racket[k0] 打印一个 @c|{@}|。
 
-每一项跳转都印在它打印的字符前面，所以每一行从左往右，就是执行的先后；
-把名字去掉，剩下的正是原版谜题的那一行。
-
-同一行里，交出去的参数始终是同一个：第 @math{n} 行都是 @racket[kn]。
-被跳向的目标却从最新的 @racket[kn] 开始，一个比一个旧，一路退到
-@racket[k0]，打印出 @math{n} 个 @racket[*]，最后在 @racket[k0]
-打印一个 @c|{@}|。
-
-把名字换成位置，参数相同的放进同一行，目标相同的放进同一列，
-越往左的列越新，就得到一个矩阵：
-
-@out-block|{
-      ...  k3   k2   k1   k0
-k0                        @
-k1                   *    @
-k2              *    *    @
-k3         *    *    *    @
-...
-}|
-
-这个模式来自：
+从这个矩阵读出三条规律：
 
 @itemlist[#:style 'ordered
   @item{@bold{@racket[k0] 打印 @c|{@}|} 并捕获一个新的@tech{延续}
@@ -196,17 +179,15 @@ k3         *    *    *    @
 之所以能级联，是因为每个@tech{延续}都「记得」下一步要跳向哪个
 @racket[kn]，形成一条链，每经过一次 @racket[k0] 就多一个链节。
 
-@subsubsection[#:tag "01:rewrite"]{用函数重写}
-
-这三条规律只涉及@tech{延续}之间谁调用谁、传的是什么。回到原来的谜题，
-看第二处 @racket[(label)] 捕获的那条@tech{延续}：它收到一个值以后，
-要做的就是这个捕获点后面剩下的程序，打印一个 @racket[*]，
-再把收到的值交给 @racket[yin]。这件事写成函数，就是一个收 @racket[k]
-的 @racket[kn+1]：打印 @racket[*]，再调用 @racket[(kn k)]。
-第一处捕获的 @racket[k0] 也一样：它收到 @racket[kn] 以后，打印
-@c|{@}|，捕获一条新的 @racket[kn+1]，再把 @racket[kn+1] 交给
-@racket[kn+1]。跳向一个@tech{延续}，就是调用它；
-捕获一个新@tech{延续}，就是定义一个新函数。
+这三条规律只涉及@tech{延续}之间谁调用谁、传的是什么，
+用程序直接写下来就行。回到原来的谜题，看第二处 @racket[(label)]
+捕获的那条@tech{延续}：它收到一个值以后，要做的就是这个捕获点后面剩下
+的程序，打印一个 @racket[*]，再把收到的值交给 @racket[yin]。
+这件事写成函数，就是一个收 @racket[k] 的 @racket[kn+1]：打印
+@racket[*]，再调用 @racket[(kn k)]。第一处捕获的 @racket[k0] 也一样：
+它收到 @racket[kn] 以后，打印 @c|{@}|，捕获一条新的 @racket[kn+1]，
+再把 @racket[kn+1] 交给 @racket[kn+1]。跳向一个@tech{延续}，
+就是调用它；捕获一个新@tech{延续}，就是定义一个新函数。
 
 @racketblock[
 (define (k0 kn)
