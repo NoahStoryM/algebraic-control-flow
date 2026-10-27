@@ -161,34 +161,33 @@
 
 @subsubsection[#:tag "01:rules"]{读出规律}
 
-这份输出排成了一个矩阵。每一项都印在它打印的字符前面，
-所以每一行从左往右读，就是执行的先后；去掉名字，
-剩下的正是原版谜题的一行。再看名字：同一行里，
-交出去的参数始终是同一个，第 @math{n} 行都是 @racket[kn]；
-被跳向的目标从最新的 @racket[kn] 开始，一个比一个旧，一路退到
-@racket[k0]。一路上每跳一次打印一个 @racket[*]，到了 @racket[k0] 打印
-@c|{@}|。
+挑一行来读，比如最后一行：@c|{(k3 k3)* (k2 k3)* (k1 k3)* (k0 k3)@}|。
+名字印在它打印的字符前面，从左往右就是执行的先后。@racket[k3]
+刚被捕获，先拿它调用它自己，打印一个 @racket[*]；接着跳向
+@racket[k2]，打印 @racket[*]；再跳向 @racket[k1]，打印 @racket[*]；
+最后跳向 @racket[k0]，打印 @c|{@}|。一路交出去的参数都是 @racket[k3]。
+去掉名字，剩下 @c|{***@}|，正是原版谜题的第四行。
 
-由此读出三条规律：
+@racket[k2] 为什么会跳向 @racket[k1]？@racket[k2]
+是在它自己那一行开头，由第二处 @racket[(label)] 捕获的，那时
+@racket[yin] 绑定的是 @racket[k1]。一条@tech{延续}记下的，
+是捕获点后面剩下的程序：打印一个 @racket[*]，再把收到的值交给
+@racket[yin]，也就是 @racket[k1]。由第二处捕获的每一条都是这样，
+记着捕获时的 @racket[yin]，打印 @racket[*] 后跳向它。只有 @racket[k0]
+不同：它由第一处捕获，后面剩下的是打印 @c|{@}|，
+再捕获一条新的@tech{延续}，然后拿新的这条调用它自己。
 
-@itemlist[#:style 'ordered
-  @item{@bold{@racket[k0] 打印 @c|{@}|} 并捕获一个新的@tech{延续}
-  @racket[kn+1]。}
-  @item{@bold{@racket[kn+1] 打印 @racket[*]} 并跳向 @racket[kn]。}
-  @item{@bold{每个 @racket[kn]} 被调用时，收到最近捕获的@tech{延续}
-  @racket[k] 作为参数。}]
-之所以能级联，是因为每个@tech{延续}都「记得」下一步要跳向哪个
-@racket[kn]，形成一条链，每经过一次 @racket[k0] 就多一个链节。
+多出来的 @racket[*] 就记在这条链上：@racket[k3] 跳向
+@racket[k2]，@racket[k2] 跳向 @racket[k1]，@racket[k1] 跳向
+@racket[k0]。每到一次 @racket[k0]，就多捕获一条@tech{延续}，
+链长出一节，下一行就多一个 @racket[*]。
 
-这三条规律只涉及@tech{延续}之间谁调用谁、传的是什么，
-用程序直接写下来就行。回到原来的谜题，看第二处 @racket[(label)]
-捕获的那条@tech{延续}：它收到一个值以后，要做的就是这个捕获点后面剩下
-的程序，打印一个 @racket[*]，再把收到的值交给 @racket[yin]。
-这件事写成函数，就是一个收 @racket[k] 的 @racket[kn+1]：打印
-@racket[*]，再调用 @racket[(kn k)]。第一处捕获的 @racket[k0] 也一样：
-它收到 @racket[kn] 以后，打印 @c|{@}|，捕获一条新的 @racket[kn+1]，
-再把 @racket[kn+1] 交给 @racket[kn+1]。跳向一个@tech{延续}，
-就是调用它；捕获一个新@tech{延续}，就是定义一个新函数。
+这些规律只说@tech{延续}之间谁调用谁、交出的是什么，照着写成函数就行：
+跳向一条@tech{延续}，就是调用它；捕获一条新@tech{延续}，
+就是定义一个新函数。记着 @racket[kn] 的那条 @racket[kn+1]，收到
+@racket[k] 以后打印 @racket[*]，再调用 @racket[(kn k)]；@racket[k0]
+收到 @racket[kn] 以后打印 @c|{@}|，定义一个新的 @racket[kn+1]，
+再拿它调用它自己：
 
 @racketblock[
 (define (k0 kn)
