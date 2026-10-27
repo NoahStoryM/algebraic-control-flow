@@ -274,12 +274,13 @@ DNI 互相推得出。右边一列都是提供当前@tech{延续}：@racket[cc] 
 拿到@tech{延续}就交给 @racket[proc]，这正是由@tech{排中律}推出 DNE。
 作为对任意类型都成立的原则，两者互相推得出。
 
+@margin-note{@racket[∪] 不记来源。为了分得清两支，不妨让 @math{q} 取
+@racket[Real] 这样能用谓词分辨的类型。}
+
 @bold{练习}：@italic{实质条件} @math{¬p ∨ q} 是经典逻辑中 @math{p → q}
 的另一种编码。试着实现 @c{material->procedure : (¬p ∨ q) → p → q} 和
-@c{procedure->material : (p → q) → ¬p ∨ q}。（@racket[∪] 不记来源，
-为了分得清两支，不妨让 @math{q} 取 @racket[Real]
-这样能用谓词分辨的类型。）你会发现其中一个方向需要 @racket[cc]，
-是哪一个？
+@c{procedure->material : (p → q) → ¬p ∨ q}。你会发现其中一个方向需要
+@racket[cc]，是哪一个？
 
 可是，从 @math{¬¬p} 取出 @math{p}，非得凭空拿到一个@tech{延续}不可吗？
 
