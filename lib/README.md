@@ -104,7 +104,7 @@ scribble --text --dest build zh/main.scrbl # 纯文本，便于通读和比对
 - 回指照正文原来的说法写，链到那一节：`@xref["01:compare"]{比较一节}`。整个第一部是一份文档，篇与篇之间也这样写。
 - 文献用 `scriblib/autobib`：在部的目录下放一个 `bib.rkt`，写 `(define-cite ~cite citet generate-bibliography #:style author+date-style)` 和各条 `make-bib`；正文 `@~cite[条目]` 或 `@citet[条目]`，部末 `@(generate-bibliography #:sec-title "参考文献")`。第一篇目前没有文献引用，所以还没建。
 - 其他文档里的术语：`@tech/refer{continuation}`（Racket Reference）、`@tech/guide{…}`（Racket Guide），写法取自 ctp。要引别的文档，在 `acf.rkt` 里用 `define-tech` 再定义一个。
-- 代码里的链接：代码块、`@racket` 和 `@c` 里的标识符按 `acf.rkt` 里 `for-label` 引入的库排版，着色并链接到它们的文档；`acf.rkt` 把这些绑定也交给引用它的文档，所以各 `.scrbl` 不用自己写 `for-label`。现在引入的有 `racket/base`、`racket/function`、`racket/control`、Typed Racket 的类型记号和 `control-context`（`label`、`goto`、`cc`……）。用到新的库，就在那里加。正文自己重新定义的名字也链接到库里对应的那一个（Noah 10/26）。
+- 代码里的链接：代码块、`@racket` 和 `@c` 里的标识符按 `acf.rkt` 里 `for-label` 引入的库排版，着色并链接到它们的文档；`acf.rkt` 把这些绑定也交给引用它的文档，所以各 `.scrbl` 不用自己写 `for-label`。现在引入的有 `racket/base`、`racket/function`、`racket/match`、`racket/control`、Typed Racket 的类型记号和 `control-context`（`label`、`goto`、`cc`……）。用到新的库，就在那里加。正文自己重新定义的名字也链接到库里对应的那一个（Noah 10/26）。
 - 不直接引用其他文档的正文（STYLE.md）。
 
 ## 注释

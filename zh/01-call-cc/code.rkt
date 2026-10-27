@@ -217,17 +217,17 @@
 (module stage-18 racket
 
   (define n -1)
-
   (define (cc)
     (set! n (+ n 1))
-    (let/cc k
-      (define l (cons k (string->symbol (string-append "k" (number->string n)))))
+    (let/cc kn
+      (define l (cons kn n))
       (apply-cont l l)))
 
-  (define (apply-cont kl l)
-    (display #\tab)
-    (display (list (cdr kl) (cdr l)))
-    ((car kl) l))
+  (define (apply-cont lm ln)
+    (match-define (cons km m) lm)
+    (match-define (cons kn n) ln)
+    (display (format "  (k~a k~a)" m n))
+    (km ln))
   (provide (all-defined-out))
 )
 
@@ -290,7 +290,7 @@
                        (let ([kn+1 (trace:cc)])
                          (display #\*)
                          (trace:apply-cont kn kn+1))))
-               "\t(k0 k0)@\n\t(k1 k1)*\t(k0 k1)@\n\t(k2 k2)*\t(k1 k2)*\t(k0 k2)@\n"))
+               "  (k0 k0)@\n  (k1 k1)*  (k0 k1)@\n  (k2 k2)*  (k1 k2)*  (k0 k2)@\n"))
   (check-true (output-starts-with? (λ () (yin:k0 yin:k0)) "@\n*@\n**@\n***@"))
   ;; 三重否定律：把 DNI 升两层的延续降回来，行为和原来的一样，什么也不捕获
   (check-equal? (with-output-to-string (λ () ((tn:triple-negation tn:kkkq) 'hello))) "hello\n")

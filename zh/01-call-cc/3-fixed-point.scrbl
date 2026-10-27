@@ -114,28 +114,23 @@
 
 要回答这个问题，得看清每一步跳向了谁。给每个@tech{延续}起一个名
 字：@racket[k0]、@racket[k1]、@racket[k2]……先写一个插桩版的
-@racket[cc]，每捕获一个@tech{延续}，就把它和一个新名字配成一对：
-
+@racket[cc]，每捕获一个@tech{延续}，就给它配上一个新编号：
 @examples[#:eval ev #:label #f #:no-prompt
 (define n -1)
 (define (cc)
   (set! n (+ n 1))
-  (let/cc k
-    (define l
-      (cons k (string->symbol
-               (string-append "k" (number->string n)))))
+  (let/cc kn
+    (define l (cons kn n))
     (apply-cont l l)))]
-
 这样的@tech{延续}是一个 @racket[cons] 对，不再是能直接调用的函数，
-调用它的办法得我们自己规定。@racket[apply-cont] 先印出谁跳向谁，
-再拆开这个对，调用里面的函数：
-
+调用它的办法得我们自己规定。@racket[apply-cont] 拆开两个对，
+印出谁跳向谁，再调用里面的函数：
 @examples[#:eval ev #:label #f #:no-prompt
-(define (apply-cont kl l)
-  (display #\tab)
-  (display (list (cdr kl) (cdr l)))
-  ((car kl) l))]
-
+(define (apply-cont lm ln)
+  (match-define (cons km m) lm)
+  (match-define (cons kn n) ln)
+  (display (format "  (k~a k~a)" m n))
+  (km ln))]
 插桩版的 @racket[cc] 交出新@tech{延续}之前，先用 @racket[apply-cont]
 拿它调用它自己，所以每个@tech{延续}第一次出现，都是 @racket[(kn kn)]
 这样一项。
