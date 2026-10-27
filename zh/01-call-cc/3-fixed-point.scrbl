@@ -2,9 +2,6 @@
 
 @title[#:tag "01:3-fixed-point"]{否定的不动点}
 
-还有一个类型我们早就认识，却一直没拿来代入：@racket[Label]。
-它是它自己的否定，层数还数得下去吗？
-
 @(define ev (make-acf-eval))
 @examples[#:eval ev #:hidden
 (define-type ⊥ (∪))
@@ -25,6 +22,28 @@
            (display "...")]
           [(thread-dead? t) (display s)]
           [else (sleep 0.01) (loop)])))]
+
+还有一个类型我们早就认识，却一直没拿来代入：@racket[Label]。
+它是@defterm{否定的不动点}，就是@xref["01:where-fails"]{「对应关系在哪
+里失效」}里那个自身否定的类型。连 @racket[goto] 也是一个@tech{标签}：
+
+@mm{@ty{Label} → ⊥ = ¬@ty{Label} = @ty{Label}}
+
+层数还数得下去吗？以 @racket[Label] 为底，它外面包一层否定，得到的
+@math{¬@ty{Label}} 还是 @racket[Label]；再包一层，还是
+@racket[Label]。层号照样数得下去，可每一层都是同一个类型。
+可以把它想成一座无穷高的否定塔，每一层都是同一个 @racket[Label]；
+层数在这里不再能区分角色，分不清一个@tech{标签}是被调用的那个，
+还是交出去的那个。
+
+代价是，「有类型的程序就是证明」这个读法也失效了。有了
+@racket[Label]，只用 @racket[λ] 和函数调用的有类型程序，
+也不再保证终止。把 @racket[goto] 交给它自己，
+
+@racketblock[
+(goto goto)]
+
+类型是 @racket[⊥]，却永远算不完。
 
 @section[#:tag "01:label-sub"]{代入 @racket[Label]}
 
@@ -51,29 +70,7 @@
 定义标签」}里那句 @racket[(define (label) (cc))]，就是这样一个不分支的
 @racket[cc]。
 
-@racket[Label] 是@defterm{否定的不动点}，就
-是@xref["01:where-fails"]{「对应关系在哪里失效」}里那个自身否定的类
-型。连 @racket[goto] 也是一个@tech{标签}：
-
-@mm{@ty{Label} → ⊥ = ¬@ty{Label} = @ty{Label}}
-
-再数一数层数。以 @racket[Label] 为底，它外面包一层否定，得到的
-@math{¬@ty{Label}} 还是 @racket[Label]；再包一层，还是
-@racket[Label]。层号照样数得下去，可每一层都是同一个类型。
-可以把它想成一座无穷高的否定塔，每一层都是同一个 @racket[Label]；
-层数在这里不再能区分角色，分不清一个@tech{标签}是被调用的那个，
-还是交出去的那个。
-
-代价是，「有类型的程序就是证明」这个读法也失效了。有了
-@racket[Label]，只用 @racket[λ] 和函数调用的有类型程序，
-也不再保证终止。把 @racket[goto] 交给它自己，
-
-@racketblock[
-(goto goto)]
-
-类型是 @racket[⊥]，却永远算不完。
-
-@subsection[#:tag "01:yin-yang"]{把标签交给标签}
+@section[#:tag "01:yin-yang"]{把标签交给标签}
 
 之前的例子里，我们总是先用 @racket[(label)] 造一个@tech{标签}，
 存进变量，再交给 @racket[goto] 跳回去。省掉中间的变量，就是：
@@ -121,7 +118,7 @@
 每一轮都比上一轮多打印一个 @racket[*]。多出来的那个 @racket[*]，
 记在了哪里？
 
-@subsubsection[#:tag "01:trace"]{追踪谜题}
+@subsection[#:tag "01:trace"]{追踪谜题}
 
 要回答这个问题，得看清每一步跳向了谁。给每个@tech{延续}起一个名
 字：@racket[k0]、@racket[k1]、@racket[k2]……先写一个插桩版的
@@ -177,7 +174,7 @@
 续}。@racket[k0] 由第一处 @racket[(label)] 捕获，
 只有这一条；@racket[k1]、@racket[k2]……都由第二处捕获。
 
-@subsubsection[#:tag "01:rules"]{读出规律}
+@subsection[#:tag "01:rules"]{读出规律}
 
 规律就在每一对名字里。右边是交出去的参数，总是最近捕获的那条@tech{延
 续}，记作 @racket[km]；左边是当前被调用的那条。调用的若是
