@@ -145,8 +145,9 @@
 (call/cc proc)
 (call/cc (λ (k) (k (proc k))))]
 
-@racket[call/cc] 交给 @racket[proc] 的 @racket[k]，通向的是
-@racket[call/cc] 返回之后的地方。调用 @racket[proc] 又是
+第二行交给 @racket[call/cc] 的，是包了一层的那整个 @racket[λ]，不是
+@racket[proc]。@racket[call/cc] 交给 @racket[proc] 的 @racket[k]，
+通向的是 @racket[call/cc] 返回之后的地方。调用 @racket[proc] 又是
 @racket[call/cc] 做的最后一件事，@racket[proc] 正常返回时，
 返回值也直接交到那里。所以 @racket[proc] 的结果不论经 @racket[k]
 显式交出，还是正常返回，都走到同一个出口；正常返回时隐含经过的，
@@ -161,9 +162,10 @@
 
 @section[#:tag "01:where-fails"]{对应关系在哪里失效}
 
-@tech{Curry-Howard 对应}在纯粹的全函数语言（每个函数都会终止并交出值，
-如 Agda 和 Coq）中是精确的：对任意非空的 @math{p}，@math{¬p}
-确实是空的。真实的编程语言打破了这一点。
+这一节看哪些程序不能当作证明。@tech{Curry-Howard
+对应}在纯粹的全函数语言（每个函数都会终止并交出值，如 Agda 和 Coq）
+中是精确的：对任意非空的 @math{p}，@math{¬p} 确实是空的。
+真实的编程语言打破了这一点。
 
 考虑 @racket[(define (loop) (loop))]。它的类型是 @math{→ ⊥}：
 不收参数的函数，可以看成从只有一个元素的类型
@@ -249,9 +251,10 @@
 要交出一个 @math{p}。能对 @racket[kkp] 做的只有调用它，调用它却要一个
 @math{¬p} 类型的 @racket[kp]：有了 @racket[kp]，调用 @racket[kkp] 得到
 @math{⊥}，再交给 @racket[absurd] 就能当作 @math{p}。可是没有人交来
-@racket[kp]，自己又构造不出，也就无法调用 @racket[kkp]。@tech{排中
-律}更彻底：什么也没给，要交出一个 @math{p} 或一个 @math{¬p}，
-两样都写不出。
+@racket[kp]，自己又构造不出，也就无法调用 @racket[kkp]。
+这不只是试不出来：纯 @racket[λ] 写不出对任意 @math{p} 都成立的
+@math{¬¬p → p}，这是一条定理。@tech{排中律}更彻底：什么也没给，
+要交出一个 @math{p} 或一个 @math{¬p}，两样都写不出。
 
 @racket[call/cc] 和 @racket[cc] 补上的，正是这个缺口：
 它们凭空提供了一个@tech{延续}，就是当前@tech{延续}。@racket[call/cc]
@@ -294,8 +297,7 @@
 
 @section[#:tag "01:substitute"]{代入不同的类型}
 
-@xref["01:watershed"]{「分水岭」}从定律出发找程序，留下一个问题：从
-@math{¬¬p} 取出 @math{p}，非得凭空拿到一个@tech{延续}不可吗？
+@xref["01:watershed"]{「分水岭」}从定律出发找程序。
 这一节接着从定律出发，换一个办法：代入。
 
 逻辑里，一条定律对任何命题都成立；把一个具体的命题代进去，
@@ -308,13 +310,12 @@
 
 @subsection[#:tag "01:program-type"]{程序的类型}
 
-这一回先站到运行整个程序的一侧。代入最朴素的一个：退出码的类型
-@racket[Byte]，得到 @math{¬¬@ty{Byte} → @ty{Byte}}。选它，
-是因为程序最后交出的就是退出码。这个类型很容易填上，
-可要留住程序原来的行为，就得另看。光看类型，@racket[(λ (kk) 0)]
-就填上了，什么也不捕获。逻辑上也不奇怪：@racket[Byte] 有值，是真命题，
-从任何前提推出它都成立，丢掉前提、直接拿出一个 @racket[Byte]
-就是证明。
+先代入最朴素的一个：退出码的类型 @racket[Byte]，得到
+@math{¬¬@ty{Byte} → @ty{Byte}}。选它，是因为程序最后交出的就是退出码。
+这一回既看类型能不能填上，也看能不能留住交进来的计算的行为。
+光看类型，@racket[(λ (kk) 0)] 就填上了，什么也不捕获。
+逻辑上也不奇怪：@racket[Byte] 有值，是真命题，从任何前提推出它都成立，
+丢掉前提、直接拿出一个 @racket[Byte] 就是证明。
 
 可逻辑只问命题真不真，不问拿出的是哪一个 @racket[Byte]；@racket[0]
 和程序算出来的退出码，在它眼里没有分别。我们却在乎。
@@ -349,22 +350,17 @@
 @math{¬@ty{Byte} → @ty{Byte}}，而不是 @math{¬@ty{Byte} → ⊥}，
 也就不再是 @math{¬¬@ty{Byte}}。
 
-真实的操作系统也是这样运行程序的。启动一个程序时，OS
-提供一个退出通道，进程通过它交回状态码，然后 OS 接管。
-交回的方式有两种：显式地调用 @racket[exit]，或者从 @racket[main]
-返回。C 语言规定后者等于拿返回值调用 @racket[exit]，正是上面外层那个
-@racket[(exit …)]。
-
 所以程序是一个 @math{¬¬@ty{Byte}}：它等着计算终结处的那条@tech{延续}。
-多数语言本身只提供 @racket[exit]，不提供 @racket[call/cc]；有了
-@racket[call/cc]，没有 @racket[exit] 也能像上面那样模拟出来。站在 OS
-那一边看，启动程序时，退出通道已经在那里了：OS 把 @racket[exit]
-交给程序，程序把退出码交给 @racket[exit]，OS 随后接管。对程序内部，
-调用 @racket[exit] 不再返回；对外部，退出码已经交到手里。
-把计算运行起来、在出口接收结果的整个过程，对
-应@xref["01:watershed"]{「分水岭」}里的 DNE：
-从等待@tech{延续}的计算中取得结果。这条@tech{延续}由 OS 交来，
-语言里什么也不用捕获。
+真实的操作系统也是这样运行程序的：启动一个程序时，
+退出通道已经在那里了，就是 @racket[exit]。程序交回退出码有两种方式：
+显式地调用 @racket[exit]，或者从 @racket[main] 返回；C
+语言规定后者等于拿返回值调用 @racket[exit]，正是上面外层那个
+@racket[(exit …)]。对程序内部，调用 @racket[exit] 不再返回；对外部，OS
+接到了退出码。把计算运行起来、在出口接收结果的整个过程，
+对应@xref["01:watershed"]{「分水岭」}里的 DNE。和 @racket[call/cc]
+的区别，在谁来提供这条@tech{延续}：多数语言本身只提供 @racket[exit]，
+由 OS 从外面交来，语言里什么也不用捕获；有了 @racket[call/cc]，没有
+@racket[exit] 也能像上面那样自己捕获出来。
 
 @subsection[#:tag "01:neg-q"]{代入 @math{¬q}}
 
@@ -410,7 +406,9 @@ DNI 的写法包成一个 @racket[kkkq]，交给 @racket[triple-negation]
   (let ([kq (triple-negation kkkq)])
     (kq q)))]
 
-@racket[q] 经取回的 @racket[kq] 交到了 @racket[let/cc] 返回的地方。
+@racket[q] 经取回的 @racket[kq] 交到了 @racket[let/cc] 返回的地方，
+一路是
+@racket[(kq q)]、@racket[(kkkq kkq)]、@racket[(kkq k)]、@racket[(k q)]。
 取回的 @racket[kq] 和 @racket[k] 不是同一个值，行为却一样：先用 DNI
 包一层，再用三重否定律取回，回到了原样。定义里 @racket[kkq] 的形参
 @racket[kq]，这次收到的也正是 @racket[k]。
@@ -448,7 +446,8 @@ DNI 的写法包成一个 @racket[kkkq]，交给 @racket[triple-negation]
 层数还带出一个规律。DNI、DNE 一次加减两层，不改变奇偶，@tech{矛盾律}却
 要一奇一偶。奇偶不同的两个值，把低的那个反复做 DNI，
 总能升到与另一个相邻，再调用，@racket[triple-negation] 就是这样做的。
-从 @math{p ∨ ¬p} 出发，左支做一次 DNI，就得到 @math{¬¬p ∨ ¬p}，第 2
+例如第 0 层与第 5 层：把第 0 层升到第 4 层，就能交给第 5 层。从
+@math{p ∨ ¬p} 出发，左支做一次 DNI，就得到 @math{¬¬p ∨ ¬p}，第 2
 层或第 1 层；两支各做几次 DNI，也就得到任意的「偶数层 ∨ 奇数层」，
 用不着 DNE。奇偶相同的两个，只靠 DNI、DNE 凑不成相邻。
 

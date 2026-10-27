@@ -190,10 +190,13 @@
 
 规律就在每一对名字里。先看第三行 @c|{(k2 k2)* (k1 k2)* (k0 k2)@}|：
 右边总是 @racket[k2]，最近捕获的那条；左边一步步往回退。@racket[k2]
-被捕获时，@racket[yin] 绑的是 @racket[k1]，所以 @racket[(k2 k2)] 打印
-@racket[*] 之后，下一步是 @racket[(k1 k2)]；@racket[k1] 被捕获时
-@racket[yin] 绑的是 @racket[k0]，于是接着是 @racket[(k0 k2)]。一般地，
-右边是交出去的参数，总是最近捕获的那条@tech{延续}，记作 @racket[km]；
+被捕获时，@racket[yin] 绑的是 @racket[k1]，所以跳回 @racket[k2]，
+继续执行的是捕获时那份环境里的 @racket[(yin yang)]：@racket[yin] 是
+@racket[k1]，@racket[yang] 收到这次交来的
+@racket[k2]。@racket[(k2 k2)] 打印 @racket[*] 之后，下一步就是
+@racket[(k1 k2)]；@racket[k1] 被捕获时 @racket[yin] 绑的是
+@racket[k0]，于是接着是 @racket[(k0 k2)]。一般地，右边是交出去的参数，
+总是最近捕获的那条@tech{延续}，记作 @racket[km]；
 左边是当前被调用的那条。调用的若是 @racket[(kn+1 km)]，打印一个
 @racket[*]，下一步就是 @racket[(kn km)]，把同一个 @racket[km]
 交给前一条：@racket[kn+1] 被捕获时，@racket[yin] 绑的正是
@@ -226,8 +229,8 @@
 做@defterm[#:en "Continuation-Passing Style" #:abbr "CPS"]{延续传递风
 格}；把程序改写成这种写法，就是 @defterm{CPS 变换}。
 
-反过来看，原来的谜题就是这组@bold{互递归调用}，只是其中的@tech{延续}由
-@racket[(label)] 在运行时捕获，而不是作为参数传进
-来。@math{@ty{Label} = ¬@ty{Label}} 是@tech{说谎者悖论}，
-阴阳谜题就像让它运行了起来：同一个@tech{标签}一会儿被调用，
-一会儿被交出去，永远落不了地。
+反过来看，原来的谜题就是这样一组@bold{函数调用}，
+只是其中的@tech{延续}由 @racket[(label)] 在运行时捕获，
+而不是作为参数传进来。@math{@ty{Label} = ¬@ty{Label}}
+是@tech{说谎者悖论}，阴阳谜题就像让它运行了起来：
+同一个@tech{标签}一会儿被调用，一会儿被交出去，永远落不了地。

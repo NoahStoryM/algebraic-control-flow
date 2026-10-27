@@ -85,9 +85,10 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 不带任何载荷。要避免修改状态，我们需要向跳转目标发送一个值。
 这就是@defterm[#:en "continuation"]{延续}的核心思想。
 
-@racket[(label)] 第一次被求值时，我们希望它返回一个「回调」：
-一个以后可以调用的函数，带着一个值跳回去。当调用那个回调
-时，@racket[(label)] 应该「再次返回」，这次返回的就是传入的那个值。
+设想一个新的操作符，像 @racket[(label)] 那样捕获当前位置。
+它第一次被求值时，我们希望它返回一个「回调」：一个以后可以调用的函数，
+带着一个值跳回去。当调用那个回调时，它应该「再次返回」，
+这次返回的就是传入的那个值。
 
 于是这个操作符的返回值有两种可能：
 
@@ -232,7 +233,9 @@ then 分支返回。两条路径都通过@tech{延续} @racket[result] 汇合，
 
 @section[#:tag "01:label-from-call-cc"]{从 @racket[call/cc] 定义标签}
 
-令 @math{p = @ty{Label}}，@racket[call/cc] 交给 @racket[proc]
+这里的 @racket[call/cc] 用 Racket 自带的，还是上一节由 @racket[cc]
+写出的，都可以，只要不是由@tech{标签}写出的那个，免得定义绕成圈。令
+@math{p = @ty{Label}}，@racket[call/cc] 交给 @racket[proc]
 的@tech{延续}类型就是 @math{@ty{Label} → ⊥}，
 恰好是一个@tech{标签}。@tech{标签}因此可以直接由 @racket[call/cc]
 定义：
