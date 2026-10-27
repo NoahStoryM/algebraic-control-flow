@@ -130,7 +130,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 @racket[saved] 不再是 @racket[#f]，走 then 分支，@racket[(cc)]
 第二次返回，交出存进去的值。
 
-@subsection[#:tag "01:mul-cc"]{再写 @racket[mul]}
+有了 @racket[cc]，@racket[mul] 可以再写一次：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define (mul . r*)
