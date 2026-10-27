@@ -80,8 +80,7 @@
 @racketblock[
 (goto goto)]
 
-类型是 @math{⊥}，却永远算不完。这并不是说用到 @racket[Label]
-的程序都会循环。一个程序停不停，要看它自己怎样调用。
+类型是 @math{⊥}，却永远算不完。
 
 @subsection[#:tag "01:yin-yang"]{阴阳谜题}
 
