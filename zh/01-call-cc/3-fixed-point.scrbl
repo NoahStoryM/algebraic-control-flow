@@ -149,7 +149,7 @@
    (let ([kn+1 (cc)])
      (display #\*)
      (apply-cont kn kn+1)))
- (show-lines 3
+ (show-lines 4
   (λ ()
     (let ([kn (cc)])
       (displayln #\@)
@@ -177,10 +177,11 @@
 越往左的列越新，就得到一个矩阵：
 
 @out-block|{
-      ...  k2   k1   k0
-k0                   @
-k1              *    @
-k2         *    *    @
+      ...  k3   k2   k1   k0
+k0                        @
+k1                   *    @
+k2              *    *    @
+k3         *    *    *    @
 ...
 }|
 
