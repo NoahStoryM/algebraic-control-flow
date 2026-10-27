@@ -127,7 +127,6 @@
     (apply-cont l l)))
 (define (apply-cont kl l)
   (display (list (cdr kl) (cdr l)))
-  (display #\tab)
   ((car kl) l))]
 
 这里的 @racket[let/cc] 借的是 Racket 自带的那一个。前文的
@@ -139,22 +138,22 @@
 先拆开这个对，记下名字，再调用里面的函数。@racket[cc]
 构造@tech{延续}，@racket[apply-cont] 消费@tech{延续}。插桩版的
 @racket[cc] 在交回新@tech{延续}时，先把它交给它自己，
-所以追踪里每个@tech{延续}第一次出现都是 @racket[(kn kn)] 这样的一行。
-谜题改用这两个函数来写：
+所以追踪里每个@tech{延续}第一次出现都是 @racket[(kn kn)] 这样一项。
+谜题改用这两个函数来写，打印照原版：
 
 @examples[#:eval ev #:label #f
 (eval:alts
  (let ([kn (cc)])
    (displayln #\@)
    (let ([kn+1 (cc)])
-     (displayln #\*)
+     (display #\*)
      (apply-cont kn kn+1)))
- (show-lines 10
+ (show-lines 5
   (λ ()
     (let ([kn (cc)])
       (displayln #\@)
       (let ([kn+1 (cc)])
-        (displayln #\*)
+        (display #\*)
         (apply-cont kn kn+1))))))]
 
 追踪的每一项是一对名字：前一个是被跳向的目标，后一个是交给它的参数。
@@ -165,22 +164,13 @@
 
 @subsubsection[#:tag "01:matrix"]{读矩阵}
 
-把上面的追踪在每个 @c|{@}| 处断开，每段排成一行，
-从左往右就是执行的先后：
-
-@out-block|{
-(k0 k0)@
-(k1 k1)*  (k0 k1)@
-(k2 k2)*  (k1 k2)*  (k0 k2)@
-(k3 k3)*  (k2 k3)*  (k1 k3)*  (k0 k3)@
-...
-}|
+每一项跳转都印在它打印的字符前面，所以每一行从左往右，就是执行的先后；
+把名字去掉，剩下的正是原版谜题的那一行。
 
 同一行里，交出去的参数始终是同一个：第 @math{n} 行都是 @racket[kn]。
 被跳向的目标却从最新的 @racket[kn] 开始，一个比一个旧，一路退到
 @racket[k0]，打印出 @math{n} 个 @racket[*]，最后在 @racket[k0]
-打印一个 @c|{@}|。每一行正是原版谜题打印出的一行（插桩版为了配合追踪，
-每个字符各占一行）。
+打印一个 @c|{@}|。
 
 把名字换成位置，参数相同的放进同一行，目标相同的放进同一列，
 越往左的列越新，就得到一个矩阵：
