@@ -35,12 +35,17 @@
 @math{q} 的证明。这是@defterm{蕴含}，写作
 @defsym["p → q" "蕴含；函数类型"]@math{→}。
 
-那 @racket[⊥] 呢？@tech{空类型} @racket[⊥] 没有元素，
-写不出这个类型的表达式；假命题也没有证明。@racket[⊥] 正好对应假。于是
-@math{p → ⊥} 对应否定：有了 @math{p} 的证明，就推出假，也就是 @math{p}
-不成立。这个类型就是@defterm{否定}
-@defsym["¬p" "p 的否定：p → ⊥，延续的类型"]@math{¬p}。@tech{延续}的类
-型正是 @math{p → ⊥}，每个@tech{延续}都是一个@tech{否定}：
+这样读，一个命题为真，就是写得出这个类型的表达式。
+@racket[(→ Real Byte)] 为真，随手就能写一个，比如 @racket[(λ (r) 0)]。
+
+那假呢？最典型的是 @racket[⊥]：@tech{空类型}没有元素，
+写不出这个类型的表达式，正像假命题没有证明。一个命题为假，
+就是从它能推出假，写得出一个 @math{p → ⊥}：有了 @math{p}，就推出
+@math{⊥}。这和「写不出 @math{p}」不是一回事：有的命题自己写不出，
+它的否定也写不出。@math{p → ⊥} 就是@defterm{否定}
+@defsym["¬p" "p 的否定：p → ⊥，延续的类型"]@math{¬p}，与 @math{p}
+正好相反。@tech{延续}的类型正是 @math{p → ⊥}，
+每个@tech{延续}都是一个@tech{否定}：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define-type (¬ p) (→ p ⊥))]
@@ -76,25 +81,26 @@
 
 @section[#:tag "01:types-to-logic"]{从类型到逻辑}
 
-先说不收参数。否定的箭头指向 @math{⊥}，一个元素也没有的类型。把
-@math{⊥} 换成恰好有一个元素的类型
-@defsym["⊤" "真，恰好有一个元素的类型"]@math{⊤}，再把箭头反过来，就是
-@math{⊤ → A}：一个不收参数的函数 @racket[(→ A)]，也就是我们熟悉的
-thunk。拿到一个 thunk，调用它就拿到一个 @math{A}；拿到一个 @math{A}，
-也总能包成 @racket[(λ () a)]。两边能来回换，@math{⊤ → A} 与 @math{A}
-逻辑上等价：从真推出 @math{A}，就是 @math{A} 成立。@racket[cc] 是一个
-thunk，读它的类型，只看它交出什么就行。
+先说不收参数。否定 @math{p → ⊥} 与 @math{p} 正好相反。把 @math{⊥}
+换成恰好有一个元素的类型
+@defsym["⊤" "真，恰好有一个元素的类型"]@math{⊤}，再把箭头反过来，
+得到的 @math{⊤ → p} 却和 @math{p} 一样。它就是不收参数的函数
+@racket[(→ p)]，我们熟悉的 thunk：拿到一个 thunk，调用它就拿到一个
+@math{p}；拿到一个 @math{p}，也总能包成 @racket[(λ () a)]。
+两边能来回换，从真推出 @math{p}，就是 @math{p} 成立。@racket[cc]
+是一个 thunk，读它的类型，只看它交出什么就行。
 
-顺着「不收参数」还能多走一步。thunk 不收参数，也可以看成收下一个
-@math{⊤}。这里的「零」容易和多值混在一起：多值说的是一次交出几个结果，
-不是类型有几个元素。@racket[(values x y)] 交出两个结果；
-把一次交出的结果整体来看，对应积 @math{p × q}：两样都在手里，就是
-@math{p} 与 @math{q} 同时成立。这是@defterm{合取}，写作
+调用 thunk 时，什么也不交给它。Racket 里「什么也不交」也有写法：
+@racket[(values)] 交出零个结果。这样的交法只有一种，正合 @math{⊤}
+只有一个元素：把一次交出的结果整体来看，@racket[(values)] 对应
+@math{⊤}。这里的「零」说的是一次交出几个结果，不是类型有几个元素；
+一种交法也没有的，才是 @math{⊥}。照这样看，@racket[(values x y)]
+交出两个结果，整体对应积 @math{p × q}：两样都在手里，@math{p} 与
+@math{q} 同时成立。这是@defterm{合取}，写作
 @defsym["p ∧ q" "合取；多个结果 p × q"]@math{∧}。@racket[(values)]
-交出零个结果，这样的交法只有一种，整体来看对应没有分量的空积，也就是
-@math{⊤}；一种交法也没有的，才是 @math{⊥}。零个分量并上去，
-什么也没多出来，就像「真且 @math{p}」就是 @math{p}。函数的两个参数，
-也可以按同样的方式合起来，看成一个 @math{p × q}。
+是它的单位元：零个结果并上去，什么也没多出来，就像「真且 @math{p}」
+就是 @math{p}。函数的两个参数，也可以这样合起来，看成一个
+@math{p × q}。
 
 @margin-note{@racket[∪] 有一个容易误读的地方。集合 @math{X = {a, b}}、
 @math{Y = {b, c}} 的并集里，@math{b} 说不清来自哪一边。
@@ -124,8 +130,10 @@ thunk，读它的类型，只看它交出什么就行。
 
 现在 @racket[cc] 也读得下去了：@math{p ∨ ¬p}，@math{p} 成立，或者
 @math{p} 不成立。这条也有名字，
-叫@defterm[#:en "law of excluded middle"]{排中律}。三个操作符的类型，
-都对上了逻辑课本里有名字的定律：
+叫@defterm[#:en "law of excluded middle"]{排中律}。@racket[call/cc]
+把这个分支挪进了操作符内部，它的类型里也就没有 @math{∪}，只用 @math{→}
+和 @math{⊥} 就写得下。三个操作符的类型，都对上了逻辑课本里有名字的定
+律：
 
 @tabular[#:style 'boxed #:row-properties '(bottom-border ())
   (list
