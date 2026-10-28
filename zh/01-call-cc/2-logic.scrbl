@@ -67,25 +67,29 @@
 
 @section[#:tag "01:types-to-logic"]{从类型到逻辑}
 
-「写出表达式就是证明」的读法能推广到我们用过的其他类型构造子吗？
-假设有两个表达式 @math{x} 和 @math{y}，类型分别是 @math{p} 和
-@math{q}。从这个设定出发，我们可以构造出：
+「写出表达式就是证明」的读法，能推广到我们用过的其他类型吗？
 
-@itemlist[#:style 'ordered
-  @item{@math{p → q} 类型的表达式 @racket[(λ (x) y)]，@math{y}
-  可以用到 @math{x}：给定一个 @math{p}，就能产出一个 @math{q}。
-  也就是说：如果 @math{p} 成立，那么 @math{q} 成立。
-  这是@defterm{蕴含}，写作
-  @defsym["p → q" "蕴含；函数类型"]@math{→}。}
-  @item{@math{p × q} 类型的表达式 @racket[(values x y)]：把 @math{x}
-  和 @math{y} 打包在一起。也就是说：@math{p} 和 @math{q} 同时成立。
-  这是@defterm{合取}，写作
-  @defsym["p ∧ q" "合取；多个结果 p × q"]@math{∧}。}
-  @item{@math{p ∪ q} 类型的表达式：@math{x} 和 @math{y}
-  都可以是这个类型。也就是说：@math{p} 和 @math{q}
-  只要有一个成立，@math{p} 或 @math{q} 就成立。这是@defterm{析取}，
-  写作
-  @defsym["p ∨ q" "析取；联合类型 p ∪ q"]@math{∨}。}]
+先看 @math{→}。@racket[(λ (x) y)] 里，@math{y} 可以用到 @math{x}：
+给它一个 @math{p}，就产出一个 @math{q}。读作命题，就是：如果 @math{p}
+成立，那么 @math{q} 成立。这是@defterm{蕴含}，写作
+@defsym["p → q" "蕴含；函数类型"]@math{→}。把 @math{p → ⊥} 读作否定，
+用的正是这个读法。
+
+否定的箭头指向没有值的 @math{⊥}。把 @math{⊥} 换成只有一个值的类型
+@defsym["⊤" "真，只有一个值的类型"]@math{⊤}，再把箭头反过来，就是
+@math{⊤ → A}。它是我们熟悉的 thunk，不收参数的函数 @racket[(→ A)]。
+拿到一个 thunk，调用它就拿到一个 @math{A}；拿到一个 @math{A}，
+也总能包成 @racket[(λ () a)]。所以 @math{⊤ → A} 与 @math{A}
+逻辑上等价：从真推出 @math{A}，就是 @math{A} 成立。
+
+调用 thunk 时，交给它的是零个值，Racket 写作 @racket[(values)]；
+@math{⊤} 那唯一的值就是它。@racket[(values x y)] 交出两个值，类型写作
+@math{p × q}：两样都在手里，读作 @math{p} 与 @math{q} 同时成立。
+这是@defterm{合取}，写作
+@defsym["p ∧ q" "合取；多个值 p × q"]@math{∧}。零个值正是它的单位元：
+再并上 @racket[(values)]，什么也没多出来，就像「真且 @math{p}」就是
+@math{p}。函数收两个参数，也就是收一个 @math{p × q}。
+
 @margin-note{@racket[∪] 有一个容易误读的地方。集合 @math{X = {a, b}}、
 @math{Y = {b, c}} 的并集里，@math{b} 说不清来自哪一边。
 打上标签再并起来，@math{X + Y = X × {0} ∪ Y × {1}}，两边就不相交了，
@@ -93,29 +97,31 @@
 标签的联合}。丢掉标签，总有一个从 @math{X + Y} 到 @math{X ∪ Y}
 的映射；@math{X ∩ Y = {}} 时它是一一对应，用不着标签。}
 
-这里要把两样东西分开。逻辑里证明「@math{p} 或 @math{q}」，
-总要说清是哪一支成立。对应的是@defterm[#:en "disjoint union"]{不相交的
-联合}：两边的元素分得开，拿到一个元素，就知道它来自哪一边；
-打标签是做到不相交的一种办法。Typed Racket 的 @racket[∪]
-却是普通的并集 @math{p ∪ q}，两边分不分得开，要看 @math{p} 和 @math{q}
-本身。
+剩下 @math{∪}。@racket[(cc)] 交出的 @math{p ∪ ¬p}，
+用的人必须分得清拿到的是哪一支。那版 @racket[mul] 用谓词
+@racket[real?] 一问就知道，实数和函数本来就不相交。@racket[call/cc]
+不知道结果会是什么，结果也可能是函数，就把传回的结果包进列表，用
+@racket[list?] 区分，这就是打标签。@racket[cc] 自己要决定交出哪一支，
+看的是 @racket[saved] 是不是 @racket[#f]，最早那版 @racket[mul]
+看的是标志 @racket[first?]：这两处靠另记一个状态来分辨，
+不是在交给调用者的结果上添标记。
 
-前面其实一直在设法分开两边。@racket[(cc)] 交出的 @math{p ∪ ¬p} 里，
-实数和函数本来就不相交，那版 @racket[mul] 用谓词 @racket[real?]
-一问就知道。@racket[call/cc] 不知道结果会是什么，结果也可能是函数，
-就把传回的结果包进列表，用 @racket[list?] 区分，
-这就是打标签。@racket[cc] 自己要决定交出哪一支，看的是 @racket[saved]
-是不是 @racket[#f]，最早那版 @racket[mul] 看的是标志 @racket[first?]：
-这两处靠另记一个状态来分辨，不是在交给调用者的结果上添标记。下面把
-@racket[∪] 读作 @math{∨}，说的都是这样分得开两边的联合。
+读作「@math{p} 或 @math{q}」，也得这样分得清：逻辑里证明「@math{p} 或
+@math{q}」，总要说清是哪一支成立。对应的
+是@defterm[#:en "disjoint union"]{不相交的联合}：两边的元素分得开，
+拿到一个元素，就知道它来自哪一边；打标签是做到不相交的一种办法。Typed
+Racket 的 @racket[∪] 却是普通的并集，两边分不分得开，要看 @math{p} 和
+@math{q} 本身。下面把 @racket[∪] 读作「或」，
+说的都是这样分得开两边的联合。这是@defterm{析取}，写作
+@defsym["p ∨ q" "析取；联合类型 p ∪ q"]@math{∨}。
 
 每个类型构造子都对应一个逻辑连接词。类型是命题，表达式是证明，
 构造程序就是构造证明。这个对应关系有一个名字：@defterm{Curry-Howard
 对应}。
 
-用 @math{¬} 和 @math{∨} 改写（@racket[cc] 不收参数，只看它交出什么），
-开头那两个签名都成了命题，对上逻辑课本里两条有名字的定
-律；@racket[absurd] 的签名也是一条：
+用 @math{¬} 和 @math{∨} 改写（@racket[cc] 是一个 thunk，
+只看它交出什么就行），开头那两个签名都成了命题，
+对上逻辑课本里两条有名字的定律；@racket[absurd] 的签名也是一条：
 
 @tabular[#:style 'boxed #:row-properties '(bottom-border ())
   (list
@@ -160,54 +166,6 @@
 交给它一个等@tech{延续}的计算，它从中把结果取出来。
 这条定律叫@defterm[#:en "Double Negation Elimination" #:abbr "DNE"]{双
 重否定消除}。
-
-@section[#:tag "01:where-fails"]{对应关系在哪里失效}
-
-这一节看哪些程序不能当作证明。@tech{Curry-Howard
-对应}在纯粹的全函数语言（每个函数都会终止并交出值，如 Agda 和 Coq）
-中是精确的：对任意非空的 @math{p}，@math{¬p} 确实是空的。
-真实的编程语言打破了这一点。
-
-考虑 @racket[(define (loop) (loop))]。它的类型是 @math{→ ⊥}：
-不收参数的函数，可以看成从只有一个元素的类型
-@defsym["⊤" "真，只有一个元素的类型"]@math{⊤}（真）出发，即
-@math{⊤ → ⊥ = ¬⊤}：真的@tech{否定}。在纯粹理论中，@math{¬⊤}
-应该是空的，因为真不可反驳。但 @racket[loop]
-是这个类型下合法的表达式，只不过一调用就永不终止。在非全函数语言中，
-合法的表达式不一定终止，因此并非每个表达式都是证明。
-
-类似地，内置的 @racket[exit] 的类型是
-@math{@ty{Byte} → ⊥ = ¬@ty{Byte}}。借助 @racket[exit]，我们可以为任意
-@math{p} 构造 @math{¬p}：@racket[(λ (_) (exit 0))]。@racket[raise]
-抛出异常，也不正常返回到抛出的位置，@racket[(λ (_) (raise 'oops))]
-同样是一个 @math{¬p}。任何真命题的@tech{否定}都变成了非空。
-
-还有第三种失效。用 @math{¬} 改写，@math{@ty{Label} = @ty{Label} → ⊥}
-就是 @math{@ty{Label} = ¬@ty{Label}}：一个自身@tech{否定}的类型，
-读作命题，就是一句「这句话是假的」。推一推：如果 @racket[Label]
-为真（非空），@math{¬@ty{Label}} 也就非空，@racket[Label]
-的@tech{否定}为真，@racket[Label] 为假。如果 @racket[Label]
-为假（空），@math{¬@ty{Label}} 反倒有值：空类型出发的函数总写得出来，
-就像 @racket[absurd] 填充了 @math{⊥ → p}；可
-@math{¬@ty{Label} = @ty{Label}}，于是 @racket[Label] 又有了值，
-变成了真。
-
-这就是@defterm{说谎者悖论}，它无法被一致地赋予真假值。Agda 和 Coq
-这样的一致类型论禁止这类定义；Racket 没有这个限制，我们可以构造
-@racket[Label] 类型的值。
-
-每种情况下，严格的 Curry-Howard 解读都失效了：
-本应为空的@tech{否定}类型有了值，本应非法的自指类型变得合法。
-不能把任意 Racket 表达式都当作证明。下面读出逻辑定律时，无限循环、
-内置的 @racket[exit]、抛出异常和自指类型，都不纳入这个读法；
-@racket[cc] 和 @racket[call/cc] 当作控制操作，
-不把前面实现它们的过程一并当作证明。
-
-后面真正要用的是两条规则：按给定的类型使用控制操作符，
-程序里交进来的东西，在证明里算假设。在这个范围内，
-程序的类型推导对应逻辑证明；没有未解除的假设时，
-得到的才是相应命题的无条件证明。加入控制操作，就多了@tech{排中律}、DNE
-这样的推理规则。
 
 @section[#:tag "01:watershed"]{分水岭}
 
@@ -334,9 +292,7 @@
 @racket[Byte]。这是运行的行为，类型里看不出来。
 
 要找这样的实例，先得知道一个 @math{¬¬@ty{Byte}} 长什么样。最常见的，
-就是一个程序：它算出一个退出码，交给 @racket[exit]，然后结束。
-@xref["01:where-fails"]{「对应关系在哪里失效」}拿 @racket[exit] 给任意
-@math{p} 造出 @math{¬p}；这里只看它作为程序出口的那一种用法。要看清
+就是一个程序：它算出一个退出码，交给 @racket[exit]，然后结束。要看清
 @racket[exit] 从哪里来，假设我们的语言有 @racket[call/cc] 但没有内置的
 @racket[exit]，把整个程序包在 @racket[call/cc] 里：
 

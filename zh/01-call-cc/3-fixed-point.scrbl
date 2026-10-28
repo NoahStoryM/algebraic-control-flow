@@ -24,8 +24,9 @@
           [else (sleep 0.01) (loop)])))]
 
 还有一个类型我们早就认识，却一直没拿来代入：@racket[Label]。
-它是@defterm{否定的不动点}，就是@xref["01:where-fails"]{「对应关系在哪
-里失效」}里那个自身否定的类型。连 @racket[goto] 也是一个@tech{标签}：
+@math{@ty{Label} = @ty{Label} → ⊥} 用 @math{¬} 改写，就是
+@math{@ty{Label} = ¬@ty{Label}}：它的否定就是它自己，
+是@defterm{否定的不动点}。连 @racket[goto] 也是一个@tech{标签}：
 
 @mm{@ty{Label} → ⊥ = ¬@ty{Label} = @ty{Label}}
 
@@ -35,15 +36,6 @@
 可以把它想成一座无穷高的否定塔，每一层都是同一个 @racket[Label]；
 层数在这里不再能区分角色，分不清一个@tech{标签}是被调用的那个，
 还是交出去的那个。
-
-代价是，「有类型的程序就是证明」这个读法也失效了。有了
-@racket[Label]，只用 @racket[λ] 和函数调用的有类型程序，
-也不再保证终止。把 @racket[goto] 交给它自己，
-
-@racketblock[
-(goto goto)]
-
-类型是 @racket[⊥]，却永远算不完。
 
 @section[#:tag "01:label-sub"]{代入 @racket[Label]}
 
@@ -235,6 +227,50 @@
 
 反过来看，原来的谜题就是这样一组@bold{函数调用}，
 只是其中的@tech{延续}由 @racket[(label)] 在运行时捕获，
-而不是作为参数传进来。@math{@ty{Label} = ¬@ty{Label}}
-是@tech{说谎者悖论}，阴阳谜题就像让它运行了起来：
-同一个@tech{标签}一会儿被调用，一会儿被交出去，永远落不了地。
+而不是作为参数传进来。
+
+@section[#:tag "01:where-fails"]{对应关系在哪里失效}
+
+阴阳谜题有类型，却永远停不下来。「写出表达式就是证明」的读法，
+在这里显然不成立了。回头看，它在好几处都不成立。@tech{Curry-Howard
+对应}在纯粹的全函数语言（每个函数都会终止并交出值，如 Agda 和 Coq）
+中是精确的：对任意非空的 @math{p}，@math{¬p} 确实是空的。
+真实的编程语言打破了这一点。
+
+最简单的是 @racket[(define (loop) (loop))]。它是一个交出 @math{⊥} 的
+thunk，类型是 @math{⊤ → ⊥ = ¬⊤}：真的@tech{否定}。@math{¬⊤}
+本应是空的，因为真不可反驳；@racket[loop] 却是这个类型下合法的表达式，
+只不过一调用就永不终止。合法的表达式不一定终止，
+并非每个表达式都是证明。
+
+@xref["01:program-type"]{「代入 Byte」}里的 @racket[exit] 也是这样。
+它的类型是 @math{¬@ty{Byte}}，可借助它，我们能为任意 @math{p} 造出
+@math{¬p}：@racket[(λ (_) (exit 0))]。@racket[raise] 抛出异常，
+也不正常返回到抛出的位置，@racket[(λ (_) (raise 'oops))] 同样是一个
+@math{¬p}。任何真命题的@tech{否定}都变成了非空。
+
+第三种就是 @racket[Label]。@math{@ty{Label} = ¬@ty{Label}} 读作命题，
+就是一句「这句话是假的」。推一推：如果 @racket[Label]
+为真（非空），@math{¬@ty{Label}} 也就非空，@racket[Label]
+的@tech{否定}为真，@racket[Label] 为假。如果 @racket[Label]
+为假（空），@math{¬@ty{Label}} 反倒有值：空类型出发的函数总写得出来，
+就像 @racket[absurd] 填充了 @math{⊥ → p}；可
+@math{¬@ty{Label} = @ty{Label}}，于是 @racket[Label] 又有了值，
+变成了真。这就是@defterm{说谎者悖论}，它无法被一致地赋予真假值。
+阴阳谜题就像让它运行了起来：同一个@tech{标签}一会儿被调用，
+一会儿被交出去，永远落不了地。更简单的是把 @racket[goto]
+交给它自己：@racket[(goto goto)] 的类型是 @racket[⊥]，却永远算不完。
+Agda 和 Coq 这样的一致类型论禁止这类定义；Racket 没有这个限制。
+
+每种情况下，严格的 Curry-Howard 解读都失效了：
+本应为空的@tech{否定}类型有了值，本应非法的自指类型变得合法。
+不能把任意 Racket 表达式都当作证明。前面读出逻辑定律时，无限循环、
+内置的 @racket[exit]、抛出异常和自指类型，都不在这个读法之内；
+@racket[cc] 和 @racket[call/cc] 当作控制操作，
+不把实现它们的过程一并当作证明。
+
+前面真正用到的是两条规则：按给定的类型使用控制操作符，
+程序里交进来的东西，在证明里算假设。在这个范围内，
+程序的类型推导对应逻辑证明；没有未解除的假设时，
+得到的才是相应命题的无条件证明。加入控制操作，就多了@tech{排中律}、DNE
+这样的推理规则。
