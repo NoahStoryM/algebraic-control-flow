@@ -243,11 +243,14 @@ thunk，类型是 @math{⊤ → ⊥ = ¬⊤}：真的@tech{否定}。@math{¬⊤
 只不过一调用就永不终止。合法的表达式不一定终止，
 并非每个表达式都是证明。
 
-@xref["01:program-type"]{「代入 Byte」}里的 @racket[exit] 也是这样。
-它的类型是 @math{¬@ty{Byte}}，可借助它，我们能为任意 @math{p} 造出
-@math{¬p}：@racket[(λ (_) (exit 0))]。@racket[raise] 抛出异常，
+再看语言内置的 @racket[exit]。若把它当作无需任何假设就能用的常量，
+赋予它 @math{@ty{Byte} → ⊥} 的类型，那么 @racket[(λ (_) (exit 0))]
+就能占据任意 @math{p → ⊥}。@racket[raise] 抛出异常，
 也不正常返回到抛出的位置，@racket[(λ (_) (raise 'oops))] 同样是一个
-@math{¬p}。任何真命题的@tech{否定}都变成了非空。
+@math{¬p}。任何真命题的@tech{否定}都变成了非空，
+这类内置操作不能直接纳入同一套无条件证明的读
+法。@xref["01:program-type"]{「代入 Byte」}中由参数交来的
+@racket[exit] 则算一个假设，不是这样的反例。
 
 第三种就是 @racket[Label]。@math{@ty{Label} = ¬@ty{Label}} 读作命题，
 就是一句「这句话是假的」。推一推：如果 @racket[Label]
