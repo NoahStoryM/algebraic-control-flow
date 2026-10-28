@@ -50,7 +50,7 @@
 同一个类型的两支只能靠打标签分开：在@tech{带标签的联合}
 @math{@ty{Label} + @ty{Label}} 里，每个@tech{标签} @math{l} 有
 @math{(l, 0)}、@math{(l, 1)} 两份，记着自己来自哪一支。
-可是@xref["01:types-to-logic"]{「从类型到逻辑」}说过，Typed Racket 的
+可是@xref["01:types-to-logic"]{「合取与析取」}说过，Typed Racket 的
 @racket[∪] 是普通的并集，不记录值从哪一边来，
 就像经过那个丢掉标签的映射，两份并成一个 @math{l}。
 两支就坍缩成了一支：
