@@ -66,34 +66,45 @@
 的表达式，就给出了 @math{p} 的证明；写出一个 @math{p → ⊥}，
 就给出了它的@tech{否定}的证明。
 
+有了 @math{¬}，开头那两个类型可以重写了。先看 @racket[call/cc]。把
+@math{p → ⊥} 换成 @math{¬p}，它的类型就是
+
+@mm{(¬p → p) → p}
+
+这里的箭头都读作「如果……那么……」。@racket[(λ (x) y)] 收下一个
+@math{p}，交出一个 @math{q}，@math{y} 可以用到 @math{x}：有了 @math{p}
+的证明，就造得出 @math{q} 的证明。这是@defterm{蕴含}，写作
+@defsym["p → q" "蕴含；函数类型"]@math{→}。整个类型读下来就是：
+如果从「@math{p} 不成立」能推出 @math{p}，那么 @math{p} 成立。
+逻辑课本里真有这么一条，叫@defterm{Clavius 律}。
+
+刚才的 @racket[absurd] 也是一条。@math{⊥ → q}：从假推出任何东西，
+叫@defterm[#:en "principle of explosion"]{爆炸原理}。
+
+@racket[cc] 却读不下去。它不收参数，交出的又是一个 @math{∪}，
+这两样还不知道该怎么读。
+
 @section[#:tag "01:types-to-logic"]{从类型到逻辑}
 
-「写出表达式就是证明」的读法，能推广到我们用过的其他类型吗？
-
-先看 @math{→}。@racket[(λ (x) y)] 里，@math{y} 可以用到 @math{x}：
-给它一个 @math{p}，就产出一个 @math{q}。读作命题，就是：如果 @math{p}
-成立，那么 @math{q} 成立。这是@defterm{蕴含}，写作
-@defsym["p → q" "蕴含；函数类型"]@math{→}。把 @math{p → ⊥} 读作否定，
-用的正是这个读法。
-
-否定的箭头指向 @math{⊥}，一个元素也没有的类型。把 @math{⊥}
-换成恰好有一个元素的类型
+先说不收参数。否定的箭头指向 @math{⊥}，一个元素也没有的类型。把
+@math{⊥} 换成恰好有一个元素的类型
 @defsym["⊤" "真，恰好有一个元素的类型"]@math{⊤}，再把箭头反过来，就是
-@math{⊤ → A}。它对应我们熟悉的 thunk，不收参数的函数 @racket[(→ A)]。
-拿到一个 thunk，调用它就拿到一个 @math{A}；拿到一个 @math{A}，
-也总能包成 @racket[(λ () a)]。所以 @math{⊤ → A} 与 @math{A}
-逻辑上等价：从真推出 @math{A}，就是 @math{A} 成立。
+@math{⊤ → A}：一个不收参数的函数 @racket[(→ A)]，也就是我们熟悉的
+thunk。拿到一个 thunk，调用它就拿到一个 @math{A}；拿到一个 @math{A}，
+也总能包成 @racket[(λ () a)]。两边能来回换，@math{⊤ → A} 与 @math{A}
+逻辑上等价：从真推出 @math{A}，就是 @math{A} 成立。@racket[cc] 是一个
+thunk，读它的类型，只看它交出什么就行。
 
-多值说的是另一件事：一次交出几个结果，不要和类型有几个元素混在一起。
-@racket[(values x y)] 交出两个结果；把一次交出的结果整体来看，对应积
-@math{p × q}：两样都在手里，就是 @math{p} 与 @math{q} 同时成立。
-这是@defterm{合取}，写作
+顺着「不收参数」还能多走一步。thunk 不收参数，也可以看成收下一个
+@math{⊤}。这里的「零」容易和多值混在一起：多值说的是一次交出几个结果，
+不是类型有几个元素。@racket[(values x y)] 交出两个结果；
+把一次交出的结果整体来看，对应积 @math{p × q}：两样都在手里，就是
+@math{p} 与 @math{q} 同时成立。这是@defterm{合取}，写作
 @defsym["p ∧ q" "合取；多个结果 p × q"]@math{∧}。@racket[(values)]
 交出零个结果，这样的交法只有一种，整体来看对应没有分量的空积，也就是
-@math{⊤}；一种交法也没有的，才是 @math{⊥}。thunk 不收参数，
-也可以看成收下一个 @math{⊤}。零个分量并上去，什么也没多出来，
-就像「真且 @math{p}」就是 @math{p}：@math{⊤} 是合取的单位元。
-函数的两个参数，也可以按同样的方式合起来，看成一个 @math{p × q}。
+@math{⊤}；一种交法也没有的，才是 @math{⊥}。零个分量并上去，
+什么也没多出来，就像「真且 @math{p}」就是 @math{p}。函数的两个参数，
+也可以按同样的方式合起来，看成一个 @math{p × q}。
 
 @margin-note{@racket[∪] 有一个容易误读的地方。集合 @math{X = {a, b}}、
 @math{Y = {b, c}} 的并集里，@math{b} 说不清来自哪一边。
@@ -102,7 +113,7 @@
 标签的联合}。丢掉标签，总有一个从 @math{X + Y} 到 @math{X ∪ Y}
 的映射；@math{X ∩ Y = {}} 时它是一一对应，用不着标签。}
 
-剩下 @math{∪}。@racket[(cc)] 交出的 @math{p ∪ ¬p}，
+再说 @math{∪}。@racket[(cc)] 交出的 @math{p ∪ ¬p}，
 用的人必须分得清拿到的是哪一支。那版 @racket[mul] 用谓词
 @racket[real?] 一问就知道，实数和函数本来就不相交。@racket[call/cc]
 不知道结果会是什么，结果也可能是函数，就把传回的结果包进列表，用
@@ -121,21 +132,21 @@
 这是@defterm{析取}，写作
 @defsym["p ∨ q" "析取；联合类型 p ∪ q"]@math{∨}。
 
-每个类型构造子都对应一个逻辑连接词。类型是命题，表达式是证明，
-构造程序就是构造证明。这个对应关系有一个名字：@defterm{Curry-Howard
-对应}。
-
-用 @math{¬} 和 @math{∨} 改写（@racket[cc] 是一个 thunk，
-只看它交出什么就行），开头那两个类型都成了命题，
-对上逻辑课本里两条有名字的定律；@racket[absurd] 的类型也是一条：
+现在 @racket[cc] 也读得下去了：@math{p ∨ ¬p}，@math{p} 成立，或者
+@math{p} 不成立。这条也有名字，
+叫@defterm[#:en "law of excluded middle"]{排中律}。三个操作符的类型，
+都对上了逻辑课本里有名字的定律：
 
 @tabular[#:style 'boxed #:row-properties '(bottom-border ())
   (list
    (list @elem{操作符} @elem{命题} @elem{定律})
-   (list @elem{@racket[cc]} @elem{@math{p ∨ ¬p}}
-         @elem{@defterm[#:en "law of excluded middle"]{排中律}})
-   (list @elem{@racket[call/cc]} @elem{@math{(¬p → p) → p}} @elem{@defterm{Clavius 律}})
-   (list @elem{@racket[absurd]} @elem{@math{⊥ → q}} @elem{@defterm[#:en "principle of explosion"]{爆炸原理}}))]
+   (list @elem{@racket[cc]} @elem{@math{p ∨ ¬p}} @elem{@tech{排中律}})
+   (list @elem{@racket[call/cc]} @elem{@math{(¬p → p) → p}} @elem{@tech{Clavius 律}})
+   (list @elem{@racket[absurd]} @elem{@math{⊥ → q}} @elem{@tech{爆炸原理}}))]
+
+这不是巧合。每个类型构造子都对应一个逻辑连接词：类型是命题，
+表达式是证明，构造程序就是构造证明。这个对应关系有一个名字：
+@defterm{Curry-Howard 对应}。
 
 @section[#:tag "01:other-types"]{@racket[call/cc] 的另外两种类型}
 
