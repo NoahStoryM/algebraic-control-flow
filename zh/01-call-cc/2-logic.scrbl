@@ -9,16 +9,16 @@
 (define (goto l) (l l))
 (define (label) (primitive-call/cc goto))]
 
-@tech{标签}、@racket[cc]、@racket[call/cc] 能互相写出，
-类型却各不相同。这些操作符的实现用到了 @racket[label]、@racket[goto]
-和 @racket[set!]，类型里却一样也看不到，只用到
-@math{→}、@math{⊥}、@math{∪} 三样东西：
+上一小篇从@tech{标签}出发，消除赋值得到 @racket[cc]，消除分支得到
+@racket[call/cc]。三者能互相写出，类型却各不相同；实现里用到的
+@racket[label]、@racket[goto] 和 @racket[set!]，类型里一样也看不到。
+这一小篇倒过来走，从 @racket[call/cc] 的类型读起：
 
 @racketblock[
-(: cc      (∀ (p) (→ (∪ p (→ p ⊥)))))
 (: call/cc (∀ (p) (→ (→ (→ p ⊥) p) p)))]
 
-只看这三样东西，这两个类型像在说些什么？先从最熟悉的 @math{→} 看起。
+它只用到 @math{→} 和 @math{⊥} 两样东西。这个类型像在说些什么？
+先从最熟悉的 @math{→} 看起。
 
 @section[#:tag "01:from-bottom"]{函数与否定}
 
@@ -64,8 +64,8 @@
 说它交出什么类型都不会错，所以 @racket[absurd] 的类型是
 @math{⊥ → q}，@math{q} 任意。从@tech{空类型}可以推出任何东西。
 
-有了 @math{¬}，开头那两个类型可以重写了。先看 @racket[call/cc]。把
-@math{p → ⊥} 换成 @math{¬p}，它的类型就是
+有了 @math{¬}，开头 @racket[call/cc] 的类型可以重写了。把 @math{p → ⊥}
+换成 @math{¬p}，它就是
 
 @mm{(¬p → p) → p}
 
@@ -76,13 +76,18 @@
 刚才的 @racket[absurd] 也是一条。@math{⊥ → q}：从假推出任何东西，
 叫@defterm[#:en "principle of explosion"]{爆炸原理}。
 
-@racket[cc] 却读不下去。它不收参数，交出的又是一个 @math{∪}，
-这两样还不知道该怎么读。
+再倒回一步，看 @racket[cc]。
 
 @section[#:tag "01:types-to-logic"]{从类型到逻辑}
 
-先说不收参数。否定 @math{p → ⊥} 与 @math{p} 正好相反。把 @math{⊥}
-换成恰好有一个元素的类型
+@racket[cc] 的类型是
+
+@racketblock[
+(: cc (∀ (p) (→ (∪ p (→ p ⊥)))))]
+
+这回读不下去了：它不收参数，交出的又是一个 @math{∪}，
+这两样还不知道该怎么读。先说不收参数。否定 @math{p → ⊥} 与 @math{p}
+正好相反。把 @math{⊥} 换成恰好有一个元素的类型
 @defsym["⊤" "真，恰好有一个元素的类型"]@math{⊤}，再把箭头反过来，
 得到的 @math{⊤ → p} 却和 @math{p} 一样。它就是不收参数的函数
 @racket[(→ p)]，我们熟悉的 thunk：拿到一个 thunk，调用它就拿到一个
