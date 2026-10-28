@@ -1,6 +1,6 @@
 #lang acf/scribble
 
-@title[#:tag "01:2-logic"]{类型里的逻辑}
+@title[#:tag "01:2-logic"]{Curry-Howard 对应}
 
 @(define ev (make-acf-eval))
 @examples[#:eval ev #:hidden
@@ -9,9 +9,9 @@
 (define (goto l) (l l))
 (define (label) (primitive-call/cc goto))]
 
-标签、@racket[cc]、@racket[call/cc] 能互相写出，签名却各不相同。
-这些操作符的实现用到了 @racket[label]、@racket[goto] 和
-@racket[set!]，签名里却一样也看不到，只用到
+@tech{标签}、@racket[cc]、@racket[call/cc] 能互相写出，
+类型却各不相同。这些操作符的实现用到了 @racket[label]、@racket[goto]
+和 @racket[set!]，类型里却一样也看不到，只用到
 @math{→}、@math{⊥}、@math{∪} 三样东西：
 
 @racketblock[
@@ -19,18 +19,19 @@
 (: call/cc (∀ (p) (→ (→ (→ p ⊥) p) p)))]
 
 如果把 @math{⊥} 读作假，@math{→} 读作「如果……那么……」，@math{∪}
-读作「或」，这两个签名读起来就像两条命题。这只是字面上的相像，
+读作「或」，这两个类型读起来就像两条命题。这只是字面上的相像，
 还是经得起检验？
 
 @section[#:tag "01:from-bottom"]{从 @math{⊥} 出发}
 
-在这个类比中，没有值的@tech{空类型} @racket[⊥] 应该对应假：
-假命题没有证明，@racket[⊥] 也没有值。如果这个类比成立，那么
+在这个类比中，@tech{空类型} @racket[⊥] 应该对应假：
+假命题没有证明，@racket[⊥] 这个类型也没有元素。如果这个类比成立，那么
 @math{p → ⊥} 就对应逻辑中的否定：给定 @math{p} 的证明，推出假。
 而@tech{延续}的类型正是 @math{p → ⊥}。
 
-验证一下。@math{⊥} 的否定是 @math{⊥ → ⊥}。恒等函数就具有这个类型。
-更一般地，从 @racket[⊥] 出发，推出什么都行。先看一个奇怪的函数：
+有了假，也有了否定，自然想看看：假的否定是不是真？也就是说，
+能不能写出一个 @math{⊥ → ⊥} 类型的表达式？能，恒等函数就是。更一般地，
+从 @racket[⊥] 出发，推出什么都行。先看一个奇怪的函数：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: absurd (∀ (q) (→ ⊥ q)))
@@ -125,7 +126,7 @@
 对应}。
 
 用 @math{¬} 和 @math{∨} 改写（@racket[cc] 是一个 thunk，
-只看它交出什么就行），开头那两个签名都成了命题，
+只看它交出什么就行），开头那两个类型都成了命题，
 对上逻辑课本里两条有名字的定律；@racket[absurd] 的签名也是一条：
 
 @tabular[#:style 'boxed #:row-properties '(bottom-border ())
