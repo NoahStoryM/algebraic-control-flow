@@ -256,9 +256,9 @@ thunk，类型是 @math{⊤ → ⊥ = ¬⊤}：真的@tech{否定}。@math{¬⊤
 就是一句「这句话是假的」。推一推：如果 @racket[Label]
 为真（非空），@math{¬@ty{Label}} 也就非空，@racket[Label]
 的@tech{否定}为真，@racket[Label] 为假。如果 @racket[Label]
-为假（空），@math{¬@ty{Label}} 反倒有值：空类型出发的函数总写得出来，
-就像 @racket[absurd] 填充了 @math{⊥ → p}；可
-@math{¬@ty{Label} = @ty{Label}}，于是 @racket[Label] 又有了值，
+为假（空），@math{¬@ty{Label}} 反倒有元素：空类型出发的函数总写得出
+来，就像 @racket[absurd] 填充了 @math{⊥ → p}；可
+@math{¬@ty{Label} = @ty{Label}}，于是 @racket[Label] 又有了元素，
 变成了真。这就是@defterm{说谎者悖论}，它无法被一致地赋予真假值。
 阴阳谜题就像让它运行了起来：同一个@tech{标签}一会儿被调用，
 一会儿被交出去，永远落不了地。更简单的是把 @racket[goto]
@@ -266,7 +266,7 @@ thunk，类型是 @math{⊤ → ⊥ = ¬⊤}：真的@tech{否定}。@math{¬⊤
 Agda 和 Coq 这样的一致类型论禁止这类定义；Racket 没有这个限制。
 
 每种情况下，严格的 Curry-Howard 解读都失效了：
-本应为空的@tech{否定}类型有了值，本应非法的自指类型变得合法。
+本应为空的@tech{否定}类型有了元素，本应非法的自指类型变得合法。
 不能把任意 Racket 表达式都当作证明。前面读出逻辑定律时，无限循环、
 内置的 @racket[exit]、抛出异常和自指类型，都不在这个读法之内；
 @racket[cc] 和 @racket[call/cc] 当作控制操作，

@@ -16,7 +16,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 设想我们有一等的@tech{标签}：
 
 @examples[#:eval ev #:label #f #:no-prompt
-(define-type ⊥ (∪))  (code:comment "空类型：没有构造子，没有值")
+(define-type ⊥ (∪))  (code:comment "空类型：没有构造子，没有元素")
 (: goto  (→ Label ⊥))
 (: label (→ Label))]
 
@@ -24,8 +24,8 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 值。@racket[(goto l)] 跳回 @racket[l] 被创建的地方，让当初那次
 @racket[(label)] 调用再返回一次，交出的仍是这个
 @racket[l]。@racket[goto] 的返回类型是
-@defsym["⊥" "空类型，没有值；读作假"]@racket[⊥]（bottom），
-一个没有值的@defterm[#:en "empty type"]{空类型}：@racket[goto]
+@defsym["⊥" "空类型，没有元素；读作假"]@racket[⊥]（bottom），
+一个没有元素的@defterm[#:en "empty type"]{空类型}：@racket[goto]
 永远不会回到调用它的地方，控制转移到了别处。
 
 「一等」说的是两件事。@tech{标签}和数、字符串一样是值，可以存进变量，
