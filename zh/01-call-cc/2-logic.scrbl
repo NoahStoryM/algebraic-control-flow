@@ -127,7 +127,7 @@
 
 用 @math{¬} 和 @math{∨} 改写（@racket[cc] 是一个 thunk，
 只看它交出什么就行），开头那两个类型都成了命题，
-对上逻辑课本里两条有名字的定律；@racket[absurd] 的签名也是一条：
+对上逻辑课本里两条有名字的定律；@racket[absurd] 的类型也是一条：
 
 @tabular[#:style 'boxed #:row-properties '(bottom-border ())
   (list
@@ -139,7 +139,7 @@
 
 @section[#:tag "01:other-types"]{@racket[call/cc] 的另外两种类型}
 
-表里 @racket[call/cc] 只占一行。换个角度看它的签名，
+表里 @racket[call/cc] 只占一行。换个角度看它的类型，
 还能读出另外两种类型，各对上一条经典定律。
 
 第一种放宽交给 @racket[proc] 的@tech{延续}。@tech{延续} @racket[k]
@@ -148,7 +148,7 @@
 也有类型 @math{((p → q) → p) → p}，这是 @defterm{Peirce 律}；令
 @math{q = ⊥}，就回到 @tech{Clavius 律}。
 
-第二种收紧交给 @racket[call/cc] 的函数。签名说，
+第二种收紧交给 @racket[call/cc] 的函数。类型说，
 这个函数可以正常返回一个 @math{p}，最后那版 @racket[mul] 里的
 @racket[λ] 就是这样，没遇到零，乘积是正常返回的。
 可它也可以从不正常返回、只等@tech{延续}。两者其实是一回事：
