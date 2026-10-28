@@ -28,9 +28,11 @@
 那么有字节。
 
 照这个样子，把类型看作命题，写出一个这种类型的表达式，
-就像给出了这个命题的证明。@racket[(λ (x) y)] 收下一个 @math{p}，
-交出一个 @math{q}，@math{y} 可以用到 @math{x}：有了 @math{p} 的证明，
-就造得出 @math{q} 的证明。这是@defterm{蕴含}，写作
+就像给出了这个命题的证明。一般地，设 @math{p}、@math{q} 是两个类型，
+也就是两个命题。函数 @racket[(λ (x) body)] 的形参 @racket[x] 是一个
+@math{p}，函数体 @racket[body] 用到 @racket[x]，算出一个 @math{q}，
+这个函数的类型就是 @math{p → q}：有了 @math{p} 的证明，就造得出
+@math{q} 的证明。这是@defterm{蕴含}，写作
 @defsym["p → q" "蕴含；函数类型"]@math{→}。
 
 那 @racket[⊥] 呢？@tech{空类型} @racket[⊥] 没有元素，
