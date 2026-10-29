@@ -153,20 +153,20 @@
 照这个对应，一条等实数的@tech{延续}本该写不出来；我们却一直拿着，
 最后那版 @racket[mul] 里的 @racket[return] 就是。
 这些@tech{延续}都不是用 @racket[λ] 写出来的，是
-@racket[cc]、@racket[call/cc] 在运行时捕获出来的。@racket[cc]
-交出的就是当前@tech{延续}，可它的类型却不是 @math{¬p}。倒回一步，看
-@racket[cc]。
+@racket[cc]、@racket[call/cc] 在运行时捕获出来的。
+写不出的东西，@racket[cc] 凭什么交得出来？
 
 @section[#:tag "01:types-to-logic"]{合取与析取}
 
-@racket[cc] 的类型是
+倒回一步，答案就在 @racket[cc] 的类型里：
 
 @racketblock[
 (: cc (∀ (p) (→ (∪ p (→ p ⊥)))))]
 
-这回读不下去了：它不收参数，交出的又是一个 @math{∪}，
-这两样还不知道该怎么读。先说不收参数。否定 @math{p → ⊥} 与 @math{p}
-正好相反。把 @math{⊥} 换成恰好有一个元素的类型
+它交出的不是 @math{¬p}，而是 @math{p ∪ ¬p}。这个类型还读不下去：
+它不收参数，交出的又是一个 @math{∪}，这两样还不知道该怎么读。
+先说不收参数。否定 @math{p → ⊥} 与 @math{p} 正好相反。把 @math{⊥}
+换成恰好有一个元素的类型
 @defsym["⊤" "真，恰好有一个元素的类型"]@math{⊤}，再把箭头反过来，
 得到的 @math{⊤ → p} 却和 @math{p} 一样。它就是不收参数的函数
 @racket[(→ p)]，我们熟悉的 thunk：拿到一个 thunk，调用它就拿到一个
