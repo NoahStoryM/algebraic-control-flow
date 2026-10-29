@@ -9,20 +9,19 @@
 (define (goto l) (l l))
 (define (label) (primitive-call/cc goto))]
 
-上一小篇从@tech{标签}出发，消除赋值得到 @racket[cc]，消除分支得到
-@racket[call/cc]。三者能互相写出，类型却各不相同；实现里用到的
-@racket[label]、@racket[goto] 和 @racket[set!]，类型里一样也看不到。
-这一小篇倒过来走，从 @racket[call/cc] 的类型读起：
+上一小篇里，@racket[goto] 和@tech{延续}交出的类型都是 @racket[⊥]。交出
+@racket[⊥]，说的是这段计算不会有结果交回来：一调用，
+控制流就切换到了别处。
 
-@racketblock[
-(: call/cc (∀ (p) (→ (→ (→ p ⊥) p) p)))]
-
-它只用到 @math{→} 和 @math{⊥} 两样东西。同一个 @racket[call/cc]，
-其实还能写成另外几种类型，先把它们都找出来。
+这样的调用可以出现在任何位置。最后那版 @racket[mul] 里，
+@racket[(return r)] 和 @racket[(* res r)] 是 @racket[if] 的两个分支，
+一个交出 @racket[⊥]，一个交出实数，类型对不上；@racket[for/fold]
+要的是实数，@racket[(return r)] 交不出实数，程序却照样运行。
+这是为什么？
 
 @section[#:tag "01:call-cc-types"]{@racket[call/cc] 的几种类型}
 
-先造一个奇怪的函数：
+答案在 @racket[⊥] 本身。先造一个奇怪的函数：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: absurd (∀ (q) (→ ⊥ q)))
@@ -35,8 +34,17 @@
 说它交出什么类型都不会错，所以 @racket[absurd] 的类型是
 @math{⊥ → q}，@math{q} 任意。
 
-有了 @racket[absurd]，@racket[call/cc] 的类型就能放宽。交给
-@racket[proc] 的@tech{延续} @racket[k] 永不返回，后面接上
+有了它，前面的疑问就解开了。@racket[(return r)] 交出 @racket[⊥]，接上
+@racket[absurd]，@racket[(absurd (return r))] 就能当作实数用；
+@racket[absurd] 其实从来不会被调用，因为 @racket[(return r)]
+根本不会交回来。交出 @racket[⊥] 的表达式，放在要什么类型的位置都行。
+
+同样的道理，也能重新看 @racket[call/cc] 的类型。它原来的类型是
+
+@racketblock[
+(: call/cc (∀ (p) (→ (→ (→ p ⊥) p) p)))]
+
+先放宽。交给 @racket[proc] 的@tech{延续} @racket[k] 永不返回，后面接上
 @racket[absurd]，@racket[(compose absurd k)] 的行为和 @racket[k]
 一样，类型却是 @racket[(→ p q)]，@math{q} 任意。所以 @racket[call/cc]
 也有这样的类型：
@@ -133,7 +141,7 @@
 表达式是证明，构造程序就是构造证明。这个对应关系有一个名字：
 @defterm{Curry-Howard 对应}。
 
-再倒回一步，看 @racket[cc]。
+倒回一步，看 @racket[cc]。
 
 @section[#:tag "01:types-to-logic"]{合取与析取}
 
