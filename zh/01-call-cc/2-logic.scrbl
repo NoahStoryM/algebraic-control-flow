@@ -78,9 +78,9 @@
 (call/cc (λ (k) (k (proc k))))]
 
 @racket[proc] 的结果不论经 @racket[k] 显式交出，还是正常返回，
-都走到同一个出口；正常返回时隐含经过的，就是一条看不见的@tech{延续}。
-第二行交给 @racket[call/cc] 的那整个 @racket[λ] 总会调用 @racket[k]，
-正是上面那种只等@tech{延续}的函数。
+都走到同一个出口：正常返回，走的也正是 @racket[k] 这条@tech{延续}，
+只是没有写出来。第二行交给 @racket[call/cc] 的那整个 @racket[λ]
+总会调用 @racket[k]，正是上面那种只等@tech{延续}的函数。
 
 于是手里有了四个类型，@racket[absurd] 的一个，@racket[call/cc]
 的三个，都只用 @math{→} 和 @math{⊥}。它们像在说些什么？
