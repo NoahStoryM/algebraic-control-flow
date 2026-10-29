@@ -11,9 +11,7 @@
 下面给出不打标签的版本，并按两个方向各绕一圈：从@tech{标签}出发，经过
 @racket[cc]、@racket[call/cc] 回到@tech{标签}；再经过
 @racket[call/cc]、@racket[cc] 回到@tech{标签}。
-每一步都把上一步当作原语。绕一圈回来，说明三者可以互相定义，
-并不是说要拿绕回来的@tech{标签}去换掉起点的那个，
-原因见@xref["01:label-from-call-cc"]{「从 call/cc 定义标签」}的旁注。
+和@xref["01:label-from-call-cc"]{正文}一样，每一步都把上一步当作原语。
 这里的版本还顺带处理了多值。
 
 @section[#:tag "01:appendix-forward"]{标签 → @racket[cc] → @racket[call/cc] → 标签}

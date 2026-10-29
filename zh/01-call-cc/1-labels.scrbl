@@ -97,12 +97,6 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 这样合起来的类型，叫@defterm[#:en "tagged union"]{带标签的联合}，写作
 @defsym["p ∐ q" "带标签的联合：每支配上标签再并起来"]@racket[∐]：
 
-@margin-note{打标签的道理，看集合最清楚。集合 @math{X = {a, b}}、
-@math{Y = {b, c}} 的并集里，@math{b} 说不清来自哪一边。
-打上标签再并起来，@math{X + Y = X × {0} ∪ Y × {1}}，两边就不相交了，
-检查标签就是一个谓词。丢掉标签，总有一个从 @math{X + Y} 到
-@math{X ∪ Y} 的映射；@math{X ∩ Y = {}} 时它是一一对应，用不着标签。}
-
 @examples[#:eval ev #:label #f #:no-prompt
 (define-type (∐ p0 p1 ...) (∪ (Pair p0 0) (Pair p1 1) ...))]
 
@@ -217,14 +211,23 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 
 @section[#:tag "01:label-from-call-cc"]{从 @racket[call/cc] 定义标签}
 
-@margin-note{这里的 @racket[call/cc] 当作原语，用 Racket
-自带的那一个。上一节由 @racket[cc] 写出的不行：@racket[cc]
-是用@tech{标签}写的，拿它来定义@tech{标签}，定义就绕回了自己。}
+从@tech{标签}出发，我们写出了 @racket[cc]，又由 @racket[cc] 写出了
+@racket[call/cc]。再走一步，能不能由 @racket[call/cc]
+写回@tech{标签}，绕成一个圈？这一步要把 @racket[call/cc] 当作原语：
+手上只有它，没有@tech{标签}。Racket 自带的 @racket[call/cc]
+就是这样一个原语。
 
-令 @math{p = @ty{Label}}，@racket[call/cc] 交给 @racket[proc]
-的@tech{延续}类型就是 @math{@ty{Label} → ⊥}，
-恰好是一个@tech{标签}。@tech{标签}因此可以直接由 @racket[call/cc]
-定义：
+先看@tech{标签}是什么样的函数。@racket[(goto l)] 就是 @racket[(l l)]：
+@tech{标签}接受一个@tech{标签}，而且永不返回。它的类型
+@defsym[@ty{Label} "标签的类型：Label = Label → ⊥"]@ty{Label}
+因此是一个递归类型：
+
+@mm{@ty{Label} = @ty{Label} → ⊥}
+
+再看 @racket[call/cc] 交给 @racket[proc] 的@tech{延续}，类型是
+@math{p → ⊥}。令 @math{p = @ty{Label}}，两者就一样了：
+@racket[call/cc] 交出的@tech{延续}，恰好可以当作一个@tech{标签}。
+于是：
 
 @(define ev1 (make-acf-eval))
 @examples[#:eval ev1 #:label #f #:no-prompt
@@ -232,11 +235,9 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 (define (goto l) (l l))
 (define (label) (call/cc goto))]
 
-@defsym[@ty{Label} "标签的类型：Label = Label → ⊥"]
-@math{@ty{Label} = @ty{Label} → ⊥} 是一个递归类型：@tech{标签}是一个接
-受@tech{标签}且永不返回的函数。@racket[(label)] 做了什么，
-一步步展开来看。把 @racket[call/cc] 交给 @racket[goto]
-的@tech{延续}记作 @racket[k]，它通向 @racket[(label)] 被调用的地方：
+@racket[(label)] 做了什么，一步步展开来看。把 @racket[call/cc] 交给
+@racket[goto] 的@tech{延续}记作 @racket[k]，它通向 @racket[(label)]
+被调用的地方：
 
 @racketblock[
   (label)
@@ -252,8 +253,8 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 跳回同一处，@racket[(label)] 又一次返回 @racket[l]。
 这正是开头为一等@tech{标签}描述的行为。
 
-顺序也可以反过来。以@tech{标签}为原语，先得到 @racket[call/cc]，
-再由它得到 @racket[cc]：
+圈也可以反过来绕。以@tech{标签}为原语，先写出 @racket[call/cc]，
+再由它写出 @racket[cc]，最后把 @racket[cc] 当作原语，写回@tech{标签}：
 
 @(define ev2 (make-acf-eval))
 @examples[#:eval ev2 #:hidden
