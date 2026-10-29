@@ -16,8 +16,8 @@
 
 @section[#:tag "01:disjoint-already"]{两边本来就不相交}
 
-两个类型没有公共的元素，并集本身就是不相交的联合，用一个谓词就分得开。
-把 @racket[cc] 的返回类型换成普通的 @racket[∪]：
+两边本来就不相交，又有现成的谓词能分辨，就可以直接用普通的并集。把
+@racket[cc] 的返回类型换成普通的 @racket[∪]：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: cc (∀ (p) (→ (∪ p (→ p ⊥)))))
@@ -52,7 +52,7 @@ tag 还做了一些处理。这个 @racket[cc] 还顺带处理了多值：@racke
 (mul 2 0 3)]
 
 代价是分不分得开要由使用者负责：@math{p} 换成函数类型，
-值和@tech{延续}就分不清了。用这个 @racket[cc] 写 @racket[call/cc]
+值和@tech{延续}就未必分得清了。用这个 @racket[cc] 写 @racket[call/cc]
 正碰上这种情况：@racket[call/cc] 不知道结果会是什么，
 结果也可能是一个函数。只好把传回来的结果一律收进一张列表，
 @tech{延续}是函数，永远不是列表，两者就分开了。这用的是

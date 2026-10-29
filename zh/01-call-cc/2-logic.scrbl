@@ -79,8 +79,9 @@
 
 @racket[proc] 的结果不论经 @racket[k] 显式交出，还是正常返回，
 都走到同一个出口：正常返回，走的也正是 @racket[k] 这条@tech{延续}，
-只是没有写出来。第二行交给 @racket[call/cc] 的那整个 @racket[λ]
-总会调用 @racket[k]，正是上面那种只等@tech{延续}的函数。
+只是没有写出来。第二行交给 @racket[call/cc] 的那整个
+@racket[λ]，@racket[proc] 若正常返回，就再经 @racket[k] 交出结果，
+所以它从不正常返回，正是上面那种只等@tech{延续}的函数。
 
 于是手里有了四个类型，@racket[absurd] 的一个，@racket[call/cc]
 的三个，都只用 @math{→} 和 @math{⊥}。它们像在说些什么？
@@ -118,11 +119,13 @@
 只要这两样最基本的对上了，搭出来的整体也就对上了。
 
 先看 @math{⊥}。它像假，凭什么？假命题没有证明；@tech{空类型} @math{⊥}
-没有元素，这个类型的表达式一个也写不出来。两边说的是同一件事：
-没有证明，就是写不出表达式。反过来读，不依赖额外的假设写出一个类型的表
-达式，就像给出了对应命题的证明；写得出，命题就为真。
-拿这个读法验证一下：假的否定 @math{¬⊥} 该是真的，确实写得出
-@math{⊥ → ⊥} 类型的表达式，恒等函数就是。@racket[absurd]
+没有元素，给不出一个这样的值。@racket[(return r)] 的类型是
+@racket[⊥]，那是借着手里现成的 @racket[return] 才写得出来；
+不依赖额外的假设，@racket[⊥] 类型的表达式一个也写不出来。
+两边说的是同一件事：没有证明，就是写不出表达式。反过来读，
+不依赖额外的假设写出一个类型的表达式，就像给出了对应命题的证明；
+写得出，命题就为真。拿这个读法验证一下：假的否定 @math{¬⊥} 该是真的，
+确实写得出 @math{⊥ → ⊥} 类型的表达式，恒等函数就是。@racket[absurd]
 说的从假推出任何东西，在逻辑里也成立。@math{⊥} 对上了假。
 
 再看 @math{→}。照这个读法，写出一个类型为 @math{p → q} 的函数，
@@ -150,8 +153,8 @@
 这个对应关系有一个名字：@defterm{Curry-Howard 对应}。
 
 可这样一来，有件事说不通了。@tech{延续}的类型正是 @math{p → ⊥}，
-照这个对应，一条等实数的@tech{延续}本该写不出来；我们却一直拿着，
-最后那版 @racket[mul] 里的 @racket[return] 就是。
+照这个对应，一条等实数的@tech{延续}本该不依赖任何假设就写不出来；
+我们却一直拿着，最后那版 @racket[mul] 里的 @racket[return] 就是。
 这些@tech{延续}都不是用 @racket[λ] 写出来的，是
 @racket[cc]、@racket[call/cc] 在运行时捕获出来的。
 写不出的东西，@racket[cc] 凭什么交得出来？
@@ -175,52 +178,59 @@
 交的联合}。打标签是做到这一点的一种办法，其它办法
 见@xref["01:appendix"]{附录}。}
 
-这回也检验一下。证明「@math{p} 或 @math{q}」，要么给出 @math{p}
-的证明，要么给出 @math{q} 的证明，而且说得清给的是哪一个。@math{p ∐ q}
-的表达式正是这样写出来的：手里有一个 @math{p} 类型的 @racket[a]，
-@racket[(cons a 0)] 就是一个 @math{p ∐ q}；有一个 @math{q} 类型的
-@racket[b]，@racket[(cons b 1)] 也是，标签记着给的是哪一支。反过来，
-使用「@math{p} 或 @math{q}」要分情况：由 @math{p} 推得出 @math{r}，由
-@math{q} 也推得出 @math{r}，就推出 @math{r}。@racket[match]
-正是这样分两支的，@racket[mul] 和 @racket[call/cc] 里的
-@racket[match]，两支交出的是同一种类型的结果。@math{∐} 对上了析取。
+这回也检验一下。引入「@math{p} 或 @math{q}」有两种办法：由 @math{p}
+的证明得到 @math{p} 或 @math{q}，或者由 @math{q} 的证明得到 @math{p}
+或 @math{q}；两种办法都记明引入的是哪一支。这对应两种带标签的构造：
+手里有一个 @math{p} 类型的 @racket[a]，@racket[(cons a 0)] 就是一个
+@math{p ∐ q}；有一个 @math{q} 类型的 @racket[b]，@racket[(cons b 1)]
+也是，标签记着给的是哪一支。反过来，使用「@math{p} 或 @math{q}」
+要分情况：在 @math{p} 的假设下推得出 @math{r}，在 @math{q}
+的假设下也推得出 @math{r}，就能从 @math{p} 或 @math{q} 推出
+@math{r}。@racket[match] 正是这样分两支的，@racket[mul] 和
+@racket[call/cc] 里的 @racket[match]，两支交出的是同一种类型的结
+果。@math{∐} 对上了析取。
 
 单位元也对得上。一支也没有的 @racket[(∐)] 就是 @racket[⊥]。
 @math{p ∐ ⊥} 里，@math{⊥} 那一支没有元素，拿到的总是 @math{p} 那一支，
 去掉标签就是一个 @math{p}；一个 @math{p} 配上标签，也就成了
 @math{p ∐ ⊥}。两边来回能换，@math{⊥ ∐ p} 也一样。逻辑里，
-假正是析取的单位元：
+假正是析取的单位元，
+@defsym["p ⇔ q" "互推：p 推出 q，q 也推出 p"]@math{⇔} 读作互推：
 
-@mm{p = p ∨ ⊥ = ⊥ ∨ p}
+@mm{p ⇔ p ∨ ⊥ ⇔ ⊥ ∨ p}
 
 所以 @racket[(cc)] 写出的是 @math{p ∨ ¬p}，正是@tech{排中律}。
 前面那件说不通的事，也有了着落：@racket[(cc)] 并没有写出一个
 @math{¬p}，@tech{延续}只是其中一支，而且以后可能经由它跳回来，
-换成另一支。@racket[call/cc] 把这个分支挪进了操作符内部，
+换成另一支。拿到@tech{延续}那一支，得到的是一条和捕获点连着的出口：
+交给它一个 @math{p}，就跳回去，让 @racket[(cc)] 改交 @math{p} 那一支。
+这条出口不能从整个控制过程里摘出来，当作 @math{¬p}
+的无条件证明。@racket[call/cc] 把这个分支挪进了操作符内部，
 它的类型里也就没有 @math{∐}，只用 @math{→} 和 @math{⊥} 就写得下。
 
-前面说的都是 @racket[(cc)] 为真。@racket[cc]
-本身是一个不收参数的函数，也写得出来，当然也为真。逻辑里，从真
+前面说的都是 @racket[(cc)] 的类型为真。@racket[cc]
+本身是一个不收参数的函数，也写得出来，它的类型当然也为真。逻辑里，从真
 @defsym["⊤" "真，恰好有一个元素的类型"]@math{⊤} 推出 @math{p}，和
-@math{p} 本身一样：@math{⊤ → p} 与 @math{p} 同真同假。程序里也是这样：
-表达式 @racket[e] 和 @racket[thunk] @racket[(λ () e)] 来回能换，调用
-@racket[thunk] 就拿到 @racket[e] 的值，有了 @racket[e] 也总能包成
-@racket[thunk]。所以 @racket[cc] 和 @racket[(cc)] 说的是同一条定律。
+@math{p} 本身可以互推。程序里，表达式 @racket[e] 可以包成
+@racket[thunk] @racket[(λ () e)]；调用这个 @racket[thunk]，才执行
+@racket[e]，交出结果。所以 @racket[cc] 和 @racket[(cc)]
+的类型在逻辑上等价，读出的都是@tech{排中律}。
 
 @margin-note{这里的「零」说的是一次交出几个值，不是类型有几个元素。}
 
-那 @math{⊤} 对应什么？@racket[thunk] 只有零个形参，调用它时，
-交给它零个实参。把一次交出的几个值整体来看，零个值只有一种交法，就是
-@racket[(values)]，它是 @racket[(Values)] 类型唯一的元素。
-@racket[thunk] 若真对应 @math{⊤ → p}，@math{⊤} 就该对应
-@racket[(Values)]。而 @math{⊤} 正是@defterm{合取}
+那 @math{⊤} 对应什么？@racket[thunk] 不收参数，
+调用时交给它的是零个实参。把一次交出的值整体看成一组，
+零个值就是空的一组，只有这一种可能。@racket[(values)]
+交出的正是零个值，结果类型写作 @racket[(Values)]。照这样整体来读，
+它对应恰好有一个元素的 @math{⊤}，@racket[thunk] 也就对应
+@math{⊤ → p}。而 @math{⊤} 正是@defterm{合取}
 @defsym["p ∧ q" "合取；多个值 p × q"]@math{∧} 的单位元：
 
-@mm{p = p ∧ ⊤ = ⊤ ∧ p}
+@mm{p ⇔ p ∧ ⊤ ⇔ ⊤ ∧ p}
 
-@racket[(Values)] 也正是 @racket[Values] 的单位元：零个值并上去，
-什么也没多出来。所以合取应该对应 @racket[Values]，把几个值并成一组，
-也就是笛卡尔积 @math{p × q}。检验一下。证明「@math{p} 且 @math{q}」，
+空的一组并到别的值上，也没有多出任何值，正像这个单位元。
+这提示我们，@racket[(Values p q)] 该对应 @math{p ∧ q}，也就是笛卡尔积
+@math{p × q}。检验一下。证明「@math{p} 且 @math{q}」，
 两个证明都要给出；@racket[(values a b)] 正是把 @racket[a] 和
 @racket[b] 一起交出。使用「@math{p} 且 @math{q}」，两样都能拿来用；
 收下 @racket[(values a b)] 的地方，@racket[a] 和 @racket[b]
