@@ -97,15 +97,15 @@ DNE。和 @racket[call/cc] 的区别，在谁来提供这条@tech{延续}：
 (: triple-negation (∀ (q) (→ (¬¬¬ q) (¬ q))))
 (define (triple-negation kkkq)
   (define (kq q)
-    (define (kkq kq) (kq q))
+    (define (kkq k) (k q))
     (kkkq kkq))
   kq)]
 
 交出去的 @racket[kq] 等一个 @racket[q]。等 @racket[q] 交来，手里就有了
 @racket[q] 和 @racket[kkkq]。@racket[kkkq] 等的是一个
 @math{¬¬q}，@racket[q] 还差两个否定；照 DNI 的写法包一层，@racket[kkq]
-等一个 @racket[kq]，正是 @math{¬¬q}，交给 @racket[kkkq]。只有
-@racket[λ] 和函数调用，什么也没有捕获。
+等一条否定 @math{q} 的@tech{延续} @racket[k]，正是 @math{¬¬q}，交给
+@racket[kkkq]。只有 @racket[λ] 和函数调用，什么也没有捕获。
 
 试一试。用 @racket[let/cc] 拿到一条真正的@tech{延续} @racket[k]，照
 DNI 的写法包成一个 @racket[kkkq]，交给 @racket[triple-negation]
@@ -123,7 +123,7 @@ DNI 的写法包成一个 @racket[kkkq]，交给 @racket[triple-negation]
 @racket[(kq q)]、@racket[(kkkq kkq)]、@racket[(kkq k)]、@racket[(k q)]。
 取回的 @racket[kq] 和 @racket[k] 不是同一个值，行为却一样：先用 DNI
 包一层，再用三重否定律取回，回到了原样。定义里 @racket[kkq] 的形参
-@racket[kq]，这次收到的也正是 @racket[k]。
+@racket[k]，这次收到的也正是这个 @racket[k]。
 
 @math{¬¬¬q → ¬q} 这条定律叫@defterm[#:en "law of triple negation"]{三
 重否定律}，是一条直觉主义定理。
@@ -159,10 +159,9 @@ DNI 的写法包成一个 @racket[kkkq]，交给 @racket[triple-negation]
 层数先带出一个规律。DNI、DNE 一次加减两层，不改变奇偶，@tech{矛盾律}却
 要一奇一偶。奇偶不同的两个值，把低的那个反复做 DNI，
 总能升到与另一个相邻，再调用，@racket[triple-negation] 就是这样做的。
-例如第 0 层与第 5 层：把第 0 层升到第 4 层，就能交给第 5 层。从
-@math{p ∨ ¬p} 出发，左支做一次 DNI，就得到 @math{¬¬p ∨ ¬p}，第 2
-层或第 1 层；两支各做几次 DNI，也就得到任意的「偶数层 ∨ 奇数层」，
-用不着 DNE。奇偶相同的两个，只靠 DNI、DNE 凑不成相邻。
+例如第 0 层与第 5 层：第 0 层用 DNI 升到第 2 层，再升到第 4 层，就与第
+5 层相邻，交给它，得到 @math{⊥}。奇偶相同的两个，只靠 DNI、DNE
+凑不成相邻。
 
 回到@xref["01:watershed"]{「分水岭」}留下的问题：从 @math{¬¬p} 取出
 @math{p}，非得凭空拿到一个@tech{延续}不可吗？
@@ -176,17 +175,19 @@ OS 交来；@racket[triple-negation] 更省事，不需要另外交来一条
 要把计算真的跑起来，又不捕获，就得像运行程序那样，
 由外面交来一条@tech{延续}。
 
-层数也照出了两种逻辑的分别。把能互相推出的层归为一类：
+层数也照出了两种逻辑的分别。把能互相推出的层归为一类；
+这里按对任意底类型 @math{A} 都成立的互推来归类，不利用 @math{A}
+的额外性质：
 
 @itemlist[
   @item{经典逻辑里，DNI 加两层，DNE 减两层，相差两层的都能互推，
   一座塔只剩两类：偶数层，奇数层。}
   @item{直觉主义逻辑里，DNE 一般不成立，但三重否定律能从第 3 层回到第
   1 层；把其中的 @math{q} 换成 @math{¬A}，就从第 4 层回到第 2 层；
-  依此类推，只有第 0 层一般回不去。塔分成三类：第 0 层，奇数层，第 2
-  层起的偶数层。}]
-这里按对任意底类型 @math{A} 都成立的互推来归类，不利用 @math{A}
-的额外性质。最低的五层排出来：
+  依此类推。只有第 0 层一般回不去：那要用 DNE，
+  @xref["01:watershed"]{「分水岭」}里试过，对任意类型写不出来。
+  塔分成三类：第 0 层，奇数层，第 2 层起的偶数层。}]
+最低的五层排出来：
 
 @tabular[#:style 'boxed #:row-properties '(bottom-border ())
   (list

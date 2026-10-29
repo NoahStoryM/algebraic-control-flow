@@ -77,11 +77,9 @@
 (call/cc proc)
 (call/cc (λ (k) (k (proc k))))]
 
-@racket[proc] 的结果不论经 @racket[k] 显式交出，还是正常返回，
-都走到同一个出口：正常返回，走的也正是 @racket[k] 这条@tech{延续}，
-只是没有写出来。第二行交给 @racket[call/cc] 的那整个
-@racket[λ]，@racket[proc] 若正常返回，就再经 @racket[k] 交出结果，
-所以它从不正常返回，正是上面那种只等@tech{延续}的函数。
+第二行交给 @racket[call/cc] 的那整个 @racket[λ]，@racket[proc]
+若正常返回，就再经 @racket[k] 交出结果，所以它从不正常返回，
+正是上面那种只等@tech{延续}的函数。
 
 于是手里有了四个类型，@racket[absurd] 的一个，@racket[call/cc]
 的三个，都只用 @math{→} 和 @math{⊥}。它们像在说些什么？
@@ -280,17 +278,15 @@
 都是控制操作符在运行时捕获出来的。结论里的每样东西都由交到手里的东西做
 成，这样的程序是@defterm[#:en "constructive"]{构造性}的。
 
-@margin-note{这条定理可用直觉主义逻辑的 Kripke 语义证明，这里不展开。}
+
 
 用同样的办法试经典的两条。DNE 给一个等@tech{延续}的函数 @racket[kkp]，
 要交出一个 @math{p}。能对 @racket[kkp] 做的只有调用它，调用它却要一个
 @math{¬p} 类型的 @racket[kp]：有了 @racket[kp]，调用 @racket[kkp] 得到
 @math{⊥}，再交给 @racket[absurd] 就能当作 @math{p}。可是没有人交来
-@racket[kp]，自己又构造不出，也就无法调用 @racket[kkp]。
-这不只是试不出来：在上述纯函数的类型规则下，不借助额外假设，
-就不存在对任意 @math{p} 都适用的 @math{¬¬p → p} 实现，
-这是一条不可定义性定理。@tech{排中律}更彻底：什么也没给，要交出一个
-@math{p} 或一个 @math{¬p}，两样都写不出。
+@racket[kp]，自己又构造不出，也就无法调用 @racket[kkp]。@tech{排中
+律}更彻底：什么也没给，要交出一个 @math{p} 或一个 @math{¬p}，
+两样都写不出。
 
 @racket[call/cc] 和 @racket[cc] 补上的，正是这个缺口：
 它们凭空提供了一个@tech{延续}，就是当前@tech{延续}。@racket[call/cc]

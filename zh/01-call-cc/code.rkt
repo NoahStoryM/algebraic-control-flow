@@ -331,7 +331,7 @@
   (: triple-negation (∀ (q) (→ (¬¬¬ q) (¬ q))))
   (define (triple-negation kkkq)
     (define (kq q)
-      (define (kkq kq) (kq q))
+      (define (kkq k) (k q))
       (kkkq kkq))
     kq)
   (define q 'hello)

@@ -62,8 +62,12 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
       (when (zero? r)
         (set! result r)
         (goto ret))
-      (set! result (* result r))))
+            (set! result (* result r))))
   result)]
+
+@examples[#:eval ev #:label #f
+(mul 2 3 4)
+(mul 2 0 3)]
 
 这里的 @racket[ret] 是一个「返回@tech{标签}」。
 遇到零时，@racket[(goto ret)] 并不直接跳到函数末尾。@racket[ret] 是在
@@ -122,13 +126,13 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 @racket[label]、@racket[goto] 和 @racket[set!]，
 但它们被封装起来了，@racket[cc] 的使用者不必再碰可变状态。}
 
-@racket[first?] 和 @racket[u]，正是上面那版 @racket[mul] 里的那一套：
-@racket[first?] 分辨第一次进入还是跳回来，@racket[u]
-存下跳回来时带的值。按时间顺序看。第一次调用 @racket[(cc)] 时，
-@racket[first?] 是 @racket[#t]，@racket[(label)] 捕获当前位置，
-@racket[cond] 走第一支，把 @racket[first?] 改成 @racket[#f]，
-交出一个配着 @racket[1] 的函数，这就是@tech{延续}。@racket[(cc)]
-就此返回。
+@racket[first?] 和 @racket[u]，就是上面那版 @racket[mul] 里的
+@racket[first?] 和 @racket[result]：@racket[first?]
+分辨第一次进入还是跳回来，@racket[u] 存下跳回来时带的值。
+按时间顺序看。第一次调用 @racket[(cc)] 时，@racket[first?] 是
+@racket[#t]，@racket[(label)] 捕获当前位置，@racket[cond] 走第一支，把
+@racket[first?] 改成 @racket[#f]，交出一个配着 @racket[1] 的函数，
+这就是@tech{延续}。@racket[(cc)] 就此返回。
 
 后来某处调用这个@tech{延续}，它把参数存进 @racket[u]，再
 @racket[(goto l)] 跳回 @racket[cc] 里面。此时 @racket[cc]
@@ -146,9 +150,13 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
     [(cons return 1)
      (for/fold ([res (*)] #:result (return res))
                ([r (in-list r*)])
-       (if (zero? r)
+              (if (zero? r)
            (return r)
            (* res r)))]))]
+
+@examples[#:eval ev #:label #f
+(mul 2 3 4)
+(mul 2 0 3)]
 
 @racket[match] 按标签分两支。@racket[for/fold] 一边遍历 @racket[r*]，
 一边累积 @racket[res]；@racket[#:result] 指定遍历结束后交出什么。
