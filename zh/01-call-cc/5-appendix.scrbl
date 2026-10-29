@@ -1,20 +1,11 @@
 #lang acf/scribble
 
-@title[#:tag "01:appendix"]{附录：不打标签的 cc}
+@title[#:tag "01:appendix"]{附录：模拟不相交的联合}
 
-正文里 @racket[cc] 交出带标签的联合 @math{p ∐ (p → ⊥)}。
-要紧的是两支不相交，标签只是做到这一点的一种办法。
-只要两支本来就分得开，直接用 @racket[∪] 也行，
-分不分得开由使用者负责。control-context 库里的 @racket[cc]
-就是这样定义的，另外为了配合 prompt tag 还做了一些处理。
-
-下面给出不打标签的版本，并按两个方向各绕一圈：从@tech{标签}出发，经过
-@racket[cc]、@racket[call/cc] 回到@tech{标签}；再经过
-@racket[call/cc]、@racket[cc] 回到@tech{标签}。
-和@xref["01:label-from-call-cc"]{正文}一样，每一步都把上一步当作原语。
-这里的版本还顺带处理了多值。
-
-@section[#:tag "01:appendix-forward"]{标签 → @racket[cc] → @racket[call/cc] → 标签}
+正文读作「或」的，是@tech{不相交的联合}：拿到一个值，
+要分得清它来自哪一支。Typed Racket 自带的 @racket[∪] 是普通的并集，
+不记来源。正文用标签做到不相交，这不是唯一的办法。下面列出四种，
+用到的代码都在文中出现过，或者就是正文代码不打标签的写法。
 
 @(define ev (make-acf-eval))
 @examples[#:eval ev #:hidden
@@ -23,8 +14,10 @@
 (define (goto l) (l l))
 (define (label) (primitive-call/cc goto))]
 
-起点是一等@tech{标签} @racket[label] 和 @racket[goto]。用它们写
-@racket[cc]：
+@section[#:tag "01:disjoint-already"]{两边本来就不相交}
+
+两个类型没有公共的元素，并集本身就是不相交的联合，用一个谓词就分得开。
+把 @racket[cc] 的返回类型换成普通的 @racket[∪]：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: cc (∀ (p) (→ (∪ p (→ p ⊥)))))
@@ -35,15 +28,9 @@
       (apply values saved)
       (λ args (set! saved args) (goto l))))]
 
-@racket[saved] 一身兼两职：@racket[#f] 表示@tech{延续}还没被调用过，
-否则存着@tech{延续}收到的参数。两种职责不会混淆，因为
-@racket[(λ args …)] 总把参数收成一张列表，哪怕参数本身是 @racket[#f]，
-哪怕一个参数也没有，存进去的列表都不是 @racket[#f]。@racket[args]
-收下全部参数，@c{apply values} 全部交出，这样@tech{延续}
-也能接收多值。
-
 @racket[(cc)] 交出的不是值就是@tech{延续}，没有标签。@racket[mul]
-的结果是实数，@tech{延续}是函数，用 @racket[real?] 就分得开：
+的结果是实数，@tech{延续}是函数，两者没有公共的元素，用 @racket[real?]
+就分得开：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define (mul . r*)
@@ -60,10 +47,50 @@
 (mul 2 3 4)
 (mul 2 0 3)]
 
-@racket[call/cc] 却不知道结果会是什么，结果也可能是一个函数，
-和@tech{延续} 分不开。这时只好自己造出不相交来：
-把传回来的结果一律收进一张列表。@tech{延续}是函数，永远不是列表，
-两者就分开了。这一层列表起的正是标签的作用：
+代价是分不分得开要由使用者负责：@math{p} 换成函数类型，
+值和@tech{延续}就分不清了。control-context 库里的 @racket[cc]
+就是这样定义的，另外为了配合 prompt tag 还做了一些处理。这个
+@racket[cc] 还顺带处理了多值：@racket[args] 收下全部参数，
+@c{apply values} 全部交出。
+
+@section[#:tag "01:disjoint-tag"]{打标签}
+
+这是正文的做法，见@xref["01:cc"]{「从标签到延续」}。看集合最清楚：集合
+@math{X = {a, b}}、@math{Y = {b, c}} 的并集里，@math{b}
+说不清来自哪一边。每一边配上标签再并起来，
+
+@mm{X + Y = X × {0} ∪ Y × {1}}
+
+两边就不相交了，检查标签就是一个谓词。丢掉标签，总有一个从
+@math{X + Y} 到 @math{X ∪ Y} 的映射；@math{X ∩ Y = {}}
+时它是一一对应，用不着标签，这就回到了上一种。@racket[∐] 用
+@racket[cons] 把值和标签配成一对。
+
+@section[#:tag "01:disjoint-state"]{赋值修改变量}
+
+分支的信息也可以不放在值里，而放在值外面的一个变量里。
+@xref["01:first-class"]{「一等标签」}里提前返回的 @racket[mul]
+就是这样：@racket[first?] 记着这是第一次进入，还是经 @racket[goto]
+跳回来的。@racket[cc] 里的 @racket[first?]，上面 @racket[cc] 里的
+@racket[saved]，也是这样。
+
+这一种和其它三种不同：值本身不带来源，类型上看不出两支，
+得靠可变状态才分得开。正文从@tech{标签}走到 @racket[cc]，
+要摆脱的正是它。@racket[cc] 并没有消除它，只是把它藏进了自己里面，
+交给使用者的是打好标签的值。
+
+@section[#:tag "01:disjoint-struct"]{为分支定义专门的结构}
+
+两边有公共的元素，又不想给每一支都打标签，可以只把其中一支包进一种专门
+的结构，另一支的元素永远不是这种结构。上面 @racket[cc] 的
+@racket[saved] 已经这样用过：@racket[(λ args …)]
+总把参数收成一张列表，哪怕参数本身是 @racket[#f]，存进去的列表都不是
+@racket[#f]，标志和载荷就分开了。
+
+用上面的 @racket[cc] 写 @racket[call/cc] 也得这样。@racket[call/cc]
+不知道结果会是什么，结果也可能是一个函数，和@tech{延续}分不开。
+把传回来的结果一律收进一张列表，@tech{延续}是函数，永远不是列表，
+两者就分开了：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: call/cc (∀ (p) (→ (→ (→ p ⊥) p) p)))
@@ -78,13 +105,23 @@
 再次返回时交出这张列表，@racket[(list? x)] 为真，@c{apply values}
 把列表拆开交回。
 
-最后一步和@xref["01:label-from-call-cc"]{正文}一样，令
-@math{p = @ty{Label}}：
+这一种和打标签本质相同，都是给值做记号。打标签时记号是数据，
+@racket[0] 或 @racket[1]；这里记号是结构本身。列表之外，
+也可以为这一支专门定义一种结构体。
+
+@section[#:tag "01:disjoint-loops"]{不打标签的互相定义}
+
+不打标签，三种表述照样可以互相定义。和@xref["01:label-from-call-cc"]{
+正文}一样，每一步都把上一步当作原语。
+
+从@tech{标签}出发，经过上面的 @racket[cc] 和 @racket[call/cc]，
+最后一步和正文一样，令 @math{p = @ty{Label}}：
 
 @racketblock[
 (define (label) (call/cc goto))]
 
-@section[#:tag "01:appendix-backward"]{标签 → @racket[call/cc] → @racket[cc] → 标签}
+反过来，先用@tech{标签}写 @racket[call/cc]。写法和上面的 @racket[cc]
+一样，只是把@tech{延续}交给 @racket[proc]，不交给调用者：
 
 @(define ev2 (make-acf-eval))
 @examples[#:eval ev2 #:hidden
@@ -92,10 +129,6 @@
 (define primitive-call/cc call/cc)
 (define (goto l) (l l))
 (define (label) (primitive-call/cc goto))]
-
-反过来，先用@tech{标签}写 @racket[call/cc]。写法和上一节的 @racket[cc]
-一样，只是把@tech{延续}交给 @racket[proc]，不交给调用者：
-
 @examples[#:eval ev2 #:label #f #:no-prompt
 (define (call/cc proc)
   (define saved #f)

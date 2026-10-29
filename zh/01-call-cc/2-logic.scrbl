@@ -171,15 +171,12 @@
 @math{p} 成立，或者 @math{p} 不成立。
 
 再细看这个对应。@racket[(cc)] 交出的 @math{p ∐ ¬p}，两支各配着标签，
-@racket[0] 是 @math{p}，@racket[1] 是 @math{¬p}：拿到一个值，
-看标签就知道它属于哪一支，再按那一支使用它。@racket[mul] 和
-@racket[call/cc] 正是这样用 @racket[match] 分两支的。读作「@math{p} 或
-@math{q}」，也得这样分得清。两支分得开的联合，
-叫@defterm[#:en "disjoint union"]{不相交的联合}，
-打标签是做到不相交的一种办法。Typed Racket 自带的 @racket[∪]
-却是普通的并集，不记来源，两边分不分得开，要看 @math{p} 和 @math{q}
-本身。下面读作「或」的，说的都是分得开两边的联合。这是@defterm{析取}，
-写作 @defsym["p ∨ q" "析取；不相交的联合 p ∐ q"]@math{∨}。
+@racket[0] 是 @math{p}，@racket[1] 是 @math{¬p}。读作「@math{p} 或
+@math{q}」，拿到一个值，就得分得清它属于哪一支，再按那一支使用它；
+@racket[mul] 和 @racket[call/cc] 正是这样用 @racket[match] 分两支的。
+两支分得开的联合，叫@defterm[#:en "disjoint union"]{不相交的联合}，
+怎样做到分得开，见@xref["01:appendix"]{附录}。这是@defterm{析取}，写作
+@defsym["p ∨ q" "析取；不相交的联合 p ∐ q"]@math{∨}。
 
 所以 @racket[(cc)] 写出的是 @math{p ∨ ¬p}，正是@tech{排中律}。
 前面那件说不通的事，也有了着落：@racket[(cc)] 并没有写出一个
