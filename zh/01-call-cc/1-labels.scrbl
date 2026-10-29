@@ -32,7 +32,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 
 「一等」说的是两件事。@tech{标签}和数、字符串一样是值，可以存进变量，
 传给函数，作为返回值。而且创建它的函数返回以后，
-它仍然有效，@racket[goto] 还能跳回那个函数里面去。C
+它仍然有效，@racket[goto] 还能跳回那个函数里面去。标准 C
 的@tech{标签}两件都做不到。
 
 先拿它写一个循环：
@@ -258,14 +258,17 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 = (goto k)
 = (k k)]
 
+@margin-note{@racket[goto] 返回 @racket[⊥]，却能交给要返回 @math{p} 的
+@racket[call/cc]，为什么无妨，见@xref["01:call-cc-types"]{「call/cc
+的几种类型」}。}
+
 @racket[(call/cc goto)] 拿捕获的@tech{延续}当@tech{标签}，原地跳一次，
 又回到这里。@racket[goto] 并不正常返回，返回类型是 @racket[⊥] 也无妨：
 它把 @racket[k] 交给 @racket[k] 自己。@racket[(k k)] 跳回
 @racket[(label)] 被调用的地方，让 @racket[call/cc] 带着 @racket[k]
-再返回一次，所以 @racket[(label)] 的结果就是 @racket[k] 本身。
-这个@tech{标签}就是它被创建处的@tech{延续}。以后 @racket[(goto l)]
-再调用 @racket[(l l)]，跳回同一处，@racket[(label)] 又一次返回
-@racket[l]。这正是开头为一等@tech{标签}描述的行为。
+再返回一次，所以 @racket[(label)] 的结果就是 @racket[k] 本身。以后
+@racket[(goto l)] 跳回同一处，@racket[(label)] 又一次返回 @racket[l]，
+正是开头为一等@tech{标签}描述的行为。
 
 圈也可以反过来绕。以@tech{标签}为原语，先写出 @racket[call/cc]，
 再由它写出 @racket[cc]，最后把 @racket[cc] 当作原语，写回@tech{标签}：

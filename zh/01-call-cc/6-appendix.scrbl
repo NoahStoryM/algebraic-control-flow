@@ -34,7 +34,7 @@
       (λ args (set! saved args) (goto l))))]
 
 control-context 库（@racketmodname[control/context]）里的 @racket[cc]
-就是这样定义的，另外为了配合 prompt tag 还做了一些处理。@racket[(cc)]
+就是这样定义的，另外还做了一些这里用不到的处理。@racket[(cc)]
 交出的不是值就是@tech{延续}，没有标签。@racket[mul]
 的结果是实数，@tech{延续}是函数，用 @racket[real?] 就分得开：
 

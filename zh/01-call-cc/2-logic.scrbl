@@ -7,7 +7,16 @@
 (define-type ⊥ (∪))
 (define primitive-call/cc call/cc)
 (define (goto l) (l l))
-(define (label) (primitive-call/cc goto))]
+(define (label) (primitive-call/cc goto))
+(require racket/undefined)
+(define (cc)
+  (define first? #t)
+  (define u undefined)
+  (define l (label))
+  (cond
+    [first? (set! first? #f)
+     (cons (λ (v) (set! u v) (goto l)) 1)]
+    [else (cons u 0)]))]
 
 上一小篇里，@racket[goto] 和@tech{延续}交出的类型都是 @racket[⊥]。交出
 @racket[⊥]，说的是这段计算不会有结果交回来：一调用，
@@ -119,9 +128,9 @@
 @margin-note{这里先只看会终止的程序；会一直算下去的程序，
 留到@xref["01:where-fails"]{「对应关系在哪里失效」}再看。}
 
-先看 @math{⊥}。它像假，凭什么？假命题没有证明；@tech{空类型} @math{⊥}
-没有元素，给不出一个这样的值。@racket[(return r)] 的类型是
-@racket[⊥]，那是借着手里现成的 @racket[return] 才写得出来；
+先看 @math{⊥}。它像假，凭什么？@math{⊥} 这个假命题没有证明；@tech{空类
+型} @math{⊥} 没有元素，给不出一个这样的值。@racket[(return r)]
+的类型是 @racket[⊥]，那是借着手里现成的 @racket[return] 才写得出来；
 不依赖额外的假设，@racket[⊥] 类型的表达式一个也写不出来。
 两边说的是同一件事：没有证明，就是写不出表达式。反过来读，
 不依赖额外的假设写出一个类型的表达式，就像给出了对应命题的证明；
@@ -161,6 +170,11 @@
 写不出的东西，@racket[cc] 凭什么交得出来？
 
 @section[#:tag "01:types-to-logic"]{析取与合取}
+
+@margin-note{这里把 @racket[cc] 当作现成的操作，按它的类型来用；
+它内部怎样用 @racket[label] 实现，不算在内，
+留到@xref["01:where-fails"]{「对应关系在哪里失效」}再说。}
+
 
 等实数的@tech{延续}对应假，可 @racket[(cc)] 是一个合法的表达式，
 写得出来，它的类型就该是真的。倒回一步，看看 @racket[cc] 的类型。有了
@@ -205,9 +219,18 @@
 @math{¬p}，@tech{延续}只是其中一支，而且以后可能经由它跳回来，
 换成另一支。拿到@tech{延续}那一支，得到的是一条和捕获点连着的出口：
 交给它一个 @math{p}，就跳回去，让 @racket[(cc)] 改交 @math{p} 那一支。
-这条出口不能从整个控制过程里摘出来，当作 @math{¬p}
-的无条件证明。@racket[call/cc] 把这个分支挪进了操作符内部，
-它的类型里也就没有 @math{∐}，只用 @math{→} 和 @math{⊥} 就写得下。
+这条出口不能从整个控制过程里摘出来，当作 @math{¬p} 的无条件证明。
+比如：
+
+@examples[#:eval ev #:label #f
+(match (cc)
+  [(cons r 0) r]
+  [(cons k 1) (k 5)])]
+
+拿 @racket[k] 去「反驳」@racket[5]，并没有得到 @racket[⊥]：程序回到
+@racket[(cc)]，改交出 @racket[5]。@racket[call/cc]
+把这个分支挪进了操作符内部，它的类型里也就没有 @math{∐}，只用 @math{→}
+和 @math{⊥} 就写得下。
 
 前面说的都是 @racket[(cc)] 的类型为真。@racket[cc]
 本身是一个不收参数的函数，也写得出来，它的类型当然也为真。逻辑里，从真

@@ -2,10 +2,12 @@
 
 @title[#:tag "01:conclusion"]{结论}
 
-@tech{标签}、@racket[cc]、@racket[call/cc] 交出的都是@tech{延续}，
-而只用 @racket[λ] 和函数调用，不靠永不终止的程序，也不用自指类型，
-凭空写不出一个非空类型的@tech{延续}。@xref["01:watershed"]{「分水
-岭」}沿着这条线分成两列：调用@tech{延续}、写一个函数等着@tech{延续}，
+从一等@tech{标签}出发，离 @racket[call/cc] 只差几行代码：@tech{标签}、
+@racket[cc]、@racket[call/cc] 互相定义得出。
+三者交出的都是@tech{延续}，而只用 @racket[λ] 和函数调用，
+不靠永不终止的程序，也不用自指类型，凭空写不出一个非空类型的@tech{延
+续}。@xref["01:watershed"]{「分水岭」}沿着这条线分成两列：
+调用@tech{延续}、写一个函数等着@tech{延续}，
 只用交到手里的那条；@racket[call/cc] 和 @racket[cc]
 却凭空拿到了当前@tech{延续}。
 
