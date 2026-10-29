@@ -15,6 +15,7 @@
 
 @include-section["1-labels.scrbl"]
 @include-section["2-logic.scrbl"]
-@include-section["3-fixed-point.scrbl"]
-@include-section["4-conclusion.scrbl"]
-@include-section["5-appendix.scrbl"]
+@include-section["3-substitution.scrbl"]
+@include-section["4-fixed-point.scrbl"]
+@include-section["5-conclusion.scrbl"]
+@include-section["6-appendix.scrbl"]

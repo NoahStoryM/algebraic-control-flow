@@ -1,6 +1,6 @@
 #lang acf/scribble
 
-@title[#:tag "01:3-fixed-point"]{否定的不动点}
+@title[#:tag "01:4-fixed-point"]{否定的不动点}
 
 @(define ev (make-acf-eval))
 @examples[#:eval ev #:hidden
