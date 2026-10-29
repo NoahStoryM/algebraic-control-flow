@@ -1,419 +1,322 @@
 #lang acf/scribble
 
-@title[#:tag "01:2-logic"]{类型里的逻辑}
+@title[#:tag "01:2-logic"]{Curry-Howard 对应}
 
 @(define ev (make-acf-eval))
 @examples[#:eval ev #:hidden
 (define-type ⊥ (∪))
 (define primitive-call/cc call/cc)
 (define (goto l) (l l))
-(define (label) (primitive-call/cc goto))]
+(define (label) (primitive-call/cc goto))
+(require racket/undefined)
+(define (cc)
+  (define first? #t)
+  (define u undefined)
+  (define l (label))
+  (cond
+    [first? (set! first? #f)
+     (cons (λ (v) (set! u v) (goto l)) 1)]
+    [else (cons u 0)]))]
 
-标签、@racket[cc]、@racket[call/cc] 能互相写出，
-签名却各不相同。@xref["01:compare"]{「比较」一节}的表里有联合类型，
-也有高阶类型；单是 @racket[call/cc] 一个操作符，就写出了三种签名，
-而且每一种都成立。这些操作符的实现用到了 @racket[label]、@racket[goto]
-和 @racket[set!]，签名里却一样也看不到，只用到
-@math{→}、@math{⊥}、@math{∪} 三样东西。写 @racket[absurd]
-时我们还顺口说了一句「从@tech{空类型}可以推出任何东西」，
-这已经是逻辑里的说法了。把这些签名放在一起：
+上一小篇里，@racket[goto] 和@tech{延续}交出的类型都是 @racket[⊥]。交出
+@racket[⊥]，说的是这段计算不会有结果交回来：一调用，控制流就切换到了别处。
+
+这样的调用可以出现在任何位置。最后那版 @racket[mul] 里，@racket[(return r)] 和
+@racket[(* res r)] 是 @racket[if] 的两个分支，一个交出 @racket[⊥]，
+一个交出实数，不考虑子类型的话，类型对不上；@racket[for/fold]
+要的是实数，@racket[(return r)] 交不出实数，程序却照样运行。这是为什么？
+
+@section[#:tag "01:call-cc-types"]{@racket[call/cc] 的几种类型}
+
+答案在 @racket[⊥] 本身。先造一个奇怪的函数：
+
+@examples[#:eval ev #:label #f #:no-prompt
+(: absurd (∀ (q) (→ ⊥ q)))
+(define absurd (case-λ))]
+
+@racket[case-λ] 按参数的个数分情形定义函数，每个子句对应一种调用方式。
+一个子句也没有的 @racket[(case-λ)]，没有任何调用方式能与它匹配，一调用就报错。
+这正合 @racket[⊥] 的情形：@racket[⊥] 类型没有元素，谁也交不出一个来给它，
+类型正确的程序里根本调用不到它。既然调用不到，说它交出什么类型都不会错，所以
+@racket[absurd] 的类型是 @math{⊥ → q}，@math{q} 任意。
+
+有了它，前面的疑问就解开了。@racket[(return r)] 交出 @racket[⊥]，接上
+@racket[absurd]，@racket[(absurd (return r))] 就能当作实数用；@racket[absurd]
+其实从来不会被调用，因为 @racket[(return r)] 根本不会交回来。交出 @racket[⊥]
+的表达式，放在要什么类型的位置都行。
+
+同样的道理，也能重新看 @racket[call/cc] 的类型。它原来的类型是：
 
 @racketblock[
-(: cc      (∀ (p)   (→ (∪ p (→ p ⊥)))))
-(: call/cc (∀ (p)   (→ (→ (→ p ⊥) p) p)))
-(: call/cc (∀ (p q) (→ (→ (→ p q) p) p)))
-(: call/cc (∀ (p)   (→ (→ (→ p ⊥) ⊥) p)))
-(: absurd  (∀ (q)   (→ ⊥ q)))]
+(: call/cc (∀ (p) (→ (→ (→ p ⊥) p) p)))]
 
-如果把 @math{⊥} 读作假，@math{→} 读作「如果……那么……」，@math{∪}
-读作「或」，这五个签名读起来就像五条命题，而且是逻辑课本里有名字的五
-条。这只是字面上的相像，还是经得起检验？
+先放宽。交给 @racket[proc] 的@tech{延续} @racket[k] 永不返回，后面接上
+@racket[absurd]，@racket[(compose absurd k)] 的行为和 @racket[k] 一样，类型却是
+@racket[(→ p q)]，@math{q} 任意。所以 @racket[call/cc] 也有这样的类型：
 
-@section[#:tag "01:from-bottom"]{从 @math{⊥} 出发}
+@racketblock[
+(: call/cc (∀ (p q) (→ (→ (→ p q) p) p)))]
 
-在这个类比中，没有值的@tech{空类型} @racket[⊥] 应该对应假：
-不存在该类型的表达式。如果这个类比成立，那么 @math{p → ⊥}
-就对应逻辑中的否定：给定 @math{p} 的证明，推出假。
-而@tech{延续}的类型正是 @math{p → ⊥}。
+令 @math{q = ⊥}，就回到原来那一种。
 
-验证一下。@math{⊥} 的否定是 @math{⊥ → ⊥}。恒等函数就具有这个类型。
-更一般地，@racket[absurd] 为任意 @math{q} 提供了 @math{⊥ → q}。
-所以假的否定是非空的：它是真的，逻辑中 @math{¬⊥} 也确实为真。
-这个类比目前站得住脚。
+再看另一头。假如 @racket[proc] 总会调用交给它的@tech{延续} @racket[k]，
+它自己就从不正常返回，返回类型是 @racket[⊥]，类型也就成了
+@racket[(→ (→ p ⊥) ⊥)]。用同样的办法，后面接上 @racket[absurd]，
+@racket[(compose absurd proc)] 的类型就回到了 @racket[(→ (→ p ⊥) p)]，正好交得给
+@racket[call/cc]。所以 @racket[call/cc] 也有这样的类型：
 
-那么非空类型的否定呢？类型 @math{@ty{Real} → ⊥}
-是一个接受实数且永不返回的函数。我们能构造出具有该类型的表达式吗？
-只用普通的 @racket[λ] 和函数调用，并且暂不考虑永不终止的程序，
-写不出来：函数体最终要交出一个值，而 @racket[⊥] 没有值可交。
-前面见到的@tech{延续}，都是 @racket[cc]、@racket[call/cc]
-这样的控制操作符在运行时捕获出来的，不是用 λ 写出来的。
+@racketblock[
+(: call/cc (∀ (p) (→ (→ (→ p ⊥) ⊥) p)))]
 
-所以对于任何非空的类型 @math{p}，只用纯函数，类型 @math{p → ⊥}
-是空的：真命题的否定是假。这个类型就是@defterm{否定}
-@defsym["¬p" "p 的否定：p → ⊥，延续的类型"]@math{¬p}，
-每个@tech{延续}都是一个@tech{否定}：
+交给它一个只等@tech{延续}的计算，它从中把结果取出来。
+
+这样收紧，其实没有少掉什么。原来的类型允许 @racket[proc] 正常返回一个 @math{p}，
+最后那版 @racket[mul] 里的 @racket[λ] 就是这样，没遇到零，乘积是正常返回的。
+可调用 @racket[proc] 是 @racket[call/cc] 做的最后一件事，@racket[proc]
+正常返回，返回值直接交到调用 @racket[call/cc] 的地方。所以交给 @racket[proc]
+的@tech{延续} @racket[k]，和调用 @racket[proc] 这一处的@tech{延续}，都是调用
+@racket[call/cc] 时的当前@tech{延续}，下面两个表达式行为相同：
+
+@racketblock[
+(call/cc proc)
+(call/cc (λ (k) (k (proc k))))]
+
+第二行交给 @racket[call/cc] 的那整个 @racket[λ]，@racket[proc] 若正常返回，
+就再经 @racket[k] 交出结果，所以它从不正常返回，正是上面那种只等@tech{延续}的函
+数。
+
+于是手里有了四个类型，@racket[absurd] 的一个，@racket[call/cc] 的三个，都只用
+@math{→} 和 @math{⊥}。它们像在说些什么？
+
+@section[#:tag "01:from-bottom"]{读成命题}
+
+@math{⊥} 看上去像逻辑里的假，
+@defsym["p → q" "蕴含；函数类型"]@math{→} 看上去像「如果……那么……」，
+也就是@defterm{蕴含}。照这个样子，@math{p → ⊥} 说的是「如果 @math{p}，那么假」，
+也就是 @math{p} 不成立。这是@defterm{否定}
+@defsym["¬p" "p 的否定：p → ⊥，延续的类型"]@math{¬p}。@tech{延续}的类型正是
+@math{p → ⊥}，每个@tech{延续}都是一个@tech{否定}：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define-type (¬ p) (→ p ⊥))]
 
-非空意味着为真，空意味着为假。为一个类型写出表达式，
-就是证明对应的命题。
-
-@section[#:tag "01:types-to-logic"]{从类型到逻辑}
-
-「非空即真」的读法能推广到我们用过的其他类型构造子吗？假设有两个表达式
-@math{x} 和 @math{y}，类型分别是 @math{p} 和 @math{q}。
-从这个设定出发，我们可以构造出：
-
-@itemlist[#:style 'ordered
-  @item{@math{p → q} 类型的表达式 @racket[(λ (x) y)]：给定一个
-  @math{p}，就能产出一个 @math{q}。也就是说：如果 @math{p} 成立，那么
-  @math{q} 成立。这是@defterm{蕴含}，写作
-  @defsym["p → q" "蕴含；函数类型"]@math{→}。}
-  @item{@math{p × q} 类型的表达式 @racket[(values x y)]：把 @math{x}
-  和 @math{y} 打包在一起。也就是说：@math{p} 和 @math{q} 同时成立。
-  这是@defterm{合取}，写作
-  @defsym["p ∧ q" "合取；多个结果 p × q"]@math{∧}。}
-  @item{@math{p ∪ q} 类型的表达式：@math{x} 本身就可以视为这个类型
-  （@math{y} 也一样）。也就是说：@math{p} 或 @math{q} 成立。
-  这是@defterm{析取}，写作
-  @defsym["p ∨ q" "析取；联合类型 p ∪ q"]@math{∨}。}]
-有一点要单独说清：Typed Racket 的 @racket[∪] 是普通的并集，
-不是不相交的联合。一个值属于 @math{p ∪ q}，并不记录它是从哪一边来的；
-要分清两边，程序员得自己用 @racket[real?] 这样的谓词去问。
-后面讨论@tech{析取}时，两个分支能不能分开，正取决于这一点。
-
-@tech{合取}和@tech{析取}各有一个单位元。@tech{合取}的单位元是
-@defsym["⊤" "真，合取的单位元；Typed Racket 的 (Values)"]@math{⊤}，
-对应 Typed Racket 中的 @racket[(Values)] 类型：它只有一个值，
-就是什么也不交出的 @racket[(values)]。把它和别的结果放在一起，
-等于什么也没加，所以 @math{p ∧ ⊤ = ⊤ ∧ p = p}。@tech{析取}的单位元是
-@math{⊥}，也就是 @racket[(∪)] 类型：它没有任何值，并进去也什么都不多，
-所以 @math{p ∨ ⊥ = ⊥ ∨ p = p}。
-
-每个类型构造子都对应一个逻辑连接词。类型是命题，表达式是证明，
-构造程序就是构造证明。这个对应关系有一个名字：@defterm{Curry-Howard
-对应}。
-
-有了 @math{¬} 和 @math{∨}，开头那五个签名可以写成命题，
-各自对上一条定律：
+用 @math{¬} 改写，四个类型都成了逻辑课本里有名字的定律：
 
 @tabular[#:style 'boxed #:row-properties '(bottom-border ())
   (list
-   (list @elem{操作符} @elem{命题} @elem{定律})
-   (list @elem{@racket[cc]} @elem{@math{p ∨ ¬p}}
-         @elem{@defterm[#:en "law of excluded middle"]{排中律}})
-   (list @elem{@racket[call/cc]} @elem{@math{(¬p → p) → p}} @elem{Clavius 律})
+   (list @elem{程序} @elem{命题} @elem{定律})
+   (list @elem{@racket[absurd]} @elem{@math{⊥ → q}}
+         @elem{@defterm[#:en "principle of explosion"]{爆炸原理}})
+   (list @elem{@racket[call/cc]} @elem{@math{(¬p → p) → p}}
+         @elem{@defterm{Clavius 律}})
    (list @elem{@racket[call/cc]} @elem{@math{((p → q) → p) → p}}
-         @elem{Peirce 律})
+         @elem{@defterm{Peirce 律}})
    (list @elem{@racket[call/cc]} @elem{@math{¬¬p → p}}
-         @elem{@defterm[#:en "Double Negation Elimination" #:abbr "DNE"]{双重否定消除}})
-   (list @elem{@racket[absurd]} @elem{@math{⊥ → q}} @elem{爆炸原理}))]
+         @elem{@defterm[#:en "Double Negation Elimination" #:abbr "DNE"]{双重否定消除}}))]
 
-而 @math{@ty{Label} = @ty{Label} → ⊥} 变成
-@math{@ty{Label} = ¬@ty{Label}}：一个自身@tech{否定}的类型。
+四个程序，恰好对上四条有名的定律。这只是字面上的相像，还是真有其事？
 
-表里的定律分两种。爆炸原理在任何逻辑里都成立，@racket[absurd]
-也确实只用一个空的 @racket[case-λ] 就写了出来。
-其余四条只在经典逻辑中成立，只承认构造性证明的逻辑一般证不出它们；
-我们的操作符也正是靠捕获@tech{延续}才实现它们的。
+检验起来并不费事。这些类型都由 @math{→} 和 @math{⊥} 搭起来，
+只要这两样最基本的对上了，搭出来的整体也就对上了。
 
-@section[#:tag "01:where-fails"]{对应关系在哪里失效}
+@margin-note{这里先只看会终止的程序；会一直算下去的程序，
+留到@xref["01:where-fails"]{「对应关系在哪里失效」}再看。}
 
-@tech{Curry-Howard 对应}在纯粹的全函数语言（如 Agda 和 Coq）
-中是精确的：对任意非空的 @math{p}，@math{¬p} 确实是空的。
-真实的编程语言打破了这一点。
+先看 @math{⊥}。它像假，凭什么？@math{⊥} 这个假命题没有证明；@tech{空类型}
+@math{⊥} 没有元素，给不出一个这样的值。@racket[(return r)] 的类型是 @racket[⊥]，
+那是借着手里现成的 @racket[return] 才写得出来；不依赖额外的假设，@racket[⊥]
+类型的表达式一个也写不出来。两边说的是同一件事：没有证明，就是写不出表达式。
+反过来读，不依赖额外的假设写出一个类型的表达式，就像给出了对应命题的证明；
+写得出，命题就为真。拿这个读法验证一下：假的否定 @math{¬⊥} 该是真的，确实写得出
+@math{⊥ → ⊥} 类型的表达式，恒等函数就是。@racket[absurd] 说的从假推出任何东西，
+在逻辑里也成立。@math{⊥} 对上了假。
 
-考虑 @racket[(define (loop) (loop))]。它的类型是 @math{→ ⊥}，即
-@math{⊤ → ⊥ = ¬⊤}：真的@tech{否定}。在纯粹理论中，@math{¬⊤}
-应该是空的，因为真不可反驳。但 @racket[(loop)]
-是这个类型下合法的表达式，只不过永不终止。在非全函数语言中，
-合法的表达式不一定终止，因此并非每个表达式都是证明。
+再看 @math{→}。照这个读法，写出一个类型为 @math{p → q} 的函数，就是给出「如果
+@math{p}，那么 @math{q}」的证明。函数 @racket[(λ (x) body)] 的形参 @racket[x]
+是一个 @math{p}，函数体 @racket[body] 用到 @racket[x]，算出一个 @math{q}：
+假定有了 @math{p} 的证明，就造得出 @math{q} 的证明，逻辑里证明「如果……那么……」
+正是这样做的。反过来，手里有一个 @math{p → q} 和一个 @math{p}，调用它就得到一个
+@math{q}，正是由「如果 @math{p}，那么 @math{q}」和 @math{p} 推出 @math{q}。比如
+@racket[(→ Byte Natural)]：@racket[(λ (b) (+ b b))] 收下一个字节，交回它的两倍，
+一个自然数，这个命题为真。@math{→} 对上了蕴含。
 
-类似地，内置的 @racket[exit] 的类型是
-@math{@ty{Byte} → ⊥ = ¬@ty{Byte}}。借助 @racket[exit]，我们可以为任意
-@math{p} 构造 @math{¬p}：@racket[(λ (_) (exit 0))]。
-任何真命题的@tech{否定}都变成了非空。
+@margin-note{写不出 @math{p}，不等于写得出 @math{¬p}：有的命题自己写不出，
+它的否定也写不出。}
 
-还有第三种失效。我们的类型 @math{@ty{Label} = ¬@ty{Label}}
-是一个自身@tech{否定}的类型。把它读作命题：如果它为真（非空），
-它的@tech{否定}就为真，所以它为假。如果它为假（空），
-它的@tech{否定}就平凡地非空（正如 @racket[absurd] 填充了
-@math{⊥ → p}），但 @math{¬@ty{Label} = @ty{Label}}，所以它又变成了真。
+两样合起来，否定也对得上。@math{p} 为假，就是它的否定 @math{¬p} 为真：写得出一个
+@math{p → ⊥} 类型的表达式。反过来，@math{p} 为真，@math{¬p} 就该是假的，
+写不出来。试着写一个 @math{@ty{Real} → ⊥}：一个总会交出结果的函数，
+函数体最终要交出一个值，可 @racket[⊥] 类型没有元素，交不出来。
 
-这就是@defterm{说谎者悖论}：「这句话是假的。」
-它无法被一致地赋予真假值。一个类型在自己的定义里出现在否定的位置
-（@math{→} 的左侧），这样的递归类型没法当作一致的命题来解读，所以 Agda
-和 Coq 这样的一致类型论用@defterm{正性}条件禁止这类定义。Racket
-没有这个限制。悖论是合法的，我们可以构造 @racket[Label] 类型的值。
+两样最基本的都对上了，四条定律就不是巧合。每个类型构造子都对应一个逻辑连接词：
+类型是命题，表达式是证明，构造程序就是构造证明。这个对应关系有一个名
+字：@defterm{Curry-Howard 对应}。
 
-每种情况下，严格的 Curry-Howard 解读都失效了：
-本应为空的@tech{否定}类型有了值，本应非法的自指类型变得合法。
-我们把这个对应关系当作结构性的指引：类型的结构映射到逻辑连接词的结构，
-即便严格的逻辑解读不再精确。后文说一个类型「既真又假」，
-或者由类型读出程序会做什么，都是这种意义上的指引，不是可靠的逻辑推导。
+可这样一来，有件事说不通了。@tech{延续}的类型正是 @math{p → ⊥}，照这个对应，
+一条等实数的@tech{延续}本该不依赖任何假设就写不出来；我们却一直拿着，最后那版
+@racket[mul] 里的 @racket[return] 就是。这些@tech{延续}都不是用 @racket[λ]
+写出来的，是 @racket[cc]、@racket[call/cc] 在运行时捕获出来的。
+写不出的东西，@racket[cc] 凭什么交得出来？
+
+@section[#:tag "01:types-to-logic"]{析取与合取}
+
+@margin-note{这里把 @racket[cc] 当作现成的操作，按它的类型来用；它内部怎样用
+@racket[label] 实现，不算在内，留到@xref["01:where-fails"]{「对应关系在哪里失
+效」}再说。}
+
+
+等实数的@tech{延续}对应假，可 @racket[(cc)] 是一个合法的表达式，写得出来，
+它的类型就该是真的。倒回一步，看看 @racket[cc] 的类型。有了 @math{¬}，
+它可以写成：
+
+@racketblock[
+(: cc (∀ (p) (→ (∐ p (¬ p)))))]
+
+@racket[(cc)] 交出的不是只有 @math{¬p}，而是 @math{p ∐ ¬p}。@math{∐}
+看上去像「或」，也就是@defterm{析取}
+@defsym["p ∨ q" "析取；不相交的联合 p ∐ q"]@math{∨}。照这个样子，@math{p ∐ ¬p}
+说的是「@math{p} 成立，或者 @math{p} 不成立」，这正是逻辑里
+的@defterm[#:en "law of excluded middle"]{排中律}。
+
+@margin-note{两支分得开的联合，叫@defterm[#:en "disjoint union"]{不相交的联合}。
+打标签是做到这一点的一种办法，其它办法见@xref["01:appendix"]{附录}。}
+
+这回也检验一下。引入「@math{p} 或 @math{q}」有两种办法：由 @math{p} 的证明得到
+@math{p} 或 @math{q}，或者由 @math{q} 的证明得到 @math{p} 或 @math{q}；
+两种办法都记明引入的是哪一支。这对应两种带标签的构造：手里有一个 @math{p} 类型的
+@racket[a]，@racket[(cons a 0)] 就是一个 @math{p ∐ q}；有一个 @math{q} 类型的
+@racket[b]，@racket[(cons b 1)] 也是，标签记着给的是哪一支。反过来，
+使用「@math{p} 或 @math{q}」要分情况：在 @math{p} 的假设下推得出 @math{r}，在
+@math{q} 的假设下也推得出 @math{r}，就能从 @math{p} 或 @math{q} 推出
+@math{r}。@racket[match] 正是这样分两支的，@racket[mul] 和 @racket[call/cc] 里的
+@racket[match]，两支交出的是同一种类型的结果。@math{∐} 对上了析取。
+
+单位元也对得上。一支也没有的 @racket[(∐)] 就是 @racket[⊥]。@math{p ∐ ⊥}
+里，@math{⊥} 那一支没有元素，拿到的总是 @math{p} 那一支，去掉标签就是一个
+@math{p}；一个 @math{p} 配上标签，也就成了 @math{p ∐ ⊥}。
+两边来回能换，@math{⊥ ∐ p} 也一样。逻辑里，假正是析取的单位元，
+@defsym["p ⇔ q" "互推：p 推出 q，q 也推出 p"]@math{⇔} 读作互推：
+
+@mm{p ⇔ p ∨ ⊥ ⇔ ⊥ ∨ p}
+
+所以 @racket[(cc)] 写出的是 @math{p ∨ ¬p}，正是@tech{排中律}。
+前面那件说不通的事，也有了着落：@racket[(cc)] 并没有写出一个
+@math{¬p}，@tech{延续}只是其中一支，而且以后可能经由它跳回来，换成另一支。
+拿到@tech{延续}那一支，得到的是一条和捕获点连着的出口：交给它一个 @math{p}，
+就跳回去，让 @racket[(cc)] 改交 @math{p} 那一支。这条出口不能从整个控制过程里摘
+出来，当作 @math{¬p} 的无条件证明。比如：
+
+@examples[#:eval ev #:label #f
+(match (cc)
+  [(cons r 0) r]
+  [(cons k 1) (k 5)])]
+
+拿 @racket[k] 去「反驳」@racket[5]，并没有得到 @racket[⊥]：程序回到
+@racket[(cc)]，改交出 @racket[5]。@racket[call/cc] 把这个分支挪进了操作符内部，
+它的类型里也就没有 @math{∐}，只用 @math{→} 和 @math{⊥} 就写得下。
+
+前面说的都是 @racket[(cc)] 的类型为真。@racket[cc] 本身是一个不收参数的函数，
+也写得出来，它的类型当然也为真。逻辑里，从真
+@defsym["⊤" "真，恰好有一个元素的类型"]@math{⊤} 推出 @math{p}，和 @math{p}
+本身可以互推。程序里，表达式 @racket[e] 可以包成 @racket[thunk]
+@racket[(λ () e)]；调用这个 @racket[thunk]，才执行 @racket[e]，交出结果。所以
+@racket[cc] 和 @racket[(cc)] 的类型在逻辑上等价，读出的都是@tech{排中律}。
+
+@margin-note{这里的「零」说的是一次交出几个值，不是类型有几个元素。}
+
+那 @math{⊤} 对应什么？@racket[thunk] 不收参数，调用时交给它的是零个实参。
+把一次交出的值整体看成一组，零个值就是空的一组，只有这一种可
+能。@racket[(values)] 交出的正是零个值，结果类型写作 @racket[(Values)]。
+照这样整体来读，它对应恰好有一个元素的 @math{⊤}，@racket[thunk] 也就对应
+@math{⊤ → p}。不收参数有了着落，那收多个参数、交多个值，又对应什么？@math{⊤}
+正是@defterm{合取}
+@defsym["p ∧ q" "合取；多个值 p × q"]@math{∧} 的单位元：
+
+@mm{p ⇔ p ∧ ⊤ ⇔ ⊤ ∧ p}
+
+空的一组并到别的值上，也没有多出任何值，正像这个单位元。
+这提示我们，@racket[(Values p q)] 该对应 @math{p ∧ q}，也就是笛卡尔积
+@math{p × q}。检验一下。证明「@math{p} 且 @math{q}」，
+两个证明都要给出；@racket[(values a b)] 正是把 @racket[a] 和 @racket[b]
+一起交出。使用「@math{p} 且 @math{q}」，两样都能拿来用；收下
+@racket[(values a b)] 的地方，@racket[a] 和 @racket[b] 都在手里。@racket[Values]
+对上了合取。函数的两个参数，也可以这样合起来，看成一个 @math{p × q}，读作
+@math{p ∧ q}。
 
 @section[#:tag "01:watershed"]{分水岭}
 
-在引入 @racket[cc] 和 @racket[call/cc] 之前，我们拥有的一切（函数、
-积、联合、@math{⊤}、@math{⊥}）都属于@defterm{直觉主义逻辑}：
-构造性类型系统所自然栖居的逻辑。那么 @racket[cc] 和 @racket[call/cc]
-到底添加了什么？
+@racket[cc] 对上的@tech{排中律}，@racket[call/cc] 对上的 DNE，
+逻辑课本说都只在@defterm{经典逻辑}中成立。不承认它们，只承认构造出来的证明，
+就是@defterm{直觉主义逻辑}。在引入 @racket[cc] 和 @racket[call/cc] 之前，
+我们用到的函数、积、联合、@math{⊤}、@math{⊥}，都没有越出它的范围。
 
-换个问法：只用函数，我们能拿@tech{延续}做什么？回到最后那版
-@racket[mul]。里面有一个实数 @racket[r]，还有一个@tech{延续}
-@racket[return]，它等一个实数，类型是 @math{¬@ty{Real}}。
+这两条经典定律，各有一条与之相对的定律，在直觉主义逻辑里照样成立。
+@tech{排中律}说 @math{p} 与 @math{¬p} 至少有一个成立；说两者不能同时成立，
+就是@defterm{矛盾律} @math{¬(¬p ∧ p)}。DNE 从 @math{¬¬p} 推出 @math{p}；
+箭头反过来，从 @math{p} 推出 @math{¬¬p}，就
+是@defterm[#:en "Double Negation Introduction" #:abbr "DNI"]{双重否定引入}。
 
-最直接的是调用：@racket[(return r)]，把实数交给等着它的@tech{延续}。
-给这个操作起个名字：
+成立的命题，照 @tech{Curry-Howard 对应}应该写得出程序。前面是从程序读出命题，
+这回反过来，从命题出发找程序。
+
+先看@tech{矛盾律}。@math{¬p ∧ p} 是一个 @math{¬p} 和一个 @math{p} 放在一起，
+对应函数的两个参数；整体取否定，结果是 @math{⊥}。所以要写的是这样一个函数：
+收下一个@tech{延续} @racket[kv] 和一个值 @racket[v]，得到 @math{⊥}。手里能产生
+@math{⊥} 的只有 @racket[kv]，能交给它的只有 @racket[v]，
+写法几乎是被类型逼出来的：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: apply-cont (∀ (p) (→ (¬ p) p ⊥)))
-(define (apply-cont kv . v*) (apply kv v*))]
+(define (apply-cont kv v) (kv v))]
 
-在当前的设定中@tech{延续}恰好是函数，所以它就是函数调用；@tech{延续}换
-一种表示，向它传值就不再只是函数调用。
+这就是调用@tech{延续}。最后那版 @racket[mul] 里的 @racket[(return r)]，就是一次
+@racket[apply-cont]。
 
-要是@tech{延续}还没来，手里只有 @racket[r] 呢？调用不了，
-但可以先写一个函数等
-着：@racket[(λ (return) (return r))]，@racket[return] 一来，就把
-@racket[r] 交给它。它等的是一个 @math{¬@ty{Real}}，类型是
-@math{¬¬@ty{Real}}。做的还是调用，只是值先到，@tech{延续}后到。
+再看 DNI。给一个值 @racket[v]，要交出一个 @math{¬¬p}，也就是一个收下 @math{¬p}、
+结果为 @math{⊥} 的函数。理由和刚才一样，只能写成 @racket[(λ (kv) (kv v))]。
+做的还是调用，只是值先到，@tech{延续}后到。从 @racket[v] 得到这个函数，就是
+@racket[(curryr apply-cont)]：先给定 @racket[apply-cont] 的第二个参数。
 
-反过来，要是手里只有这样一个等@tech{延续}的函数，
-想要的却是里面的实数呢？它在等一个 @racket[return]，可是没有人交给它。
-只用函数，这一步做不到，要靠 @racket[call/cc]：
-它把当前@tech{延续}交给这个函数当作 @racket[return]，实数交到
-@racket[return] 手里，也就回到了调用 @racket[call/cc] 的地方。最后那版
-@racket[mul] 也是这样，把乘积从那个 @racket[λ] 里取了回来。
+两个程序用到的@tech{延续}都是交进来的。这不是巧合：@xref["01:from-bottom"]{「读
+成命题」}里试过，只用 @racket[λ] 凭空写不出 @math{@ty{Real} → ⊥} 这样的否定，
+前面见到的@tech{延续}，都是控制操作符在运行时捕获出来的。
+结论里的每样东西都由交到手里的东西做成，这样的程序
+是@defterm[#:en "constructive"]{构造性}的。
 
-再进一步，连等@tech{延续}的函数也不要，直接把当前@tech{延续}拿到手里。
-这就是 @racket[(cc)]：它先交出当前@tech{延续}，等有人把实数传回来，
-再交出那个实数。手里原本什么也没有，它交出的却总是两者之一，一个实数，
-或者一个等实数的@tech{延续}，事先不要求谁给出任何一支。
 
-这四步，逻辑里各有一个名字。调用@tech{延续}，就是@defterm{矛盾律}：
-一个 @math{¬p} 和一个 @math{p} 放在一起，得到 @math{⊥}。
-先写一个函数等着@tech{延续}，就
-是@defterm[#:en "Double Negation Introduction" #:abbr "DNI"]{双重否定
-引入}：从 @math{p} 得到 @math{¬¬p}。
 
-这两步只用函数就够了。回想@xref["01:from-bottom"]{「从 ⊥ 出发」}一节：
-对非空的 @math{p}，只用 @racket[λ]，凭空写不出一个
-@math{¬p}，@tech{延续}只能由别人交来。调用用的是手里现成的
-@racket[return]；先写一个函数等着，是等别人把 @racket[return] 交进来。
-两步都只用交到手里的东西，是@defterm[#:en "constructive"]{构造性}的：
-结论里的每样东西，都由交到手里的东西做成。
+用同样的办法试经典的两条。DNE 给一个等@tech{延续}的函数 @racket[kkp]，要交出一个
+@math{p}。能对 @racket[kkp] 做的只有调用它，调用它却要一个 @math{¬p} 类型的
+@racket[kp]：有了 @racket[kp]，调用 @racket[kkp] 得到 @math{⊥}，再交给
+@racket[absurd] 就能当作 @math{p}。可是没有人交来 @racket[kp]，自己又构造不出，
+也就无法调用 @racket[kkp]。@tech{排中律}更彻底：什么也没给，要交出一个 @math{p}
+或一个 @math{¬p}，两样都写不出。
 
-后两步不一样。@racket[call/cc] 和 @racket[cc]
-凭空提供了一个@tech{延续}，就是当前@tech{延续}。@racket[call/cc]
-把它交给一个等着的函数，从 @math{¬¬p} 得到 @math{p}，
-这是@tech{双重否定消除}。@racket[cc] 干脆把它交到我们手里；
-以后可能经由它跳回来，让 @racket[(cc)] 再返回一次，
-所以交出的东西得容得下两种情况：第一次是@tech{延续}，跳回来时是值，
-于是成了 @math{p ∨ ¬p}，这是@tech{排中律}。凭空提供一个@tech{延续}，
-这是经典的。
+@racket[call/cc] 和 @racket[cc] 补上的，正是这个缺口：
+它们凭空提供了一个@tech{延续}，就是当前@tech{延续}。@racket[call/cc]
+把它交给等着的函数，从 @math{¬¬p} 得到 @math{p}。@racket[cc]
+干脆把它交到我们手里；以后可能经由它跳回来，让 @racket[(cc)] 再返回一次，
+所以交出的东西得容得下两种情况：第一次是@tech{延续}，跳回来时是值，于是成了
+@math{p ∨ ¬p}。凭空提供一个@tech{延续}，这是经典的。
 
-排成一张表：
+排成一张表，每一行是一对相对的定律，每一列上下两格互相推得出：
 
 @tabular[#:style 'boxed #:row-properties '(bottom-border ())
   (list
    (list "" @elem{构造性} @elem{经典})
-   (list @elem{@math{¬p} 遇上 @math{p}}
-         @elem{@bold{@tech{矛盾律}}：@racket[apply-cont]（函数调用）}
-         @elem{@bold{@tech{排中律}}：@racket[cc]（捕获@tech{延续}）})
-   (list @elem{@math{¬¬p} 遇上 @math{p}}
-         @elem{@bold{DNI}：@racket[(λ (k) (k v))]}
-         @elem{@bold{DNE}：@racket[call/cc]（捕获@tech{延续}）}))]
+   (list @elem{@math{p} 与 @math{¬p}}
+         @elem{@bold{@tech{矛盾律}}：@racket[apply-cont]}
+         @elem{@bold{@tech{排中律}}：@racket[cc]})
+   (list @elem{@math{p} 与 @math{¬¬p}}
+         @elem{@bold{DNI}：@racket[(curryr apply-cont)]}
+         @elem{@bold{DNE}：@racket[call/cc]}))]
 
-表里每一列的上下两格，其实是一回事。左边一列都是调用@tech{延续}，
-只差值和@tech{延续}谁先到：@math{¬p → p → ⊥} 和 @math{p → ¬p → ⊥}
-只差参数的次序，@tech{矛盾律}和 DNI 互相推得出。
-右边一列都是提供当前@tech{延续}，只差交给一个函数还是交到手
-里。@racket[cc] 能@xref["01:label-from-call-cc"]{用 @racket[call/cc]
-写出}，就是 @racket[(call/cc values)]；@racket[call/cc]
-也能@xref["01:call-cc"]{用 @racket[cc] 写出}，
-照@xref["01:invisible"]{「那条看不见的延续」}里的第二种读法，
-那段代码读起来正是由@tech{排中律}推出 DNE：@racket[(cc)] 交出 @math{p}
-那一支，就直接交出；交出 @math{¬p} 那一支，就交给 @racket[proc]，
-得到的 @math{⊥} 照爆炸原理（@racket[absurd]）
-可以当作任何类型。@tech{排中律}和 DNE 作为对任意类型都成立的原则，
-同样互相推得出，经典的成分只在提供当前@tech{延续}的那一步。
-
-@bold{练习}：@italic{实质条件} @math{¬p ∨ q} 是经典逻辑中 @math{p → q}
-的另一种编码。试着实现 @c{material->procedure : (¬p ∨ q) → p → q} 和
-@c{procedure->material : (p → q) → ¬p ∨ q}。你会发现其中一个方向需要
-@racket[cc]，是哪一个？
+左边一列只差参数次序，@tech{矛盾律}和 DNI 互相推得出。
+右边一列都是提供当前@tech{延续}：@racket[cc] 可以由 @racket[call/cc] 写出，
+见@xref["01:label-from-call-cc"]{「从 call/cc 定义标签」}；
+反过来，@xref["01:call-cc"]{用 @racket[cc] 写出的 @racket[call/cc]} 先调用
+@racket[(cc)]，拿到配着 @racket[0] 的值就交出，拿到配着 @racket[1]
+的@tech{延续}就交给 @racket[proc]，这正是由@tech{排中律}推出 DNE。
+作为对任意类型都成立的原则，两者互相推得出。
 
 可是，从 @math{¬¬p} 取出 @math{p}，非得凭空拿到一个@tech{延续}不可吗？
-
-@section[#:tag "01:substitute"]{代入不同的类型}
-
-到目前为止，对应关系一直是从程序读向逻辑：先写出操作符，
-再认出它的类型是哪条定律。现在反过来用。
-
-逻辑里，一条定律对任何命题都成立；把一个具体的命题代进去，
-就得到它的一个实例。在程序里，就是给类型参数 @math{p}
-填上一个具体的类型。直觉主义定律的实例，本来就能用 @racket[λ] 写出。
-经典定律不同：@racket[call/cc] 要对每一个 @math{p} 都管用，
-只好去捕获当前@tech{延续}。可要是 @math{p} 只是某一个具体的类型，
-手里也许就有别的办法。把几个具体的类型代进 DNE @math{¬¬p → p}，
-看看哪些要捕获，哪些不用。
-
-@subsection[#:tag "01:program-type"]{程序的类型}
-
-先代入最朴素的一个：退出码的类型 @racket[Byte]，得到
-@math{¬¬@ty{Byte} → @ty{Byte}}。光看类型，这个实例很容易
-写：@racket[(λ (kk) 0)] 就是，什么也不捕获。
-逻辑上也不奇怪：@racket[Byte] 有值，是真命题，从任何前提推出它都成立，
-丢掉前提、直接拿出一个 @racket[Byte] 就是证明。
-
-可逻辑只问命题真不真，不问拿出的是哪一个 @racket[Byte]；@racket[0]
-和程序算出来的退出码，在它眼里没有分别。我们却在
-乎。@racket[(λ (kk) 0)] 根本不理会交给它的那个 @math{¬¬@ty{Byte}}；
-我们要的实例，得真把那个 @math{¬¬@ty{Byte}} 跑起来，交出它给出的那个
-@racket[Byte]。这是运行的行为，类型里看不出来。
-
-什么样的东西是一个 @math{¬¬@ty{Byte}}？最常见的，就是一个程序：
-它算出一个退出码，交给 @racket[exit]，然后结束。要看清 @racket[exit]
-从哪里来，假设我们的语言有 @racket[call/cc] 但没有内置的
-@racket[exit]，把整个程序包在 @racket[call/cc] 里：
-
-@racketblock[
-(call/cc (λ (exit) (exit ...程序体...)))]
-
-@racket[call/cc] 交给 @racket[λ] 的，是它被调用处的当前@tech{延续}。
-这个 @racket[call/cc] 包着整个程序，它返回以后什么也不剩，
-所以这条@tech{延续}通向的就是计算终结的地方：交给它一个退出码，
-整个计算到此结束。这就是 @racket[exit]，计算终结时的当前@tech{延续}。
-程序体里任何地方调用 @racket[(exit 0)]，都直接跳到终点；
-程序体正常算完，结果也经外层的 @racket[exit] 交过去。
-
-@racket[exit] 等一个退出码，类型是
-@math{¬@ty{Byte}}。@racket[(λ (exit) (exit ...))] 等一个
-@racket[exit]，无论走哪条路，结果都经 @racket[exit] 交出，
-自己从不正常返回，类型是 @math{¬¬@ty{Byte}}。外层那个
-@racket[(exit …)] 不能省。少了它，程序体正常结束时，
-这个函数会把结果正常返回，它的类型就成了
-@math{¬@ty{Byte} → @ty{Byte}}，而不是 @math{¬@ty{Byte} → ⊥}，
-也就不再是 @math{¬¬@ty{Byte}}。
-
-真实的操作系统也是这样运行程序的。启动一个程序时，OS
-提供一个退出通道，进程通过它交回状态码，然后 OS 接管。
-交回的方式有两种：显式地调用 @racket[exit]，或者从 @racket[main]
-返回。C 语言规定后者等于拿返回值调用 @racket[exit]，正是上面外层那个
-@racket[(exit …)]。
-
-所以程序是一个 @math{¬¬@ty{Byte}}：它等着计算终结处的那条@tech{延续}。
-运行它，就是把这条@tech{延续}交给它，取回退出码，从 @math{¬¬@ty{Byte}}
-得到 @racket[Byte]，正是@xref["01:watershed"]{「分水岭」}里的 DNE。
-
-这也是@xref["01:watershed"]{「分水岭」}末尾那个问题的一个回答。
-在语言里模拟 @racket[exit]，得靠 @racket[call/cc]
-捕获当前@tech{延续}；真实的程序却用不着。OS 启动程序时，
-计算终结处的当前@tech{延续}已经在那里了，就是 @racket[exit]，
-直接交给程序就行，不必再用 @racket[cc] 或 @racket[call/cc] 去捕获。
-程序把退出码交给 @racket[exit]，这次调用不会回到程序里的当前位置，OS
-接到的就是退出码本身。从 @math{¬¬@ty{Byte}} 到 @racket[Byte]
-的这一步，在语言的边界上完成：运行一个程序，就是一次
-@math{¬¬@ty{Byte} → @ty{Byte}}。
-
-@subsection[#:tag "01:neg-q"]{代入 @math{¬q}}
-
-再换一个类型。不代入一个光秃秃的类型，而是代入一个本身就是否定的类型
-@math{¬q}：
-
-@mm{¬¬¬q → ¬q}
-
-手里是一个 @math{¬¬¬q}，叫它 @racket[kkkq]，要交出一个
-@math{¬q}。@math{¬q} 是一个函数，等一个 @racket[q]，
-那就先把这个函数交出去：
-
-@examples[#:eval ev #:label #f #:no-prompt
-(define-type (¬¬  q) (¬ (¬  q)))
-(define-type (¬¬¬ q) (¬ (¬¬ q)))
-
-(: triple-negation (∀ (q) (→ (¬¬¬ q) (¬ q))))
-(define ((triple-negation kkkq) q)
-  (define (kkq kq) (kq q))
-  (kkkq kkq))]
-
-等 @racket[q] 交来，手里就有了 @racket[q] 和
-@racket[kkkq]。@racket[kkkq] 等的是一个 @math{¬¬q}，@racket[q]
-还差两个否定；照 DNI 的写法包一层，@racket[kkq] 等一个 @racket[kq]，
-正是 @math{¬¬q}，交给 @racket[kkkq]。只有 @racket[λ] 和函数调用，
-什么也没有捕获。
-
-试一试。拿 @racket[displayln] 当作一个 @math{¬q}，照 DNI
-的写法把它包成一个 @math{¬¬¬q}，再交给 @racket[triple-negation]
-取回来：
-
-@examples[#:eval ev #:label #f
-(define (kkkq kkq) (kkq displayln))
-((triple-negation kkkq) 'hello)]
-
-为什么这一次不用捕获？要交出的结果本身也是一个函数，
-就可以先把它交出去；等它收到 @racket[q]，再用 @racket[q]
-构造出所需的双重否定。@racket[call/cc] 却要对任何类型都成立，
-不知道结果是不是一个函数，只能当场把计算跑起来，取出一个结果。
-这条定律叫@defterm[#:en "law of triple negation"]{三重否定律}，
-是一条直觉主义定理。
-
-@subsubsection[#:tag "01:layers"]{数一数层数}
-
-@racket[triple-negation] 里的几个名
-字，@racket[q]、@racket[kq]、@racket[kkq]、@racket[kkkq]，
-差的只是外面叠了几个否定。数一数，刚才的做法能说得更清
-楚，@xref["01:watershed"]{「分水岭」}留下的问题也有了回答。
-
-固定一个类型 @math{A}，把 @math{A} 本身算作第 0 层，@math{¬A} 算作第 1
-层，@math{¬¬A} 算作第 2 层，依此类推：多一层的类型，
-正是「接收少一层的值、结果为 @math{⊥}」的函数类型。@math{A}
-可以是任何类型，甚至可以是 @racket[Label]；只是谈论同一座否定塔的时
-候，@math{A} 要固定下来，只数它外面包了几层，不去拆它的内部。
-名字也替我们数：一个值叫 @racket[v]，等它的@tech{延续}就叫
-@racket[kv]，等 @racket[kv] 的就叫 @racket[kkv]，名字里有几个
-@racket[k]，就比 @racket[v] 多几层。
-
-@xref["01:watershed"]{「分水岭」}的四种情形，用层数说就是：
-
-@itemlist[
-  @item{@tech{矛盾律}：第 @math{n+1} 层与第 @math{n} 层相遇，得到
-  @math{⊥}。}
-  @item{DNI：加两层，从第 @math{n} 层升到第 @math{n+2} 层。}
-  @item{DNE：减两层，从第 @math{n+2} 层落到第 @math{n} 层。}
-  @item{@tech{排中律}：交出相邻两层之一，第 @math{n} 层或第 @math{n+1}
-  层。}]
-以 @math{q} 为底，@racket[triple-negation] 从第 3 层减到第 1 层：第 0
-层的 @racket[q] 用 DNI 升到第 2 层，正好与第 3 层的 @racket[kkkq]
-相邻。
-
-层数还带出一个规律。DNI、DNE 一次加减两层，不改变奇偶，@tech{矛盾律}却
-要一奇一偶。奇偶不同的两个值，把低的那个反复做 DNI，
-总能升到与另一个相邻，再调用，@racket[triple-negation] 就是这样做的。
-从 @math{p ∨ ¬p} 出发，两支各做几次 DNI，也就得到任意的「偶数层 ∨
-奇数层」，用不着 DNE。奇偶相同的两个，只靠 DNI、DNE 凑不成相邻。
-
-回到@xref["01:watershed"]{「分水岭」}留下的问题：从 @math{¬¬p} 取出
-@math{p}，非得凭空拿到一个@tech{延续}不可吗？
-不一定。@xref["01:program-type"]{「程序的类型」}里，那条@tech{延续}由
-OS 交来；@racket[triple-negation] 更省事，连交来的@tech{延续}也不需
-要，它交出的 @math{¬q}，用交进来的 @racket[kkkq] 就做成了。
-
-用层数说，区别在要交出的东西落在哪一层。落在第 1 层或更高，
-要交出的是一个函数，可以先交出去，等下一层的值来了再算。落到第 0 层，
-就得当场交出一个值，这时就没有对任何类型都适用的纯 λ 写法了；
-要把计算真的跑起来，得像运行程序那样，由外面交来一条@tech{延续}。
-
-层数也照出了两种逻辑的分别。把能互相推出的层归为一类：
-
-@itemlist[
-  @item{经典逻辑里，DNI 加两层，DNE 减两层，相差两层的都能互推，
-  一座塔只剩两类：偶数层，奇数层。}
-  @item{直觉主义逻辑里，DNE 一般不成立，但三重否定律能从第 3 层回到第
-  1 层，从第 4 层回到第 2 层……只有第 0 层回不去。塔分成三类：第 0 层，
-  奇数层，第 2 层起的偶数层。}]
-在这座否定塔上，两种逻辑的区别，就在第 0 层是否与其余的偶数层合并。
-代入具体的类型以后，类别还可能再合并：底类型本身是 @math{¬q} 时，第 0
-层就是 @math{¬q}，第 2 层是 @math{¬¬¬q}，三重否定律已经把它们合在了一
-起。

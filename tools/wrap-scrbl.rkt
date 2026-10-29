@@ -1,5 +1,5 @@
 #lang racket
-;; 把 .scrbl 的正文折到每行不超过 70 栏（STYLE.md；Noah 10/26），中文字与全角标点算两栏。
+;; 把 .scrbl 的正文折到每行不超过 80 栏（STYLE.md；Noah 10/26 定 70，10/29 改 80），中文字与全角标点算两栏。
 ;;
 ;; 用法：LC_ALL=C.UTF-8 racket tools/wrap-scrbl.rkt [--check] 文件 …
 ;;   不带 --check：就地改写；带 --check：只列出能折却没折的行，有这种行时返回非零状态。
@@ -7,7 +7,7 @@
 ;; 在两处折行：半角空格处（空格换成换行），或两个中文字（含全角标点）之间。
 ;; Scribble 把行尾的换行排成一个空格；#lang acf/scribble 读入时去掉两侧都是中文字的换行
 ;; （lib/cjk-join.rkt），所以这两种折行都不改变排出来的文字。
-;; 能在空格处或中文标点之后折，就不在一个词的中间折：离 70 栏不远时优先选这两种位置。
+;; 能在空格处或中文标点之后折，就不在一个词的中间折：离 80 栏不远时优先选这两种位置。
 ;; 改写时先把一段正文连成一行（两个中文字之间直接相连，其余用一个空格连接），再重新折。
 ;; 下面这些地方不动：
 ;;   @examples[…]、@racketblock[…]、@out-block|{…}|、@tabular[…]、标题行等整块；
@@ -15,7 +15,7 @@
 ;; 代码块里的长行要手工按 Racket 的缩进改。
 (provide char-cols line-cols)
 
-(define limit 70)
+(define limit 80)
 
 (define (wide? c)
   (let ([n (char->integer c)])

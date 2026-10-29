@@ -2,24 +2,112 @@
 ;; 每次推导保留正文里的名字；循环定义放进不同子模块，各自选择底层原语。
 
 (module label-to-cc racket
-  (require (only-in racket/base [call/cc primitive-call/cc]))
+  (require racket/undefined (only-in racket/base [call/cc primitive-call/cc]))
   (provide label goto cc call/cc mul)
   (define (goto l) (l l))
   (define (label) (primitive-call/cc goto))
 
+  (define (cc)
+    (define first? #t)
+    (define u undefined)
+    (define l (label))
+    (cond
+      [first? (set! first? #f)
+       (cons (λ (v) (set! u v) (goto l)) 1)]
+      [else (cons u 0)]))
+
+  (define (call/cc proc)
+    (match (cc)
+      [(cons v 0) v]
+      [(cons k 1) (proc k)]))
+
+  (define (mul . r*)
+    (match (cc)
+      [(cons r 0) r]
+      [(cons return 1)
+       (for/fold ([res (*)] #:result (return res))
+                 ([r (in-list r*)])
+         (if (zero? r)
+             (return r)
+             (* res r)))])))
+
+(module label-to-cc/return racket
+  (require (only-in (submod ".." label-to-cc) call/cc))
+  (provide mul)
+  (define-syntax-rule (let/cc k body ...) (call/cc (λ (k) body ...)))
+  (define (mul . r*)
+    (let/cc return
+      (for/fold ([res (*)])
+                ([r (in-list r*)])
+        (if (zero? r)
+            (return r)
+            (* res r))))))
+
+(module call/cc-to-label racket
+  (provide label goto)
+  (define (goto l) (l l))
+  (define (label) (call/cc goto)))
+
+(module label-to-call/cc racket
+  (require racket/undefined (only-in racket/base [call/cc primitive-call/cc]))
+  (provide label goto cc call/cc)
+  (define (goto l) (l l))
+  (define (label) (primitive-call/cc goto))
+  (define (call/cc proc)
+    (define first? #t)
+    (define u undefined)
+    (define l (label))
+    (cond
+      [first? (set! first? #f)
+       (proc (λ (v) (set! u v) (goto l)))]
+      [else u]))
+  (define-syntax-rule (let/cc k body ...) (call/cc (λ (k) body ...)))
+  (define (cc)
+    (let/cc k
+      (cons (λ (v) (k (cons v 0))) 1))))
+
+(module cc-to-label racket
+  (require (only-in (submod ".." label-to-call/cc) cc))
+  (provide label goto)
+  (define (label) (car (cc)))
+  (define (goto l) (l l)))
+
+(module tagged typed/racket/no-check
+  (require racket/undefined)
+  (define-type ⊥ (∪))
+  (define-type (∐ p0 p1 ...) (∪ (Pair p0 0) (Pair p1 1) ...))
+  (: cc (∀ (p) (→ (∐ p (→ p ⊥)))))
+  (define-type Label (→ Label ⊥))
+  (define (goto l) (l l))
+  (define (label) (call-with-current-continuation goto))
+  (define (cc)
+    (define first? #t)
+    (define u undefined)
+    (define l (label))
+    (cond
+      [first? (set! first? #f)
+       (cons (λ (v) (set! u v) (goto l)) 1)]
+      [else (cons u 0)]))
+  (: call/cc (∀ (p) (→ (→ (→ p ⊥) p) p)))
+  (define (call/cc proc)
+    (match (cc)
+      [(cons v 0) v]
+      [(cons k 1) (proc k)]))
+  (provide (all-defined-out)))
+
+(module union-label-to-cc typed/racket/no-check
+  (require (only-in racket/base [call/cc primitive-call/cc]))
+  (provide label goto cc call/cc mul)
+  (define-type ⊥ (∪))
+  (define (goto l) (l l))
+  (define (label) (primitive-call/cc goto))
+  (: cc (∀ (p) (→ (∪ p (→ p ⊥)))))
   (define (cc)
     (define saved #f)
     (define l (label))
     (if saved
         (apply values saved)
         (λ args (set! saved args) (goto l))))
-
-  (define (call/cc proc)
-    (define x (cc))
-    (if (list? x)
-        (apply values x)
-        (proc (λ args (x args)))))
-
   (define (mul . r*)
     (define result (cc))
     (if (real? result)
@@ -28,26 +116,21 @@
                   ([r (in-list r*)])
           (if (zero? r)
               (result r)
-              (* res r))))))
+              (* res r)))))
+  (: call/cc (∀ (p) (→ (→ (→ p ⊥) p) p)))
+  (define (call/cc proc)
+    (define x (cc))
+    (if (list? x)
+        (apply values x)
+        (proc (λ args (x args))))))
 
-(module label-to-cc/return racket
-  (require (only-in (submod ".." label-to-cc) call/cc))
-  (provide mul)
-  (define (mul . r*)
-    (call/cc
-     (λ (return)
-       (for/fold ([res (*)])
-                 ([r (in-list r*)])
-         (if (zero? r)
-             (return r)
-             (* res r)))))))
-
-(module call/cc-to-label racket
+(module union-call/cc-to-label racket
+  (require (only-in (submod ".." union-label-to-cc) call/cc))
   (provide label goto)
   (define (goto l) (l l))
   (define (label) (call/cc goto)))
 
-(module label-to-call/cc racket
+(module union-label-to-call/cc racket
   (require (only-in racket/base [call/cc primitive-call/cc]))
   (provide label goto cc call/cc)
   (define (goto l) (l l))
@@ -60,12 +143,30 @@
         (proc (λ args (set! saved args) (goto l)))))
   (define (cc) (call/cc values)))
 
-(module cc-to-label racket
-  (require (only-in racket/base [call/cc primitive-call/cc]))
+(module union-cc-to-label racket
+  (require (only-in (submod ".." union-label-to-call/cc) cc))
   (provide label goto)
-  (define (cc) (primitive-call/cc values))
   (define (label) (cc))
   (define (goto l) (l l)))
+
+(module tagged-neg typed/racket/no-check
+  (require (only-in (submod ".." tagged) [cc tagged:cc]))
+  (define-type ⊥ (∪))
+  (define-type (∐ p0 p1 ...) (∪ (Pair p0 0) (Pair p1 1) ...))
+  (define-type (¬ p) (→ p ⊥))
+  (: cc (∀ (p) (→ (∐ p (¬ p)))))
+  (define cc tagged:cc)
+  (provide cc))
+
+(module disjoint-struct racket
+  (provide (all-defined-out))
+  (struct b (v))
+  (struct c (v))
+  (define (which x)
+    (cond
+      [(b? x) (list 'b (b-v x))]
+      [(c? x) (list 'c (c-v x))]
+      [else   (list 'a x)])))
 
 (module+ test
   (require rackunit "../../tools/check-output-prefix.rkt"
@@ -73,7 +174,12 @@
            (prefix-in b: (submod ".." call/cc-to-label))
            (prefix-in c: (submod ".." label-to-call/cc))
            (prefix-in d: (submod ".." cc-to-label))
-           (prefix-in e: (submod ".." label-to-cc/return)))
+           (prefix-in e: (submod ".." label-to-cc/return))
+           (prefix-in ua: (submod ".." union-label-to-cc))
+           (prefix-in ub: (submod ".." union-call/cc-to-label))
+           (prefix-in uc: (submod ".." union-label-to-call/cc))
+           (prefix-in ud: (submod ".." union-cc-to-label))
+           (prefix-in ds: (submod ".." disjoint-struct)))
 
   (define (count-to-seven label goto)
     (let ([x 0])
@@ -84,19 +190,35 @@
   (for ([pair (list (cons a:label a:goto)
                    (cons b:label b:goto)
                    (cons c:label c:goto)
-                   (cons d:label d:goto))])
+                   (cons d:label d:goto)
+                   (cons ua:label ua:goto)
+                   (cons ub:label ub:goto)
+                   (cons uc:label uc:goto)
+                   (cons ud:label ud:goto))])
     (check-equal? (count-to-seven (car pair) (cdr pair)) 7))
 
   (check-equal? (a:mul) 1)
   (check-equal? (a:mul 2 3 4) 24)
   (check-equal? (a:mul 2 3 0 4) 0)
+  (check-equal? (map ds:which (list 1 (ds:b 1) (ds:c 1) '(c 1)))
+                '((a 1) (b 1) (c 1) (a (c 1))))
+  (check-equal? (ua:mul) 1)
+  (check-equal? (ua:mul 2 3 4) 24)
+  (check-equal? (ua:mul 2 0 3) 0)
+  (for ([call/cc (list ua:call/cc uc:call/cc)])
+    (check-equal? (call/cc (λ (k) (+ 100 (k 9)))) 9)
+    (check-equal? (call/cc (λ (k) 7)) 7)
+    (check-equal? (call-with-values (λ () (call/cc (λ (k) (k 1 2)))) list) '(1 2))
+    (check-equal? (procedure? (call/cc (λ (k) (k add1)))) #t))
+  (for ([cc (list ua:cc uc:cc)])
+    (check-equal? (let ([r (cc)]) (if (procedure? r) (r 42) r)) 42))
   (check-equal? (e:mul) 1)
   (check-equal? (e:mul 2 3 4) 24)
   (check-equal? (e:mul 2 0 3) 0)
   (check-equal? (a:call/cc (λ (k) (+ 100 (k 9)))) 9)
   (check-equal? (c:call/cc (λ (k) (+ 100 (k 9)))) 9)
-  (check-equal? (let ([v (a:cc)]) (if (procedure? v) (v 42) v)) 42)
-  (check-equal? (let ([v (c:cc)]) (if (procedure? v) (v 42) v)) 42)
+  (check-equal? (match (a:cc) [(cons v 0) v] [(cons k 1) (k 42)]) 42)
+  (check-equal? (match (c:cc) [(cons v 0) v] [(cons k 1) (k 42)]) 42)
   (check-true
    (output-starts-with?
     (λ ()
@@ -194,7 +316,7 @@
   (define-type (¬¬ p) (¬ (¬ p)))
   (: apply-cont (∀ (p) (→ (¬ p) p ⊥)))
 
-  (define (apply-cont kv . v*) (apply kv v*))
+  (define (apply-cont kv v) (kv v))
   (provide (all-defined-out))
 )
 
@@ -202,31 +324,39 @@
   (define-type ⊥ (∪))
   (define-type (¬ p) (→ p ⊥))
   (: apply-cont (∀ (p) (→ (¬ p) p ⊥)))
-  (define (apply-cont kv . v*) (apply kv v*))
+  (define (apply-cont kv v) (kv v))
   (define-type (¬¬  q) (¬ (¬  q)))
   (define-type (¬¬¬ q) (¬ (¬¬ q)))
 
   (: triple-negation (∀ (q) (→ (¬¬¬ q) (¬ q))))
-  (define ((triple-negation kkkq) q)
-    (define (kkq kq) (kq q))
-    (kkkq kkq))
-  (define (kkkq kkq) (kkq displayln))
+  (define (triple-negation kkkq)
+    (define (kq q)
+      (define (kkq k) (k q))
+      (kkkq kkq))
+    kq)
+  (define q 'hello)
   (provide (all-defined-out))
 )
 
-(module stage-18 racket
+(module stage-18 typed/racket/no-check
+  (define-type ⊥ (∪))
+  (define-type (¬ p) (Pair (→ p ⊥) Natural))
+  (define-type Label (¬ Label))
 
   (define n -1)
-  (define (cc)
+
+  (: label (→ Label))
+  (define (label)
     (set! n (+ n 1))
     (let/cc kn
       (define ln (cons kn n))
       (apply-cont ln ln)))
 
+  (: apply-cont (→ (¬ Label) Label ⊥))
   (define (apply-cont ln lm)
     (match-define (cons kn n) ln)
     (match-define (cons km m) lm)
-    (display (format "  (k~a k~a)" n m))
+    (display (format "    (k~a k~a): " n m))
     (kn lm))
   (provide (all-defined-out))
 )
@@ -285,13 +415,13 @@
   (check-equal? (count-to-seven primitive:label primitive:goto) 7)
   (check-equal? (elimination:call/cc (λ (k) (+ 10 (k 4)))) 4)
   (check-true (output-starts-with?
-               (λ () (let ([kn (trace:cc)])
+               (λ () (let ([yin (trace:label)])
                        (displayln #\@)
-                       (let ([kn+1 (trace:cc)])
+                       (let ([yang (trace:label)])
                          (display #\*)
-                         (trace:apply-cont kn kn+1))))
-               "  (k0 k0)@\n  (k1 k1)*  (k0 k1)@\n  (k2 k2)*  (k1 k2)*  (k0 k2)@\n"))
+                         (trace:apply-cont yin yang))))
+               "    (k0 k0): @\n    (k1 k1): *    (k0 k1): @\n    (k2 k2): *    (k1 k2): *    (k0 k2): @\n"))
   (check-true (output-starts-with? (λ () (yin:k0 yin:k0)) "@\n*@\n**@\n***@"))
   ;; 三重否定律：把 DNI 升两层的延续降回来，行为和原来的一样，什么也不捕获
-  (check-equal? (with-output-to-string (λ () ((tn:triple-negation tn:kkkq) 'hello))) "hello\n")
+  (check-equal? (let/cc k (define (kkkq kkq) (kkq k)) (let ([kq (tn:triple-negation kkkq)]) (kq 'hello))) 'hello)
   (check-equal? ((tn:triple-negation (λ (kkq) (kkq (λ (q) (list 'got q))))) 7) '(got 7)))

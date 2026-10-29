@@ -48,11 +48,12 @@
                     racket/function
                     racket/match
                     racket/control
-                    (only-in typed/racket/base : ∀ ∪ U → case→ define-type Values Byte Real)
+                    racket/undefined
+                    (only-in typed/racket/base : ∀ ∪ U → case→ define-type Values Byte Real Natural Pair)
                     control/context))
 ;; 同样的绑定也交给引用本模块的文档，正文里的 @racket[call/cc] 等因此能直接链接。
-(provide (for-label (all-from-out racket/base racket/function racket/match racket/control control/context)
-                    : ∀ ∪ U → case→ define-type Values Byte Real))
+(provide (for-label (all-from-out racket/base racket/function racket/match racket/control racket/undefined control/context)
+                    : ∀ ∪ U → case→ define-type Values Byte Real Natural Pair))
 
 (define label-context (quote-syntax here))
 

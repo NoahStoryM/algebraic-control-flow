@@ -11,12 +11,13 @@ zh/main.scrbl                 部：目录、各篇、术语表、符号表
 zh/01-call-cc/main.scrbl      篇：标题，用 @include-section 串起各小篇
 zh/01-call-cc/1-labels.scrbl  小篇
 zh/01-call-cc/2-logic.scrbl
-zh/01-call-cc/3-fixed-point.scrbl
-zh/01-call-cc/4-conclusion.scrbl 结论与未解的线索；附录也各自单独成文件
+zh/01-call-cc/3-substitution.scrbl
+zh/01-call-cc/4-fixed-point.scrbl
+zh/01-call-cc/5-conclusion.scrbl 结论与未解的线索；附录也各自单独成文件
 ```
 
 - 每个文件以 `#lang acf/scribble` 开头（`scribble/lang/reader.rkt`、`lib/doc-lang.rkt`）：它就是 `scribble/manual` 加上 `scribble/example` 和 `acf.rkt` 的写法，不必再 `require`；`acf.rkt` 的 `defterm` 盖过 scribble/manual 自带的那个。要先 `raco pkg install --name acf`，`#lang acf/scribble` 才找得到。名字不用 `#lang acf`，把它留给以后（Noah 10/26）。
-- 每行不超过 70 栏，中文字与全角标点算两栏。Scribble 会把行尾的换行排成一个空格，`#lang acf/scribble` 读入时去掉两侧都是中文字（含全角标点）的换行（`lib/cjk-join.rkt`），所以中文段落可以在任意两个字之间折行，排出来不多空格；中文与代码、英文之间的换行照常排成一个空格。Chrome 不会自己去掉这种换行（Firefox 会），所以这一步不能省。
+- 每行不超过 80 栏（Noah 10/29，原为 70），中文字与全角标点算两栏。Scribble 会把行尾的换行排成一个空格，`#lang acf/scribble` 读入时去掉两侧都是中文字（含全角标点）的换行（`lib/cjk-join.rkt`），所以中文段落可以在任意两个字之间折行，排出来不多空格；中文与代码、英文之间的换行照常排成一个空格。Chrome 不会自己去掉这种换行（Firefox 会），所以这一步不能省。
 - `racket tools/wrap-scrbl.rkt 文件…` 先把每段连成一行再重新折：能在空格处或中文标点之后折就优先这样折，标点不放在行首，`--check` 只检查。代码块里的长行要手工按 Racket 的缩进改。
 - 部的 `@title` 带 `#:style acf-style`；篇的 `@title` 带 `#:style chapter-style`，HTML 里每个小篇单独成页。
 - 小篇文件里，`@title` 是小篇名，`@section` 对应 .md 里的「#」，`@subsection` 对应「##」，`@subsubsection` 对应「###」。
@@ -71,7 +72,7 @@ scribble --markdown ++xref-in setup/xref load-collections-xref --dest out zh/mai
 | `@out-block\|{…}\|` | 不带语言的输出（如矩阵），原样排 |
 
 - 注释写 `(code:comment "…")`，空行写 `(code:blank)`；方括号里的 `;` 注释会被读取器丢掉。
-- 不会停的程序要显示输出时，用 `(eval:alts 显示的程序 实际运行的程序)`：显示原程序，运行一个只截取前几行、再打出 `...` 的版本（见第一篇第三小篇的 `show-lines`）。
+- 不会停的程序要显示输出时，用 `(eval:alts 显示的程序 实际运行的程序)`：显示原程序，运行一个只截取前几行、再打出 `...` 的版本（见第一篇第四小篇的 `show-lines`）。
 - 需要从头换一套定义时（例如以另一个原语为起点），另建一个求值器，不在同一个里覆盖。
 - 例子求值出错（没有用 `eval:error` 标明的）时，文档构建失败。
 
