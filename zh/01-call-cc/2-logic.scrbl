@@ -207,26 +207,26 @@
 @racket[thunk] 就拿到 @racket[e] 的值，有了 @racket[e] 也总能包成
 @racket[thunk]。所以 @racket[cc] 和 @racket[(cc)] 说的是同一条定律。
 
-@margin-note{这里的「零」说的是一次交出几个结果，不是类型有几个元素；
+@margin-note{这里的「零」说的是一次交出几个值，不是类型有几个元素；
 一种交法也没有的，才是 @math{⊥}。}
 
-那 @math{⊤} 对应什么？调用 @racket[thunk] 时，什么也不交给它。Racket
-里「什么也不交」也有写法：@racket[(values)] 交出零个结果。
-把一次交出的结果整体来看，它的类型是 @racket[(Values)]。
-这样的交法只有一种，@racket[(Values)] 恰好有一个元素，正合 @math{⊤}。
-逻辑里，真是@defterm{合取}
-@defsym["p ∧ q" "合取；多个结果 p × q"]@math{∧} 的单位元：
+那 @math{⊤} 对应什么？@racket[thunk] 只有零个形参，调用它时，
+交给它零个实参。把一次交出的几个值整体来看，零个值只有一种交法，就是
+@racket[(values)]，它是 @racket[(Values)] 类型唯一的元素。
+@racket[thunk] 若真对应 @math{⊤ → p}，@math{⊤} 就该对应
+@racket[(Values)]。而 @math{⊤} 正是@defterm{合取}
+@defsym["p ∧ q" "合取；多个值 p × q"]@math{∧} 的单位元：
 
 @mm{p = p ∧ ⊤ = ⊤ ∧ p}
 
-@racket[(Values)] 也是 @racket[Values] 的单位元：零个结果并上去，
-什么也没多出来，@racket[(Values p)] 就是 @math{p}。于是猜想，合取对应
-@racket[Values]，把几个结果并成一组，也就是积 @math{p × q}。检验一下。
-证明「@math{p} 且 @math{q}」，两个证明都要给出；@racket[(values a b)]
-正是把 @racket[a] 和 @racket[b] 一起交出。使用「@math{p} 且
-@math{q}」，两样都能拿来用；收下 @racket[(values a b)]
-的地方，@racket[a] 和 @racket[b] 都在手里。@racket[Values]
-对上了合取。函数的两个参数，也可以这样合起来，看成一个 @math{p × q}。
+@racket[(Values)] 也正是 @racket[Values] 的单位元：零个值并上去，
+什么也没多出来。所以合取应该对应 @racket[Values]，把几个值并成一组，
+也就是积 @math{p × q}。检验一下。证明「@math{p} 且 @math{q}」，
+两个证明都要给出；@racket[(values a b)] 正是把 @racket[a] 和
+@racket[b] 一起交出。使用「@math{p} 且 @math{q}」，两样都能拿来用；
+收下 @racket[(values a b)] 的地方，@racket[a] 和 @racket[b]
+都在手里。@racket[Values] 对上了合取。函数的两个参数，
+也可以这样合起来，看成一个 @math{p × q}。
 
 @section[#:tag "01:watershed"]{分水岭}
 
