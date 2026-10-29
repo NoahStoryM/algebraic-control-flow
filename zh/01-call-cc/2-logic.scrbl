@@ -179,12 +179,12 @@
 
 再细看这个对应。@racket[(cc)] 交出的 @math{p ∪ ¬p}，
 用的人必须分得清拿到的是哪一支。那版 @racket[mul] 用谓词
-@racket[real?] 一问就知道，实数和函数本来就不相交。@racket[call/cc]
-不知道结果会是什么，结果也可能是函数，就把传回的结果包进列表，用
-@racket[list?] 区分，这就是打标签。@racket[cc] 自己要决定交出哪一支，
-看的是 @racket[saved] 是不是 @racket[#f]，最早那版 @racket[mul]
-看的是标志 @racket[first?]：这两处靠另记一个状态来分辨，
-不是在交给调用者的结果上添标记。
+@racket[real?] 一问就知道，实数和函数本来就不相交。用 @racket[cc] 写
+@racket[call/cc] 时，不知道 @racket[(cc)] 传回的结果会是什么，
+它也可能是函数，就把传回的结果包进列表，用 @racket[list?] 区分，
+这就是打标签。@racket[cc] 自己要决定交出哪一支，看的是 @racket[saved]
+是不是 @racket[#f]，最早那版 @racket[mul] 看的是标志 @racket[first?]：
+这两处靠另记一个状态来分辨，不是在交给调用者的结果上添标记。
 
 读作「@math{p} 或 @math{q}」，也得这样分得清：用类型表示「@math{p} 或
 @math{q}」时，我们用两支分得开的联合，拿到一个值，能判断它属于哪一支，
