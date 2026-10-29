@@ -216,6 +216,10 @@
 把这个分支挪进了操作符内部，它的类型里也就没有 @math{∪}，只用 @math{→}
 和 @math{⊥} 就写得下。
 
+前面那件说不通的事，也有了着落：@racket[cc] 并没有写出一个 @math{¬p}，
+它写出的是 @math{p ∨ ¬p}。@tech{延续}只是其中一支，
+而且以后可能经由它跳回来，换成另一支。
+
 @section[#:tag "01:watershed"]{分水岭}
 
 @racket[cc] 对上的@tech{排中律}，@racket[call/cc] 对上的 DNE，
