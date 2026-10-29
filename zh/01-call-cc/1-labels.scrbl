@@ -6,6 +6,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 
 @(define ev (make-acf-eval))
 @examples[#:eval ev #:hidden
+(require racket/undefined)
 (define-type ⊥ (∪))
 (define primitive-call/cc call/cc)
 (define (goto l) (l l))
@@ -115,7 +116,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 (: cc (∀ (p) (→ (∐ p (→ p ⊥)))))
 (define (cc)
   (define first? #t)
-  (define u #f)
+  (define u undefined)
   (define l (label))
   (cond
     [first? (set! first? #f)
@@ -256,13 +257,14 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 
 @(define ev2 (make-acf-eval))
 @examples[#:eval ev2 #:hidden
+(require racket/undefined)
 (define primitive-call/cc call/cc)
 (define (goto l) (l l))
 (define (label) (primitive-call/cc goto))]
 @examples[#:eval ev2 #:label #f #:no-prompt
 (define (call/cc proc)
   (define first? #t)
-  (define u #f)
+  (define u undefined)
   (define l (label))
   (cond
     [first? (set! first? #f)

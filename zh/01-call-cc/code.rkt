@@ -2,14 +2,14 @@
 ;; 每次推导保留正文里的名字；循环定义放进不同子模块，各自选择底层原语。
 
 (module label-to-cc racket
-  (require (only-in racket/base [call/cc primitive-call/cc]))
+  (require racket/undefined (only-in racket/base [call/cc primitive-call/cc]))
   (provide label goto cc call/cc mul)
   (define (goto l) (l l))
   (define (label) (primitive-call/cc goto))
 
   (define (cc)
     (define first? #t)
-    (define u #f)
+    (define u undefined)
     (define l (label))
     (cond
       [first? (set! first? #f)
@@ -49,13 +49,13 @@
   (define (label) (call/cc goto)))
 
 (module label-to-call/cc racket
-  (require (only-in racket/base [call/cc primitive-call/cc]))
+  (require racket/undefined (only-in racket/base [call/cc primitive-call/cc]))
   (provide label goto cc call/cc)
   (define (goto l) (l l))
   (define (label) (primitive-call/cc goto))
   (define (call/cc proc)
     (define first? #t)
-    (define u #f)
+    (define u undefined)
     (define l (label))
     (cond
       [first? (set! first? #f)
@@ -73,6 +73,7 @@
   (define (goto l) (l l)))
 
 (module tagged typed/racket/no-check
+  (require racket/undefined)
   (define-type ⊥ (∪))
   (define-type (∐ p0 p1 ...) (∪ (Pair p0 0) (Pair p1 1) ...))
   (: cc (∀ (p) (→ (∐ p (→ p ⊥)))))
@@ -81,7 +82,7 @@
   (define (label) (call-with-current-continuation goto))
   (define (cc)
     (define first? #t)
-    (define u #f)
+    (define u undefined)
     (define l (label))
     (cond
       [first? (set! first? #f)
