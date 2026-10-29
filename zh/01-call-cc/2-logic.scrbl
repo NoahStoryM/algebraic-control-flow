@@ -158,13 +158,17 @@
 
 @section[#:tag "01:types-to-logic"]{析取与合取}
 
-倒回一步，答案就在 @racket[cc] 的类型里：
+倒回一步，看 @racket[cc] 的类型：
 
 @racketblock[
 (: cc (∀ (p) (→ (∪ p (→ p ⊥)))))]
 
-@racket[(cc)] 交出的不是 @math{¬p}，而是 @math{p ∪ ¬p}。这个 @math{∪}
-还不知道该怎么读。
+等实数的@tech{延续}对应假，可 @racket[(cc)] 是一个合法的表达式，
+写得出来，它的类型就该是真的。看看它交出的是什么：不是只有 @math{¬p}，
+而是 @math{p ∪ ¬p}。按通常的想法，@math{p} 和 @math{¬p} 一真一假，
+合在一起总有一支为真，@math{p ∪ ¬p} 一定为真。
+这似乎对上了逻辑里的@defterm[#:en "law of excluded middle"]{排中律}：
+@math{p} 成立，或者 @math{p} 不成立。
 
 @margin-note{@racket[∪] 有一个容易误读的地方。集合 @math{X = {a, b}}、
 @math{Y = {b, c}} 的并集里，@math{b} 说不清来自哪一边。
@@ -173,13 +177,14 @@
 标签的联合}。丢掉标签，总有一个从 @math{X + Y} 到 @math{X ∪ Y}
 的映射；@math{X ∩ Y = {}} 时它是一一对应，用不着标签。}
 
-@racket[(cc)] 交出的 @math{p ∪ ¬p}，用的人必须分得清拿到的是哪一支。
-那版 @racket[mul] 用谓词 @racket[real?] 一问就知道，
-实数和函数本来就不相交。@racket[call/cc] 不知道结果会是什么，
-结果也可能是函数，就把传回的结果包进列表，用 @racket[list?] 区分，
-这就是打标签。@racket[cc] 自己要决定交出哪一支，看的是 @racket[saved]
-是不是 @racket[#f]，最早那版 @racket[mul] 看的是标志 @racket[first?]：
-这两处靠另记一个状态来分辨，不是在交给调用者的结果上添标记。
+再细看这个对应。@racket[(cc)] 交出的 @math{p ∪ ¬p}，
+用的人必须分得清拿到的是哪一支。那版 @racket[mul] 用谓词
+@racket[real?] 一问就知道，实数和函数本来就不相交。@racket[call/cc]
+不知道结果会是什么，结果也可能是函数，就把传回的结果包进列表，用
+@racket[list?] 区分，这就是打标签。@racket[cc] 自己要决定交出哪一支，
+看的是 @racket[saved] 是不是 @racket[#f]，最早那版 @racket[mul]
+看的是标志 @racket[first?]：这两处靠另记一个状态来分辨，
+不是在交给调用者的结果上添标记。
 
 读作「@math{p} 或 @math{q}」，也得这样分得清：用类型表示「@math{p} 或
 @math{q}」时，我们用两支分得开的联合，拿到一个值，能判断它属于哪一支，
@@ -191,11 +196,9 @@
 这是@defterm{析取}，写作
 @defsym["p ∨ q" "析取；联合类型 p ∪ q"]@math{∨}。
 
-现在读得下去了：@racket[(cc)] 写出的是 @math{p ∨ ¬p}，@math{p} 成立，
-或者 @math{p} 不成立。这条也有名字，
-叫@defterm[#:en "law of excluded middle"]{排中律}。
+所以 @racket[(cc)] 写出的是 @math{p ∨ ¬p}，正是@tech{排中律}。
 前面那件说不通的事，也有了着落：@racket[(cc)] 并没有写出一个
-@math{¬p}，@tech{延续} 只是其中一支，而且以后可能经由它跳回来，
+@math{¬p}，@tech{延续}只是其中一支，而且以后可能经由它跳回来，
 换成另一支。@racket[call/cc] 把这个分支挪进了操作符内部，
 它的类型里也就没有 @math{∪}，只用 @math{→} 和 @math{⊥} 就写得下。
 
