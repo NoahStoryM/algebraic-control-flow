@@ -207,8 +207,7 @@
 @racket[thunk] 就拿到 @racket[e] 的值，有了 @racket[e] 也总能包成
 @racket[thunk]。所以 @racket[cc] 和 @racket[(cc)] 说的是同一条定律。
 
-@margin-note{这里的「零」说的是一次交出几个值，不是类型有几个元素；
-一种交法也没有的，才是 @math{⊥}。}
+@margin-note{这里的「零」说的是一次交出几个值，不是类型有几个元素。}
 
 那 @math{⊤} 对应什么？@racket[thunk] 只有零个形参，调用它时，
 交给它零个实参。把一次交出的几个值整体来看，零个值只有一种交法，就是
@@ -221,7 +220,7 @@
 
 @racket[(Values)] 也正是 @racket[Values] 的单位元：零个值并上去，
 什么也没多出来。所以合取应该对应 @racket[Values]，把几个值并成一组，
-也就是积 @math{p × q}。检验一下。证明「@math{p} 且 @math{q}」，
+也就是笛卡尔积 @math{p × q}。检验一下。证明「@math{p} 且 @math{q}」，
 两个证明都要给出；@racket[(values a b)] 正是把 @racket[a] 和
 @racket[b] 一起交出。使用「@math{p} 且 @math{q}」，两样都能拿来用；
 收下 @racket[(values a b)] 的地方，@racket[a] 和 @racket[b]
