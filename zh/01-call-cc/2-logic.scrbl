@@ -200,17 +200,17 @@
 它的类型里也就没有 @math{∐}，只用 @math{→} 和 @math{⊥} 就写得下。
 
 前面说的都是 @racket[(cc)] 为真。@racket[cc]
-本身是一个不收参数的函数，也写得出来，当然也为真。逻辑里，从真推出
-@math{p}，和 @math{p} 本身一样：@math{⊤ → p} 与 @math{p} 同真同假，
-@defsym["⊤" "真，恰好有一个元素的类型"]@math{⊤} 是真。程序里也是这样：
-表达式 @racket[e] 和 thunk @racket[(λ () e)] 来回能换，调用 thunk
-就拿到 @racket[e] 的值，有了 @racket[e] 也总能包成 thunk。所以
-@racket[cc] 和 @racket[(cc)] 说的是同一条定律。
+本身是一个不收参数的函数，也写得出来，当然也为真。逻辑里，从真
+@defsym["⊤" "真，恰好有一个元素的类型"]@math{⊤} 推出 @math{p}，和
+@math{p} 本身一样：@math{⊤ → p} 与 @math{p} 同真同假。程序里也是这样：
+表达式 @racket[e] 和 @racket[thunk] @racket[(λ () e)] 来回能换，调用
+@racket[thunk] 就拿到 @racket[e] 的值，有了 @racket[e] 也总能包成
+@racket[thunk]。所以 @racket[cc] 和 @racket[(cc)] 说的是同一条定律。
 
 @margin-note{这里的「零」说的是一次交出几个结果，不是类型有几个元素；
 一种交法也没有的，才是 @math{⊥}。}
 
-那 @math{⊤} 对应什么？调用 thunk 时，什么也不交给它。Racket
+那 @math{⊤} 对应什么？调用 @racket[thunk] 时，什么也不交给它。Racket
 里「什么也不交」也有写法：@racket[(values)] 交出零个结果。
 把一次交出的结果整体来看，它的类型是 @racket[(Values)]。
 这样的交法只有一种，@racket[(Values)] 恰好有一个元素，正合 @math{⊤}。
