@@ -407,11 +407,6 @@ DNE。和 @racket[call/cc] 的区别，在谁来提供这条@tech{延续}：
 等一个 @racket[kq]，正是 @math{¬¬q}，交给 @racket[kkkq]。只有
 @racket[λ] 和函数调用，什么也没有捕获。
 
-@margin-note{@racket[let/cc] 是 @racket[call/cc]
-的简写：@racket[(let/cc k body ...)] 就是
-@racket[(call/cc (λ (k) body ...))]，给当前@tech{延续}起个名字
-@racket[k]。}
-
 试一试。用 @racket[let/cc] 拿到一条真正的@tech{延续} @racket[k]，照
 DNI 的写法包成一个 @racket[kkkq]，交给 @racket[triple-negation]
 取回一个 @math{¬q}，再把 @racket[q] 交给它：

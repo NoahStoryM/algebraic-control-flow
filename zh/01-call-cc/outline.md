@@ -377,3 +377,9 @@ Noah：Curry-Howard 对应是逐个构造子对应的，演示最基本的情况
 - 「从 call/cc 定义标签」改从闭环讲起：已有 标签 → `cc` → `call/cc`，再由 `call/cc` 写回标签；这一步把 `call/cc` 当原语（Racket 自带的那个），正文说清，原先「当作原语」的旁注删去。`p = Label` 改为先看标签的形状（`(goto l)` 即 `(l l)`，得 Label = Label → ⊥），再与延续的类型 p → ⊥ 对上。反方向也说成绕圈：最后把 `cc` 当原语写回标签。
 - 附录开头相应改为「和正文一样，每一步都把上一步当作原语」。
 - 第三篇大纲的备注改为待定：`ans` 包装本身就算标签，改文章时再定。
+
+## let/cc 提前到 1.1（Noah 10/29）
+
+- 1.1 里 `(call/cc (λ (k) …))` 改用 `let/cc`：`call/cc` 版 `mul` 与反向定义里的 `cc`；语法糖旁注挪到 `mul` 处首次登场，1.2 原旁注删去。求值器与 `code.rkt` 里定义了自己的 `call/cc` 的地方，`let/cc` 用 `define-syntax-rule` 接到这个 `call/cc` 上（隐藏）。
+- 1.2 的 `(call/cc (λ (k) (k (proc k))))` 和 `(call/cc (λ (exit) (exit …)))` 不改：那两处讲的正是那个 `λ` 本身（只等延续的函数、¬¬Byte）。
+- 反向定义的 `call/cc` 与 `cc` 拆成两个代码块，隔开两个 `define`。`(code:blank)` 在 `@examples` 里会被求值，`eval:alts` 包起来又显示成 `()`，所以拆块。

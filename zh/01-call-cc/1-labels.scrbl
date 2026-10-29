@@ -10,7 +10,8 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 (define-type ⊥ (∪))
 (define primitive-call/cc call/cc)
 (define (goto l) (l l))
-(define (label) (primitive-call/cc goto))]
+(define (label) (primitive-call/cc goto))
+(define-syntax-rule (let/cc k body ...) (call/cc (λ (k) body ...)))]
 
 @section[#:tag "01:first-class"]{一等标签}
 
@@ -188,15 +189,19 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 
 有了 @racket[call/cc]，@racket[mul] 可以再写一次：
 
+@margin-note{@racket[let/cc] 是 @racket[call/cc] 的语法糖：
+@racket[(let/cc k body ...)] 就是
+@racket[(call/cc (λ (k) body ...))]，给当前@tech{延续}起个名字
+@racket[k]。}
+
 @examples[#:eval ev #:label #f #:no-prompt
 (define (mul . r*)
-  (call/cc
-   (λ (return)
-     (for/fold ([res (*)])
-               ([r (in-list r*)])
-       (if (zero? r)
-           (return r)
-           (* res r))))))]
+  (let/cc return
+    (for/fold ([res (*)])
+              ([r (in-list r*)])
+      (if (zero? r)
+          (return r)
+          (* res r)))))]
 
 @examples[#:eval ev #:label #f
 (mul 2 3 4)
@@ -261,7 +266,8 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 (require racket/undefined)
 (define primitive-call/cc call/cc)
 (define (goto l) (l l))
-(define (label) (primitive-call/cc goto))]
+(define (label) (primitive-call/cc goto))
+(define-syntax-rule (let/cc k body ...) (call/cc (λ (k) body ...)))]
 @examples[#:eval ev2 #:label #f #:no-prompt
 (define (call/cc proc)
   (define first? #t)
@@ -270,12 +276,12 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
   (cond
     [first? (set! first? #f)
      (proc (λ (v) (set! u v) (goto l)))]
-    [else u]))
+    [else u]))]
 
+@examples[#:eval ev2 #:label #f #:no-prompt
 (define (cc)
-  (call/cc
-   (λ (k)
-     (cons (λ (v) (k (cons v 0))) 1))))]
+  (let/cc k
+    (cons (λ (v) (k (cons v 0))) 1)))]
 
 这个 @racket[call/cc] 的写法和 @racket[cc] 一样，只是把@tech{延续}交给
 @racket[proc]，而不是交给调用者。由它写 @racket[cc]，

@@ -34,14 +34,14 @@
 (module label-to-cc/return racket
   (require (only-in (submod ".." label-to-cc) call/cc))
   (provide mul)
+  (define-syntax-rule (let/cc k body ...) (call/cc (λ (k) body ...)))
   (define (mul . r*)
-    (call/cc
-     (λ (return)
-       (for/fold ([res (*)])
-                 ([r (in-list r*)])
-         (if (zero? r)
-             (return r)
-             (* res r)))))))
+    (let/cc return
+      (for/fold ([res (*)])
+                ([r (in-list r*)])
+        (if (zero? r)
+            (return r)
+            (* res r))))))
 
 (module call/cc-to-label racket
   (provide label goto)
@@ -61,10 +61,10 @@
       [first? (set! first? #f)
        (proc (λ (v) (set! u v) (goto l)))]
       [else u]))
+  (define-syntax-rule (let/cc k body ...) (call/cc (λ (k) body ...)))
   (define (cc)
-    (call/cc
-     (λ (k)
-       (cons (λ (v) (k (cons v 0))) 1)))))
+    (let/cc k
+      (cons (λ (v) (k (cons v 0))) 1))))
 
 (module cc-to-label racket
   (require (only-in (submod ".." label-to-call/cc) cc))
