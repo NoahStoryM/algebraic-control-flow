@@ -33,7 +33,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 它仍然有效，@racket[goto] 还能跳回那个函数里面去。C
 的@tech{标签}两件都做不到。
 
-@subsection[#:tag "01:loop"]{循环}
+先拿它写一个循环：
 
 @examples[#:eval ev #:label #f
 (let ([x 0])
@@ -47,7 +47,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 重新绑定到它，循环体从头再走一遍。可变变量 @racket[x]
 记下已经走了几遍。
 
-@subsection[#:tag "01:early-return"]{提前返回}
+再写一个提前返回的函数：把一串实数乘起来，遇到零就立即交出零。
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define (mul . r*)
@@ -71,24 +71,19 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 函数交出 @racket[result]，也就是刚存进去的零。布尔标志 @racket[first?]
 就是用来分辨这是第一次进入，还是经 @racket[goto] 跳回来的。
 
-@subsection[#:tag "01:label-trouble"]{标签的问题}
-
-注意两个例子都依赖@bold{修改可变状态}（@racket[set!]）
-来在跳转之间传递信息。@racket[(goto loop)] 时，@tech{标签}本身不携带任
-何数据，所以我们不得不通过副作用来进入正确的状态。第二个例子中的标志
-@racket[first?] 与乘法无关：它存在的唯一目的就是区分「我们是第一次运
-行，还是刚刚跳回来？」
-
 @section[#:tag "01:cc"]{从标签到延续：@racket[cc] 操作符}
 
-一等@tech{标签}的根本限制在于：@racket[goto] 是一张单程票，
-不带任何载荷。要避免修改状态，我们需要向跳转目标发送一个值。
-这就是@defterm[#:en "continuation"]{延续}的核心思想。
+两个例子都依赖@bold{修改可变状态}（@racket[set!]）
+来在跳转之间传递信息。@racket[goto] 是一张单程票，@tech{标签}本身不携
+带任何数据，所以我们不得不通过副作用来进入正确的状态。
+第二个例子中的标志 @racket[first?] 与乘法无关：
+它存在的唯一目的就是区分「我们是第一次运行，还是刚刚跳回来？」
 
-设想一个新的操作符，像 @racket[(label)] 那样捕获当前位置。
-它第一次被求值时，我们希望它返回一个「回调」：一个以后可以调用的函数，
-带着一个值跳回去。当调用那个回调时，它应该「再次返回」，
-这次返回的就是传入的那个值。
+要避免修改状态，跳回去时得能捎上一个值。设想一个新的操作符，像
+@racket[(label)] 那样捕获当前位置。它第一次被求值时，
+返回一个「回调」：一个以后可以调用的函数，带着一个值跳回去。
+调用这个回调时，它「再次返回」，这次交出的就是传入的那个值。这个回调，
+就叫@defterm[#:en "continuation"]{延续}。
 
 于是这个操作符的返回值有两种可能：
 
@@ -96,124 +91,105 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
   @item{类型为 @math{p → ⊥} 的@tech{延续}：接受类型为 @math{p}
   的值且永不返回的函数（它跳回捕获点）。}
   @item{类型为 @math{p} 的值，在@tech{延续}被调用时收到。}]
+用的人得分得清拿到的是哪一种。我们给每种可能打上一个标签：值配上
+@racket[0]，@tech{延续}配上 @racket[1]，用 @racket[cons] 配成一对。
+这样合起来的类型，叫@defterm[#:en "tagged union"]{带标签的联合}，写作
+@defsym["p ∐ q" "带标签的联合：每支配上标签再并起来"]@racket[∐]：
+
+@margin-note{打标签的道理，看集合最清楚。集合 @math{X = {a, b}}、
+@math{Y = {b, c}} 的并集里，@math{b} 说不清来自哪一边。
+打上标签再并起来，@math{X + Y = X × {0} ∪ Y × {1}}，两边就不相交了，
+检查标签就是一个谓词。丢掉标签，总有一个从 @math{X + Y} 到
+@math{X ∪ Y} 的映射；@math{X ∩ Y = {}} 时它是一一对应，用不着标签。}
+
+@examples[#:eval ev #:label #f #:no-prompt
+(define-type (∐ p0 p1 ...) (∪ (Pair p0 0) (Pair p1 1) ...))]
+
+第 @math{i} 支的值配上标签 @math{i}。一支也没有的 @racket[(∐)]，就是
+@racket[(∪)]，也就是 @racket[⊥]。
+
 我们把这个操作符叫做 @racket[cc]（@racket[current-continuation]
 的缩写）：
 
 @examples[#:eval ev #:label #f #:no-prompt
-(: cc (∀ (p) (→ (∪ p (→ p ⊥)))))
+(: cc (∀ (p) (→ (∐ p (→ p ⊥)))))
 (define (cc)
-  (define saved #f)
+  (define first? #t)
+  (define u #f)
   (define l (label))
-  (if saved
-      (apply values saved)
-      (λ args (set! saved args) (goto l))))]
+  (cond
+    [first? (set! first? #f)
+     (cons (λ (v) (set! u v) (goto l)) 1)]
+    [else (cons u 0)]))]
 
 @margin-note{@racket[cc] 的内部仍然使用了
 @racket[label]、@racket[goto] 和 @racket[set!]，
-但它们被封装起来了，@racket[cc] 的使用者不必再碰可变状态。
-实现顺带处理了多值：@racket[args] 收下全部参数，@c{apply values}
-全部交出。本文的类型标注都省略多值的情形。}
+但它们被封装起来了，@racket[cc] 的使用者不必再碰可变状态。}
 
-@racket[saved] 一身兼两职。它是一个标志，@racket[#f]
-表示还没有人调用过@tech{延续}；它也是载荷，@tech{延续}被调用时，
-收到的参数存在这里。两种职责不会混淆：@racket[(λ args …)]
-总是把收到的参数收成一张列表 @racket[args]，哪怕参数本身是
-@racket[#f]，哪怕一个参数也没有，存进去的列表都不是 @racket[#f]。
+@racket[first?] 和 @racket[u]，正是上面那版 @racket[mul] 里的那一套：
+@racket[first?] 分辨第一次进入还是跳回来，@racket[u]
+存下跳回来时带的值。按时间顺序看。第一次调用 @racket[(cc)] 时，
+@racket[first?] 是 @racket[#t]，@racket[(label)] 捕获当前位置，
+@racket[cond] 走第一支，把 @racket[first?] 改成 @racket[#f]，
+交出一个配着 @racket[1] 的函数，这就是@tech{延续}。@racket[(cc)]
+就此返回。
 
-按时间顺序看。第一次调用 @racket[(cc)] 时，@racket[saved] 是
-@racket[#f]，@racket[(label)] 捕获当前位置，@racket[if] 走 else 分支，
-交出一个函数，这就是@tech{延续}。@racket[(cc)] 就此返回。
-
-后来某处调用这个@tech{延续}，它把参数存进 @racket[saved]，再
+后来某处调用这个@tech{延续}，它把参数存进 @racket[u]，再
 @racket[(goto l)] 跳回 @racket[cc] 里面。此时 @racket[cc]
 早已返回过，@tech{标签}仍然能跳回去，用的正是一等@tech{标签}的第二项能
-力。@racket[(label)] 再次返回，控制又来到 @racket[if]。这一回
-@racket[saved] 不再是 @racket[#f]，走 then 分支，@racket[(cc)]
-第二次返回，交出存进去的值。
+力。@racket[(label)] 再次返回，控制又来到 @racket[cond]。这一回
+@racket[first?] 是 @racket[#f]，走 @racket[else]，@racket[(cc)]
+第二次返回，交出配着 @racket[0] 的 @racket[u]。
 
 有了 @racket[cc]，@racket[mul] 可以再写一次：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define (mul . r*)
-  (define result (cc))
-  (if (real? result)
-      result
-      (for/fold ([res (*)] #:result (result res))
-                ([r (in-list r*)])
-        (if (zero? r)
-            (result r)
-            (* res r)))))]
+  (match (cc)
+    [(cons r 0) r]
+    [(cons return 1)
+     (for/fold ([res (*)] #:result (return res))
+               ([r (in-list r*)])
+       (if (zero? r)
+           (return r)
+           (* res r)))]))]
 
-@racket[for/fold] 一边遍历 @racket[r*]，一边累积
-@racket[res]；@racket[#:result] 指定遍历结束后交出什么。
+@racket[match] 按标签分两支。@racket[for/fold] 一边遍历 @racket[r*]，
+一边累积 @racket[res]；@racket[#:result] 指定遍历结束后交出什么。
 
-第一次求值 @racket[(cc)] 时，@racket[result]
-绑定到一个@tech{延续}（一个函数）。因为@tech{延续}不是
-@racket[real?]，我们进入 else 分支并开始折叠。如果遇到零，调用
-@racket[(result r)]，触发@tech{延续}：控制跳回求值 @racket[(cc)]
-的位置，现在 @racket[result] 绑定到 @racket[r]（一个实数）。进入 then
-分支，立即返回。如果没有遇到零，@racket[for/fold] 的 @racket[#:result]
-子句在折叠结束后调用 @racket[(result res)]，
-同样触发@tech{延续}，@racket[result] 绑定到累积乘积 @racket[res]，从
-then 分支返回。两条路径都通过@tech{延续} @racket[result] 汇合，
+第一次求值 @racket[(cc)] 时，交出的配着 @racket[1]，
+是一个@tech{延续}，绑定到 @racket[return]，开始折叠。如果遇到零，调用
+@racket[(return r)]，触发@tech{延续}：控制跳回求值 @racket[(cc)]
+的位置，这一回交出的配着 @racket[0]，就是 @racket[r]，第一支立即返回。
+如果没有遇到零，@racket[for/fold] 的 @racket[#:result]
+子句在折叠结束后调用 @racket[(return res)]，同样跳回，交出累积乘积
+@racket[res]。两条路径都通过@tech{延续} @racket[return] 汇合，
 不需要可变状态，也不需要标志。
 
 @section[#:tag "01:call-cc"]{消除分支：@racket[call/cc]}
 
 @racket[cc] 消除了可变状态，但带来了新的要求：@bold{分支}。每次调用
-@racket[(cc)] 的返回值都有两种可能，程序员必须区分收到的是哪种情况。
-在提前返回的例子中，我们用 @racket[(real? result)]
-来分离值和@tech{延续}。这行得通，只是程序员又多了一件要操心的事。
+@racket[(cc)] 的返回值都有两种可能，程序员必须用 @racket[match]
+区分收到的是哪一支。这行得通，只是程序员又多了一件要操心的事。
 能不能把分支也一并消除？
 
-不再返回联合类型让调用者去分支，而是让调用者传入一个函数
+不再返回带标签的联合让调用者去分支，而是让调用者传入一个函数
 @racket[proc]，直接把@tech{延续}作为参数交给它。分支挪进操作符内部，
-对用户不可见。
-
-@margin-note{打标签的道理，看集合最清楚。集合 @math{X = {a, b}}、
-@math{Y = {b, c}} 的并集里，@math{b} 说不清来自哪一边。
-打上标签再并起来，@math{X + Y = X × {0} ∪ Y × {1}}，两边就不相交了，
-检查标签就是一个谓词；@math{X + Y} 叫@defterm[#:en "tagged union"]{带
-标签的联合}。丢掉标签，总有一个从 @math{X + Y} 到 @math{X ∪ Y}
-的映射；@math{X ∩ Y = {}} 时它是一一对应，用不着标签。}
-
-挪进去的分支仍然要做。操作符自己调用 @racket[(cc)]，
-同样会拿到两种东西：第一次是@tech{延续}，以后是传回来的结
-果。@racket[mul] 能用 @racket[real?] 分辨它们，是因为结果恰好是实数；
-操作符不知道结果会是什么，结果也可能是一个函数，和@tech{延续}分不开。
-办法是把传回来的结果一律收进一张列表。@tech{延续}是函数，
-永远不是列表，两者就分得开了。这相当于给传回来的结果打上标签：
+对用户不可见：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: call/cc (∀ (p) (→ (→ (→ p ⊥) p) p)))
 (define (call/cc proc)
-  (define x (cc))
-  (if (list? x)
-      (apply values x)
-      (proc (λ args (x args)))))]
+  (match (cc)
+    [(cons v 0) v]
+    [(cons k 1) (proc k)]))]
 
-@racket[x] 是 @racket[(cc)] 交出来的东西，和 @racket[cc] 里的
-@racket[saved] 不是一回事。第一次，@racket[x] 是 @racket[cc]
-的@tech{延续}，不是列表，走 else 分支。@racket[call/cc] 不把它原样交给
-@racket[proc]，而是包上一层：@racket[(λ args (x args))]
-把收到的参数收成列表 @racket[args]，再交给 @racket[x]。
-
-@racket[proc] 拿到这个包装好的@tech{延续}，记作 @racket[k]。
-拿一个值走一遍，看 @racket[proc] 调用 @racket[(k 5)] 时发生什么：
-
-@itemlist[#:style 'ordered
-  @item{包装 @racket[(λ args (x args))] 收到 @racket[5]，@racket[args]
-  是 @racket[(5)]，交给 @racket[x]。}
-  @item{@racket[x] 是 @racket[cc] 的@tech{延续}，它的
-  @racket[(λ args …)] 收到 @racket[(5)]，@racket[args] 是
-  @racket[((5))]，存进 @racket[saved]，跳回 @racket[cc] 里面。}
-  @item{@racket[(cc)] 再次返回，@c{apply values} 剥掉一层，交出
-  @racket[(5)]，@racket[x] 绑定到它。}
-  @item{@racket[(list? x)] 为真，@racket[(apply values x)] 再剥一层，
-  交回 @racket[5]。}]
-@racket[call/cc] 的调用者收到了传给@tech{延续}的值，@racket[proc]
-里剩下的工作被跳过。@racket[proc] 若不调用@tech{延续}而正常返回，
-它的返回值就是 @racket[call/cc] 的结果。
+第一次，@racket[(cc)] 交出配着 @racket[1] 的@tech{延续} @racket[k]，
+交给 @racket[proc]。@racket[proc] 若在某处调用 @racket[(k v)]，
+@racket[(cc)] 再次返回，这回交出配着 @racket[0] 的 @racket[v]，
+@racket[call/cc] 把它交给调用者，@racket[proc] 里剩下的工作被跳过。
+@racket[proc] 若不调用@tech{延续}而正常返回，它的返回值就是
+@racket[call/cc] 的结果。
 
 有了 @racket[call/cc]，@racket[mul] 可以再写一次：
 
@@ -231,7 +207,7 @@ then 分支返回。两条路径都通过@tech{延续} @racket[result] 汇合，
 (mul 2 3 4)
 (mul 2 0 3)]
 
-标志、可变状态、@racket[real?] 的分支都不见了。
+标志、可变状态、@racket[match] 的分支都不见了。
 没有遇到零，@racket[for/fold] 正常结束，乘积作为 @racket[proc]
 的返回值交出；遇到零，@racket[(return r)] 把零直接交给 @racket[mul]
 的调用者。@tech{延续}有了一个名字，叫 @racket[return]。
@@ -285,20 +261,27 @@ then 分支返回。两条路径都通过@tech{延续} @racket[result] 汇合，
 (define (label) (primitive-call/cc goto))]
 @examples[#:eval ev2 #:label #f #:no-prompt
 (define (call/cc proc)
-  (define saved #f)
+  (define first? #t)
+  (define u #f)
   (define l (label))
-  (if saved
-      (apply values saved)
-      (proc (λ args (set! saved args) (goto l)))))
+  (cond
+    [first? (set! first? #f)
+     (proc (λ (v) (set! u v) (goto l)))]
+    [else u]))
 
-(define (cc) (call/cc values))]
+(define (cc)
+  (call/cc
+   (λ (k)
+     (cons (λ (v) (k (cons v 0))) 1))))]
 
 这个 @racket[call/cc] 的写法和 @racket[cc] 一样，只是把@tech{延续}交给
-@racket[proc]，而不是交给调用者。以 @racket[cc]
-为原语，@tech{标签}就是 @racket[(cc)] 第一次交出的那个@tech{延续}：
+@racket[proc]，而不是交给调用者。由它写 @racket[cc]，
+只要给交出的@tech{延续}配上 @racket[1]，再让它跳回来时配上
+@racket[0]。以 @racket[cc] 为原语，@tech{标签}就是 @racket[(cc)]
+交出的东西去掉标签：
 
 @examples[#:eval ev2 #:label #f #:no-prompt
-(define (label) (cc))
+(define (label) (car (cc)))
 (define (goto l) (l l))]
 
 无论从哪一个出发，另外两个都写得出来：三种表述在@bold{表达能力上等
@@ -310,11 +293,11 @@ then 分支返回。两条路径都通过@tech{延续} @racket[result] 汇合，
   (list
    (list ""
          @elem{一等@tech{标签} (@racket[goto] + @racket[label])}
-         @elem{值与@tech{延续}的联合 (@racket[cc])}
+         @elem{值与@tech{延续}的带标签的联合 (@racket[cc])}
          @elem{高阶回调 (@racket[call/cc])})
    (list @elem{@bold{涉及的类型}}
          @elem{只有 @racket[Label]}
-         @elem{联合类型 @math{p ∪ (p → ⊥)}}
+         @elem{带标签的联合 @math{p ∐ (p → ⊥)}}
          @elem{高阶：@math{((p → ⊥) → p) → p}})   (list @elem{@bold{需要可变状态？}}
          @elem{是：必须用 @racket[set!] 在跳转间传递信息}
          @elem{否}

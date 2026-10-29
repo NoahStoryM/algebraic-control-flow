@@ -8,27 +8,28 @@
   (define (label) (primitive-call/cc goto))
 
   (define (cc)
-    (define saved #f)
+    (define first? #t)
+    (define u #f)
     (define l (label))
-    (if saved
-        (apply values saved)
-        (λ args (set! saved args) (goto l))))
+    (cond
+      [first? (set! first? #f)
+       (cons (λ (v) (set! u v) (goto l)) 1)]
+      [else (cons u 0)]))
 
   (define (call/cc proc)
-    (define x (cc))
-    (if (list? x)
-        (apply values x)
-        (proc (λ args (x args)))))
+    (match (cc)
+      [(cons v 0) v]
+      [(cons k 1) (proc k)]))
 
   (define (mul . r*)
-    (define result (cc))
-    (if (real? result)
-        result
-        (for/fold ([res (*)] #:result (result res))
-                  ([r (in-list r*)])
-          (if (zero? r)
-              (result r)
-              (* res r))))))
+    (match (cc)
+      [(cons r 0) r]
+      [(cons return 1)
+       (for/fold ([res (*)] #:result (return res))
+                 ([r (in-list r*)])
+         (if (zero? r)
+             (return r)
+             (* res r)))])))
 
 (module label-to-cc/return racket
   (require (only-in (submod ".." label-to-cc) call/cc))
@@ -53,19 +54,45 @@
   (define (goto l) (l l))
   (define (label) (primitive-call/cc goto))
   (define (call/cc proc)
-    (define saved #f)
+    (define first? #t)
+    (define u #f)
     (define l (label))
-    (if saved
-        (apply values saved)
-        (proc (λ args (set! saved args) (goto l)))))
-  (define (cc) (call/cc values)))
+    (cond
+      [first? (set! first? #f)
+       (proc (λ (v) (set! u v) (goto l)))]
+      [else u]))
+  (define (cc)
+    (call/cc
+     (λ (k)
+       (cons (λ (v) (k (cons v 0))) 1)))))
 
 (module cc-to-label racket
-  (require (only-in racket/base [call/cc primitive-call/cc]))
+  (require (only-in (submod ".." label-to-call/cc) cc))
   (provide label goto)
-  (define (cc) (primitive-call/cc values))
-  (define (label) (cc))
+  (define (label) (car (cc)))
   (define (goto l) (l l)))
+
+(module tagged typed/racket/no-check
+  (define-type ⊥ (∪))
+  (define-type (∐ p0 p1 ...) (∪ (Pair p0 0) (Pair p1 1) ...))
+  (: cc (∀ (p) (→ (∐ p (→ p ⊥)))))
+  (define-type Label (→ Label ⊥))
+  (define (goto l) (l l))
+  (define (label) (call-with-current-continuation goto))
+  (define (cc)
+    (define first? #t)
+    (define u #f)
+    (define l (label))
+    (cond
+      [first? (set! first? #f)
+       (cons (λ (v) (set! u v) (goto l)) 1)]
+      [else (cons u 0)]))
+  (: call/cc (∀ (p) (→ (→ (→ p ⊥) p) p)))
+  (define (call/cc proc)
+    (match (cc)
+      [(cons v 0) v]
+      [(cons k 1) (proc k)]))
+  (provide (all-defined-out)))
 
 (module+ test
   (require rackunit "../../tools/check-output-prefix.rkt"
@@ -95,8 +122,8 @@
   (check-equal? (e:mul 2 0 3) 0)
   (check-equal? (a:call/cc (λ (k) (+ 100 (k 9)))) 9)
   (check-equal? (c:call/cc (λ (k) (+ 100 (k 9)))) 9)
-  (check-equal? (let ([v (a:cc)]) (if (procedure? v) (v 42) v)) 42)
-  (check-equal? (let ([v (c:cc)]) (if (procedure? v) (v 42) v)) 42)
+  (check-equal? (match (a:cc) [(cons v 0) v] [(cons k 1) (k 42)]) 42)
+  (check-equal? (match (c:cc) [(cons v 0) v] [(cons k 1) (k 42)]) 42)
   (check-true
    (output-starts-with?
     (λ ()

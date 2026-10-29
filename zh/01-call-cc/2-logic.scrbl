@@ -162,32 +162,30 @@
 写得出来，它的类型就该是真的。倒回一步，看看 @racket[cc] 的类型：
 
 @racketblock[
-(: cc (∀ (p) (→ (∪ p (→ p ⊥)))))]
+(: cc (∀ (p) (→ (∐ p (→ p ⊥)))))]
 
-@racket[(cc)] 交出的不是只有 @math{¬p}，而是 @math{p ∪ ¬p}。
+@racket[(cc)] 交出的不是只有 @math{¬p}，而是 @math{p ∐ ¬p}。
 按通常的想法，@math{p} 和 @math{¬p} 一真一假，
-合在一起总有一支为真，@math{p ∪ ¬p} 一定为真。
+合在一起总有一支为真，@math{p ∐ ¬p} 一定为真。
 这似乎对上了逻辑里的@defterm[#:en "law of excluded middle"]{排中律}：
 @math{p} 成立，或者 @math{p} 不成立。
 
-再细看这个对应。@racket[(cc)] 交出的 @math{p ∪ ¬p}，
-用的人必须分得清拿到的是哪一支：第一小篇里，@racket[mul] 用
-@racket[real?] 分辨，用 @racket[cc] 写的 @racket[call/cc]
-给传回来的值打上标签。读作「@math{p} 或 @math{q}」，也得这样分得清：
-用类型表示「@math{p} 或 @math{q}」时，我们用两支分得开的联合，
-拿到一个值，能判断它属于哪一支，再按那一支使用它。
-这是@defterm[#:en "disjoint union"]{不相交的联合}，
-打标签是做到不相交的一种办法。Typed Racket 的 @racket[∪]
-却是普通的并集，两边分不分得开，要看 @math{p} 和 @math{q} 本身。下面把
-@racket[∪] 读作「或」，说的都是这样分得开两边的联合。
-这是@defterm{析取}，写作
-@defsym["p ∨ q" "析取；联合类型 p ∪ q"]@math{∨}。
+再细看这个对应。@racket[(cc)] 交出的 @math{p ∐ ¬p}，两支各配着标签，
+@racket[0] 是 @math{p}，@racket[1] 是 @math{¬p}：拿到一个值，
+看标签就知道它属于哪一支，再按那一支使用它。@racket[mul] 和
+@racket[call/cc] 正是这样用 @racket[match] 分两支的。读作「@math{p} 或
+@math{q}」，也得这样分得清。两支分得开的联合，
+叫@defterm[#:en "disjoint union"]{不相交的联合}，
+打标签是做到不相交的一种办法。Typed Racket 自带的 @racket[∪]
+却是普通的并集，不记来源，两边分不分得开，要看 @math{p} 和 @math{q}
+本身。下面读作「或」的，说的都是分得开两边的联合。这是@defterm{析取}，
+写作 @defsym["p ∨ q" "析取；不相交的联合 p ∐ q"]@math{∨}。
 
 所以 @racket[(cc)] 写出的是 @math{p ∨ ¬p}，正是@tech{排中律}。
 前面那件说不通的事，也有了着落：@racket[(cc)] 并没有写出一个
 @math{¬p}，@tech{延续}只是其中一支，而且以后可能经由它跳回来，
 换成另一支。@racket[call/cc] 把这个分支挪进了操作符内部，
-它的类型里也就没有 @math{∪}，只用 @math{→} 和 @math{⊥} 就写得下。
+它的类型里也就没有 @math{∐}，只用 @math{→} 和 @math{⊥} 就写得下。
 
 还剩一处：上面说的都是 @racket[(cc)]，@racket[cc]
 本身是一个不收参数的函数。否定 @math{p → ⊥} 与 @math{p} 正好相反。把
@@ -275,8 +273,8 @@
 跳回来时是值，于是成了 @math{p ∨ ¬p}。凭空提供一个@tech{延续}，
 这是经典的。
 
-@margin-note{@racket[∪] 不记来源。为了分得清两支，不妨让 @math{q} 取
-@racket[Real] 这样能用谓词分辨的类型。}
+@margin-note{@math{∨} 用 @racket[∐] 表示，两支各配一个标签，用
+@racket[match] 分辨。}
 
 @bold{练习}：@italic{实质条件} @math{¬p ∨ q} 说「@math{p} 不成立，或者
 @math{q} 成立」，是经典逻辑中 @math{p → q} 的另一种编码。试着实现
@@ -297,10 +295,11 @@
          @elem{@bold{DNE}：@racket[call/cc]}))]
 
 左边一列只差参数次序，@tech{矛盾律}和 DNI 互相推得出。
-右边一列都是提供当前@tech{延续}：@racket[cc] 就是
-@racket[(call/cc values)]；反过来，@xref["01:call-cc"]{用 @racket[cc]
-写出的 @racket[call/cc]} 先调用 @racket[(cc)]，
-拿到包在列表里的结果就拆开交出，拿到@tech{延续}就交给 @racket[proc]，
+右边一列都是提供当前@tech{延续}：@racket[cc] 可以由 @racket[call/cc]
+写出，见@xref["01:label-from-call-cc"]{「从 call/cc 定义标签」}；
+反过来，@xref["01:call-cc"]{用 @racket[cc] 写出的 @racket[call/cc]}
+先调用 @racket[(cc)]，拿到配着 @racket[0] 的值就交出，拿到配着
+@racket[1] 的@tech{延续}就交给 @racket[proc]，
 这正是由@tech{排中律}推出 DNE。作为对任意类型都成立的原则，
 两者互相推得出。
 
