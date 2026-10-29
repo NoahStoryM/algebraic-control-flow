@@ -225,7 +225,7 @@
 @racket[b] 一起交出。使用「@math{p} 且 @math{q}」，两样都能拿来用；
 收下 @racket[(values a b)] 的地方，@racket[a] 和 @racket[b]
 都在手里。@racket[Values] 对上了合取。函数的两个参数，
-也可以这样合起来，看成一个 @math{p × q}。
+也可以这样合起来，看成一个 @math{p × q}，读作 @math{p ∧ q}。
 
 @section[#:tag "01:watershed"]{分水岭}
 
