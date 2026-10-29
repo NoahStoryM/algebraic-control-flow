@@ -362,3 +362,11 @@ Noah：Curry-Howard 对应是逐个构造子对应的，演示最基本的情况
 - 1.2「析取与合取」：`(cc)` 交出 p ∐ ¬p，两支配着标签，直接引出不相交的联合与析取；Typed Racket 的 ∪ 不记来源只一句。分水岭的列内互推改说 `cc` 可由 `call/cc` 写出；练习旁注改为用 ∐ 表示 ∨。
 - 1.3 坍缩：从 `(define (label) (car (cc)))` 讲起，`car` 丢掉标签就是坍缩。
 - `code.rkt` 相应模块与测试已改。
+
+## 附录：不打标签的 cc（Noah 10/29）
+
+- 核心是不相交的联合，不一定要打标签。control-context 的 `cc` 用 ∪（另有配合 prompt tag 的处理），附录给的是本文改写前的 ∪ 版本，不照抄库。
+- `5-appendix.scrbl`：两个方向各绕一圈。标签 → `cc`（`saved` 一身兼两职，带多值）→ `call/cc`（结果包一层列表，即自造的标签）→ 标签；标签 → `call/cc` → `cc` 即 `(call/cc values)` → 标签即 `(cc)`，不用 `car`，正是 Label ∪ Label = Label 的坍缩。
+- 开头说明绕一圈只说明可互相定义，不是拿绕回来的标签替换起点（回指 1.1 的旁注）。
+- `code.rkt` 新增 `union-*` 四个子模块及测试。
+- 第三篇开头异常单子改带标签联合的事记在 `zh/03-delimited/outline.md`，不属本轮。
