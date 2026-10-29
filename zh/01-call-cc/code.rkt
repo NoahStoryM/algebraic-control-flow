@@ -149,6 +149,15 @@
   (define (label) (cc))
   (define (goto l) (l l)))
 
+(module tagged-neg typed/racket/no-check
+  (require (only-in (submod ".." tagged) [cc tagged:cc]))
+  (define-type ⊥ (∪))
+  (define-type (∐ p0 p1 ...) (∪ (Pair p0 0) (Pair p1 1) ...))
+  (define-type (¬ p) (→ p ⊥))
+  (: cc (∀ (p) (→ (∐ p (¬ p)))))
+  (define cc tagged:cc)
+  (provide cc))
+
 (module+ test
   (require rackunit "../../tools/check-output-prefix.rkt"
            (prefix-in a: (submod ".." label-to-cc))

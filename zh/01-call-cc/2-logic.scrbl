@@ -159,24 +159,31 @@
 @section[#:tag "01:types-to-logic"]{析取与合取}
 
 等实数的@tech{延续}对应假，可 @racket[(cc)] 是一个合法的表达式，
-写得出来，它的类型就该是真的。倒回一步，看看 @racket[cc] 的类型：
+写得出来，它的类型就该是真的。倒回一步，看看 @racket[cc] 的类型。有了
+@math{¬}，它可以写成：
 
 @racketblock[
-(: cc (∀ (p) (→ (∐ p (→ p ⊥)))))]
+(: cc (∀ (p) (→ (∐ p (¬ p)))))]
 
-@racket[(cc)] 交出的不是只有 @math{¬p}，而是 @math{p ∐ ¬p}。
-按通常的想法，@math{p} 和 @math{¬p} 一真一假，
-合在一起总有一支为真，@math{p ∐ ¬p} 一定为真。
-这似乎对上了逻辑里的@defterm[#:en "law of excluded middle"]{排中律}：
-@math{p} 成立，或者 @math{p} 不成立。
+@racket[(cc)] 交出的不是只有 @math{¬p}，而是 @math{p ∐ ¬p}。@math{∐}
+看上去像「或」，也就是@defterm{析取}
+@defsym["p ∨ q" "析取；不相交的联合 p ∐ q"]@math{∨}。照这个样子，
+@math{p ∐ ¬p} 说的是「@math{p} 成立，或者 @math{p} 不成立」，
+这正是逻辑里的@defterm[#:en "law of excluded middle"]{排中律}。
 
-再细看这个对应。@racket[(cc)] 交出的 @math{p ∐ ¬p}，两支各配着标签，
-@racket[0] 是 @math{p}，@racket[1] 是 @math{¬p}。读作「@math{p} 或
-@math{q}」，拿到一个值，就得分得清它属于哪一支，再按那一支使用它；
-@racket[mul] 和 @racket[call/cc] 正是这样用 @racket[match] 分两支的。
-两支分得开的联合，叫@defterm[#:en "disjoint union"]{不相交的联合}，
-怎样做到分得开，见@xref["01:appendix"]{附录}。这是@defterm{析取}，写作
-@defsym["p ∨ q" "析取；不相交的联合 p ∐ q"]@math{∨}。
+@margin-note{两支分得开的联合，叫@defterm[#:en "disjoint union"]{不相
+交的联合}。打标签是做到这一点的一种办法，其它办法
+见@xref["01:appendix"]{附录}。}
+
+这回也检验一下。证明「@math{p} 或 @math{q}」，要么给出 @math{p}
+的证明，要么给出 @math{q} 的证明，而且说得清给的是哪一个。@math{p ∐ q}
+的表达式正是这样写出来的：手里有一个 @math{p} 类型的 @racket[a]，
+@racket[(cons a 0)] 就是一个 @math{p ∐ q}；有一个 @math{q} 类型的
+@racket[b]，@racket[(cons b 1)] 也是，标签记着给的是哪一支。反过来，
+使用「@math{p} 或 @math{q}」要分情况：由 @math{p} 推得出 @math{r}，由
+@math{q} 也推得出 @math{r}，就推出 @math{r}。@racket[match]
+正是这样分两支的，@racket[mul] 和 @racket[call/cc] 里的
+@racket[match]，两支交出的是同一种类型的结果。@math{∐} 对上了析取。
 
 所以 @racket[(cc)] 写出的是 @math{p ∨ ¬p}，正是@tech{排中律}。
 前面那件说不通的事，也有了着落：@racket[(cc)] 并没有写出一个
