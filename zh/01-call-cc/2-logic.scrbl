@@ -185,34 +185,48 @@
 正是这样分两支的，@racket[mul] 和 @racket[call/cc] 里的
 @racket[match]，两支交出的是同一种类型的结果。@math{∐} 对上了析取。
 
+单位元也对得上。一支也没有的 @racket[(∐)] 就是 @racket[⊥]。
+@math{p ∐ ⊥} 里，@math{⊥} 那一支没有元素，拿到的总是 @math{p} 那一支，
+去掉标签就是一个 @math{p}；一个 @math{p} 配上标签，也就成了
+@math{p ∐ ⊥}。两边来回能换，@math{⊥ ∐ p} 也一样。逻辑里，
+假正是析取的单位元：
+
+@mm{p = p ∨ ⊥ = ⊥ ∨ p}
+
 所以 @racket[(cc)] 写出的是 @math{p ∨ ¬p}，正是@tech{排中律}。
 前面那件说不通的事，也有了着落：@racket[(cc)] 并没有写出一个
 @math{¬p}，@tech{延续}只是其中一支，而且以后可能经由它跳回来，
 换成另一支。@racket[call/cc] 把这个分支挪进了操作符内部，
 它的类型里也就没有 @math{∐}，只用 @math{→} 和 @math{⊥} 就写得下。
 
-还剩一处：上面说的都是 @racket[(cc)]，@racket[cc]
-本身是一个不收参数的函数。否定 @math{p → ⊥} 与 @math{p} 正好相反。把
-@math{⊥} 换成恰好有一个元素的类型
-@defsym["⊤" "真，恰好有一个元素的类型"]@math{⊤}，再把箭头反过来，
-得到的 @math{⊤ → p} 却和 @math{p} 一样。它就是不收参数的函数
-@racket[(→ p)]，我们熟悉的 thunk：拿到一个 thunk，调用它就拿到一个
-@math{p}；拿到一个 @math{p}，也总能包成 @racket[(λ () a)]。
-两边能来回换，从真推出 @math{p}，就是 @math{p} 成立。所以 @racket[cc]
-和 @racket[(cc)] 说的是同一条定律。
+前面说的都是 @racket[(cc)] 为真。@racket[cc]
+本身是一个不收参数的函数，也写得出来，当然也为真。逻辑里，从真推出
+@math{p}，和 @math{p} 本身一样：@math{⊤ → p} 与 @math{p} 同真同假，
+@defsym["⊤" "真，恰好有一个元素的类型"]@math{⊤} 是真。程序里也是这样：
+表达式 @racket[e] 和 thunk @racket[(λ () e)] 来回能换，调用 thunk
+就拿到 @racket[e] 的值，有了 @racket[e] 也总能包成 thunk。所以
+@racket[cc] 和 @racket[(cc)] 说的是同一条定律。
 
-调用 @racket[(cc)] 时，什么也不交给 @racket[cc]。Racket
+@margin-note{这里的「零」说的是一次交出几个结果，不是类型有几个元素；
+一种交法也没有的，才是 @math{⊥}。}
+
+那 @math{⊤} 对应什么？调用 thunk 时，什么也不交给它。Racket
 里「什么也不交」也有写法：@racket[(values)] 交出零个结果。
-这样的交法只有一种，正合 @math{⊤} 只有一个元素：
-把一次交出的结果整体来看，@racket[(values)] 对应 @math{⊤}。
-这里的「零」说的是一次交出几个结果，不是类型有几个元素；
-一种交法也没有的，才是 @math{⊥}。照这样看，@racket[(values x y)]
-交出两个结果，整体对应积 @math{p × q}：两样都在手里，@math{p} 与
-@math{q} 同时成立。这是@defterm{合取}，写作
-@defsym["p ∧ q" "合取；多个结果 p × q"]@math{∧}。@racket[(values)]
-是它的单位元：零个结果并上去，什么也没多出来，就像「真且 @math{p}」
-就是 @math{p}。函数的两个参数，也可以这样合起来，看成一个
-@math{p × q}。
+把一次交出的结果整体来看，它的类型是 @racket[(Values)]。
+这样的交法只有一种，@racket[(Values)] 恰好有一个元素，正合 @math{⊤}。
+逻辑里，真是@defterm{合取}
+@defsym["p ∧ q" "合取；多个结果 p × q"]@math{∧} 的单位元：
+
+@mm{p = p ∧ ⊤ = ⊤ ∧ p}
+
+@racket[(Values)] 也是 @racket[Values] 的单位元：零个结果并上去，
+什么也没多出来，@racket[(Values p)] 就是 @math{p}。于是猜想，合取对应
+@racket[Values]，把几个结果并成一组，也就是积 @math{p × q}。检验一下。
+证明「@math{p} 且 @math{q}」，两个证明都要给出；@racket[(values a b)]
+正是把 @racket[a] 和 @racket[b] 一起交出。使用「@math{p} 且
+@math{q}」，两样都能拿来用；收下 @racket[(values a b)]
+的地方，@racket[a] 和 @racket[b] 都在手里。@racket[Values]
+对上了合取。函数的两个参数，也可以这样合起来，看成一个 @math{p × q}。
 
 @section[#:tag "01:watershed"]{分水岭}
 
