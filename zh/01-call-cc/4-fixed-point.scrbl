@@ -144,7 +144,7 @@
 (define (apply-cont ln lm)
   (match-define (cons kn n) ln)
   (match-define (cons km m) lm)
-  (display (format "  (k~a k~a)" n m))
+  (display (format "    (k~a k~a): " n m))
   (kn lm))]
 
 插桩版的 @racket[label] 和@xref["01:label-from-call-cc"]{原来那个}一样，
@@ -176,8 +176,8 @@
 
 @subsection[#:tag "01:rules"]{读出规律}
 
-规律就在每一对名字里。先看第三行 @c|{(k2 k2)* (k1 k2)* (k0 k2)@}|：右边总是
-@racket[k2]，最近捕获的那条；左边一步步往回退。@racket[k2]
+规律就在每一对名字里。先看第三行 @c|{(k2 k2): *  (k1 k2): *  (k0 k2): @}|：
+右边总是 @racket[k2]，最近捕获的那条；左边一步步往回退。@racket[k2]
 被捕获时，@racket[yin] 绑的是 @racket[k1]，所以跳回 @racket[k2]，
 继续执行的是捕获时那份环境里的 @racket[(yin yang)]：@racket[yin] 是
 @racket[k1]，@racket[yang] 收到这次交来的 @racket[k2]。@racket[(k2 k2)] 打印
