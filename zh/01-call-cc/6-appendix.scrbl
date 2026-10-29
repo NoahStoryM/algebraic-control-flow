@@ -33,10 +33,10 @@
       (apply values saved)
       (λ args (set! saved args) (goto l))))]
 
-control-context 库里的 @racket[cc] 就是这样定义的，另外为了配合 prompt
-tag 还做了一些处理。@racket[(cc)] 交出的不是值就是@tech{延续}，
-没有标签。@racket[mul] 的结果是实数，@tech{延续}是函数，用
-@racket[real?] 就分得开：
+control-context 库（@racketmodname[control/context]）里的 @racket[cc]
+就是这样定义的，另外为了配合 prompt tag 还做了一些处理。@racket[(cc)]
+交出的不是值就是@tech{延续}，没有标签。@racket[mul]
+的结果是实数，@tech{延续}是函数，用 @racket[real?] 就分得开：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define (mul . r*)
@@ -90,7 +90,11 @@ tag 还做了一些处理。@racket[(cc)] 交出的不是值就是@tech{延续}�
       (proc (λ args (set! saved args) (goto l)))))]
 
 @examples[#:eval ev2 #:label #f #:no-prompt
-(define (cc) (call/cc values))
+(define (cc) (call/cc values))]
+
+最后把 @racket[cc] 当作原语，写回@tech{标签}：
+
+@examples[#:eval ev2 #:label #f #:no-prompt
 (define (label) (cc))
 (define (goto l) (l l))]
 

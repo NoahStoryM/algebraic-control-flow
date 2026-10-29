@@ -260,11 +260,12 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 
 @racket[(call/cc goto)] 拿捕获的@tech{延续}当@tech{标签}，原地跳一次，
 又回到这里。@racket[goto] 并不正常返回，返回类型是 @racket[⊥] 也无妨：
-它把 @racket[k] 交给 @racket[k] 自己，@racket[(label)] 的结果经
-@racket[k] 交回来，就是 @racket[k] 本身。这个@tech{标签}就是它被创建处
-的@tech{延续}。以后 @racket[(goto l)] 再调用 @racket[(l l)]，
-跳回同一处，@racket[(label)] 又一次返回 @racket[l]。
-这正是开头为一等@tech{标签}描述的行为。
+它把 @racket[k] 交给 @racket[k] 自己。@racket[(k k)] 跳回
+@racket[(label)] 被调用的地方，让 @racket[call/cc] 带着 @racket[k]
+再返回一次，所以 @racket[(label)] 的结果就是 @racket[k] 本身。
+这个@tech{标签}就是它被创建处的@tech{延续}。以后 @racket[(goto l)]
+再调用 @racket[(l l)]，跳回同一处，@racket[(label)] 又一次返回
+@racket[l]。这正是开头为一等@tech{标签}描述的行为。
 
 圈也可以反过来绕。以@tech{标签}为原语，先写出 @racket[call/cc]，
 再由它写出 @racket[cc]，最后把 @racket[cc] 当作原语，写回@tech{标签}：
@@ -315,8 +316,8 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
    (list @elem{@bold{涉及的类型}}
          @elem{只有 @racket[Label]}
          @elem{带标签的联合 @math{p ∐ (p → ⊥)}}
-         @elem{高阶：@math{((p → ⊥) → p) → p}})   (list @elem{@bold{需要可变状态？}}
-         @elem{是：必须用 @racket[set!] 在跳转间传递信息}
+         @elem{高阶：@math{((p → ⊥) → p) → p}})   (list @elem{@bold{使用者需要可变状态？}}
+         @elem{是：要在跳转间带值，就得用 @racket[set!]}
          @elem{否}
          @elem{否})
    (list @elem{@bold{要分辨返回值？}}

@@ -15,9 +15,9 @@
 
 这样的调用可以出现在任何位置。最后那版 @racket[mul] 里，
 @racket[(return r)] 和 @racket[(* res r)] 是 @racket[if] 的两个分支，
-一个交出 @racket[⊥]，一个交出实数，类型对不上；@racket[for/fold]
-要的是实数，@racket[(return r)] 交不出实数，程序却照样运行。
-这是为什么？
+一个交出 @racket[⊥]，一个交出实数，不考虑子类型的话，
+类型对不上；@racket[for/fold] 要的是实数，@racket[(return r)]
+交不出实数，程序却照样运行。这是为什么？
 
 @section[#:tag "01:call-cc-types"]{@racket[call/cc] 的几种类型}
 
@@ -67,11 +67,11 @@
 
 这样收紧，其实没有少掉什么。原来的类型允许 @racket[proc] 正常返回一个
 @math{p}，最后那版 @racket[mul] 里的 @racket[λ] 就是这样，没遇到零，
-乘积是正常返回的。可通过 @racket[(call/cc proc)] 调用 @racket[proc]
-时，交给 @racket[proc] 的@tech{延续} @racket[k]，和调用 @racket[proc]
-这一处的@tech{延续}，都是调用 @racket[call/cc] 时的当前@tech{延续}：
-调用 @racket[proc] 是 @racket[call/cc] 做的最后一件事，@racket[proc]
-正常返回，返回值也直接交到那里。所以下面两个表达式行为相同：
+乘积是正常返回的。可调用 @racket[proc] 是 @racket[call/cc]
+做的最后一件事，@racket[proc] 正常返回，返回值直接交到调用
+@racket[call/cc] 的地方。所以交给 @racket[proc] 的@tech{延续}
+@racket[k]，和调用 @racket[proc] 这一处的@tech{延续}，都是调用
+@racket[call/cc] 时的当前@tech{延续}，下面两个表达式行为相同：
 
 @racketblock[
 (call/cc proc)
@@ -86,7 +86,7 @@
 
 @section[#:tag "01:from-bottom"]{读成命题}
 
-四个类型都只用 @math{→} 和 @math{⊥}。@math{⊥} 看上去像逻辑里的假，
+@math{⊥} 看上去像逻辑里的假，
 @defsym["p → q" "蕴含；函数类型"]@math{→} 看上去像「如果……那么……」，
 也就是@defterm{蕴含}。照这个样子，@math{p → ⊥} 说的是「如果 @math{p}，
 那么假」，也就是 @math{p} 不成立。这是@defterm{否定}
@@ -115,6 +115,9 @@
 
 检验起来并不费事。这些类型都由 @math{→} 和 @math{⊥} 搭起来，
 只要这两样最基本的对上了，搭出来的整体也就对上了。
+
+@margin-note{这里先只看会终止的程序；会一直算下去的程序，
+留到@xref["01:where-fails"]{「对应关系在哪里失效」}再看。}
 
 先看 @math{⊥}。它像假，凭什么？假命题没有证明；@tech{空类型} @math{⊥}
 没有元素，给不出一个这样的值。@racket[(return r)] 的类型是
@@ -221,7 +224,8 @@
 零个值就是空的一组，只有这一种可能。@racket[(values)]
 交出的正是零个值，结果类型写作 @racket[(Values)]。照这样整体来读，
 它对应恰好有一个元素的 @math{⊤}，@racket[thunk] 也就对应
-@math{⊤ → p}。而 @math{⊤} 正是@defterm{合取}
+@math{⊤ → p}。不收参数有了着落，那收多个参数、交多个值，
+又对应什么？@math{⊤} 正是@defterm{合取}
 @defsym["p ∧ q" "合取；多个值 p × q"]@math{∧} 的单位元：
 
 @mm{p ⇔ p ∧ ⊤ ⇔ ⊤ ∧ p}

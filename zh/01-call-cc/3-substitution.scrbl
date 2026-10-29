@@ -74,10 +74,10 @@
 接收结果。@racket[exit] 在程序体里是交来的假设，在
 @racket[(λ (exit) …)] 里则被绑定。把计算运行起来、
 在出口接收结果的整个过程，对应@xref["01:watershed"]{「分水岭」}里的
-DNE。和 @racket[call/cc] 的区别，在谁来提供这条@tech{延续}：
-多数语言本身只提供 @racket[exit]，由 OS 从外面交来，
-语言里什么也不用捕获；有了 @racket[call/cc]，没有 @racket[exit]
-也能像上面那样自己捕获出来。
+DNE；这个过程不是语言里的某个函数，是运行环境本身。和 @racket[call/cc]
+的区别，在谁来提供这条@tech{延续}：多数语言本身只提供 @racket[exit]，
+由 OS 从外面交来，语言里什么也不用捕获；有了 @racket[call/cc]，没有
+@racket[exit] 也能像上面那样自己捕获出来。
 
 @section[#:tag "01:neg-q"]{代入 @math{¬q}}
 
@@ -103,9 +103,10 @@ DNE。和 @racket[call/cc] 的区别，在谁来提供这条@tech{延续}：
 
 交出去的 @racket[kq] 等一个 @racket[q]。等 @racket[q] 交来，手里就有了
 @racket[q] 和 @racket[kkkq]。@racket[kkkq] 等的是一个
-@math{¬¬q}，@racket[q] 还差两个否定；照 DNI 的写法包一层，@racket[kkq]
-等一条否定 @math{q} 的@tech{延续} @racket[k]，正是 @math{¬¬q}，交给
-@racket[kkkq]。只有 @racket[λ] 和函数调用，什么也没有捕获。
+@math{¬¬q}，@racket[q] 还差两个否定；用一次 DNI，
+加上两层否定：@racket[kkq] 等一条否定 @math{q} 的@tech{延续}
+@racket[k]，正是 @math{¬¬q}，交给 @racket[kkkq]。只有 @racket[λ]
+和函数调用，什么也没有捕获。
 
 试一试。用 @racket[let/cc] 拿到一条真正的@tech{延续} @racket[k]，照
 DNI 的写法包成一个 @racket[kkkq]，交给 @racket[triple-negation]
