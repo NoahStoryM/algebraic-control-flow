@@ -170,28 +170,13 @@
 这似乎对上了逻辑里的@defterm[#:en "law of excluded middle"]{排中律}：
 @math{p} 成立，或者 @math{p} 不成立。
 
-@margin-note{@racket[∪] 有一个容易误读的地方。集合 @math{X = {a, b}}、
-@math{Y = {b, c}} 的并集里，@math{b} 说不清来自哪一边。
-打上标签再并起来，@math{X + Y = X × {0} ∪ Y × {1}}，两边就不相交了，
-检查标签就是一个谓词；@math{X + Y} 叫@defterm[#:en "tagged union"]{带
-标签的联合}。丢掉标签，总有一个从 @math{X + Y} 到 @math{X ∪ Y}
-的映射；@math{X ∩ Y = {}} 时它是一一对应，用不着标签。}
-
 再细看这个对应。@racket[(cc)] 交出的 @math{p ∪ ¬p}，
-用的人必须分得清拿到的是哪一支。那版 @racket[mul] 用谓词
-@racket[real?] 一问就知道，实数和函数本来就不相交。用 @racket[cc] 写
-@racket[call/cc] 时，@racket[(cc)] 返回的可能是当前@tech{延续}，
-也可能是之后调用这条@tech{延续}时传回来的参数。任何值，
-甚至@tech{延续}本身，都可以作为参数传回来；为了分得开，
-就在调用@tech{延续}之前，先把参数包进列表，相当于打上标签。@racket[cc]
-自己要决定交出哪一支，看的是 @racket[saved] 是不是 @racket[#f]，
-最早那版 @racket[mul] 看的是标志 @racket[first?]：
-这两处靠另记一个状态来分辨，不是在交给调用者的结果上添标记。
-
-读作「@math{p} 或 @math{q}」，也得这样分得清：用类型表示「@math{p} 或
-@math{q}」时，我们用两支分得开的联合，拿到一个值，能判断它属于哪一支，
-再按那一支使用它。对应的是@defterm[#:en "disjoint union"]{不相交的联
-合}：两边的元素分得开，拿到一个元素，就知道它来自哪一边；
+用的人必须分得清拿到的是哪一支：第一小篇里，@racket[mul] 用
+@racket[real?] 分辨，用 @racket[cc] 写的 @racket[call/cc]
+给传回来的值打上标签。读作「@math{p} 或 @math{q}」，也得这样分得清：
+用类型表示「@math{p} 或 @math{q}」时，我们用两支分得开的联合，
+拿到一个值，能判断它属于哪一支，再按那一支使用它。
+这是@defterm[#:en "disjoint union"]{不相交的联合}，
 打标签是做到不相交的一种办法。Typed Racket 的 @racket[∪]
 却是普通的并集，两边分不分得开，要看 @math{p} 和 @math{q} 本身。下面把
 @racket[∪] 读作「或」，说的都是这样分得开两边的联合。
