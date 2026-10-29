@@ -39,7 +39,7 @@
 @racket[absurd] 其实从来不会被调用，因为 @racket[(return r)]
 根本不会交回来。交出 @racket[⊥] 的表达式，放在要什么类型的位置都行。
 
-同样的道理，也能重新看 @racket[call/cc] 的类型。它原来的类型是
+同样的道理，也能重新看 @racket[call/cc] 的类型。它原来的类型是：
 
 @racketblock[
 (: call/cc (∀ (p) (→ (→ (→ p ⊥) p) p)))]
@@ -54,32 +54,32 @@
 
 令 @math{q = ⊥}，就回到原来那一种。
 
-也能反过来收紧交给 @racket[call/cc] 的函数。手里若是一个从不正常返回、
-只等@tech{延续}的函数 @racket[h]，类型 @racket[(→ (→ p ⊥) ⊥)]，
-就把它包成 @racket[(λ (k) (absurd (h k)))]：@racket[(h k)] 的类型是
-@racket[⊥]，交给 @racket[absurd] 就成了 @math{p}，正好是
-@racket[call/cc] 要的那种函数。所以 @racket[call/cc] 也有这样的类型：
+再看另一头。假如 @racket[proc] 总会调用交给它的@tech{延续}
+@racket[k]，它自己就从不正常返回，返回类型是 @racket[⊥]，类型也就成了
+@racket[(→ (→ p ⊥) ⊥)]。用同样的办法，后面接上 @racket[absurd]，
+@racket[(compose absurd proc)] 的类型就回到了 @racket[(→ (→ p ⊥) p)]，
+正好交得给 @racket[call/cc]。所以 @racket[call/cc] 也有这样的类型：
 
 @racketblock[
 (: call/cc (∀ (p) (→ (→ (→ p ⊥) ⊥) p)))]
 
 交给它一个只等@tech{延续}的计算，它从中把结果取出来。
 
-这样收紧，其实没有少掉什么。原来的类型说，交给 @racket[call/cc]
-的函数可以正常返回一个 @math{p}，最后那版 @racket[mul] 里的 @racket[λ]
-就是这样，没遇到零，乘积是正常返回的。可下面两个表达式行为相同：
+这样收紧，其实没有少掉什么。原来的类型允许 @racket[proc] 正常返回一个
+@math{p}，最后那版 @racket[mul] 里的 @racket[λ] 就是这样，没遇到零，
+乘积是正常返回的。可通过 @racket[(call/cc proc)] 调用 @racket[proc]
+时，交给 @racket[proc] 的@tech{延续} @racket[k]，和调用 @racket[proc]
+这一处的@tech{延续}，都是调用 @racket[call/cc] 时的当前@tech{延续}：
+调用 @racket[proc] 是 @racket[call/cc] 做的最后一件事，@racket[proc]
+正常返回，返回值也直接交到那里。所以下面两个表达式行为相同：
 
 @racketblock[
 (call/cc proc)
 (call/cc (λ (k) (k (proc k))))]
 
-第二行交给 @racket[call/cc] 的，是包了一层的那整个 @racket[λ]，不是
-@racket[proc]。@racket[call/cc] 交给 @racket[proc] 的 @racket[k]，
-通向的是 @racket[call/cc] 返回之后的地方。调用 @racket[proc] 又是
-@racket[call/cc] 做的最后一件事，@racket[proc] 正常返回时，
-返回值也直接交到那里。所以 @racket[proc] 的结果不论经 @racket[k]
-显式交出，还是正常返回，都走到同一个出口；正常返回时隐含经过的，
-就是一条看不见的@tech{延续}。包了一层的 @racket[λ] 从不正常返回，
+@racket[proc] 的结果不论经 @racket[k] 显式交出，还是正常返回，
+都走到同一个出口；正常返回时隐含经过的，就是一条看不见的@tech{延续}。
+第二行交给 @racket[call/cc] 的那整个 @racket[λ] 总会调用 @racket[k]，
 正是上面那种只等@tech{延续}的函数。
 
 于是手里有了四个类型，@racket[absurd] 的一个，@racket[call/cc]
