@@ -180,8 +180,10 @@
 再细看这个对应。@racket[(cc)] 交出的 @math{p ∪ ¬p}，
 用的人必须分得清拿到的是哪一支。那版 @racket[mul] 用谓词
 @racket[real?] 一问就知道，实数和函数本来就不相交。用 @racket[cc] 写
-@racket[call/cc] 时，结果可能也是函数，就把以后经@tech{延续}跳回来的值
-都包进列表，和当前@tech{延续}区分开，这就是打标签。@racket[cc]
+@racket[call/cc] 时，@racket[(cc)] 返回的可能是当前@tech{延续}，
+也可能是之后调用这条@tech{延续}时传回来的参数。任何值，
+甚至@tech{延续}本身，都可以作为参数传回来；为了分得开，
+就在调用@tech{延续}之前，先把参数包进列表，相当于打上标签。@racket[cc]
 自己要决定交出哪一支，看的是 @racket[saved] 是不是 @racket[#f]，
 最早那版 @racket[mul] 看的是标志 @racket[first?]：
 这两处靠另记一个状态来分辨，不是在交给调用者的结果上添标记。
