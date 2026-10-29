@@ -158,6 +158,16 @@
   (define cc tagged:cc)
   (provide cc))
 
+(module disjoint-struct racket
+  (provide (all-defined-out))
+  (struct b (v))
+  (struct c (v))
+  (define (which x)
+    (cond
+      [(b? x) (list 'b (b-v x))]
+      [(c? x) (list 'c (c-v x))]
+      [else   (list 'a x)])))
+
 (module+ test
   (require rackunit "../../tools/check-output-prefix.rkt"
            (prefix-in a: (submod ".." label-to-cc))
@@ -168,7 +178,8 @@
            (prefix-in ua: (submod ".." union-label-to-cc))
            (prefix-in ub: (submod ".." union-call/cc-to-label))
            (prefix-in uc: (submod ".." union-label-to-call/cc))
-           (prefix-in ud: (submod ".." union-cc-to-label)))
+           (prefix-in ud: (submod ".." union-cc-to-label))
+           (prefix-in ds: (submod ".." disjoint-struct)))
 
   (define (count-to-seven label goto)
     (let ([x 0])
@@ -189,6 +200,8 @@
   (check-equal? (a:mul) 1)
   (check-equal? (a:mul 2 3 4) 24)
   (check-equal? (a:mul 2 3 0 4) 0)
+  (check-equal? (map ds:which (list 1 (ds:b 1) (ds:c 1) '(c 1)))
+                '((a 1) (b 1) (c 1) (a (c 1))))
   (check-equal? (ua:mul) 1)
   (check-equal? (ua:mul 2 3 4) 24)
   (check-equal? (ua:mul 2 0 3) 0)
