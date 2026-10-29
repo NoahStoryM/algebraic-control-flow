@@ -111,11 +111,11 @@
 
 @section[#:tag "01:disjoint-loops"]{不打标签的互相定义}
 
-不打标签，三种表述照样可以互相定义。和@xref["01:label-from-call-cc"]{
-正文}一样，每一步都把上一步当作原语。
+不打标签，三种表述照样可以互相定义。
+和@xref["01:label-from-call-cc"]{正文}一样，每一步都把上一步当作原语。
 
 从@tech{标签}出发，经过上面的 @racket[cc] 和 @racket[call/cc]，
-最后一步和正文一样，令 @math{p = @ty{Label}}：
+最后一步令 @math{p = @ty{Label}}：
 
 @racketblock[
 (define (label) (call/cc goto))]
