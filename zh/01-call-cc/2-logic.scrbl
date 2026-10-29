@@ -158,14 +158,14 @@
 
 @section[#:tag "01:types-to-logic"]{析取与合取}
 
-倒回一步，看 @racket[cc] 的类型：
+等实数的@tech{延续}对应假，可 @racket[(cc)] 是一个合法的表达式，
+写得出来，它的类型就该是真的。倒回一步，看看 @racket[cc] 的类型：
 
 @racketblock[
 (: cc (∀ (p) (→ (∪ p (→ p ⊥)))))]
 
-等实数的@tech{延续}对应假，可 @racket[(cc)] 是一个合法的表达式，
-写得出来，它的类型就该是真的。看看它交出的是什么：不是只有 @math{¬p}，
-而是 @math{p ∪ ¬p}。按通常的想法，@math{p} 和 @math{¬p} 一真一假，
+@racket[(cc)] 交出的不是只有 @math{¬p}，而是 @math{p ∪ ¬p}。
+按通常的想法，@math{p} 和 @math{¬p} 一真一假，
 合在一起总有一支为真，@math{p ∪ ¬p} 一定为真。
 这似乎对上了逻辑里的@defterm[#:en "law of excluded middle"]{排中律}：
 @math{p} 成立，或者 @math{p} 不成立。
