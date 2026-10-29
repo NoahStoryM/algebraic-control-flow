@@ -156,35 +156,15 @@
 @racket[cc]、@racket[call/cc] 在运行时捕获出来的。
 写不出的东西，@racket[cc] 凭什么交得出来？
 
-@section[#:tag "01:types-to-logic"]{合取与析取}
+@section[#:tag "01:types-to-logic"]{析取与合取}
 
 倒回一步，答案就在 @racket[cc] 的类型里：
 
 @racketblock[
 (: cc (∀ (p) (→ (∪ p (→ p ⊥)))))]
 
-它交出的不是 @math{¬p}，而是 @math{p ∪ ¬p}。这个类型还读不下去：
-它不收参数，交出的又是一个 @math{∪}，这两样还不知道该怎么读。
-先说不收参数。否定 @math{p → ⊥} 与 @math{p} 正好相反。把 @math{⊥}
-换成恰好有一个元素的类型
-@defsym["⊤" "真，恰好有一个元素的类型"]@math{⊤}，再把箭头反过来，
-得到的 @math{⊤ → p} 却和 @math{p} 一样。它就是不收参数的函数
-@racket[(→ p)]，我们熟悉的 thunk：拿到一个 thunk，调用它就拿到一个
-@math{p}；拿到一个 @math{p}，也总能包成 @racket[(λ () a)]。
-两边能来回换，从真推出 @math{p}，就是 @math{p} 成立。@racket[cc]
-是一个 thunk，读它的类型，只看它交出什么就行。
-
-调用 thunk 时，什么也不交给它。Racket 里「什么也不交」也有写法：
-@racket[(values)] 交出零个结果。这样的交法只有一种，正合 @math{⊤}
-只有一个元素：把一次交出的结果整体来看，@racket[(values)] 对应
-@math{⊤}。这里的「零」说的是一次交出几个结果，不是类型有几个元素；
-一种交法也没有的，才是 @math{⊥}。照这样看，@racket[(values x y)]
-交出两个结果，整体对应积 @math{p × q}：两样都在手里，@math{p} 与
-@math{q} 同时成立。这是@defterm{合取}，写作
-@defsym["p ∧ q" "合取；多个结果 p × q"]@math{∧}。@racket[(values)]
-是它的单位元：零个结果并上去，什么也没多出来，就像「真且 @math{p}」
-就是 @math{p}。函数的两个参数，也可以这样合起来，看成一个
-@math{p × q}。
+@racket[(cc)] 交出的不是 @math{¬p}，而是 @math{p ∪ ¬p}。这个 @math{∪}
+还不知道该怎么读。
 
 @margin-note{@racket[∪] 有一个容易误读的地方。集合 @math{X = {a, b}}、
 @math{Y = {b, c}} 的并集里，@math{b} 说不清来自哪一边。
@@ -193,14 +173,13 @@
 标签的联合}。丢掉标签，总有一个从 @math{X + Y} 到 @math{X ∪ Y}
 的映射；@math{X ∩ Y = {}} 时它是一一对应，用不着标签。}
 
-再说 @math{∪}。@racket[(cc)] 交出的 @math{p ∪ ¬p}，
-用的人必须分得清拿到的是哪一支。那版 @racket[mul] 用谓词
-@racket[real?] 一问就知道，实数和函数本来就不相交。@racket[call/cc]
-不知道结果会是什么，结果也可能是函数，就把传回的结果包进列表，用
-@racket[list?] 区分，这就是打标签。@racket[cc] 自己要决定交出哪一支，
-看的是 @racket[saved] 是不是 @racket[#f]，最早那版 @racket[mul]
-看的是标志 @racket[first?]：这两处靠另记一个状态来分辨，
-不是在交给调用者的结果上添标记。
+@racket[(cc)] 交出的 @math{p ∪ ¬p}，用的人必须分得清拿到的是哪一支。
+那版 @racket[mul] 用谓词 @racket[real?] 一问就知道，
+实数和函数本来就不相交。@racket[call/cc] 不知道结果会是什么，
+结果也可能是函数，就把传回的结果包进列表，用 @racket[list?] 区分，
+这就是打标签。@racket[cc] 自己要决定交出哪一支，看的是 @racket[saved]
+是不是 @racket[#f]，最早那版 @racket[mul] 看的是标志 @racket[first?]：
+这两处靠另记一个状态来分辨，不是在交给调用者的结果上添标记。
 
 读作「@math{p} 或 @math{q}」，也得这样分得清：用类型表示「@math{p} 或
 @math{q}」时，我们用两支分得开的联合，拿到一个值，能判断它属于哪一支，
@@ -212,15 +191,36 @@
 这是@defterm{析取}，写作
 @defsym["p ∨ q" "析取；联合类型 p ∪ q"]@math{∨}。
 
-现在 @racket[cc] 也读得下去了：@math{p ∨ ¬p}，@math{p} 成立，或者
-@math{p} 不成立。这条也有名字，
-叫@defterm[#:en "law of excluded middle"]{排中律}。@racket[call/cc]
-把这个分支挪进了操作符内部，它的类型里也就没有 @math{∪}，只用 @math{→}
-和 @math{⊥} 就写得下。
+现在读得下去了：@racket[(cc)] 写出的是 @math{p ∨ ¬p}，@math{p} 成立，
+或者 @math{p} 不成立。这条也有名字，
+叫@defterm[#:en "law of excluded middle"]{排中律}。
+前面那件说不通的事，也有了着落：@racket[(cc)] 并没有写出一个
+@math{¬p}，@tech{延续} 只是其中一支，而且以后可能经由它跳回来，
+换成另一支。@racket[call/cc] 把这个分支挪进了操作符内部，
+它的类型里也就没有 @math{∪}，只用 @math{→} 和 @math{⊥} 就写得下。
 
-前面那件说不通的事，也有了着落：@racket[cc] 并没有写出一个 @math{¬p}，
-它写出的是 @math{p ∨ ¬p}。@tech{延续}只是其中一支，
-而且以后可能经由它跳回来，换成另一支。
+还剩一处：上面说的都是 @racket[(cc)]，@racket[cc]
+本身是一个不收参数的函数。否定 @math{p → ⊥} 与 @math{p} 正好相反。把
+@math{⊥} 换成恰好有一个元素的类型
+@defsym["⊤" "真，恰好有一个元素的类型"]@math{⊤}，再把箭头反过来，
+得到的 @math{⊤ → p} 却和 @math{p} 一样。它就是不收参数的函数
+@racket[(→ p)]，我们熟悉的 thunk：拿到一个 thunk，调用它就拿到一个
+@math{p}；拿到一个 @math{p}，也总能包成 @racket[(λ () a)]。
+两边能来回换，从真推出 @math{p}，就是 @math{p} 成立。所以 @racket[cc]
+和 @racket[(cc)] 说的是同一条定律。
+
+调用 @racket[(cc)] 时，什么也不交给 @racket[cc]。Racket
+里「什么也不交」也有写法：@racket[(values)] 交出零个结果。
+这样的交法只有一种，正合 @math{⊤} 只有一个元素：
+把一次交出的结果整体来看，@racket[(values)] 对应 @math{⊤}。
+这里的「零」说的是一次交出几个结果，不是类型有几个元素；
+一种交法也没有的，才是 @math{⊥}。照这样看，@racket[(values x y)]
+交出两个结果，整体对应积 @math{p × q}：两样都在手里，@math{p} 与
+@math{q} 同时成立。这是@defterm{合取}，写作
+@defsym["p ∧ q" "合取；多个结果 p × q"]@math{∧}。@racket[(values)]
+是它的单位元：零个结果并上去，什么也没多出来，就像「真且 @math{p}」
+就是 @math{p}。函数的两个参数，也可以这样合起来，看成一个
+@math{p × q}。
 
 @section[#:tag "01:watershed"]{分水岭}
 
