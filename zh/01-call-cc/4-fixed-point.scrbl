@@ -51,7 +51,7 @@
 @tech{标签}是这样从 @racket[cc] 写出来的：
 
 @racketblock[
-(define (label) (untag (cc)))]
+(define label (compose untag cc))]
 
 @racket[untag] 丢掉了@tech{标记}，两份并成一个 @math{l}，
 就像普通的并集不记来源。两支就坍缩成了一支：

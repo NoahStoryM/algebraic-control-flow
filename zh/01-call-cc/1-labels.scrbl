@@ -102,21 +102,15 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 第 @math{i} 支的值配上@tech{标记} @math{i}。一支也没有的 @racket[(∐)]，就是
 @racket[(∪)]，也就是 @racket[⊥]。
 
+@margin-note{这一步回不去。几支有公共的元素时，同一个元素配上不同的@tech{标记}，
+在 @racket[∐] 里是两个，@racket[untag] 以后就成了一个，再也说不清它来自哪一支：
+@racket[∐] 比 @racket[∪] 多记着来源。}
+
 把@tech{标记}丢掉，就回到普通的并集：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: untag (∀ (p ...) (→ (∐ p ...) (∪ p ...))))
 (define untag car)]
-
-这一步回不去。几支有公共的元素时，同一个元素配上不同的@tech{标记}，在 @racket[∐]
-里是两个元素，@racket[untag] 以后就成了一个：
-
-@examples[#:eval ev #:label #f
-(untag (cons 'b 0))
-(untag (cons 'b 1))]
-
-@racket['b] 原来来自哪一支，再也说不清了。@racket[∐] 比 @racket[∪] 多记着的，
-正是这份来源。
 
 我们把这个操作符叫做 @racket[cc]（@racket[current-continuation] 的缩写）：
 
@@ -302,7 +296,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 为原语，@tech{标签}就是 @racket[(cc)] 交出的东西去掉@tech{标记}：
 
 @examples[#:eval ev2 #:label #f #:no-prompt
-(define (label) (untag (cc)))
+(define label (compose untag cc))
 (define (goto l) (l l))]
 
 无论从哪一个出发，另外两个都写得出来：三种表述在@bold{表达能力上等价}。

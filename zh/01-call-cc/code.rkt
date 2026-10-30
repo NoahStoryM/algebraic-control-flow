@@ -70,7 +70,7 @@
   (require (only-in (submod ".." label-to-call/cc) cc))
   (provide label goto)
   (define untag car)
-  (define (label) (untag (cc)))
+  (define label (compose untag cc))
   (define (goto l) (l l)))
 
 (module tagged typed/racket/no-check
