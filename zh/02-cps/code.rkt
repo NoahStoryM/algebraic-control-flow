@@ -15,7 +15,7 @@
 ;;; 类型别名
 
 (define-type ⊥ (∪))
-(define-type (¬  a) (→ a ⊥))
+(define-type (¬ a ...) (→ a ... ⊥))
 (define-type (¬¬ a) (¬ (¬ a)))
 
 
@@ -30,28 +30,28 @@
 
 ;;; 宿主的箭头
 
-(define-type (→𝒟 p q) (→ p q))
-(define-type (→𝒞 p q) (→ p q))
+(define-type (→𝒞 p ... q) (→ p ... q))
+(define-type (→𝒟 p ... q) (→ p ... q))
 
-(: inj (∀ (p q) (→ (→𝒟 p q) (→𝒞 p q))))
+(: inj (∀ (p q) (→ (→𝒞 p q) (→𝒟 p q))))
 (define (inj f) f)
 
 ;;; 逆否箭头
 
-(define-type (→𝒰 p q) (← (¬ p) (¬ q)))
-(define-type (¬𝒰 p)   (→𝒰 p ⊥))
+(define-type (→𝒰 p ... q) (← (¬ p ...) (¬ q)))
+(define-type (¬𝒰 p ...)   (→𝒰 p ... ⊥))
 
 (: neg
    (∀ (p q)
-      (case→ (→ (→𝒞 p q) (→𝒰     p      q))
-             (→ (→𝒰 p q) (→𝒟 (¬¬ p) (¬¬ q))))))
+      (case→ (→ (→𝒟 p q) (→𝒰     p      q))
+             (→ (→𝒰 p q) (→𝒞 (¬¬ p) (¬¬ q))))))
 (define ((neg f) kq) (∘ kq f))
 
 
 ;;; CPS 箭头
 
-(define-type (→𝒦 p q) (→ p (¬¬ q)))
-(define-type (¬𝒦 p)   (→𝒦 p ⊥))
+(define-type (→𝒦 p ... q) (→ p ... (¬¬ q)))
+(define-type (¬𝒦 p ...)   (→𝒦 p ... ⊥))
 
 (: flip
    (∀ (p q)
@@ -59,7 +59,7 @@
              (→ (→𝒦 p q) (→𝒰 p q)))))
 (define (((flip f) . y*) . x*) (apply (apply f x*) y*))
 
-(: cps (∀ (p q) (→ (→𝒞 p q) (→𝒦 p q))))
+(: cps (∀ (p q) (→ (→𝒟 p q) (→𝒦 p q))))
 (define cps (∘ flip neg))
 
 (: cps:id (∀ (q) (→𝒦 q q)))
@@ -112,6 +112,9 @@
 
 ;;; Clavius 律
 
+(define-type Label𝒦 (→𝒦 Label𝒦 ⊥))
+(define-type Label𝒰 (¬𝒰 Label𝒰))
+
 (: neg:call/cc  (∀ (p) (→𝒰 (→𝒰 (¬𝒰 p) p) p)))
 (: cps:call/cc  (∀ (p) (→𝒦 (→𝒦 (¬𝒦 p) p) p)))
 
@@ -125,16 +128,16 @@
 (: anf:eval (∀ (a) (→ (¬¬ a) a)))
 (define (anf:eval kka) (⊥->a (kka a->⊥)))
 
-(: uncps (∀ (p q) (→ (→𝒦 p q) (→𝒞 p q))))
+(: uncps (∀ (p q) (→ (→𝒦 p q) (→𝒟 p q))))
 (define (uncps cps:f) (∘ call/cc cps:f))
 
-(: unneg (∀ (p q) (→ (→𝒰 p q) (→𝒞 p q))))
+(: unneg (∀ (p q) (→ (→𝒰 p q) (→𝒟 p q))))
 (define unneg (∘ uncps flip))
 
 
 ;;; 再用一次 neg
 
-(: neg² (∀ (p q) (→ (→𝒞 p q) (→𝒟 (¬¬ p) (¬¬ q)))))
+(: neg² (∀ (p q) (→ (→𝒟 p q) (→𝒞 (¬¬ p) (¬¬ q)))))
 (define neg² (∘ neg neg))
 
 
@@ -143,10 +146,10 @@
 (: neg²:id (∀ (p) (→𝒦 (¬¬ p) p)))
 (define (neg²:id kkp) kkp)
 
-(: join (∀ (p q) (→ (→𝒞 p q) (→𝒟 (¬¬ (¬¬ p)) (¬¬ q)))))
+(: join (∀ (p q) (→ (→𝒞 p q) (→𝒞 (¬¬ (¬¬ p)) (¬¬ q)))))
 (define join (∘ neg cps neg))
 
-(: join:id (∀ (p) (→𝒟 (¬¬ (¬¬ p)) (¬¬ p))))
+(: join:id (∀ (p) (→𝒞 (¬¬ (¬¬ p)) (¬¬ p))))
 (define join:id (join id))
 
 
@@ -308,6 +311,7 @@
   (check-equal? (+ 1 ((uncps cps:mul) 1 2 3 4)) 25)
   (check-equal? (+ 1 ((uncps cps:mul) 1 2 0 3 4)) 1)
   (check-equal? ((uncps (cps add1)) 41) 42)
+  (: cps:label (→𝒦 Label𝒦))
   (define (cps:label) (cps:call/cc cps:id))
   (check-true
    (output-starts-with?
@@ -377,9 +381,9 @@
 
 (module stage-5 typed/racket/no-check
   (define-type ⊥ (∪))
-  (define-type (¬ p) (→ p ⊥))
+  (define-type (¬ p ...) (→ p ... ⊥))
   (define-type (¬¬ p) (¬ (¬ p)))
-  (: fact/k (→ Natural (¬ Natural) ⊥))
+  (: fact/k (¬ Natural (¬ Natural)))
 
   (define (fact/k n k)
     (if (= n 0)
@@ -387,7 +391,7 @@
         (fact/k (- n 1)
                 (λ (v) (k (* n v))))))
 
-  (: fib/k (→ Natural (¬ Natural) ⊥))
+  (: fib/k (¬ Natural (¬ Natural)))
 
   (define (fib/k n k)
     (if (< n 2)
@@ -414,9 +418,9 @@
 
 (module stage-7 typed/racket/no-check
   (define-type ⊥ (∪))
-  (define-type (¬ p) (→ p ⊥))
+  (define-type (¬ p ...) (→ p ... ⊥))
   (define-type (¬¬ p) (¬ (¬ p)))
-  (: fact/k (→ Natural (¬ Natural) ⊥))
+  (: fact/k (¬ Natural (¬ Natural)))
 
   (define (fact/k n k)
     (let loop/k ([n n] [acc 1] [k k])
@@ -438,13 +442,13 @@
 
 (module stage-11 typed/racket/no-check
   (define-type ⊥ (∪))
-  (define-type (¬ p) (→ p ⊥))
+  (define-type (¬ p ...) (→ p ... ⊥))
   (define-type (¬¬ p) (¬ (¬ p)))
   (require (submod ".." stage-9))
   (: mul (→ Real * Real))
 
   (define (mul . r*)
-    (: loop/k (→ (Listof Real) (→ Real ⊥) ⊥))
+    (: loop/k (¬ (Listof Real) (¬ Real)))
     (define (loop/k r* k)
       (if (null? r*)
           (k (*))
@@ -472,7 +476,7 @@
 
 (module stage-15 typed/racket/no-check
   (define-type ⊥ (∪))
-  (define-type (¬ p) (→ p ⊥))
+  (define-type (¬ p ...) (→ p ... ⊥))
   (define-type (¬¬ p) (¬ (¬ p)))
   (define (((neg f) kq) . p*) (kq (apply f p*)))
   (define (((cps f) . p*) kq) (kq (apply f p*)))
@@ -490,7 +494,7 @@
 
 (module stage-17 typed/racket/no-check
   (define-type ⊥ (∪))
-  (define-type (¬ p) (→ p ⊥))
+  (define-type (¬ p ...) (→ p ... ⊥))
   (define-type (¬¬ p) (¬ (¬ p)))
   (define (((flip f) . y*) . x*) (apply (apply f x*) y*))
   (: flip (∀ (p q) (case→ (→ (→ (¬ q) (¬ p)) (→ p (¬¬ q)))
@@ -500,18 +504,18 @@
 
 (module stage-22 typed/racket/no-check
   (define-type ⊥ (∪))
-  (define-type (¬ p) (→ p ⊥))
+  (define-type (¬ p ...) (→ p ... ⊥))
   (define-type (¬¬ p) (¬ (¬ p)))
   (define-type (→𝒰 p q) (→ (¬ q) (¬ p)))
   (provide (all-defined-out))
 )
 
 (module stage-clavius typed/racket/no-check
-  ;; 「新箭头下的 Clavius 律」：回顾第一篇 call/cc 的类型，用 𝒞 的写法。
+  ;; 「新箭头下的 Clavius 律」：回顾第一篇 call/cc 的类型，用 𝒟 的写法。
   (define-type ⊥ (∪))
-  (define-type (→𝒞 p q) (→ p q))
-  (define-type (¬𝒞 p) (→𝒞 p ⊥))
-  (: call/cc (∀ (p) (→𝒞 (→𝒞 (¬𝒞 p) p) p)))
+  (define-type (→𝒟 p ... q) (→ p ... q))
+  (define-type (¬𝒟 p ...) (→𝒟 p ... ⊥))
+  (: call/cc (∀ (p) (→𝒟 (→𝒟 (¬𝒟 p) p) p)))
 )
 
 (module+ test
@@ -605,6 +609,7 @@
       (cps:loop r*)))
   (check-equal? (anf:eval (cps:mul 1 2 3 4)) 24)
   (check-equal? (anf:eval (cps:mul 1 2 0 3 4)) 0)
+  (: cps:label (→𝒦 Label𝒦))
   (define (cps:label) (cps:call/cc cps:id))
   (check-true
    (output-starts-with?
@@ -630,7 +635,7 @@
     (check-equal? (run ((cps (uncps cps:esc)) x)) (run (cps:esc x)))
     ;; (neg (uncps cps:f)) ≈ (flip cps:f)
     (check-equal? (⊥->a (((neg (uncps cps:esc)) a->⊥) x)) (⊥->a (((flip cps:esc) a->⊥) x)))
-    ;; unneg 走 𝒦 回到 𝒞
+    ;; unneg 走 𝒦 回到 𝒟
     (check-equal? ((unneg (neg add1)) x) (add1 x)))
   ;; 关键规律：(kp (call/cc kkp)) ≈ (kkp kp)
   ;; 前提：kkp 不装异常处理器。装了的话，直接调用 kp 还在处理器里，捕获的延续先离开它。

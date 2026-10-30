@@ -9,28 +9,28 @@
 ;;; 类型
 ;; a、x 是答案类型参数；类型标注只作设计说明，不经类型检查
 
-(define-type (→𝒟 p q) (→ p q))              ; 纯的宿主箭头
-(define-type (←𝒟 q p) (→𝒟 p q))
+(define-type (→𝒞 p q) (→ p q))              ; 纯的宿主箭头
+(define-type (←𝒞 q p) (→𝒞 p q))
 
 (define-type ⊥ (∪))
 (define-type ⊥ᵃ a)                          ; 局部空：平凡表示
-(define-type (¬ₐ p) (→𝒟 p ⊥ᵃ))
+(define-type (¬ₐ p) (→𝒞 p ⊥ᵃ))
 (define-type (¬ₐ¬ₐ p) (¬ₐ (¬ₐ p)))
 (define-type (¬ₐ¬ₐ¬ₐ p) (¬ₐ (¬ₐ¬ₐ p)))
 
-(define-type (→𝒰ₐ p q) (←𝒟 (¬ₐ p) (¬ₐ q)))  ; 局部逆否箭头
-(define-type (→𝒦ₐ p q) (→𝒟 p (¬ₐ¬ₐ q)))    ; 局部 CPS 箭头
+(define-type (→𝒰ₐ p q) (←𝒞 (¬ₐ p) (¬ₐ q)))  ; 局部逆否箭头
+(define-type (→𝒦ₐ p q) (→𝒞 p (¬ₐ¬ₐ q)))    ; 局部 CPS 箭头
 ;; 下标换成 x（¬ₓ、¬ₓ¬ₓ、→𝒰ₓ），就是以 x 为基的同一组类型
 
 
 ;;; 预复合、交换参数、恒等、丢弃
 
-(: neg  (∀ (p q) (case→ (→ (→𝒟 p q) (←𝒟 (¬ₐ p) (¬ₐ q)))
-                        (→ (←𝒟 q p) (→𝒟 (¬ₐ q) (¬ₐ p))))))
+(: neg  (∀ (p q) (case→ (→ (→𝒞 p q) (←𝒞 (¬ₐ p) (¬ₐ q)))
+                        (→ (←𝒞 q p) (→𝒞 (¬ₐ q) (¬ₐ p))))))
 (define ((neg f) kₐq) (∘ kₐq f))
 
-(: flip (∀ (p q) (case→ (→ (←𝒟 (¬ₐ p) q) (→𝒟 p (¬ₐ q)))
-                        (→ (→𝒟 p (¬ₐ q)) (←𝒟 (¬ₐ p) q)))))
+(: flip (∀ (p q) (case→ (→ (←𝒞 (¬ₐ p) q) (→𝒞 p (¬ₐ q)))
+                        (→ (→𝒞 p (¬ₐ q)) (←𝒞 (¬ₐ p) q)))))
 (define (((flip f) . y*) . x*) (apply (apply f x*) y*))
 
 (: a->⊥ᵃ (∀ (a) (¬ₐ a)))
@@ -44,14 +44,14 @@
 
 ;;; 复合
 
-(: ⨾ (∀ (p ...) (→ (←𝒟 pn-1 pn) ... (←𝒟 p1 p2) (←𝒟 p1 pn))))
+(: ⨾ (∀ (p ...) (→ (←𝒞 pn-1 pn) ... (←𝒞 p1 p2) (←𝒞 p1 pn))))
 (define (⨾ . f*) (apply ∘ (reverse f*)))
 
 (: ∘𝒰 (∀ (p ...) (→ (→𝒰ₐ pn-1 pn) ... (→𝒰ₐ p1 p2) (→𝒰ₐ p1 pn))))
 (define ∘𝒰 ⨾)
 
-(: cps  (∀ (p q) (case→ (→ (→𝒟 p q) (→𝒟 p (¬ₐ¬ₐ q)))
-                        (→ (←𝒟 q p) (←𝒟 (¬ₐ¬ₐ q) p)))))
+(: cps  (∀ (p q) (case→ (→ (→𝒞 p q) (→𝒞 p (¬ₐ¬ₐ q)))
+                        (→ (←𝒞 q p) (←𝒞 (¬ₐ¬ₐ q) p)))))
 (: cps* (∀ (p a) (→ (¬ₐ p) (→𝒦ₐ p ⊥))))
 (define cps  (∘ flip neg))
 (define cps* (∘ flip neg*))
@@ -59,7 +59,7 @@
 (: ∘𝒦 (∀ (p ...) (→ (→𝒦ₐ pn-1 pn) ... (→𝒦ₐ p1 p2) (→𝒦ₐ p1 pn))))
 (define (∘𝒦 . cps:f*) (flip (apply ∘𝒰 (map flip cps:f*))))
 
-(: neg² (∀ (p q) (→ (→𝒟 p q) (→𝒟 (¬ₐ¬ₐ p) (¬ₐ¬ₐ q)))))
+(: neg² (∀ (p q) (→ (→𝒞 p q) (→𝒞 (¬ₐ¬ₐ p) (¬ₐ¬ₐ q)))))
 (define neg² (∘ neg neg))
 
 
@@ -358,12 +358,12 @@
   (define-type ⊥ᵃ Real)
   (define-type (¬ₐ p) (→ p ⊥ᵃ))
   (define-type (¬ₐ¬ₐ p) (¬ₐ (¬ₐ p)))
-  (define-type (→𝒟 p q) (→ p q))
-  (define-type (←𝒟 q p) (→𝒟 p q))
-  (define-type (→𝒰ₐ p q) (←𝒟 (¬ₐ p) (¬ₐ q)))
-  (define-type (→𝒦ₐ p q) (→𝒟 p (¬ₐ¬ₐ q)))
+  (define-type (→𝒞 p q) (→ p q))
+  (define-type (←𝒞 q p) (→𝒞 p q))
+  (define-type (→𝒰ₐ p q) (←𝒞 (¬ₐ p) (¬ₐ q)))
+  (define-type (→𝒦ₐ p q) (→𝒞 p (¬ₐ¬ₐ q)))
   (define ((neg f) kₐq) (compose kₐq f))
-  (: neg (∀ (p q) (→ (→𝒟 p q) (∀ (a) (→𝒰ₐ p q)))))
+  (: neg (∀ (p q) (→ (→𝒞 p q) (∀ (a) (→𝒰ₐ p q)))))
   (provide (all-defined-out))
 )
 
@@ -371,10 +371,10 @@
   (define-type ⊥ᵃ Real)
   (define-type (¬ₐ p) (→ p ⊥ᵃ))
   (define-type (¬ₐ¬ₐ p) (¬ₐ (¬ₐ p)))
-  (define-type (→𝒟 p q) (→ p q))
-  (define-type (←𝒟 q p) (→𝒟 p q))
-  (define-type (→𝒰ₐ p q) (←𝒟 (¬ₐ p) (¬ₐ q)))
-  (define-type (→𝒦ₐ p q) (→𝒟 p (¬ₐ¬ₐ q)))
+  (define-type (→𝒞 p q) (→ p q))
+  (define-type (←𝒞 q p) (→𝒞 p q))
+  (define-type (→𝒰ₐ p q) (←𝒞 (¬ₐ p) (¬ₐ q)))
+  (define-type (→𝒦ₐ p q) (→𝒞 p (¬ₐ¬ₐ q)))
   (define ((neg f) kₐq) (compose kₐq f))
   (: neg (∀ (p a) (→ (¬ₐ p) (∀ (x) (→𝒰ₓ p ⊥ᵃ)))))
   (provide (all-defined-out))
@@ -384,10 +384,10 @@
   (define-type ⊥ᵃ Real)
   (define-type (¬ₐ p) (→ p ⊥ᵃ))
   (define-type (¬ₐ¬ₐ p) (¬ₐ (¬ₐ p)))
-  (define-type (→𝒟 p q) (→ p q))
-  (define-type (←𝒟 q p) (→𝒟 p q))
-  (define-type (→𝒰ₐ p q) (←𝒟 (¬ₐ p) (¬ₐ q)))
-  (define-type (→𝒦ₐ p q) (→𝒟 p (¬ₐ¬ₐ q)))
+  (define-type (→𝒞 p q) (→ p q))
+  (define-type (←𝒞 q p) (→𝒞 p q))
+  (define-type (→𝒰ₐ p q) (←𝒞 (¬ₐ p) (¬ₐ q)))
+  (define-type (→𝒦ₐ p q) (→𝒞 p (¬ₐ¬ₐ q)))
   (define (((flip f) . y*) . x*) (apply (apply f x*) y*))
   (: flip (∀ (p q) (case→ (→ (→𝒰ₐ p q) (→𝒦ₐ p q))
                           (→ (→𝒦ₐ p q) (→𝒰ₐ p q)))))
@@ -398,10 +398,10 @@
   (define-type ⊥ᵃ Real)
   (define-type (¬ₐ p) (→ p ⊥ᵃ))
   (define-type (¬ₐ¬ₐ p) (¬ₐ (¬ₐ p)))
-  (define-type (→𝒟 p q) (→ p q))
-  (define-type (←𝒟 q p) (→𝒟 p q))
-  (define-type (→𝒰ₐ p q) (←𝒟 (¬ₐ p) (¬ₐ q)))
-  (define-type (→𝒦ₐ p q) (→𝒟 p (¬ₐ¬ₐ q)))
+  (define-type (→𝒞 p q) (→ p q))
+  (define-type (←𝒞 q p) (→𝒞 p q))
+  (define-type (→𝒰ₐ p q) (←𝒞 (¬ₐ p) (¬ₐ q)))
+  (define-type (→𝒦ₐ p q) (→𝒞 p (¬ₐ¬ₐ q)))
   (define cps (compose (λ (f) (λ (v) (λ (k) (k (f v))))) values))
   (: cps  (∀ (p a) (→ (¬ₐ p) (∀ (x) (→𝒦ₓ p ⊥ᵃ)))))
   (provide (all-defined-out))
@@ -412,10 +412,10 @@
   (define-type ⊥ᵃ Real)
   (define-type (¬ₐ p) (→ p ⊥ᵃ))
   (define-type (¬ₐ¬ₐ p) (¬ₐ (¬ₐ p)))
-  (define-type (→𝒟 p q) (→ p q))
-  (define-type (←𝒟 q p) (→𝒟 p q))
-  (define-type (→𝒰ₐ p q) (←𝒟 (¬ₐ p) (¬ₐ q)))
-  (define-type (→𝒦ₐ p q) (→𝒟 p (¬ₐ¬ₐ q)))
+  (define-type (→𝒞 p q) (→ p q))
+  (define-type (←𝒞 q p) (→𝒞 p q))
+  (define-type (→𝒰ₐ p q) (←𝒞 (¬ₐ p) (¬ₐ q)))
+  (define-type (→𝒦ₐ p q) (→𝒞 p (¬ₐ¬ₐ q)))
   (define a->⊥ᵃ id)
   (: anf:eval (∀ (a) (→ (¬ₐ¬ₐ a) a)))
 
@@ -428,10 +428,10 @@
   (define-type ⊥ᵃ Real)
   (define-type (¬ₐ p) (→ p ⊥ᵃ))
   (define-type (¬ₐ¬ₐ p) (¬ₐ (¬ₐ p)))
-  (define-type (→𝒟 p q) (→ p q))
-  (define-type (←𝒟 q p) (→𝒟 p q))
-  (define-type (→𝒰ₐ p q) (←𝒟 (¬ₐ p) (¬ₐ q)))
-  (define-type (→𝒦ₐ p q) (→𝒟 p (¬ₐ¬ₐ q)))
+  (define-type (→𝒞 p q) (→ p q))
+  (define-type (←𝒞 q p) (→𝒞 p q))
+  (define-type (→𝒰ₐ p q) (←𝒞 (¬ₐ p) (¬ₐ q)))
+  (define-type (→𝒦ₐ p q) (→𝒞 p (¬ₐ¬ₐ q)))
   (define cps:id (λ (p) (λ (k) (k p))))
   (: cps:id (∀ (p a) (→ p (¬ₐ¬ₐ p))))
   (provide (all-defined-out))
@@ -471,19 +471,19 @@
   (define-type ⊥ᵃ Real)
   (define-type (¬ₐ p) (→ p ⊥ᵃ))
   (define-type (¬ₐ¬ₐ p) (¬ₐ (¬ₐ p)))
-  (define-type (→𝒟 p q) (→ p q))
-  (define-type (←𝒟 q p) (→𝒟 p q))
-  (define-type (→𝒰ₐ p q) (←𝒟 (¬ₐ p) (¬ₐ q)))
-  (define-type (→𝒦ₐ p q) (→𝒟 p (¬ₐ¬ₐ q)))
+  (define-type (→𝒞 p q) (→ p q))
+  (define-type (←𝒞 q p) (→𝒞 p q))
+  (define-type (→𝒰ₐ p q) (←𝒞 (¬ₐ p) (¬ₐ q)))
+  (define-type (→𝒦ₐ p q) (→𝒞 p (¬ₐ¬ₐ q)))
   (define ((neg f) kₐq) (compose kₐq f))
   (define (((cps f) . p*) kₐq) (kₐq (apply f p*)))
   (define (((flip f) . y*) . x*) (apply (apply f x*) y*))
-  (: neg  (∀ (p q) (case→ (→ (→𝒟 p q) (←𝒟 (¬ₐ p) (¬ₐ q)))
-                          (→ (←𝒟 q p) (→𝒟 (¬ₐ q) (¬ₐ p))))))
-  (: cps  (∀ (p q) (case→ (→ (→𝒟 p q) (→𝒟 p (¬ₐ¬ₐ q)))
-                          (→ (←𝒟 q p) (←𝒟 (¬ₐ¬ₐ q) p)))))
-  (: flip (∀ (p q) (case→ (→ (←𝒟 (¬ₐ p) q) (→𝒟 p (¬ₐ q)))
-                          (→ (→𝒟 p (¬ₐ q)) (←𝒟 (¬ₐ p) q)))))
+  (: neg  (∀ (p q) (case→ (→ (→𝒞 p q) (←𝒞 (¬ₐ p) (¬ₐ q)))
+                          (→ (←𝒞 q p) (→𝒞 (¬ₐ q) (¬ₐ p))))))
+  (: cps  (∀ (p q) (case→ (→ (→𝒞 p q) (→𝒞 p (¬ₐ¬ₐ q)))
+                          (→ (←𝒞 q p) (←𝒞 (¬ₐ¬ₐ q) p)))))
+  (: flip (∀ (p q) (case→ (→ (←𝒞 (¬ₐ p) q) (→𝒞 p (¬ₐ q)))
+                          (→ (→𝒞 p (¬ₐ q)) (←𝒞 (¬ₐ p) q)))))
   (provide (all-defined-out))
 )
 

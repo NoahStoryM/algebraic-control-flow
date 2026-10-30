@@ -7,7 +7,7 @@
 @(define ev (make-acf-eval))
 @examples[#:eval ev #:hidden
 (define-type ⊥ (∪))
-(define-type (¬ p) (→ p ⊥))
+(define-type (¬ p ...) (→ p ... ⊥))
 (define-type (¬¬ p) (¬ (¬ p)))
 (define-type (← q p) (→ p q))
 (define ∘ compose)
@@ -145,7 +145,7 @@
                           (cps:* res r))))))
     (cps:loop r*)))]
 
-@racket[(cps:mul 1 2 3 4)] 交回的是一段等待@tech{延续}的计算，交给 @racket[anf:eval] 运行。宏在展开时把程序编译成等待@tech{延续}的计算，@racket[anf:eval] 在运行时交入@tech{终结延续}。这和第一篇里操作系统运行程序是同一种分工：程序是一个 @math{¬¬@ty{Byte}}，退出通道由操作系统在启动时交给它。@racket[anf:eval] 扮演的就是操作系统：
+@racket[(cps:mul 1 2 3 4)] 交回的是一段等待@tech{延续}的计算，交给 @racket[anf:eval] 运行。宏在展开时把程序编译成等待@tech{延续}的计算，@racket[anf:eval] 在运行时交入@tech{终结延续}。这和操作系统运行程序是同一种分工：程序是一个 @math{¬¬@ty{Byte}}，退出通道由操作系统在启动时交给它。@racket[anf:eval] 扮演的就是操作系统：
 
 @examples[#:eval ev #:label #f
 (anf:eval (cps:mul 1 2 3 4))
@@ -155,19 +155,26 @@
 
 @section[#:tag "02:yin-yang"]{阴阳谜题}
 
-@racket[cps:return] 只用来跳出循环。第一篇的阴阳谜题对@tech{延续}要求更多：被捕获的@tech{延续}要作为值传来传去，再被调用。
+@racket[cps:return] 只用来跳出循环。@xref["01:yin-yang"]{阴阳谜题}对@tech{延续}要求更多：被捕获的@tech{延续}要作为值传来传去，再被调用。
 
-@racket[label] 要把捕获的@tech{延续}原样交出来，用得上一段什么也不做的计算：收到值，交出一段计算，收到@tech{延续}后把值原样交给它。它就是 @racket[(cps id)]，记作 @racket[cps:id]：
+先把@xref["01:label-from-call-cc"]{「从 call/cc 定义标签」}里的 @racket[label] 写进嵌入语言。它可以写成 @racket[(let/cc k k)]：捕获当前@tech{延续}，再把它作为结果返回。@racket[let/cc] 换成 @racket[anf:let/cc]；返回照@xref["02:cps"]{「延续与 CPS」}的办法，不交回给调用者，而是交给@tech{延续}参数 @racket[k]。于是 @racket[(let/cc k k)] 写成：
+
+@racketblock[
+(anf:let/cc cps:k (λ (k) (k cps:k)))]
+
+展开 @racket[anf:let/cc]：
+
+@racketblock[
+#,(hspace 2)(anf:let/cc cps:k (λ (k) (k cps:k)))
+= (cps:call/cc (λ (cps:k) (λ (k) (k cps:k))))]
+
+交给 @racket[cps:call/cc] 的这个函数，收下一个值 @racket[v]，交出 @racket[(λ (k) (k v))]：一段计算，收到@tech{延续}就把 @racket[v] 原样交给它。这正是 @racket[((cps id) v)]。所以这个函数就是 @racket[(cps id)]，记作 @racket[cps:id]，@racket[label] 写作：
 
 @examples[#:eval ev #:label #f #:no-prompt
-(define cps:id (cps id))]
-
-@racket[label] 在嵌入语言里写作：
-
-@examples[#:eval ev #:label #f #:no-prompt
+(define cps:id (cps id))
 (define (cps:label) (cps:call/cc cps:id))]
 
-展开一层，@racket[((cps:label) k)] 是 @racket[((cps:call/cc cps:id) k)]，也就是 @racket[((cps:id (cps k)) k)]：@racket[cps:id] 把提升过的 @racket[(cps k)] 原样交给 @racket[k]。@racket[(cps:label)] 交回一段等待@tech{延续}的计算；运行时，它把提升过的当前@tech{延续} @racket[(cps k)] 作为结果交给 @racket[k]，和第一篇的 @racket[(label)] 一样。绑定得到的 @racket[cps:yin]、@racket[cps:yang]，就是这样的值。
+@racket[(cps:label)] 交出一段计算。收到@tech{延续} @racket[k] 后，@racket[cps:call/cc] 把提升过的 @racket[(cps k)] 交给 @racket[cps:id]，@racket[cps:id] 再把它原样交给 @racket[k]，也就是 @racket[(k (cps k))]。直接风格里是 @racket[(k k)]，把@tech{延续}交给它自己；这里交给 @racket[k] 的，是提升过的它自己。绑定得到的 @racket[cps:yin]、@racket[cps:yang]，就是这样的值。
 
 谜题写进 @racket[anf:let*]。中间还有打印：打印也是一步计算，只是结果用不着。一串计算依次做下去、只留最后一个的结果，就是 @racket[anf:begin]：把前面的结果绑定到一个用不着的变量 @racket[_] 上，忽略掉。
 
@@ -177,7 +184,7 @@
     [(_ b) b]
     [(_ e b* ...) (anf:let ([_ e]) (anf:begin b* ...))]))]
 
-谜题于是照第一篇的样子写：
+谜题于是照原来的样子写：
 
 @examples[#:eval ev #:label #f
 (eval:alts

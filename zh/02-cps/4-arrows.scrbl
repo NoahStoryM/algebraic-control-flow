@@ -2,12 +2,12 @@
 
 @title[#:tag "02:4-arrows"]{两种箭头与命题}
 
-嵌入语言里，每一次绑定都把两段计算接了起来。接法有没有规律，写下的类型又说了什么？
+嵌入语言里，每一次绑定都把两段计算接了起来。接法有没有规律，写下的类型又说了什么？@racket[cps:call/cc] 只用 @racket[λ] 就写成了，@xref["01:watershed"]{「分水岭」}却说当前@tech{延续}凭空拿不到，两者怎么对得上，也要从这些类型里看。
 
 @(define ev (make-acf-eval))
 @examples[#:eval ev #:hidden
 (define-type ⊥ (∪))
-(define-type (¬ p) (→ p ⊥))
+(define-type (¬ p ...) (→ p ... ⊥))
 (define-type (¬¬ p) (¬ (¬ p)))
 (define-type (← q p) (→ p q))
 (define ∘ compose)
@@ -70,7 +70,9 @@
 
 @subsection[#:tag "02:bind-compose"]{绑定就是复合}
 
-问题一样，解法也可以借来。那里把 @racket[let] 看成复合，问题就成了复合是否满足@tech{结合律}与@tech{单位律}。这里也把一次绑定看成一次复合：照 @racket[anf:let] 的样子，先 @racket[cps:f] 再 @racket[cps:g]，接成一支新的箭头，记作 @racket[∘𝒦]（取 continuation 的字母）：
+@margin-note{𝒦 取 continuation（@tech{延续}）的首字母。}
+
+问题一样，解法也可以借来。那里把 @racket[let] 看成复合，问题就成了复合是否满足@tech{结合律}与@tech{单位律}。这里也把一次绑定看成一次复合：照 @racket[anf:let] 的样子，先 @racket[cps:f] 再 @racket[cps:g]，接成一支新的箭头，记作@defsym["g ∘𝒦 f" "CPS 箭头的复合，由 anf:let 给出"] @racket[∘𝒦]：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define ((∘𝒦 cps:g cps:f) x)
@@ -102,11 +104,15 @@
 (anf:eval ((∘𝒦 cps:mul3 (∘𝒦 cps:mul2 cps:mul1)) 1))
 (anf:eval ((∘𝒦 (∘𝒦 cps:mul3 cps:mul2) cps:mul1) 1))]
 
-两种分组算得一样。一般也是这样吗？不必逐条展开，可以借已有的运算律。先给两种写法的箭头起名：照 @racket[cps] 写法的叫@defterm[#:en "CPS arrow"]{CPS 箭头}，记作 @math{→@subscript{𝒦}}；照 @racket[neg] 写法的叫@defterm[#:en "contrapositive arrow"]{逆否箭头}，记作 @math{→@subscript{𝒰}}（U 取掉头转弯的意思：箭头的方向倒了过来）。前面名字以 @racket[cps:]、@racket[neg:] 开头的函数，就分别是这两种箭头：
+@margin-note{𝒰 取 U-turn，掉头转弯：@tech{逆否箭头}的方向倒了过来。}
+
+两种分组算得一样。一般也是这样吗？不必逐条展开，可以借已有的运算律：把它搬到一种已经认识的复合上，运算律就一起跟过来。先给两种写法的箭头起名：照 @racket[cps] 写法的叫@defterm[#:en "CPS arrow"]{CPS 箭头}，记作@defsym["p →𝒦 q" "CPS 箭头：p → ¬¬q；𝒦 取 continuation"] @math{→@subscript{𝒦}}；照 @racket[neg] 写法的叫@defterm[#:en "contrapositive arrow"]{逆否箭头}，记作@defsym["p →𝒰 q" "逆否箭头：¬q → ¬p；𝒰 取掉头转弯（U-turn）"] @math{→@subscript{𝒰}}。前面名字以 @racket[cps:]、@racket[neg:] 开头的函数，就分别是这两种箭头：
 
 @examples[#:eval ev #:label #f #:no-prompt
-(define-type (→𝒦 p q) (→    p (¬¬ q)))
-(define-type (→𝒰 p q) (← (¬ p) (¬ q)))]
+(define-type (→𝒦 p ... q) (→    p ... (¬¬ q)))
+(define-type (→𝒰 p ... q) (← (¬ p ...) (¬ q)))]
+
+@margin-note{@tt{p ...} 表示任意多个参数，和 @racket[→] 一样，最后一个是结果；没有参数时，@racket[(→𝒦 q)] 就是 @racket[(→ (¬¬ q))]。@racket[cps]、@racket[neg] 用 @tt{. p*} 把参数原样交给 @racket[f]，本来就不限个数。}
 
 @math{p →@subscript{𝒦} q} 收到 @math{p}，交出等着 @math{q} 的计算。@math{p →@subscript{𝒰} q} 用的是反向箭头 @racket[←]：它从 @math{p} 写到 @math{q}，函数却从 @math{¬q} 指向 @math{¬p}。有了名字，前面几个函数的类型可以重写；@xref["02:early-return"]{「提前返回」}里 @racket[cps:loop] 的类型，也就是 @racket[(→𝒦 (Listof Real) Real)]：
 
@@ -137,7 +143,9 @@
 = (((∘ neg:f neg:g) k) x)
 = (((⨾ neg:g neg:f) k) x)]
 
-倒数第三步靠的还是那个前提。搬过来的，原来就是反向复合 @racket[⨾]：先用 @racket[neg:g]，再用 @racket[neg:f]。@xref["02:position"]{「计算的位置」}用几次 @racket[neg] 接出@tech{闭包链}，也是这样接的。于是@tech{逆否箭头}的复合直接取 @racket[⨾]，单位元取 @racket[id]，记作 @racket[neg:id]：
+第一步照 @racket[∘𝒰] 和 @racket[flip] 的定义展开，第二步展开 @racket[∘𝒦]，第三步把 @racket[cps:f]、@racket[cps:g] 换回 @racket[flip] 之前的 @racket[neg:f]、@racket[neg:g]。第四步把 @racket[(λ (y) ((neg:g k) y))] 化简成 @racket[(neg:g k)]，靠的是@xref["02:split-k"]{「延续独占一层」}的那个前提：@racket[neg:g] 收到 @racket[k] 时只造出一个函数，什么别的也不做。最后两步是 @racket[∘] 与 @racket[⨾] 的定义。
+
+搬过来的，原来就是反向复合 @racket[⨾]：先用 @racket[neg:g]，再用 @racket[neg:f]。@xref["02:position"]{「计算的位置」}用几次 @racket[neg] 接出@tech{闭包链}，也是这样接的。于是@tech{逆否箭头}的复合@defsym["g ∘𝒰 f" "逆否箭头的复合，就是 ⨾"]直接取 @racket[⨾]，单位元取 @racket[id]，记作 @racket[neg:id]：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: ∘𝒰 (∀ (p1 p2 p3) (→ (→𝒰 p2 p3) (→𝒰 p1 p2) (→𝒰 p1 p3))))
@@ -152,7 +160,7 @@
 
 @section[#:tag "02:propositions"]{读出命题}
 
-第一篇的 @racket[call/cc] 要靠宿主捕获@tech{延续}；@xref["02:k-in-hand"]{「手中的延续」}里的 @racket[cps:call/cc] 却只用了 @racket[λ] 和函数调用，什么也没有捕获。两者做的是同一件事：把当前@tech{延续}交给 @racket[proc]。它们究竟是同一个什么？@xref["01:call-cc-types"]{「call/cc 的几种类型」}把 @racket[call/cc] 的类型读成了命题，其中一种是 @tech{Clavius 律}。照这个办法，把这一篇写下的类型也读成命题。
+@racket[call/cc] 要靠宿主捕获@tech{延续}；@xref["02:k-in-hand"]{「手中的延续」}里的 @racket[cps:call/cc] 却只用了 @racket[λ] 和函数调用，什么也没有捕获。两者做的是同一件事：把当前@tech{延续}交给 @racket[proc]。它们究竟是同一个什么？@xref["01:call-cc-types"]{「call/cc 的几种类型」}把 @racket[call/cc] 的类型读成了命题，其中一种是 @tech{Clavius 律}。照这个办法，把这一章写下的类型也读成命题。
 
 先读最早的两个。@racket[neg] 和 @racket[cps] 的类型，按照 Curry-Howard 对应，是两条直觉主义定理：
 
@@ -164,46 +172,79 @@
    (list @elem{@math{(p → q) → (p → ¬¬q)}}
          @elem{DNI 的推广形式}))]
 
-用在 @racket[id] 上，@racket[cps:id] 的类型就是 @math{p → ¬¬p}，第一篇的 DNI 本身。@racket[flip] 的两行读法 @math{(¬q → ¬p) → (p → ¬¬q)} 和 @math{(p → ¬¬q) → (¬q → ¬p)}，也都是直觉主义定理。
+用在 @racket[id] 上，@racket[cps:id] 的类型就是 @math{p → ¬¬p}，也就是 DNI。@racket[flip] 的两行读法 @math{(¬q → ¬p) → (p → ¬¬q)} 和 @math{(p → ¬¬q) → (¬q → ¬p)}，也都是直觉主义定理。
 
-两种新箭头有了名字，宿主里普通的函数也给一个，叫@defterm[#:en "host arrow"]{宿主箭头}，记作 @math{→@subscript{𝒞}}，好和它们并排：
+@margin-note{𝒟 取 direct style，直接风格：普通的函数本来就这样写。}
+
+两种新箭头有了名字，宿主里普通的函数也给一个，叫@defterm[#:en "host arrow"]{宿主箭头}，记作@defsym["p →𝒟 q" "宿主箭头：普通的函数 p → q；𝒟 取 direct style"] @math{→@subscript{𝒟}}，好和它们并排：
 
 @examples[#:eval ev #:label #f #:no-prompt
-(define-type (→𝒞 p q) (→ p q))]
+(define-type (→𝒟 p ... q) (→ p ... q))]
 
 三种箭头，各是一种命题形状：
 
 @tabular[#:style 'boxed #:row-properties '(bottom-border ())
   (list
    (list @elem{箭头} @elem{类型})
-   (list @elem{宿主箭头} @elem{@math{p →@subscript{𝒞} q = p → q}})
+   (list @elem{宿主箭头} @elem{@math{p →@subscript{𝒟} q = p → q}})
    (list @elem{CPS 箭头} @elem{@math{p →@subscript{𝒦} q = p → ¬¬q}})
    (list @elem{逆否箭头} @elem{@math{p →@subscript{𝒰} q = ¬q → ¬p}}))]
 
-@subsection[#:tag "02:clavius"]{新箭头下的 Clavius 律}
+@subsection[#:tag "02:liar"]{说谎者}
 
-回到那个问题。两个新 @racket[call/cc] 的类型，可以从定义里读出来。拿 @racket[cps:call/cc] 来看。把它交出的结果的类型记作 @racket[p]。@racket[kp] 是这次调用的当前@tech{延续}，等的就是这个结果，类型是 @racket[(¬ p)]。@racket[cps] 把它提升成 @racket[(→𝒦 p ⊥)]，这是用 @tech{CPS 箭头}写的否定，记作 @racket[¬𝒦]；用@tech{逆否箭头}写的否定同样记作 @racket[¬𝒰]：
+@xref["02:k-in-hand"]{「手中的延续」}里，交给 @racket[cps:proc] 的 @racket[cps:kp] 是 @racket[(cps kp)]。@racket[kp] 的类型是 @math{¬p}，一支从 @math{p} 到 @math{⊥} 的@tech{宿主箭头}；提升以后，@racket[(cps kp)] 是 @math{p →@subscript{𝒦} ⊥}：还是到 @math{⊥} 的箭头，只是换成了 @tech[#:key "延续传递风格"]{CPS} 箭头。
+
+阴阳谜题里的 @racket[cps:yin]、@racket[cps:yang] 也是这样的值：@racket[(cps:label)] 交给@tech{延续}的，是提升过的当前@tech{延续} @racket[(cps k)]。它收下的，又正是同类的值。于是：
 
 @examples[#:eval ev #:label #f #:no-prompt
-(define-type (¬𝒦 p) (→𝒦 p ⊥))
-(define-type (¬𝒰 p) (→𝒰 p ⊥))]
+(define-type Label𝒦 (→𝒦 Label𝒦 ⊥))
+(: cps:label (→𝒦 Label𝒦))]
 
-@racket[cps:proc] 收到的是 @racket[(¬𝒦 p)]；它交回的计算又交给了 @racket[kp]，所以是 @racket[(¬¬ p)]。@racket[cps:proc] 因此是 @racket[(→𝒦 (¬𝒦 p) p)]。@racket[cps:call/cc] 先收 @racket[cps:proc]，再收 @racket[kp]，结果是 @racket[⊥]，它的类型就出来了。@racket[neg:call/cc] 同理：
+这和 @racket[Label] 是同一个样子：@racket[(define-type Label (→ Label ⊥))]。到 @math{⊥} 的@tech{宿主箭头}是否定，@racket[Label] 是它的不动点，读成命题就是@tech{说谎者悖论}。照这个样子，把到 @math{⊥} 的 @tech[#:key "延续传递风格"]{CPS} 箭头也看作否定，记作 @defsym["¬𝒦 p" "用 CPS 箭头写的否定：p →𝒦 ⊥，展开是 p → ¬¬⊥"]@racket[¬𝒦]：
+
+@examples[#:eval ev #:label #f #:no-prompt
+(define-type (¬𝒦 p ...) (→𝒦 p ... ⊥))]
+
+@racket[cps] 把@tech{宿主箭头}提升成 @tech[#:key "延续传递风格"]{CPS} 箭头。到 @math{⊥} 的@tech{宿主箭头}是宿主的否定，提升出来的就是 @math{¬@subscript{𝒦}}：宿主的@tech{延续} @racket[kp] 是 @math{¬p}，提升成 @racket[(cps kp)]，类型是 @math{¬@subscript{𝒦} p}。@math{¬@subscript{𝒦} p} 是新箭头下的新类型，不是 @math{¬} 换了一种写法：展开到宿主，它是 @math{p → ¬¬⊥}。
+
+回头再看 @racket[Label𝒦]。它的定义 @racket[(→𝒦 Label𝒦 ⊥)]，正是 @racket[(¬𝒦 Label𝒦)]：
+
+@mm{@ty{Label𝒦} = ¬@subscript{𝒦} @ty{Label𝒦}}
+
+@racket[Label𝒦] 是 @math{¬@subscript{𝒦}} 的不动点@defsym[@ty{Label𝒦} "¬𝒦 的不动点：Label𝒦 = ¬𝒦 Label𝒦，展开是 Label𝒦 → ¬¬⊥"]。读成命题，它说的还是那句「这句话是假的」。否定换了一种，说谎者还在。
+
+展开到宿主，@math{@ty{Label𝒦} = @ty{Label𝒦} → ¬¬⊥}，仍是 @racket[Label] 那样的递归类型，只是调用的结果多了计算这一层。阴阳谜题照样停不下来：自指并没有因为写成 @tech[#:key "延续传递风格"]{CPS} 而消失。
+
+逆否箭头也一样。@racket[neg] 把宿主的否定提升成逆否箭头下的否定：交给 @racket[neg:proc] 的 @racket[neg:kp] 是 @racket[(neg kp)]，类型是 @math{p →@subscript{𝒰} ⊥}。把到 @math{⊥} 的逆否箭头记作 @defsym["¬𝒰 p" "用逆否箭头写的否定：p →𝒰 ⊥，展开是 ¬⊥ → ¬p"]@racket[¬𝒰]，它的不动点记作 @defsym[@ty{Label𝒰} "¬𝒰 的不动点：Label𝒰 = ¬𝒰 Label𝒰，展开是 ¬⊥ → ¬Label𝒰"]@racket[Label𝒰]：
+
+@examples[#:eval ev #:label #f #:no-prompt
+(define-type (¬𝒰 p ...) (→𝒰 p ... ⊥))
+(define-type Label𝒰 (¬𝒰 Label𝒰))]
+
+展开到宿主，@math{¬@subscript{𝒰} p} 是 @math{¬⊥ → ¬p}，@math{@ty{Label𝒰} = ¬⊥ → ¬@ty{Label𝒰}}。读成命题，它同样是说谎者。
+
+@subsection[#:tag "02:clavius"]{Clavius 律}
+
+回到前面那个问题：@racket[cps:call/cc] 和 @racket[call/cc]，是同一个什么？有了两种否定，两个新 @racket[call/cc] 的类型可以从定义里读出来。拿 @racket[cps:call/cc] 来看。把它交出的结果的类型记作 @racket[p]。@racket[kp] 是这次调用的当前@tech{延续}，类型是 @racket[(¬ p)]；交给 @racket[cps:proc] 的 @racket[cps:kp] 是 @racket[(cps kp)]，类型是 @racket[(¬𝒦 p)]。
+
+@racket[cps:proc] 和 @racket[cps:mul] 这些函数一样，收下参数，交出一段计算，计算的结果交给@tech{延续}参数。它收下的是 @racket[(¬𝒦 p)]，交出的计算拿到 @racket[kp]，把类型为 @racket[p] 的结果交过去。所以 @racket[cps:proc] 是 @racket[(→𝒦 (¬𝒦 p) p)]。
+
+@racket[cps:call/cc] 也是这样。它收下的是 @racket[cps:proc]，交出的计算同样拿到 @racket[kp]，把类型为 @racket[p] 的结果交过去。所以 @racket[cps:call/cc] 是 @racket[(→𝒦 (→𝒦 (¬𝒦 p) p) p)]。@racket[neg:call/cc] 同理：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: cps:call/cc (∀ (p) (→𝒦 (→𝒦 (¬𝒦 p) p) p)))
 (: neg:call/cc (∀ (p) (→𝒰 (→𝒰 (¬𝒰 p) p) p)))]
 
-@bold{练习}：照推出 @racket[cps:call/cc] 类型的办法，推出 @racket[neg:call/cc] 的类型：@racket[kp] 仍是 @racket[(¬ p)]，留意 @racket[neg:proc] 先收的是哪一个。@racket[(neg kp)] 的类型是 @math{¬⊥ → ¬p}，也就是 @racket[(¬𝒰 p)]。
+@bold{练习}：照推出 @racket[cps:call/cc] 类型的办法，推出 @racket[neg:call/cc] 的类型：@racket[kp] 仍是 @racket[(¬ p)]，留意 @racket[neg:proc] 先收的是哪一个。展开时，@racket[(→𝒰 (¬𝒰 p) p)] 是 @racket[(→ (¬ p) (¬ (¬𝒰 p)))]。@racket[(neg kp)] 的类型是 @math{¬⊥ → ¬p}，也就是 @racket[(¬𝒰 p)]。
 
-把宿主 𝒞 里的否定记作 @racket[¬𝒞]，第一篇的 @racket[call/cc] 的类型是：
+把宿主 𝒟 里的否定记作 @racket[¬𝒟]，@racket[call/cc] 的类型是：
 
 @examples[#:eval ev #:label #f #:no-prompt
-(define-type (¬𝒞 p) (→𝒞 p ⊥))
+(define-type (¬𝒟 p ...) (→𝒟 p ... ⊥))
 
-(: call/cc (∀ (p) (→𝒞 (→𝒞 (¬𝒞 p) p) p)))]
+(: call/cc (∀ (p) (→𝒟 (→𝒟 (¬𝒟 p) p) p)))]
 
-读作 @math{(¬p → p) → p}，@tech{Clavius 律}。两个新 @racket[call/cc] 的类型是同一条定律，只是 @math{→@subscript{𝒞}} 换成了 @math{→@subscript{𝒦}}、@math{→@subscript{𝒰}}：它们是 @tech{Clavius 律}用这两种箭头写出来的样子。
+读作 @math{(¬p → p) → p}，@tech{Clavius 律}。两个新 @racket[call/cc] 的类型是同一条定律，只是 @math{→@subscript{𝒟}} 换成了 @math{→@subscript{𝒦}}、@math{→@subscript{𝒰}}：它们是 @tech{Clavius 律}用这两种箭头写出来的样子。外形和宿主里的那条一样，只是箭头的种类换了；展开到宿主的箭头，就是另一条命题。
 
 可@xref["01:watershed"]{「分水岭」}说过：@racket[call/cc] 要先凭空造出一个 @math{¬p} 交给 @racket[proc]，只用 @racket[λ] 和函数调用写不出来，必须捕获。@racket[cps:call/cc] 却只用了 @racket[λ]。把 @math{→@subscript{𝒦}} 展开成宿主的箭头：
 
@@ -216,5 +257,7 @@
 @racket[cps:call/cc] 做的，是@xref["01:watershed"]{「分水岭」}构造性那一侧的事：消耗交到手里的否定。
 
 所以展开后的这条公式，已经不是宿主里的 @tech{Clavius 律}，而是一条直觉主义定理：按照 Curry-Howard，它有闭合的、有类型的纯 @racket[λ] 项，就是 @racket[cps:call/cc]。@racket[neg:call/cc] 也一样。同一条经典定律，换用 @tech{CPS 箭头}或@tech{逆否箭头}来写，就成了直觉主义定理。经典的控制并没有消失，宿主要捕获的那条@tech{延续}，成了显式的参数。
+
+这和说谎者正好相反。同样换了箭头，自指的说谎者还是悖论；经典的 @tech{Clavius 律}却成了定理。
 
 三种箭头之间，@racket[cps] 和 @racket[neg] 都从宿主出发，@racket[flip] 在后两种之间来回。还缺一个方向：嵌入语言写出的 @tech{CPS 箭头}，怎样回到宿主？
