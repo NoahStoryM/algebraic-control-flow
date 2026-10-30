@@ -119,7 +119,7 @@
 
 ;;; Clavius 律
 
-(define-type Label𝒦 (¬𝒦 Label𝒦))
+(define-type Label𝒦 (→𝒦 Label𝒦 ⊥))
 
 (: neg:call/cc  (∀ (p) (→𝒰 (→𝒰 (¬𝒰 p) p) p)))
 (: cps:call/cc  (∀ (p) (→𝒦 (→𝒦 (¬𝒦 p) p) p)))

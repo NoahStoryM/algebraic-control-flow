@@ -169,7 +169,7 @@ DNI 加两层，在这里就是 @racket[cps:id]：收下 @racket[p]，等一条 
 
 @section[#:tag "02:same-arrow"]{同一支箭头}
 
-@xref["02:clavius"]{「新箭头下的 Clavius 律」}有了 @racket[cps:call/cc] 和 @racket[neg:call/cc]。照名字的约定，@racket[cps:car] 就是 @racket[(cps car)]；@racket[cps:call/cc] 却不是 @racket[(cps call/cc)]，它是整条 @tech{Clavius 律}换写出来的，@racket[proc] 也换成了新的箭头。那 @racket[(cps call/cc)] 和 @racket[(neg call/cc)] 又是什么？
+@xref["02:clavius"]{「Clavius 律」}有了 @racket[cps:call/cc] 和 @racket[neg:call/cc]。照名字的约定，@racket[cps:car] 就是 @racket[(cps car)]；@racket[cps:call/cc] 却不是 @racket[(cps call/cc)]，它是整条 @tech{Clavius 律}换写出来的，@racket[proc] 也换成了新的箭头。那 @racket[(cps call/cc)] 和 @racket[(neg call/cc)] 又是什么？
 
 不换写定律，只把箭头搬过去。宿主的 @racket[call/cc] 照 DNE 来读，是一支@tech{宿主箭头} @math{¬¬p →@subscript{𝒟} p}：收下第 2 层的 @racket[kkp]，交出第 0 层的值。
 
