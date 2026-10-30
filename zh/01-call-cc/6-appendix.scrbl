@@ -11,6 +11,7 @@ Racket 自带的 @racket[∪] 是普通的并集，不记来源。正文用@tech
 @examples[#:eval ev #:hidden
 (define-type ⊥ (∪))
 (define-type (¬ p) (→ p ⊥))
+(define-type (¬¬ q) (¬ (¬ q)))
 (define primitive-call/cc call/cc)
 (define (goto l) (l l))
 (define (label) (primitive-call/cc goto))]
@@ -128,10 +129,10 @@ Label」}里的坍缩，@math{@ty{Label} ∪ @ty{Label} = @ty{Label}}。
 用的就是那一节不打@tech{标记}的 @racket[cc]：
 
 @examples[#:eval ev #:label #f #:no-prompt
-(: wait/fc (∀ (q) (→ (¬ (¬ q)) (¬ (¬ q)))))
+(: wait/fc (∀ (q) (→ (¬¬ q) (¬¬ q))))
 (define (wait/fc kk)
   (define first? #t)
-  (: k (∪ (¬ q) (¬ (¬ q))))
+  (: k (∪ (¬ q) (¬¬ q)))
   (define k (cc))
   (unless first? (kk k))
   (set! first? #f)
