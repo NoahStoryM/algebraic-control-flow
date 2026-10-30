@@ -149,20 +149,22 @@ Label」}里的坍缩，@math{@ty{Label} ∪ @ty{Label} = @ty{Label}}。
 @racket[wait/fc] 交给 @racket[kk] 的，要等以后调用它的人交来。@racket[kk]
 也总在第一次求值 @racket[(cc)] 的地方运行，而不在调用处：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:label #f
 (define a (make-parameter 1))
 (define b 111)
-(define f (wait/fc (λ (k) (k (* (a) b)))))]
-
-@examples[#:eval ev #:label #f
-(call/cc f)
+(define (g) (* (a) b))
+(define f (wait/fc (λ (k) (k (* (a) b)))))
+(list (g) (call/cc f))
 (set! b 222)
-(call/cc f)
+(list (g) (call/cc f))
 (parameterize ([a 2])
-  (call/cc f))]
+  (list (g) (call/cc f)))]
 
-@racket[b] 是变量，每次读到的都是它此刻的值；@racket[(a)] 却总是 @racket[1]，
-调用处的 @racket[parameterize] 看不见。
+@racket[g] 是一个普通的 thunk，和 @racket[f] 算的是同一个式子。@racket[b]
+是变量，两边每次读到的都是它此刻的值。分歧出在 @racket[(a)]：@racket[g]
+在调用处运行，看得见调用处的 @racket[parameterize]，算出 @racket[444]；
+@racket[f] 跳回第一次求值 @racket[(cc)] 的地方，那里的 @racket[(a)] 仍是
+@racket[1]。
 
 这一种和其它三种不同：值本身不带来源，类型上看不出两支，得靠可变状态才分得开。
 正文从@tech{标签}走到 @racket[cc]，要摆脱的正是它。@racket[cc] 并没有消除它，

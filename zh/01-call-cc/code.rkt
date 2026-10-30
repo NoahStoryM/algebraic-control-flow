@@ -181,10 +181,11 @@
   (define (run-wait/fc)
     (define a (make-parameter 1))
     (define b 111)
+    (define (g) (* (a) b))
     (define f (wait/fc (λ (k) (k (* (a) b)))))
-    (list (call/cc f)
-          (begin (set! b 222) (call/cc f))
-          (parameterize ([a 2]) (call/cc f)))))
+    (list (list (g) (call/cc f))
+          (begin (set! b 222) (list (g) (call/cc f)))
+          (parameterize ([a 2]) (list (g) (call/cc f))))))
 
 (module disjoint-struct racket
   (provide (all-defined-out))
@@ -234,7 +235,7 @@
                 '((a 1) (b 1) (c 1) (a (c 1))))
   (check-equal? (list (ut:untag (cons 'b 0)) (ut:untag (cons 'b 1))) '(b b))
   (check-equal? (ua:call/cc (wf:wait/fc (λ (k) (k 42)))) 42)
-  (check-equal? (wf:run-wait/fc) '(111 222 222))
+  (check-equal? (wf:run-wait/fc) '((111 111) (222 222) (444 222)))
   (check-equal? (ua:mul) 1)
   (check-equal? (ua:mul 2 3 4) 24)
   (check-equal? (ua:mul 2 0 3) 0)
