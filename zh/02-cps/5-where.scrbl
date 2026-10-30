@@ -108,7 +108,7 @@
 = (kp (call/cc kkp))
 ≈ (kkp kp)]
 
-@margin-note{@racket[=] 只是照定义展开，用到的前提只有「两层参数之间不做别的事」；@racket[≈] 说的是行为相同，前提比 @racket[=] 多。@racket[kp] 和 @racket[kkp] 都要遵守结果为 @math{⊥} 的约定，调用以后不向当前调用处正常返回：@racket[kp] 若正常返回，捕获的@tech{延续}还会接着做 @racket[(kp p)] 之后的事；@racket[kkp] 若正常交回一个值，左边会把它交给 @racket[kp]，右边却直接返回。@racket[kkp] 也不能借助异常处理器这类动态的控制环境，否则直接调用与经过捕获的@tech{延续}，所处的环境不同。函数和@tech{延续}只通过调用来使用。在这些约定下，行为相同也包括把它们放进本章的调用、绑定和复合中使用。}
+@margin-note{这两段推导里的 @racket[=] 是照定义展开，用到的前提只有「两层参数之间不做别的事」；@racket[≈] 说的是行为相同，还需要下面的控制约定。@racket[kp] 和 @racket[kkp] 都要遵守结果为 @math{⊥} 的约定，调用以后不向当前调用处正常返回：@racket[kp] 若正常返回，捕获的@tech{延续}还会接着做 @racket[(kp p)] 之后的事；@racket[kkp] 若正常交回一个值，左边会把它交给 @racket[kp]，右边却直接返回。@racket[kkp] 也不能借助异常处理器这类动态的控制环境，否则直接调用与经过捕获的@tech{延续}，所处的环境不同。函数和@tech{延续}只通过调用来使用。这些约定也适用于交进来的各层函数参数和比较时的调用环境。在这些约定下，行为相同也包括把它们放进本章的调用、绑定和复合中使用。}
 
 @racket[call/cc] 捕获的，是收到 @racket[p] 以后交给 @racket[kp] 这件剩下的工作。@racket[kp] 若是一条真正的@tech{延续}，交出去就不再回来，捕获到的就和 @racket[kp] 一样。把它交给 @racket[kkp]，和直接把 @racket[kp] 交给 @racket[kkp]，行为相同。
 
