@@ -167,8 +167,6 @@
 @examples[#:eval ev #:label #f #:no-prompt
 (define (cps:label) (cps:call/cc cps:id))]
 
-@margin-note{这类值的类型记作 @defsym[@ty{Label𝒦} "嵌入语言里标签的类型：Label𝒦 = Label𝒦 → ¬¬⊥"]@ty{Label𝒦}：它接收同类的值，交出结果为 @math{⊥} 的计算，@math{@ty{Label𝒦} = @ty{Label𝒦} → ¬¬⊥}。这仍是第一篇那样的递归类型，只是调用的结果多了计算这一层；@racket[(cps:label)] 的类型是 @math{¬¬@ty{Label𝒦}}。}
-
 展开一层，@racket[((cps:label) k)] 是 @racket[((cps:call/cc cps:id) k)]，也就是 @racket[((cps:id (cps k)) k)]：@racket[cps:id] 把提升过的 @racket[(cps k)] 原样交给 @racket[k]。@racket[(cps:label)] 交回一段等待@tech{延续}的计算；运行时，它把提升过的当前@tech{延续} @racket[(cps k)] 作为结果交给 @racket[k]，和第一篇的 @racket[(label)] 一样。绑定得到的 @racket[cps:yin]、@racket[cps:yang]，就是这样的值。
 
 谜题写进 @racket[anf:let*]。中间还有打印：打印也是一步计算，只是结果用不着。一串计算依次做下去、只留最后一个的结果，就是 @racket[anf:begin]：把前面的结果绑定到一个用不着的变量 @racket[_] 上，忽略掉。

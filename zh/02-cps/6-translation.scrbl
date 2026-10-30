@@ -58,7 +58,7 @@
                           (cps:* res r))))))
     (cps:loop r*)))]
 
-@xref["02:back-to-host"]{「回到宿主」}的 @racket[uncps] 把 @tech{CPS 箭头}变成宿主函数，里面用的是 @racket[call/cc]。全部宿主函数记作 𝒞，其中有的会跳转、会输出，像 @racket[call/cc]、@racket[raise]、@racket[exit]、@racket[display]。从中取出纯的那一部分，记作 𝒟（就取 𝒞 后面的字母）@defsym["p →𝒟 q" "纯的宿主函数 p → q；𝒟 取 𝒞 后面的字母"]：由 @racket[λ]、函数应用和纯原语写成，自己不引入控制、输出这类作用，递归只限于能终止的情形；作为参数交进来的函数，也要是纯的。这样的构造填入纯参数时仍是纯的。运行时交进去的@tech{终结延续}由外部提供，调用它以后的退出，不算纯程序内部的构造。两类的类型都是普通的函数类型，区别只在函数怎么写，类型检查不出来。纯函数也是宿主函数，@racket[inj]（injection，注入）把它原样放进 𝒞：
+@xref["02:back-to-host"]{「回到宿主」}的 @racket[uncps] 把 @tech{CPS 箭头}变成宿主函数，里面用的是 @racket[call/cc]。这一篇说的@tech{宿主箭头} 𝒞，指的是这里讨论的计算：普通的函数，加上 @racket[call/cc] 这样的控制，按@xref["02:three-forms"]{「三种写法」}约定的行为相同来比较；打印、状态这类别的作用不算在内。其中纯的那一部分，记作 𝒟（就取 𝒞 后面的字母）@defsym["p →𝒟 q" "纯的宿主函数 p → q；𝒟 取 𝒞 后面的字母"]：由 @racket[λ]、函数应用和纯原语写成，自己不引入控制，递归只限于能终止的情形；作为参数交进来的函数，也要是纯的。这样的构造填入纯参数时仍是纯的。运行时交进去的@tech{终结延续}由外部提供，调用它以后的退出，不算纯程序内部的构造。@tech{CPS 箭头}和@tech{逆否箭头}指的也是这些计算的纯写法，前面名字以 @racket[cps:]、@racket[neg:] 开头的箭头都这样写成。𝒞 和 𝒟 的类型都是普通的函数类型，区别只在函数怎么写，类型检查不出来。纯函数也是宿主函数，@racket[inj]（injection，注入）把它原样放进 𝒞：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define-type (→𝒟 p q) (→ p q))
@@ -72,23 +72,23 @@
 
 @section[#:tag "02:neg-again"]{再用一次 neg}
 
-@tech{逆否箭头}既然反了一次，就再反一次。交给 @racket[neg] 一支@tech{逆否箭头} @racket[neg:f]，得到的 @racket[(neg neg:f)] 是 @math{¬¬p → ¬¬q}：方向正了，两端都裹着 @math{¬¬}，宿主的 @racket[∘] 就能接。它只在@tech{延续}前面接上 @racket[neg:f]：@racket[neg:f] 若是纯的，它也是纯的，落在 𝒟 里。落到的却不是原来那支箭头，@math{p} 换成了 @math{¬¬p}。
+@tech{逆否箭头}既然反了一次，就再反一次。交给 @racket[neg] 一支@tech{逆否箭头} @racket[neg:f]，得到的 @racket[(neg neg:f)] 是 @math{¬¬p → ¬¬q}：方向正了，两端都裹着 @math{¬¬}，宿主的 @racket[∘] 就能接。它只在@tech{延续}前面接上 @racket[neg:f]：@racket[neg:f] 是纯的，它也是纯的，落在 𝒟 里。落到的却不是原来那支箭头，@math{p} 换成了 @math{¬¬p}。
 
-@racket[neg] 的两种读法，写进同一个 @racket[case→]。第二种读法一般只写得出 →𝒞：@racket[neg:f] 是纯的，得到的才是纯的。
+@racket[neg] 的两种读法，写进同一个 @racket[case→]，第二种读法落在 𝒟 里：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: neg
    (∀ (p q)
       (case→ (→ (→𝒞 p q) (→𝒰     p      q))
-             (→ (→𝒰 p q) (→𝒞 (¬¬ p) (¬¬ q))))))]
+             (→ (→𝒰 p q) (→𝒟 (¬¬ p) (¬¬ q))))))]
 
-两次 @racket[neg] 连起来，记作 @racket[neg²]。@tech{宿主箭头} @math{p → q} 进来，出去的是 @math{¬¬p → ¬¬q}，每个类型裹上一层 @math{¬¬}；交进来的箭头是纯的，出去的也是纯的：
+两次 @racket[neg] 连起来，记作 @racket[neg²]。@tech{宿主箭头} @math{p → q} 进来，出去的是 @math{¬¬p → ¬¬q}，每个类型裹上一层 @math{¬¬}。类型标的是箭头之间的对应：宿主里的一支箭头，对应 𝒟 里的一支 @math{¬¬p → ¬¬q}。代码本身只把 @racket[f] 包上两层，并不改写 @racket[f] 的内部，交进来的是纯箭头时，包出来的就已经是纯的：
 
 @examples[#:eval ev #:label #f #:no-prompt
-(: neg² (∀ (p q) (→ (→𝒞 p q) (→𝒞 (¬¬ p) (¬¬ q)))))
+(: neg² (∀ (p q) (→ (→𝒞 p q) (→𝒟 (¬¬ p) (¬¬ q)))))
 (define neg² (∘ neg neg))]
 
-把 𝒟 和 @racket[inj] 也画进前面那张图表。左边从 𝒰 到 𝒟 的那条 @racket[neg]，只对纯的@tech{逆否箭头}成立：
+把 𝒟 和 @racket[inj] 也画进前面那张图表：
 
 @out-block|{𝒟 ───inj────→ 𝒞 ←───────────┐
 ↑             │             │
@@ -101,7 +101,7 @@
 
 @section[#:tag "02:translate-call-cc"]{翻译 call/cc}
 
-@racket[neg²] 把 𝒞 里的箭头 @math{p → q} 包成 @math{¬¬p → ¬¬q}，可这个包装运行时仍原样调用 @racket[f]：@racket[f] 若用了宿主的 @racket[call/cc]，包一层以后照样依赖它。要落进 𝒟，还须另找一个和它行为相同的纯程序。
+@racket[f] 若用了宿主的 @racket[call/cc]，@racket[(neg² f)] 的包装运行时照样依赖它。𝒟 里对应的那一支，要另外写出一个和它行为相同的纯程序。
 
 不过，就算 @racket[f] 里用了 @racket[call/cc]，也可能另有一个纯函数，和 @racket[(neg² f)] 行为一样。举个例子：@racket[cps:f] 是一支纯的 @tech{CPS 箭头}，把 @racket[f] 定义成 @racket[(uncps cps:f)]。@racket[uncps] 里用了 @racket[call/cc]，@racket[f] 里也就有 @racket[call/cc]。展开 @racket[(neg² f)]：
 
@@ -136,16 +136,16 @@
 
 @racket[call/cc] 不见了，剩下的只用 @racket[λ] 和函数调用：外层的计算交来一段 @racket[kkp]，再把同一条 @racket[kp] 交给它。从第 4 层到第 2 层，消去两层而不落底，正是@xref["02:count-k"]{「数一数 k」}里的 @racket[(neg cps:id)]，@tech{三重否定律}用在 @math{¬p} 上。
 
-@racket[neg]、@racket[cps]、@racket[neg] 这一串把外面的两层 @math{¬¬} 并成一层，用在别的@tech{宿主箭头}上也行，记作 @racket[join]；用在 @racket[id] 上的那一支，照名字的约定记作 @racket[join:id]：
+@racket[neg]、@racket[cps]、@racket[neg] 这一串把外面的两层 @math{¬¬} 并成一层，用在别的纯箭头上也行，记作 @racket[join]；用在 @racket[id] 上的那一支，照名字的约定记作 @racket[join:id]：
 
 @examples[#:eval ev #:label #f #:no-prompt
-(: join (∀ (p q) (→ (→𝒞 p q) (→𝒞 (¬¬ (¬¬ p)) (¬¬ q)))))
+(: join (∀ (p q) (→ (→𝒟 p q) (→𝒟 (¬¬ (¬¬ p)) (¬¬ q)))))
 (define join (∘ neg cps neg))
 
 (: join:id (∀ (p) (→𝒟 (¬¬ (¬¬ p)) (¬¬ p))))
 (define join:id (join id))]
 
-和 @racket[neg²] 一样，@racket[join] 不会消除交给它的函数的副作用：@racket[(join f)] 运行时仍原样调用 @racket[f]。用在纯的 @racket[id] 上，得到的 @racket[join:id] 才确实是纯函数。
+和 @racket[neg²] 的包装一样，@racket[join] 不负责改写交给它的函数：@racket[(join f)] 运行时仍原样调用 @racket[f]。交给它纯的箭头，得到的也是纯的；用在 @racket[id] 上，得到的 @racket[join:id] 就是 𝒟 里的一支。
 
 交给 @racket[join:id] 一段四重否定的 @racket[7]，交出的是一段等着@tech{延续}的 @racket[7]：
 
