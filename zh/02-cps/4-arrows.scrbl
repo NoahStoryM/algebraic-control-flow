@@ -205,7 +205,15 @@
 @examples[#:eval ev #:label #f #:no-prompt
 (define-type (¬𝒦 p ...) (→𝒦 p ... ⊥))]
 
-@racket[cps] 把@tech{宿主箭头}提升成 @tech[#:key "延续传递风格"]{CPS} 箭头。到 @math{⊥} 的@tech{宿主箭头}是宿主的否定，提升出来的就是 @math{¬@subscript{𝒦}}：宿主的@tech{延续} @racket[kp] 是 @math{¬p}，提升成 @racket[(cps kp)]，类型是 @math{¬@subscript{𝒦} p}。@math{¬@subscript{𝒦} p} 是新箭头下的新类型，不是 @math{¬} 换了一种写法：展开到宿主，它是 @math{p → ¬¬⊥}。@racket[Label𝒦] 是 @math{¬@subscript{𝒦}} 的不动点@defsym[@ty{Label𝒦} "¬𝒦 的不动点：Label𝒦 = ¬𝒦 Label𝒦，展开是 Label𝒦 → ¬¬⊥"]，@math{@ty{Label𝒦} = ¬@subscript{𝒦} @ty{Label𝒦}}，读成命题还是说谎者：换了一种否定，自己仍是自己的否定。展开到宿主，@math{@ty{Label𝒦} = @ty{Label𝒦} → ¬¬⊥}，仍是 @racket[Label] 那样的递归类型，只是调用的结果多了计算这一层。阴阳谜题照样停不下来，自指并没有因为写成 @tech[#:key "延续传递风格"]{CPS} 而消失。
+@racket[cps] 把@tech{宿主箭头}提升成 @tech[#:key "延续传递风格"]{CPS} 箭头。到 @math{⊥} 的@tech{宿主箭头}是宿主的否定，提升出来的就是 @math{¬@subscript{𝒦}}：宿主的@tech{延续} @racket[kp] 是 @math{¬p}，提升成 @racket[(cps kp)]，类型是 @math{¬@subscript{𝒦} p}。@math{¬@subscript{𝒦} p} 是新箭头下的新类型，不是 @math{¬} 换了一种写法：展开到宿主，它是 @math{p → ¬¬⊥}。
+
+回头再看 @racket[Label𝒦]。它的定义 @racket[(→𝒦 Label𝒦 ⊥)]，正是 @racket[(¬𝒦 Label𝒦)]：
+
+@mm{@ty{Label𝒦} = ¬@subscript{𝒦} @ty{Label𝒦}}
+
+@racket[Label𝒦] 是 @math{¬@subscript{𝒦}} 的不动点@defsym[@ty{Label𝒦} "¬𝒦 的不动点：Label𝒦 = ¬𝒦 Label𝒦，展开是 Label𝒦 → ¬¬⊥"]。读成命题，它说的还是那句「这句话是假的」。否定换了一种，说谎者还在。
+
+展开到宿主，@math{@ty{Label𝒦} = @ty{Label𝒦} → ¬¬⊥}，仍是 @racket[Label] 那样的递归类型，只是调用的结果多了计算这一层。阴阳谜题照样停不下来：自指并没有因为写成 @tech[#:key "延续传递风格"]{CPS} 而消失。
 
 逆否箭头也一样。@racket[neg] 把宿主的否定提升成逆否箭头下的否定：交给 @racket[neg:proc] 的 @racket[neg:kp] 是 @racket[(neg kp)]，类型是 @math{p →@subscript{𝒰} ⊥}。把到 @math{⊥} 的逆否箭头记作 @defsym["¬𝒰 p" "用逆否箭头写的否定：p →𝒰 ⊥，展开是 ¬⊥ → ¬p"]@racket[¬𝒰]，它的不动点记作 @defsym[@ty{Label𝒰} "¬𝒰 的不动点：Label𝒰 = ¬𝒰 Label𝒰，展开是 ¬⊥ → ¬Label𝒰"]@racket[Label𝒰]：
 
