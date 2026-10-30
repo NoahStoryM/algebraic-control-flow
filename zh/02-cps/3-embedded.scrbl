@@ -157,7 +157,7 @@
 
 @racket[cps:return] 只用来跳出循环。第一篇的阴阳谜题对@tech{延续}要求更多：被捕获的@tech{延续}要作为值传来传去，再被调用。
 
-第一篇的 @racket[label] 可以写成 @racket[(let/cc k k)]：捕获当前@tech{延续}，直接交出来。照样写进嵌入语言，会碰到一个问题：@racket[anf:let/cc] 的主体得是一段计算，@racket[cps:k] 却只是一个值。
+先把第一篇的 @racket[label] 写进嵌入语言。它可以写成 @racket[(let/cc k k)]：捕获当前@tech{延续}，再把它作为结果返回。@racket[let/cc] 已经有了对应的 @racket[anf:let/cc]，还缺的是「返回」。
 
 直接风格里，返回值 @racket[v]，写 @racket[v] 就行。嵌入语言里，返回 @racket[v] 要写成一段计算 @racket[(λ (k) (k v))]：把要返回的值交给@tech{延续}参数。收下 @racket[v]、交出这段计算的，就是 @racket[(cps id)]：
 
@@ -169,7 +169,7 @@
 @examples[#:eval ev #:label #f #:no-prompt
 (define (cps:label) (anf:let/cc cps:k (cps:id cps:k)))]
 
-@racket[(λ (cps:k) (cps:id cps:k))] 只是把 @racket[cps:k] 转交给 @racket[cps:id]，所以：
+这里的 @racket[(λ (cps:k) (cps:id cps:k))] 只是把 @racket[cps:k] 转交给 @racket[cps:id]，所以：
 
 @racketblock[
 (anf:let/cc cps:k (cps:id cps:k))  =  (cps:call/cc cps:id)]
