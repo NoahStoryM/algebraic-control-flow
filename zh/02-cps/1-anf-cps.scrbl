@@ -86,7 +86,7 @@
       (h z)))
 = (let ([y (f x)])
     ((∘ h g) y))
-= ((@racket[λ] (y) ((∘ h g) y)) (f x))
+= ((λ (y) ((∘ h g) y)) (f x))
 = ((∘ (∘ h g) f) x)]
 
 里层的 @racket[let] 算的是 @racket[((∘ h g) y)]，所以 @racket[y] 的@tech{延续}就是 @racket[(∘ h g)]：它包下了剩下的全部工作，先 @racket[g] 再 @racket[h]。外层再把它接在 @racket[f] 后面。每个绑定各藏着这样一个@tech{延续}。
