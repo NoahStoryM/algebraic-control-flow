@@ -53,7 +53,7 @@
 
 @racket[let*] 的每个绑定从上到下依次执行，中间不跳跃。@racket[fib] 中先算 @racket[(fib n-1)] 再算 @racket[(fib n-2)]，不再需要知道 Racket 的求值策略，代码本身就是策略的忠实记录。这种把所有中间计算命名、排成序列的形式叫作@defterm[#:en "A-Normal Form" #:abbr "ANF"]{A-范式}。
 
-但 @racket[let] 不是什么新东西。它脱糖为 lambda 调用：
+但 @racket[let] 不是什么新东西。它脱糖为 @racket[lambda] 调用：
 
 @racketblock[
 (let ([v e]) b)  =  ((λ (v) b) e)]
@@ -65,7 +65,7 @@
 最简单的情形，函数体只是把一个函数用在绑定的值上：
 
 @racketblock[
-  (let ([y (f x)])
+#,(hspace 2)(let ([y (f x)])
     (g y))
 = ((λ (y) (g y)) (f x))
 = (g (f x))
@@ -78,7 +78,7 @@
 上面 @racket[fact]、@racket[fib] 用的是 @racket[let*]。@racket[let*] 是嵌套的 @racket[let]：后一个绑定连同它后面的全部代码，是前一个 @racket[let] 的函数体。三步计算 @racket[f]、@racket[g]、@racket[h]，照 @racket[let*] 写，再拆成 @racket[let]：
 
 @racketblock[
-  (let* ([y (f x)]
+#,(hspace 2)(let* ([y (f x)]
          [z (g y)])
     (h z))
 = (let ([y (f x)])
@@ -86,7 +86,7 @@
       (h z)))
 = (let ([y (f x)])
     ((∘ h g) y))
-= ((λ (y) ((∘ h g) y)) (f x))
+= ((@racket[λ] (y) ((∘ h g) y)) (f x))
 = ((∘ (∘ h g) f) x)]
 
 里层的 @racket[let] 算的是 @racket[((∘ h g) y)]，所以 @racket[y] 的@tech{延续}就是 @racket[(∘ h g)]：它包下了剩下的全部工作，先 @racket[g] 再 @racket[h]。外层再把它接在 @racket[f] 后面。每个绑定各藏着这样一个@tech{延续}。
@@ -94,12 +94,12 @@
 
 @subsection[#:tag "02:laws"]{结合律与单位律}
 
-把计算写成 @racket[let]，写法并不唯一。@racket[fact]、@racket[fib] 把每个新的 @racket[let] 嵌在前一个 @racket[let] 的函数体 @racket[b] 里；可 @racket[let] 里还有一处能放表达式，就是被求值的 @racket[e]：同样几步，也可以先接成一段，嵌进 @racket[e]。中间还可以插一个只给值换名的 @racket[let]。ANF 本来是要把计算顺序写死的，写法一多，定下的还是同一个顺序吗？
+把计算写成 @racket[let]，写法并不唯一。@racket[fact]、@racket[fib] 把每个新的 @racket[let] 嵌在前一个 @racket[let] 的函数体 @racket[b] 里；可 @racket[let] 里还有一处能放表达式，就是被求值的 @racket[e]：同样几步，也可以先接成一段，嵌进 @racket[e]。中间还可以插一个只给值换名的 @racket[let]。@tech[#:key "A-范式"]{ANF} 本来是要把计算顺序写死的，写法一多，定下的还是同一个顺序吗？
 
 先看嵌进 @racket[e]。同样三步，把前两步写成一段，嵌进第三步的 @racket[e]：
 
 @racketblock[
-  (let ([z (let ([y (f x)])
+#,(hspace 2)(let ([z (let ([y (f x)])
              (g y))])
     (h z))
 = (h ((∘ g f) x))
@@ -135,7 +135,7 @@
 @racket[∘] 写的顺序和算的顺序相反：@racket[(∘ h g f)] 里最右边的 @racket[f] 先算。@racket[let*] 却是照算的顺序，从上往下写。照算的顺序写的复合记作 @racket[⨾]，@racket[(⨾ f g h)] 先调用 @racket[f]，再调用 @racket[g]，最后调用 @racket[h]：
 
 @racketblock[
-  (let* ([y (f x)]
+#,(hspace 2)(let* ([y (f x)]
          [z (g y)])
     (h z))
 = ((∘ h g f) x)
@@ -155,16 +155,16 @@
 
 @section[#:tag "02:cps"]{延续与 CPS}
 
-回头看开头的 @racket[let]。每个绑定都配着一个@tech{延续} @racket[(λ (v) b)]，只是 @racket[let] 的语法替我们藏好了；ANF 所做的，不过是让这种隐藏变得有规律。把@tech{延续}取出来，起个名字 @racket[k]，再把整段写回函数调用：
+回头看开头的 @racket[let]。每个绑定都配着一个@tech{延续} @racket[(λ (v) b)]，只是 @racket[let] 的语法替我们藏好了；@tech[#:key "A-范式"]{ANF} 所做的，不过是让这种隐藏变得有规律。把@tech{延续}取出来，起个名字 @racket[k]，再把整段写回函数调用：
 
 @racketblock[
-  ((λ (v) b) e)
+#,(hspace 2)((λ (v) b) e)
 = (let ([k (λ (v) b)]) (k e))
 = ((λ (k) (k e)) (λ (v) b))]
 
 最后一行里，@tech{延续}成了一个普通的参数：@racket[(λ (k) (k e))] 先等着@tech{延续}，拿到以后把 @racket[e] 的值交给它。@tech{延续}于是成了独立的值，可以传来传去、存储、反复调用。
 
-那就让每个函数都额外接受这样一个参数 @racket[k]，代表「我算完之后该做什么」。函数不再把值返回给调用者，而是直接交给 @racket[k]。@racket[fact] 的 CPS 版本：
+那就让每个函数都额外接受这样一个参数 @racket[k]，代表「我算完之后该做什么」。函数不再把值返回给调用者，而是直接交给 @racket[k]。@racket[fact] 的 @tech[#:key "延续传递风格"]{CPS} 版本：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: fact/k (→ Natural (¬ Natural) ⊥))
@@ -193,7 +193,7 @@
 拿 @racket[(fact/k 3 k)] 跑一遍，看手里的@tech{延续}怎么变。把 @racket[(λ (v) (* 3 v))] 记作 @racket[mul3]，其余类推：
 
 @racketblock[
-  (fact/k 3 k)                                  =  (fact/k 3 (∘ k               ))
+(fact/k 3 k)                                    =  (fact/k 3 (∘ k               ))
 = (fact/k 2 (λ (v) ((∘ k          ) (* 3 v))))  =  (fact/k 2 (∘ k mul3          ))
 = (fact/k 1 (λ (v) ((∘ k mul3     ) (* 2 v))))  =  (fact/k 1 (∘ k mul3 mul2     ))
 = (fact/k 0 (λ (v) ((∘ k mul3 mul2) (* 1 v))))  =  (fact/k 0 (∘ k mul3 mul2 mul1))
@@ -211,7 +211,7 @@
         acc
         (loop (- n 1) (* n acc)))))]
 
-把它也变换成 CPS：
+把它也变换成 @tech[#:key "延续传递风格"]{CPS}：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: fact/k (→ Natural (¬ Natural) ⊥))
@@ -224,20 +224,20 @@
 同样拿 @racket[(fact/k 3 k)] 跑一遍：
 
 @racketblock[
-  (fact/k 3 k)
+#,(hspace 2)(fact/k 3 k)
 = (loop/k 3 (*      ) k)
 = (loop/k 2 (*     3) k)
 = (loop/k 1 (*   2 3) k)
 = (loop/k 0 (* 1 2 3) k)
 = (k (* 1 2 3))]
 
-循环体把 @racket[k] 原样传下去，不再包上新的闭包。尾递归之所以不消耗栈空间，正因为它不创建新的@tech{延续}：每一步复用同一个 @racket[k]。非尾递归版本里@tech{闭包链}的增长，对应着调用栈的增长。CPS 只是把这种增长从栈搬到了堆上。
+循环体把 @racket[k] 原样传下去，不再包上新的闭包。尾递归之所以不消耗栈空间，正因为它不创建新的@tech{延续}：每一步复用同一个 @racket[k]。非尾递归版本里@tech{闭包链}的增长，对应着调用栈的增长。@tech[#:key "延续传递风格"]{CPS} 只是把这种增长从栈搬到了堆上。
 
-ANF 命名中间值，让求值顺序显式；CPS 命名@tech{延续}，让@tech{延续}显式。
+@tech[#:key "A-范式"]{ANF} 命名中间值，让求值顺序显式；@tech[#:key "延续传递风格"]{CPS} 命名@tech{延续}，让@tech{延续}显式。
 
 @subsection[#:tag "02:exit"]{终结延续}
 
-CPS 函数需要一个@tech{延续}才能启动。启动时交进去什么？
+@tech[#:key "延续传递风格"]{CPS} 函数需要一个@tech{延续}才能启动。启动时交进去什么？
 
 许多语言有一个内置的@tech{延续}：@racket[exit]，类型为 @math{¬@ty{Byte}}。可以包装一下得到 @math{¬@ty{Natural}}：
 
@@ -264,13 +264,13 @@ CPS 函数需要一个@tech{延续}才能启动。启动时交进去什么？
 (⊥->a (fact/k 5 a->⊥))
 (⊥->a (fib/k 10 a->⊥))]
 
-CPS 函数运行起来，@racket[a->⊥] 充当@tech{终结延续}，@tech{闭包链}接在它前面一环环长出来；@racket[⊥->a] 在外面接住答案。计算在 raise/handler 划出的边界内执行，结果穿过边界传出来。
+@tech[#:key "延续传递风格"]{CPS} 函数运行起来，@racket[a->⊥] 充当@tech{终结延续}，@tech{闭包链}接在它前面一环环长出来；@racket[⊥->a] 在外面接住答案。计算在 raise/handler 划出的边界内执行，结果穿过边界传出来。
 
 @subsection[#:tag "02:first-class-control"]{一等控制}
 
-CPS 真正的力量不在于尾递归，而在于@tech{延续}成了@bold{一等值}。@tech{延续}就是函数，可以存储、复制、丢弃，也可以改为调用另一个。@racket[call/cc] 靠在运行时捕获当前@tech{延续}，给了我们这种能力。在 CPS 里，当前@tech{延续}已经是一个显式的参数。
+@tech[#:key "延续传递风格"]{CPS} 真正的力量不在于尾递归，而在于@tech{延续}成了@bold{一等值}。@tech{延续}就是函数，可以存储、复制、丢弃，也可以改为调用另一个。@racket[call/cc] 靠在运行时捕获当前@tech{延续}，给了我们这种能力。在 @tech[#:key "延续传递风格"]{CPS} 里，当前@tech{延续}已经是一个显式的参数。
 
-第一篇用 @racket[cc] 写过 @racket[mul]：遇到零就短路。在 CPS 里，@tech{延续}就是普通的函数参数，同样的短路可以直接写出来：
+第一篇用 @racket[cc] 写过 @racket[mul]：遇到零就短路。在 @tech[#:key "延续传递风格"]{CPS} 里，@tech{延续}就是普通的函数参数，同样的短路可以直接写出来：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: mul (→ Real * Real))
@@ -293,17 +293,17 @@ CPS 真正的力量不在于尾递归，而在于@tech{延续}成了@bold{一等
 
 正常路径上，累积的乘积沿着 @racket[k] 交回去。遇到零时，跳过 @racket[k]，直接调用 @racket[a->⊥]。@racket[k] 代表「继续乘下去然后返回结果」的@tech{延续}；@racket[a->⊥] 代表「直接跳出整个循环，把值交给 handler」的@tech{延续}。选择调用哪一个，就是选择走哪条控制流。不需要 @racket[call/cc]。@tech{延续}是普通的函数，切换@tech{延续}是普通的函数调用。
 
-但代价也很明显：程序员必须亲手编写每一个@tech{延续}，把 @racket[k] 穿过每一层调用。能否自动化 CPS 包装？
+但代价也很明显：程序员必须亲手编写每一个@tech{延续}，把 @racket[k] 穿过每一层调用。能否自动化 @tech[#:key "延续传递风格"]{CPS} 包装？
 
 
 @section[#:tag "02:split-k"]{把延续独立出来}
 
-给一个具体的函数写 CPS 包装，并不难。@racket[zero?] 的 CPS 版本：
+给一个具体的函数写 @tech[#:key "延续传递风格"]{CPS} 包装，并不难。@racket[zero?] 的 @tech[#:key "延续传递风格"]{CPS} 版本：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define (zero?/k x k) (k (zero? x)))]
 
-@racket[zero?/k] 在 @racket[zero?] 的结果外面套一层 @racket[k] 调用，就完成了包装。可这层包装，每个函数都得手写一遍。要自动化，就要一个通用的包装：交给它任意函数 @racket[f]，交回 @racket[f] 的 CPS 版本。
+@racket[zero?/k] 在 @racket[zero?] 的结果外面套一层 @racket[k] 调用，就完成了包装。可这层包装，每个函数都得手写一遍。要自动化，就要一个通用的包装：交给它任意函数 @racket[f]，交回 @racket[f] 的 @tech[#:key "延续传递风格"]{CPS} 版本。
 
 @racket[zero?/k] 的两个参数是两种东西：@racket[x] 交给 @racket[zero?] 去算，@racket[k] 只等着接住结果。通用的包装要把这两种参数分开处理，前一种原样交给 @racket[f]，后一种接住 @racket[f] 的结果。挤在同一层参数表里，它们就得一次交齐。柯里化让@tech{延续}独占一层，和其余参数分开。@tech{延续}独立在内层还是外层，操作上没有区别，函数体都一样：
 
@@ -311,7 +311,7 @@ CPS 真正的力量不在于尾递归，而在于@tech{延续}成了@bold{一等
 (define (((cps f) . p*) kq) (kq (apply f p*)))  (code:comment "延续在后")
 (define (((neg f) kq) . p*) (kq (apply f p*)))  (code:comment "延续在前")]
 
-这样的函数头是嵌套 λ 的简写：@racket[(define (((cps f) . p*) kq) body)] 就是 @racket[(define (cps f) (λ p* (λ (kq) body)))]，一层括号收一层参数，@tt{. p*} 把其余参数收成列表，原样交给 @racket[f]，不管 @racket[f] 收几个参数。
+这样的函数头是嵌套 @racket[λ] 的简写：@racket[(define (((cps f) . p*) kq) body)] 就是 @racket[(define (cps f) (λ p* (λ (kq) body)))]，一层括号收一层参数，@tt{. p*} 把其余参数收成列表，原样交给 @racket[f]，不管 @racket[f] 收几个参数。
 
 拿 @racket[+] 各走一遍。@racket[(cps +)] 先收操作数 @racket[1]、@racket[2]，交出一个等着@tech{延续}的值；再交给它一个@tech{延续}，计算才开始。@racket[(neg +)] 次序反过来，先收@tech{延续}，再收操作数：
 
@@ -335,7 +335,7 @@ CPS 真正的力量不在于尾递归，而在于@tech{延续}成了@bold{一等
 (: flip (∀ (x y z) (→ (→ x (→ y z)) (→ y (→ x z)))))
 (define (((flip f) . y*) . x*) (apply (apply f x*) y*))]
 
-@racket[flip] 交换参数顺序，对任何两层柯里化的函数都适用。@racket[neg] 产出的 @math{¬q → ¬p} 展开是 @math{¬q → p → ⊥}，正是这样的两层函数，@racket[flip] 把它变成 @math{p → ¬¬q}；反过来，又把 @math{p → ¬¬q} 变回 @math{¬q → ¬p}。只要两层 λ 之间不做别的事，@racket[(flip (flip f))] 就和 @racket[f] 行为一样：@racket[flip] 是它自己的逆，在两种写法之间来回，什么也不会丢失。@racket[neg]、@racket[cps] 造出的函数都满足这一条。
+@racket[flip] 交换参数顺序，对任何两层柯里化的函数都适用。@racket[neg] 产出的 @math{¬q → ¬p} 展开是 @math{¬q → p → ⊥}，正是这样的两层函数，@racket[flip] 把它变成 @math{p → ¬¬q}；反过来，又把 @math{p → ¬¬q} 变回 @math{¬q → ¬p}。只要两层 @racket[λ] 之间不做别的事，@racket[(flip (flip f))] 就和 @racket[f] 行为一样：@racket[flip] 是它自己的逆，在两种写法之间来回，什么也不会丢失。@racket[neg]、@racket[cps] 造出的函数都满足这一条。
 
 有了 @racket[flip]，@racket[cps] 和 @racket[neg] 可以互相定义：
 
@@ -357,7 +357,7 @@ neg  =  (∘ flip cps)]
 于是递归的每一层都是一次 @racket[neg]：第一层用 @racket[(neg mul3)]，第二层用 @racket[(neg mul2)]，第三层用 @racket[(neg mul1)]。递归到底时的那条链，就是三次 @racket[neg] 依次用在 @racket[k] 上：
 
 @racketblock[
-  (∘ k mul3 mul2 mul1)
+#,(hspace 2)(∘ k mul3 mul2 mul1)
 = ((neg mul1) ((neg mul2) ((neg mul3) k)))
 = ((∘ (neg mul1) (neg mul2) (neg mul3)) k)]
 
@@ -366,7 +366,7 @@ neg  =  (∘ flip cps)]
 以上是链的构造。运行时，值又怎样沿着它走？@xref["02:anf"]{「求值顺序与 ANF」}说过，@racket[let*] 就是复合。反过来，把这条@tech{闭包链}拆回 @racket[let*]，给中间结果起名，值从 @racket[v0] 出发：
 
 @racketblock[
-  ((∘ k mul3 mul2 mul1) v0)
+#,(hspace 2)((∘ k mul3 mul2 mul1) v0)
 = (let* ([v1 (mul1 v0)]
          [v2 (mul2 v1)]
          [v3 (mul3 v2)])
@@ -393,7 +393,7 @@ k2  =  (∘ k3 mul3)  =  ((neg mul3) k3)]
 
 @subsection[#:tag "02:k-in-hand"]{手中的延续}
 
-第一篇用 @racket[cc] 实现 @racket[call/cc]：先由 @racket[(cc)] 取得当前@tech{延续}，再把它交给 @racket[proc]。在 CPS 里，这一步不必做。@xref["02:first-class-control"]{「一等控制」}说过，当前@tech{延续}已经是一个显式的参数：照 @racket[cps] 的写法也好，照 @racket[neg] 的写法也好，函数收到的@tech{延续}参数，就是这次调用之后要做的事。那么照这两种写法，@racket[call/cc] 该怎么写？
+第一篇用 @racket[cc] 实现 @racket[call/cc]：先由 @racket[(cc)] 取得当前@tech{延续}，再把它交给 @racket[proc]。在 @tech[#:key "延续传递风格"]{CPS} 里，这一步不必做。@xref["02:first-class-control"]{「一等控制」}说过，当前@tech{延续}已经是一个显式的参数：照 @racket[cps] 的写法也好，照 @racket[neg] 的写法也好，函数收到的@tech{延续}参数，就是这次调用之后要做的事。那么照这两种写法，@racket[call/cc] 该怎么写？
 
 照 @racket[call/cc] 自己的意思写，先看它收到什么。@racket[cps:call/cc] 照 @racket[cps] 的写法，先收到输入 @racket[cps:proc]，再收到@tech{延续} @racket[kp]；@racket[neg:call/cc] 照 @racket[neg] 的写法，次序反过来，先收到 @racket[kp]，再收到 @racket[neg:proc]：
 
@@ -415,7 +415,7 @@ k2  =  (∘ k3 mul3)  =  ((neg mul3) k3)]
 (define (cps:proc1 cps:k) ((cps *) 2 3))
 (⊥->a ((cps:call/cc cps:proc1) (λ (v) (a->⊥ (add1 v)))))]
 
-@racket[cps:proc1] 正常交回 @racket[6]。原样的那份 @racket[kp]，也就是手写的那个 λ，接住它，先加 1，再交给@tech{终结延续}，得到 @racket[7]。
+@racket[cps:proc1] 正常交回 @racket[6]。原样的那份 @racket[kp]，也就是手写的那个 @racket[λ]，接住它，先加 1，再交给@tech{终结延续}，得到 @racket[7]。
 
 换一个 @racket[proc]，让它用上收到的@tech{延续}：先把 @racket[10] 交给 @racket[cps:k]，再加 1。@racket[cps:k] 收到 @racket[10]，交出的仍是一段等着@tech{延续}的计算，后面的加 1 只能再手写一个@tech{延续}接上：
 

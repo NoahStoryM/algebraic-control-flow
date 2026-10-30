@@ -40,7 +40,7 @@
 
 @section[#:tag "02:embedded"]{嵌入语言}
 
-回想@xref["02:anf"]{「求值顺序与 ANF」}里的观察。@racket[let] 脱糖为 lambda 调用，@tech{延续}藏在 @racket[let] 里面：等待结果的那个 λ 不用我们写，绑定的语法替我们写了。CPS 变换把@tech{延续}拉出来变成显式参数，这个 λ 就得亲手写。能不能反过来：用 @racket[let] 语法把 CPS 的@tech{延续}再藏回去？
+回想@xref["02:anf"]{「求值顺序与 ANF」}里的观察。@racket[let] 脱糖为 @racket[lambda] 调用，@tech{延续}藏在 @racket[let] 里面：等待结果的那个 @racket[λ] 不用我们写，绑定的语法替我们写了。@tech{CPS 变换}把@tech{延续}拉出来变成显式参数，这个 @racket[λ] 就得亲手写。能不能反过来：用 @racket[let] 语法把 @tech[#:key "延续传递风格"]{CPS} 的@tech{延续}再藏回去？
 
 @subsection[#:tag "02:hide-again"]{再次隐藏延续}
 
@@ -55,13 +55,13 @@
               ((cps:mul2 v) k))))
          a->⊥))]
 
-想要的是像 @racket[let] 一样写成 @racket[(anf:let ([v (cps:mul1 1)]) (cps:mul2 v))]，λ 由语法替我们写。对照手写版，@racket[(cps:mul1 1)] 是 @racket[e]，@racket[(cps:mul2 v)] 是 @racket[b]，宏把它们放回原处：
+想要的是像 @racket[let] 一样写成 @racket[(anf:let ([v (cps:mul1 1)]) (cps:mul2 v))]，@racket[λ] 由语法替我们写。对照手写版，@racket[(cps:mul1 1)] 是 @racket[e]，@racket[(cps:mul2 v)] 是 @racket[b]，宏把它们放回原处：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define-syntax-rule (anf:let ([v e]) b)
   (λ (k) (e (λ (v) (b k)))))]
 
-@racket[anf:let] 自己也交出一段计算，收到@tech{延续}后才开始运行。展开出来的，除了程序员写下的箭头，只有 λ 和函数调用。@racket[cps:] 箭头加上绑定的语法，就成了一门嵌在宿主里的小语言：宏充当编译器，把类似 ANF 的写法翻译成 @math{¬¬} 编码的 CPS。编译出来的程序还要有人运行，这门语言还缺一个解释器：交给程序@tech{终结延续} @racket[a->⊥]，再用 @racket[⊥->a] 接住答案：
+@racket[anf:let] 自己也交出一段计算，收到@tech{延续}后才开始运行。展开出来的，除了程序员写下的箭头，只有 @racket[λ] 和函数调用。@racket[cps:] 箭头加上绑定的语法，就成了一门嵌在宿主里的小语言：宏充当编译器，把类似 @tech[#:key "A-范式"]{ANF} 的写法翻译成 @math{¬¬} 编码的 @tech[#:key "延续传递风格"]{CPS}。编译出来的程序还要有人运行，这门语言还缺一个解释器：交给程序@tech{终结延续} @racket[a->⊥]，再用 @racket[⊥->a] 接住答案：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define (anf:eval kka) (⊥->a (kka a->⊥)))]
@@ -73,7 +73,7 @@
 
 @subsection[#:tag "02:early-return"]{提前返回}
 
-手写的 CPS 版 @racket[mul] 有两处要程序员亲自动手：正常路径上，每一步都要写出新的@tech{延续} @racket[(λ (v) (k (* v r)))]；遇到零时，要手动改调 @racket[a->⊥]。不写@tech{延续}，用宿主自己的 @racket[let/cc]、@racket[let*]、@racket[if] 和原语，@racket[mul] 可以这样写：
+手写的 @tech[#:key "延续传递风格"]{CPS} 版 @racket[mul] 有两处要程序员亲自动手：正常路径上，每一步都要写出新的@tech{延续} @racket[(λ (v) (k (* v r)))]；遇到零时，要手动改调 @racket[a->⊥]。不写@tech{延续}，用宿主自己的 @racket[let/cc]、@racket[let*]、@racket[if] 和原语，@racket[mul] 可以这样写：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: mul (→ Real * Real))
@@ -264,7 +264,7 @@
 (anf:eval ((∘𝒦 cps:mul3 (∘𝒦 cps:mul2 cps:mul1)) 1))
 (anf:eval ((∘𝒦 (∘𝒦 cps:mul3 cps:mul2) cps:mul1) 1))]
 
-两种分组算得一样。一般也是这样吗？不必逐条展开，可以借已有的运算律。先给两种写法的箭头起名：照 @racket[cps] 写法的叫 CPS 箭头，记作 @math{→@subscript{𝒦}}；照 @racket[neg] 写法的叫逆否箭头，记作 @math{→@subscript{𝒰}}（U 取掉头转弯的意思：箭头的方向倒了过来）。前面名字以 @racket[cps:]、@racket[neg:] 开头的函数，就分别是这两种箭头：
+两种分组算得一样。一般也是这样吗？不必逐条展开，可以借已有的运算律。先给两种写法的箭头起名：照 @racket[cps] 写法的叫@defterm[#:en "CPS arrow"]{CPS 箭头}，记作 @math{→@subscript{𝒦}}；照 @racket[neg] 写法的叫@defterm[#:en "contrapositive arrow"]{逆否箭头}，记作 @math{→@subscript{𝒰}}（U 取掉头转弯的意思：箭头的方向倒了过来）。前面名字以 @racket[cps:]、@racket[neg:] 开头的函数，就分别是这两种箭头：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define-type (→𝒦 p q) (→    p (¬¬ q)))
@@ -280,9 +280,9 @@
 (: cps:id (∀ (q) (→𝒦 q q)))
 (: ∘𝒦 (∀ (p1 p2 p3) (→ (→𝒦 p2 p3) (→𝒦 p1 p2) (→𝒦 p1 p3))))]
 
-@racket[case→] 列出同一个函数的几种类型，调用时按交给它的参数取用其中一种：这两行是 @racket[flip] 同一段代码的两种读法，第一行从 𝒰 搬到 𝒦，第二行搬回来。普通函数经 @racket[neg] 变成逆否箭头，经 @racket[cps] 变成 CPS 箭头，@racket[flip] 在两种箭头之间来回。沿用@xref["02:split-k"]{「把延续独立出来」}的前提，来回一趟，什么也不丢。
+@racket[case→] 列出同一个函数的几种类型，调用时按交给它的参数取用其中一种：这两行是 @racket[flip] 同一段代码的两种读法，第一行从 𝒰 搬到 𝒦，第二行搬回来。普通函数经 @racket[neg] 变成@tech{逆否箭头}，经 @racket[cps] 变成 @tech{CPS 箭头}，@racket[flip] 在两种箭头之间来回。沿用@xref["02:split-k"]{「把延续独立出来」}的前提，来回一趟，什么也不丢。
 
-逆否箭头也能复合吗？@racket[flip] 把它们一一对到 CPS 箭头，那就把 @racket[∘𝒦] 原样搬过去：两支各 @racket[flip] 成 CPS 箭头，用 @racket[∘𝒦] 接起来，再 @racket[flip] 回来：
+@tech{逆否箭头}也能复合吗？@racket[flip] 把它们一一对到 @tech{CPS 箭头}，那就把 @racket[∘𝒦] 原样搬过去：两支各 @racket[flip] 成 @tech{CPS 箭头}，用 @racket[∘𝒦] 接起来，再 @racket[flip] 回来：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define (∘𝒰       neg:g        neg:f)
@@ -291,7 +291,7 @@
 搬过来的复合是什么？把 @racket[(flip neg:g)]、@racket[(flip neg:f)] 记作 @racket[cps:g]、@racket[cps:f]，交齐@tech{延续} @racket[k] 和输入 @racket[x]，展开：
 
 @racketblock[
-  (((∘𝒰 neg:g neg:f) k) x)
+#,(hspace 2)(((∘𝒰 neg:g neg:f) k) x)
 = (((∘𝒦 cps:g cps:f) x) k)
 = ((cps:f x) (λ (y) ((cps:g y) k)))
 = ((neg:f (λ (y) ((neg:g k) y))) x)
@@ -299,7 +299,7 @@
 = (((∘ neg:f neg:g) k) x)
 = (((⨾ neg:g neg:f) k) x)]
 
-倒数第三步靠的还是那个前提。搬过来的，原来就是反向复合 @racket[⨾]：先用 @racket[neg:g]，再用 @racket[neg:f]。@xref["02:position"]{「计算的位置」}用几次 @racket[neg] 接出@tech{闭包链}，也是这样接的。于是逆否箭头的复合直接取 @racket[⨾]，单位元取 @racket[id]，记作 @racket[neg:id]：
+倒数第三步靠的还是那个前提。搬过来的，原来就是反向复合 @racket[⨾]：先用 @racket[neg:g]，再用 @racket[neg:f]。@xref["02:position"]{「计算的位置」}用几次 @racket[neg] 接出@tech{闭包链}，也是这样接的。于是@tech{逆否箭头}的复合直接取 @racket[⨾]，单位元取 @racket[id]，记作 @racket[neg:id]：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: ∘𝒰 (∀ (p1 p2 p3) (→ (→𝒰 p2 p3) (→𝒰 p1 p2) (→𝒰 p1 p3))))
@@ -308,6 +308,6 @@
 (: neg:id (∀ (q) (→𝒰 q q)))
 (define neg:id id)]
 
-@racket[⨾] 有@tech{结合律}与@tech{单位律}，@racket[∘𝒰] 也就有：分组无关紧要，@racket[neg:id] 接在哪一头都不改变什么。@racket[id] 搬回 CPS 箭头这边，正是 @racket[cps:id]。@racket[flip] 来回一趟什么也不丢，@racket[∘𝒦] 搬过去是 @racket[∘𝒰]，两条运算律也就跟着搬了回来：两种嵌套的 @racket[anf:let] 交出同样的计算，只换名的绑定可有可无。
+@racket[⨾] 有@tech{结合律}与@tech{单位律}，@racket[∘𝒰] 也就有：分组无关紧要，@racket[neg:id] 接在哪一头都不改变什么。@racket[id] 搬回 @tech{CPS 箭头}这边，正是 @racket[cps:id]。@racket[flip] 来回一趟什么也不丢，@racket[∘𝒦] 搬过去是 @racket[∘𝒰]，两条运算律也就跟着搬了回来：两种嵌套的 @racket[anf:let] 交出同样的计算，只换名的绑定可有可无。
 
 @bold{练习}：反过来，只用 @racket[∘𝒰] 和 @racket[flip] 写出 @racket[∘𝒦]，验证它与由 @racket[anf:let] 给出的定义行为相同。

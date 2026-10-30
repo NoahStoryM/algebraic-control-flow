@@ -181,7 +181,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 @racket[(label)] 做了什么，一步步展开来看。把 @racket[call/cc] 交给 @racket[goto] 的@tech{延续}记作 @racket[k]，它通向 @racket[(label)] 被调用的地方：
 
 @racketblock[
-  (label)
+#,(hspace 2)(label)
 = (call/cc goto)
 = (goto k)
 = (k k)]
