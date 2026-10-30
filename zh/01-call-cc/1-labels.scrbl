@@ -292,8 +292,13 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 
 这个 @racket[call/cc] 的写法和 @racket[cc] 一样，只是把@tech{延续}交给
 @racket[proc]，而不是交给调用者。由它写 @racket[cc]，只要给交出的@tech{延续}配上
-@racket[1]，再让它跳回来时配上 @racket[0]。以 @racket[cc]
-为原语，@tech{标签}就是 @racket[(cc)] 交出的东西去掉@tech{标记}：
+@racket[1]，再让它跳回来时配上 @racket[0]。
+
+最后以 @racket[cc] 为原语，写回@tech{标签}。@racket[(cc)] 第一次交出的，是配着
+@racket[1] 的@tech{延续} @racket[k]。把它当作@tech{标签}，跳回来靠的是
+@racket[(goto k)]，也就是 @racket[(k k)]：@racket[k] 带回来的正是它自己。于是
+@racket[(cc)] 第二次交出的，是配着 @racket[0] 的 @racket[k]。
+两支装的是同一个@tech{标签}，@tech{标记}没有什么要分辨的，丢掉就是：
 
 @examples[#:eval ev2 #:label #f #:no-prompt
 (define label (compose untag cc))
