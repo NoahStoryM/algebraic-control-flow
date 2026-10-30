@@ -44,7 +44,7 @@
 (: neg
    (∀ (p q)
       (case→ (→ (→𝒞 p q) (→𝒰     p      q))
-             (→ (→𝒰 p q) (→𝒟 (¬¬ p) (¬¬ q))))))
+             (→ (→𝒰 p q) (→𝒞 (¬¬ p) (¬¬ q))))))
 (define ((neg f) kq) (∘ kq f))
 
 
@@ -134,7 +134,7 @@
 
 ;;; 再用一次 neg
 
-(: neg² (∀ (p q) (→ (→𝒞 p q) (→𝒟 (¬¬ p) (¬¬ q)))))
+(: neg² (∀ (p q) (→ (→𝒞 p q) (→𝒞 (¬¬ p) (¬¬ q)))))
 (define neg² (∘ neg neg))
 
 
@@ -143,7 +143,7 @@
 (: neg²:id (∀ (p) (→𝒦 (¬¬ p) p)))
 (define (neg²:id kkp) kkp)
 
-(: join (∀ (p q) (→ (→𝒞 p q) (→𝒟 (¬¬ (¬¬ p)) (¬¬ q)))))
+(: join (∀ (p q) (→ (→𝒞 p q) (→𝒞 (¬¬ (¬¬ p)) (¬¬ q)))))
 (define join (∘ neg cps neg))
 
 (: join:id (∀ (p) (→𝒟 (¬¬ (¬¬ p)) (¬¬ p))))

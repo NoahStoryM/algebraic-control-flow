@@ -190,7 +190,7 @@
 (define-type (¬𝒦 p) (→𝒦 p ⊥))
 (define-type (¬𝒰 p) (→𝒰 p ⊥))]
 
-它们是新箭头下的新类型，不是 @math{¬} 换了一种写法：展开到宿主，@math{¬@subscript{𝒦} p} 是 @math{p → ¬¬⊥}。@racket[cps:proc] 收到的是 @racket[(¬𝒦 p)]；它交回的计算又交给了 @racket[kp]，所以是 @racket[(¬¬ p)]。@racket[cps:proc] 因此是 @racket[(→𝒦 (¬𝒦 p) p)]。@racket[cps:call/cc] 先收 @racket[cps:proc]，再收 @racket[kp]，结果是 @racket[⊥]，它的类型就出来了。@racket[neg:call/cc] 同理：
+它们是新箭头下的新类型，不是 @math{¬} 换了一种写法：展开到宿主，@math{¬@subscript{𝒦} p} 是 @math{p → ¬¬⊥}。@xref["02:yin-yang"]{「阴阳谜题」}旁注里的 @ty{Label𝒦}，用它写就是 @math{@ty{Label𝒦} = ¬@subscript{𝒦} @ty{Label𝒦}}。@racket[cps:proc] 收到的是 @racket[(¬𝒦 p)]；它交回的计算又交给了 @racket[kp]，所以是 @racket[(¬¬ p)]。@racket[cps:proc] 因此是 @racket[(→𝒦 (¬𝒦 p) p)]。@racket[cps:call/cc] 先收 @racket[cps:proc]，再收 @racket[kp]，结果是 @racket[⊥]，它的类型就出来了。@racket[neg:call/cc] 同理：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: cps:call/cc (∀ (p) (→𝒦 (→𝒦 (¬𝒦 p) p) p)))

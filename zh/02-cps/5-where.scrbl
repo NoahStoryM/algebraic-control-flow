@@ -108,7 +108,7 @@
 = (kp (call/cc kkp))
 ≈ (kkp kp)]
 
-@margin-note{@racket[≈] 说的是行为相同，前提比 @racket[=] 多。@racket[kp] 得是交出去就不再回来的@tech{延续}；它若正常返回，捕获的@tech{延续}还会接着做 @racket[(kp p)] 之后的事。@racket[kkp] 也不能观察或改变动态的控制环境：它若先装上一个异常处理器，再调用 @racket[kp]，直接调用时还在处理器里面，捕获的@tech{延续}却会先离开它，两边就不同了；@racket[dynamic-wind] 同样分辨得出。这里的等式只比较这一篇的@tech{延续}编码，不考虑这类程序，@tech{终结延续}由外面的运行边界提供。@xref["02:split-k"]{「延续独占一层」}的前提也照样要：两层参数之间不做别的事。}
+@margin-note{@racket[=] 只是照定义展开，用到的前提只有「两层参数之间不做别的事」；@racket[≈] 说的是行为相同，前提比 @racket[=] 多。@racket[kp] 和 @racket[kkp] 都要遵守结果为 @math{⊥} 的约定，调用以后不向当前调用处正常返回：@racket[kp] 若正常返回，捕获的@tech{延续}还会接着做 @racket[(kp p)] 之后的事；@racket[kkp] 若正常交回一个值，左边会把它交给 @racket[kp]，右边却直接返回。@racket[kkp] 也不能观察或改变动态的控制环境：它若先装上一个异常处理器，再调用 @racket[kp]，直接调用时还在处理器里面，捕获的@tech{延续}却会先离开它，两边就不同了；@racket[dynamic-wind] 同样分辨得出。这里比较的只是这一篇的@tech{延续}编码：各层参数也遵守这些约定，函数和@tech{延续}只通过调用来使用，@tech{终结延续}由外面的运行边界提供。在这些约定下，行为相同也包括把它们放进本篇的调用、绑定和复合中使用。@xref["02:split-k"]{「延续独占一层」}的前提也照样要：两层参数之间不做别的事。}
 
 @racket[call/cc] 捕获的，是收到 @racket[p] 以后交给 @racket[kp] 这件剩下的工作。@racket[kp] 若是一条真正的@tech{延续}，交出去就不再回来，捕获到的就和 @racket[kp] 一样。把它交给 @racket[kkp]，和直接把 @racket[kp] 交给 @racket[kkp]，行为相同。
 
@@ -199,7 +199,7 @@ DNI 加两层，在这里就是 @racket[cps:id]：收下 @racket[p]，等一条 
 
 后一步是@xref["02:back-to-host"]{「回到宿主」}里的往返，那里的论证只用到 @racket[(kq …)] 处在尾位置。直接展开也一样，@racket[(uncps neg²:id)] 就是 @racket[(∘ call/cc neg²:id)]，也就是 @racket[call/cc]：工作来自 @racket[uncps] 里已有的 @racket[call/cc]，不是 @racket[neg²:id] 自己捕获了什么。
 
-到这里，从 @racket[id] 造出的已经有四支。代码都和 @racket[id] 一样，区别只在箭头的种类，展开到宿主，层数各不相同：
+到这里，从 @racket[id] 造出的已经有四支。它们都从 @racket[id] 造出，箭头的种类与展开后的层数各不相同：
 
 @tabular[#:style 'boxed #:row-properties '(bottom-border ())
   (list
