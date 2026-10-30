@@ -4,17 +4,11 @@
 
 @;{系列引言等整个系列完结后再写；写作缘起与知乎回答以后放进后记（Noah 10/26）。}
 
-@margin-note{书中代码针对最新版 Racket 编写。较旧的版本（例如 Linux
-发行版打包的版本）可能还缺少部分绑定。}
+@margin-note{书中代码针对最新版 Racket 编写。较旧的版本（例如 Linux 发行版打包的版本）可能还缺少部分绑定。}
 
-@margin-note{代码在 @c{#lang typed/racket/no-check} 下运行：类型标注使用 Typed
-Racket 语法，但不会被类型检查器验证。这些标注是描述预期契约的设计文档，
-并非机器检查的断言。}
+@margin-note{代码在 @c{#lang typed/racket/no-check} 下运行：类型标注使用 Typed Racket 语法，但不会被类型检查器验证。这些标注是描述预期契约的设计文档，并非机器检查的断言。}
 
-读这本书需要熟悉 Racket，也能读 Typed Racket 的类型标注：
-@racket[(: f (→ A B))]、@racket[∀]、@racket[∪] 这样的写法不必再解释。别的写法，
-用到的地方会交代。书中的例子都在生成这份文档时实际运行过，打印和结果照录；
-不会停的程序只显示前几行，后面用 @racket[...] 表示。
+读这本书需要熟悉 Racket，也能读 Typed Racket 的类型标注：@racket[(: f (→ A B))]、@racket[∀]、@racket[∪] 这样的写法不必再解释。别的写法，用到的地方会交代。书中的例子都在生成这份文档时实际运行过，打印和结果照录；不会停的程序只显示前几行，后面用 @racket[...] 表示。
 
 @table-of-contents[]
 

@@ -2,8 +2,7 @@
 
 @title[#:tag "02:appendix"]{附录：完整代码}
 
-这里的 @racket[anf:] 宏处理多值和多个表达式组成的函数体；正文给的是单值、
-单个函数体的写法。
+这里的 @racket[anf:] 宏处理多值和多个表达式组成的函数体；正文给的是单值、单个函数体的写法。
 
 @codeblock|{
 #lang typed/racket/no-check

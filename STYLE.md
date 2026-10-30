@@ -93,9 +93,9 @@
 - .md 的篇（第二至五篇）：类型名在公式里用 `\text`，如 $\text{Natural}$。公式会吞掉花括号，含花括号的集合写成 Unicode 纯文本，不进公式，例如 {(a, b) ∈ A × B | b = f(a)}。
 - 不用破折号。
 
-**Scribble 写法**（第一篇起。Noah 10/26 提出参照 ctp，并定了引言的位置、标题间的过渡、`@tech` 与 `@racket`、每行 70 栏（10/29 改为 80 栏）、原生代码块、旁注的位置几条；公式、练习两条是 Claude 照 ctp 整理的。具体写法见 [lib/README.md](lib/README.md)）
+**Scribble 写法**（第一篇起。Noah 10/26 提出参照 ctp，并定了引言的位置、标题间的过渡、`@tech` 与 `@racket`、每行 70 栏（10/29 改为 80 栏，10/30 取消：中文每段一行）、原生代码块、旁注的位置几条；公式、练习两条是 Claude 照 ctp 整理的。具体写法见 [lib/README.md](lib/README.md)）
 
-- 文件以 `#lang acf/scribble` 开头：scribble/manual 加上本系列的写法，并在读入时去掉两个中文字之间的换行（Noah 10/26 定名，不占 `#lang acf`）。每行不超过 80 栏（按显示宽度，中文字算两栏），可以在空格处或两个中文字之间折行，尽量折在标点之后，标点不放在行首。`racket tools/wrap-scrbl.rkt` 自动折行，`--check` 检查。
+- 文件以 `#lang acf/scribble` 开头：scribble/manual 加上本系列的写法，并在读入时去掉两个中文字之间的换行（Noah 10/26 定名，不占 `#lang acf`）。中文正文每段写成一行，不折行（Noah 10/30：审稿看编译后的 HTML，折行用处不大，还会在全角标点后留下空格）。`racket tools/join-scrbl.rkt` 把段落连成一行，`--check` 检查。代码块仍按 Racket 的缩进排。以后的英文版可以照常折行。
 - 篇的引言写在篇的 `main.scrbl`，小篇之前。系列的引言等整个系列完结后再写；读者须知（Racket 版本、`typed/racket/no-check`、需要的预备知识）先放在系列前言 `zh/main.scrbl`。
 - 标题之间要有文字过渡：小篇标题、节标题后面不直接接下一级标题，至少先有一两句话。
 - 术语第一次出现写 `@defterm`（底下是 `@deftech`），之后每次出现都写 `@tech`。这样读者从后面任何一处点进去，都能跳回定义处，知道该补读哪里。节标题里不加。

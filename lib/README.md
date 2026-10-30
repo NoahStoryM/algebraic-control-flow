@@ -17,8 +17,8 @@ zh/01-call-cc/5-conclusion.scrbl 结论与未解的线索；附录也各自单�
 ```
 
 - 每个文件以 `#lang acf/scribble` 开头（`scribble/lang/reader.rkt`、`lib/doc-lang.rkt`）：它就是 `scribble/manual` 加上 `scribble/example` 和 `acf.rkt` 的写法，不必再 `require`；`acf.rkt` 的 `defterm` 盖过 scribble/manual 自带的那个。要先 `raco pkg install --name acf`，`#lang acf/scribble` 才找得到。名字不用 `#lang acf`，把它留给以后（Noah 10/26）。
-- 每行不超过 80 栏（Noah 10/29，原为 70），中文字与全角标点算两栏。Scribble 会把行尾的换行排成一个空格，`#lang acf/scribble` 读入时去掉两侧都是中文字（含全角标点）的换行（`lib/cjk-join.rkt`），所以中文段落可以在任意两个字之间折行，排出来不多空格；中文与代码、英文之间的换行照常排成一个空格。Chrome 不会自己去掉这种换行（Firefox 会），所以这一步不能省。
-- `racket tools/wrap-scrbl.rkt 文件…` 先把每段连成一行再重新折：能在空格处或中文标点之后折就优先这样折，标点不放在行首，`--check` 只检查。代码块里的长行要手工按 Racket 的缩进改。
+- 中文正文每段写成一行，不折行（Noah 10/30；原先每行限 70、80 栏）。审稿看编译后的 HTML，源文件折行用处不大；折在全角标点之后、下一行以 `@racket` 开头时，排出来还会多一个空格。`racket tools/join-scrbl.rkt 文件…` 把每段连成一行（两个中文字之间、全角标点之后直接相连，其余用一个空格），`--check` 只检查。代码块按 Racket 的缩进手工排。
+- `#lang acf/scribble` 读入时仍会去掉两侧都是中文字（含全角标点）的换行（`lib/cjk-join.rkt`），手工折行时不多出空格；Chrome 不会自己去掉这种换行（Firefox 会）。以后的英文版可以照常折行。
 - 部的 `@title` 带 `#:style acf-style`；篇的 `@title` 带 `#:style chapter-style`，HTML 里每个小篇单独成页。
 - 小篇文件里，`@title` 是小篇名，`@section` 对应 .md 里的「#」，`@subsection` 对应「##」，`@subsubsection` 对应「###」。
 - 篇的引言写在篇的 `main.scrbl`，小篇之前；读者须知暂放系列前言 `zh/main.scrbl`。标题之间要有文字过渡：小篇标题、节标题后面先有一两句话，再接下一级标题。
@@ -120,7 +120,7 @@ export LC_ALL=C.UTF-8
 raco setup --pkgs acf                                  # 生成文档；例子出错就失败
 racket tools/run-blocks.rkt zh/01-call-cc/main.scrbl   # 同样实例化文档，并数一数各类代码块
 racket tools/cmp-forms.rkt zh/01-call-cc/main.scrbl zh/01-call-cc/code.rkt
-racket tools/wrap-scrbl.rkt --check zh/main.scrbl zh/01-call-cc/*.scrbl
+racket tools/join-scrbl.rkt --check zh/main.scrbl zh/0[12]-*/*.scrbl
 racket tools/cmp-conversion.rkt zh/0X-…/article.md zh/0X-…/main.scrbl   # 只在把一篇从 .md 转换过来时用
 ```
 
