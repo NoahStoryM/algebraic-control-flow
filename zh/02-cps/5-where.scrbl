@@ -108,7 +108,7 @@
 = (kp (call/cc kkp))
 ≈ (kkp kp)]
 
-@margin-note{@racket[=] 只是照定义展开，用到的前提只有「两层参数之间不做别的事」；@racket[≈] 说的是行为相同，前提比 @racket[=] 多。@racket[kp] 和 @racket[kkp] 都要遵守结果为 @math{⊥} 的约定，调用以后不向当前调用处正常返回：@racket[kp] 若正常返回，捕获的@tech{延续}还会接着做 @racket[(kp p)] 之后的事；@racket[kkp] 若正常交回一个值，左边会把它交给 @racket[kp]，右边却直接返回。@racket[kkp] 也不能观察或改变动态的控制环境：它若先装上一个异常处理器，再调用 @racket[kp]，直接调用时还在处理器里面，捕获的@tech{延续}却会先离开它，两边就不同了；@racket[dynamic-wind] 同样分辨得出。这里比较的只是这一篇的@tech{延续}编码：各层参数也遵守这些约定，函数和@tech{延续}只通过调用来使用，@tech{终结延续}由外面的运行边界提供。在这些约定下，行为相同也包括把它们放进本篇的调用、绑定和复合中使用。@xref["02:split-k"]{「延续独占一层」}的前提也照样要：两层参数之间不做别的事。}
+@margin-note{@racket[=] 只是照定义展开，用到的前提只有「两层参数之间不做别的事」；@racket[≈] 说的是行为相同，前提比 @racket[=] 多。@racket[kp] 和 @racket[kkp] 都要遵守结果为 @math{⊥} 的约定，调用以后不向当前调用处正常返回：@racket[kp] 若正常返回，捕获的@tech{延续}还会接着做 @racket[(kp p)] 之后的事；@racket[kkp] 若正常交回一个值，左边会把它交给 @racket[kp]，右边却直接返回。@racket[kkp] 也不能观察或改变动态的控制环境：它若先装上一个异常处理器，再调用 @racket[kp]，直接调用时还在处理器里面，捕获的@tech{延续}却会先离开它，两边就不同了；@racket[dynamic-wind] 同样分辨得出。这里比较的只是这一章的@tech{延续}编码：各层参数也遵守这些约定，函数和@tech{延续}只通过调用来使用，@tech{终结延续}由外面的运行边界提供。在这些约定下，行为相同也包括把它们放进本章的调用、绑定和复合中使用。@xref["02:split-k"]{「延续独占一层」}的前提也照样要：两层参数之间不做别的事。}
 
 @racket[call/cc] 捕获的，是收到 @racket[p] 以后交给 @racket[kp] 这件剩下的工作。@racket[kp] 若是一条真正的@tech{延续}，交出去就不再回来，捕获到的就和 @racket[kp] 一样。把它交给 @racket[kkp]，和直接把 @racket[kp] 交给 @racket[kkp]，行为相同。
 
@@ -139,11 +139,11 @@ neg          uncps
 (: unneg (∀ (p q) (→ (→𝒰 p q) (→𝒟 p q))))
 (define unneg (∘ uncps flip))]
 
-在 @racket[≈] 的意义下，三种写法是@defterm[#:en "isomorphic"]{同构}的：同一组箭头的三种写法。比较的范围要说清：比的是这一篇的@tech{延续}编码在 @racket[≈] 意义下的行为，而且要靠宿主有 @racket[call/cc]，@racket[uncps] 才写得出来；并不是任意具有这些类型的 Racket 函数都这样。
+在 @racket[≈] 的意义下，三种写法是@defterm[#:en "isomorphic"]{同构}的：同一组箭头的三种写法。比较的范围要说清：比的是这一章的@tech{延续}编码在 @racket[≈] 意义下的行为，而且要靠宿主有 @racket[call/cc]，@racket[uncps] 才写得出来；并不是任意具有这些类型的 Racket 函数都这样。
 
 @section[#:tag "02:count-k"]{数一数 k}
 
-名字里的 @racket[k] 一直在数否定的层数，@xref["01:layers"]{「否定塔」}数过：@racket[kv] 等 @racket[v]，@racket[kkv] 等 @racket[kv]，多一层的正好接收少一层的。那里的几条规则，在这一篇里都有了现成的写法。
+名字里的 @racket[k] 一直在数否定的层数，@xref["01:layers"]{「否定塔」}数过：@racket[kv] 等 @racket[v]，@racket[kkv] 等 @racket[kv]，多一层的正好接收少一层的。那里的几条规则，在这一章里都有了现成的写法。
 
 DNI 加两层，在这里就是 @racket[cps:id]：收下 @racket[p]，等一条 @racket[kp] 来，再把 @racket[p] 交给它。@xref["02:cps"]{「延续与 CPS」}开头那串等式，把 @racket[(k e)] 改写成 @racket[((λ (k) (k e)) (λ (v) b))]，做的就是这一步。交来的若正是 @racket[(cps:id p)]，把 @racket[kp] 交给它，照定义一步就回到原处：
 

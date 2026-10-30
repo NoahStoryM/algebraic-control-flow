@@ -18,7 +18,7 @@
      (cons (λ (v) (set! u v) (goto l)) 1)]
     [else (cons u 0)]))]
 
-上一小篇里，@racket[goto] 和@tech{延续}交出的类型都是 @racket[⊥]。交出 @racket[⊥]，说的是这段计算不会有结果交回来：一调用，控制流就切换到了别处。
+上一节里，@racket[goto] 和@tech{延续}交出的类型都是 @racket[⊥]。交出 @racket[⊥]，说的是这段计算不会有结果交回来：一调用，控制流就切换到了别处。
 
 这样的调用可以出现在任何位置。最后那版 @racket[mul] 里，@racket[(return r)] 和 @racket[(* res r)] 是 @racket[if] 的两个分支，一个交出 @racket[⊥]，一个交出实数，不考虑子类型的话，类型对不上；@racket[for/fold] 要的是实数，@racket[(return r)] 交不出实数，程序却照样运行。这是为什么？
 
