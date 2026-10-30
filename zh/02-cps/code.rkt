@@ -311,7 +311,7 @@
   (check-equal? (+ 1 ((uncps cps:mul) 1 2 3 4)) 25)
   (check-equal? (+ 1 ((uncps cps:mul) 1 2 0 3 4)) 1)
   (check-equal? ((uncps (cps add1)) 41) 42)
-  (: cps:label (→ (¬¬ Label𝒦)))
+  (: cps:label (→𝒦 Label𝒦))
   (define (cps:label) (cps:call/cc cps:id))
   (check-true
    (output-starts-with?
@@ -609,7 +609,7 @@
       (cps:loop r*)))
   (check-equal? (anf:eval (cps:mul 1 2 3 4)) 24)
   (check-equal? (anf:eval (cps:mul 1 2 0 3 4)) 0)
-  (: cps:label (→ (¬¬ Label𝒦)))
+  (: cps:label (→𝒦 Label𝒦))
   (define (cps:label) (cps:call/cc cps:id))
   (check-true
    (output-starts-with?

@@ -266,3 +266,4 @@
 - `cps:label` 的引入（Noah 10/30 晚，几经修改）：不再重讲 CPS 的返回，回指 2.1.2。`(let/cc k k)` 写成 `(anf:let/cc cps:k (λ (k) (k cps:k)))`，展开 `anf:let/cc` 得 `(cps:call/cc (λ (cps:k) (λ (k) (k cps:k))))`，认出 `(λ (k) (k v))` 是 `((cps id) v)`，于是定义 `cps:id` 与 `(define (cps:label) (cps:call/cc cps:id))`；`((cps:label) k)` 的展开删去，只留一句：交出的是提升过的当前延续。
 - 称呼改成 部／章／节／小节（Noah 10/30 晚，以 .scrbl 为主）；正文里的「第一篇」能省就省：指向具体内容的写成链接，共用名字不注出处，对照用「直接风格里」「原来的」；引言承接语用「上一章」。STYLE.md、lib/README.md、README.md、CONTRIBUTING.md 照改。
 - 「说谎者」改成以 CPS 箭头为主线（Noah 10/30 晚）：只从 `(cps kp)` 读起，`Label𝒦` 写成 `(→𝒦 Label𝒦 ⊥)`，对照 `Label`，定义 ¬𝒦，认出不动点与说谎者；然后一段类比逆否箭头：`(neg kp) : p →𝒰 ⊥`，定义 ¬𝒰 与它的不动点 `(define-type Label𝒰 (¬𝒰 Label𝒰))`，展开 ¬⊥ → ¬Label𝒰，同样是说谎者（只给类型，没有程序）。code.rkt、附录加 `Label𝒰`；数学仓库 10.21 同步（math#51）。
+- `→𝒦` 不限参数个数（Noah 10/30 晚）：定义处加旁注，`(→𝒦 p ... q)` 即 `(→ p ... (¬¬ q))`，零元 `(→𝒦 q)` 即 `(→ (¬¬ q))`；`cps:label` 的类型改写成 `(→𝒦 Label𝒦)`。数学仓库 10.21 同步（math#52）。
