@@ -40,7 +40,7 @@ racket tools/cmp-forms.rkt zh/05-relations/article.md zh/05-relations/code.rkt  
 raco test zh/*/code.rkt
 ```
 
-第二至四篇的 `blocks.rktd` 按「节标题 + 代码块开头」唯一定位例子，逐项写明不能直接执行的块及原因；`prelude.rkt` 提供前文定义，`code.rkt` 对循环定义、无限输出和编译器做隔离测试。配置的 `stdout` 以原始打印（含换行）比较，`value` 比较结果，`exit` 捕获 `exit` 而不终止核对器。第四篇逐步构造的局部 `match` 分支和未组装的中间版本在配置中标出，最终编译器在 `code.rkt` 与 `check/` 中测试。
+第三、四篇的 `blocks.rktd` 按「节标题 + 代码块开头」唯一定位例子，逐项写明不能直接执行的块及原因；`prelude.rkt` 提供前文定义，`code.rkt` 对循环定义、无限输出和编译器做隔离测试。配置的 `stdout` 以原始打印（含换行）比较，`value` 比较结果，`exit` 捕获 `exit` 而不终止核对器。第四篇逐步构造的局部 `match` 分支和未组装的中间版本在配置中标出，最终编译器在 `code.rkt` 与 `check/` 中测试。
 
 `cmp-forms.rkt` 核对正文定义是否逐式出现在对应的 `code.rkt`，找不到时返回非零状态。推导中只有省略号、没有可执行函数体的定义，在各篇的 `form-exceptions.rktd` 中以**完整表达式和原因**逐条列出；正文改动使排除项过期时核对会报错。同名函数在 `code.rkt` 的不同子模块中保留各阶段版本。
 
