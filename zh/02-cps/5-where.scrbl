@@ -139,7 +139,9 @@ neg          uncps
 (: unneg (∀ (p q) (→ (→𝒰 p q) (→𝒟 p q))))
 (define unneg (∘ uncps flip))]
 
-在 @racket[≈] 的意义下，三种写法是@defterm[#:en "isomorphic"]{同构}的：同一组箭头的三种写法。比较的范围要说清：比的是这一章的@tech{延续}编码在 @racket[≈] 意义下的行为，而且要靠宿主有 @racket[call/cc]，@racket[uncps] 才写得出来；并不是任意具有这些类型的 Racket 函数都这样。
+@margin-note{这里的同构只就本章的@tech{延续}编码、在 @racket[≈] 的意义下说，@racket[uncps] 还要靠宿主的 @racket[call/cc] 才写得出来；并不是任意具有这些类型的 Racket 函数都这样。}
+
+在 @racket[≈] 的意义下，三种写法是@defterm[#:en "isomorphic"]{同构}的：同一组箭头的三种写法。
 
 @section[#:tag "02:count-k"]{数一数 k}
 

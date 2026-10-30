@@ -84,7 +84,9 @@
       (case→ (→ (→𝒟 p q) (→𝒰     p      q))
              (→ (→𝒰 p q) (→𝒞 (¬¬ p) (¬¬ q))))))]
 
-两次 @racket[neg] 连起来，记作 @racket[neg²]。@tech{宿主箭头} @math{p → q} 进来，出去的是 @math{¬¬p → ¬¬q}，每个类型裹上一层 @math{¬¬}。类型标的是箭头之间的对应：宿主里的一支箭头，对应 𝒞 里的一支 @math{¬¬p → ¬¬q}。代码本身只把 @racket[f] 包上两层，并不改写 @racket[f] 的内部，交进来的是纯箭头时，包出来的就已经是纯的：
+@margin-note{类型标的是箭头之间的对应：宿主里的一支箭头，对应 𝒞 里的一支 @math{¬¬p → ¬¬q}。@racket[neg²] 只把 @racket[f] 包上两层，并不改写 @racket[f] 的内部；交进来的 @racket[f] 本来就是纯的，包出来的才已经是纯的。}
+
+两次 @racket[neg] 连起来，记作 @racket[neg²]。@tech{宿主箭头} @math{p → q} 进来，出去的是 @math{¬¬p → ¬¬q}，每个类型裹上一层 @math{¬¬}：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: neg² (∀ (p q) (→ (→𝒟 p q) (→𝒞 (¬¬ p) (¬¬ q)))))
