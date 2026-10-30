@@ -71,7 +71,7 @@
 = (g (f x))
 = ((∘ g f) x)]
 
-先算 @racket[(f x)]，再算 @racket[(g y)]，正是 @racket[f] 与 @racket[g] 的复合：绑定的先后，就是复合的先后。@racket[let] 比复合多做的一件事，是给中间结果起了名字。这里的 @racket[∘] 就是第一篇用过的 @racket[compose]，把几个函数接成一个，最右边的先算。
+先算 @racket[(f x)]，再算 @racket[(g y)]，正是 @racket[f] 与 @racket[g] 的复合：绑定的先后，就是复合的先后。@racket[let] 比复合多做的一件事，是给中间结果起了名字。这里的@defsym["g ∘ f" "复合：先 f 后 g，即 compose"] @racket[∘] 就是第一篇用过的 @racket[compose]，把几个函数接成一个，最右边的先算。
 
 @margin-note{后一步若用到前面不止一个名字，比如 @racket[fib] 最后的 @racket[(+ v w)]，就不只是一串函数首尾相接了：@racket[v] 得一路带到最后。这里只看每一步只用到上一步结果的情形。}
 
@@ -132,7 +132,7 @@
 
 这就回答了前面的问题。@tech{结合律}说，@racket[let] 嵌在 @racket[b] 里还是 @racket[e] 里都一样；@tech{单位律}说，只换名的 @racket[let] 可有可无。写法尽可以不同，定下的是同一个计算顺序，行为也都一样。这两条是 @racket[∘] 的运算律。
 
-@racket[∘] 写的顺序和算的顺序相反：@racket[(∘ h g f)] 里最右边的 @racket[f] 先算。@racket[let*] 却是照算的顺序，从上往下写。照算的顺序写的复合记作 @racket[⨾]，@racket[(⨾ f g h)] 先调用 @racket[f]，再调用 @racket[g]，最后调用 @racket[h]：
+@racket[∘] 写的顺序和算的顺序相反：@racket[(∘ h g f)] 里最右边的 @racket[f] 先算。@racket[let*] 却是照算的顺序，从上往下写。照算的顺序写的复合记作@defsym["f ⨾ g" "反向复合：先 f 后 g，与 let* 的次序一致"] @racket[⨾]，@racket[(⨾ f g h)] 先调用 @racket[f]，再调用 @racket[g]，最后调用 @racket[h]：
 
 @racketblock[
 #,(hspace 2)(let* ([y (f x)]
@@ -141,7 +141,7 @@
 = ((∘ h g f) x)
 = ((⨾ f g h) x)]
 
-从类型看，复合是把首尾相接的箭头拼成一支：@racket[(∘ g f)] 里，@racket[f] 从 @racket[p1] 到 @racket[p2]，@racket[g] 从 @racket[p2] 到 @racket[p3]，拼起来就是从 @racket[p1] 到 @racket[p3]。@racket[⨾] 也是拼接，只是参数的次序反了过来，拼的是反着写的箭头。把箭头反着写，结果在左边，参数在右边，记作 @racket[←]：@racket[(← q p)] 就是 @racket[(→ p q)]。用 @racket[→] 写出 @racket[∘] 接两支时的类型，用 @racket[←] 写出 @racket[⨾] 接两支时的类型，两行只差把 @racket[→] 换成 @racket[←]：
+从类型看，复合是把首尾相接的箭头拼成一支：@racket[(∘ g f)] 里，@racket[f] 从 @racket[p1] 到 @racket[p2]，@racket[g] 从 @racket[p2] 到 @racket[p3]，拼起来就是从 @racket[p1] 到 @racket[p3]。@racket[⨾] 也是拼接，只是参数的次序反了过来，拼的是反着写的箭头。把箭头反着写，结果在左边，参数在右边，记作@defsym["q ← p" "反向箭头：从 p 到 q 的函数，结果写在左边"] @racket[←]：@racket[(← q p)] 就是 @racket[(→ p q)]。用 @racket[→] 写出 @racket[∘] 接两支时的类型，用 @racket[←] 写出 @racket[⨾] 接两支时的类型，两行只差把 @racket[→] 换成 @racket[←]：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define-type (← q p) (→ p q))
@@ -264,7 +264,7 @@
 (⊥->a (fact/k 5 a->⊥))
 (⊥->a (fib/k 10 a->⊥))]
 
-@tech[#:key "延续传递风格"]{CPS} 函数运行起来，@racket[a->⊥] 充当@tech{终结延续}，@tech{闭包链}接在它前面一环环长出来；@racket[⊥->a] 在外面接住答案。计算在 raise/handler 划出的边界内执行，结果穿过边界传出来。
+@tech[#:key "延续传递风格"]{CPS} 函数运行起来，@racket[a->⊥] 充当@tech{终结延续}，@tech{闭包链}接在它前面一环环长出来；@racket[⊥->a] 在外面接住答案。交进@tech{终结延续}、在外面接住答案的这一层，下面叫它运行边界：计算在它划出的边界内执行，结果穿过边界传出来。这套异常设施只是借来的出口，好让例子跑完以后取回答案；@tech[#:key "延续传递风格"]{CPS} 本身只要求启动时有一条@tech{延续}可交，不依赖它。
 
 @subsection[#:tag "02:first-class-control"]{一等控制}
 

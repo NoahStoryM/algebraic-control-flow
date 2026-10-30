@@ -58,7 +58,7 @@
                           (cps:* res r))))))
     (cps:loop r*)))]
 
-@xref["02:back-to-host"]{「回到宿主」}的 @racket[uncps] 把 @tech{CPS 箭头}变成宿主函数，里面用的是 @racket[call/cc]。宿主函数有两类：有的会跳转、会输出，像 @racket[call/cc]、@racket[raise]、@racket[exit]、@racket[display]；有的在合法输入上总会返回，没有可观察的副作用。全部宿主函数记作 𝒞，后一类叫纯函数，记作 𝒟；作为参数交进来的函数，也要是纯的。两类的类型都是普通的函数类型，区别只在函数怎么写，类型检查不出来。纯函数也是宿主函数，@racket[inj] 把它原样放进 𝒞：
+@xref["02:back-to-host"]{「回到宿主」}的 @racket[uncps] 把 @tech{CPS 箭头}变成宿主函数，里面用的是 @racket[call/cc]。宿主函数有两类：有的会跳转、会输出，像 @racket[call/cc]、@racket[raise]、@racket[exit]、@racket[display]；有的在合法输入上总会返回，没有可观察的副作用。全部宿主函数记作 𝒞，后一类叫纯函数，记作 𝒟（就取 𝒞 后面的字母）@defsym["p →𝒟 q" "纯的宿主函数 p → q；𝒟 取 𝒞 后面的字母"]；作为参数交进来的函数，也要是纯的。两类的类型都是普通的函数类型，区别只在函数怎么写，类型检查不出来。纯函数也是宿主函数，@racket[inj]（injection，注入）把它原样放进 𝒞：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define-type (→𝒟 p q) (→ p q))
@@ -112,9 +112,9 @@
 = (neg (flip (cps (uncps cps:f))))
 ≈ (neg (flip cps:f))]
 
-第三步用的是 @c{neg = (∘ flip cps)}，最后一步是@xref["02:three-forms"]{「三种写法」}里的 @c{(cps (uncps cps:f)) ≈ cps:f}。右边只用 @racket[λ] 和函数调用，@racket[cps:f] 是纯的，它也落在 𝒟 里。
+第二步照 @racket[neg²] 的定义，第三步用的是 @c{neg = (∘ flip cps)}，最后一步是@xref["02:three-forms"]{「三种写法」}里的 @c{(cps (uncps cps:f)) ≈ cps:f}。右边只用 @racket[λ] 和函数调用，@racket[cps:f] 是纯的，它也落在 𝒟 里。
 
-@racket[call/cc] 自己就是这样一支 @racket[f]：@xref["02:same-arrow"]{「同一支箭头」}说过，@racket[(uncps neg²:id)] 就是 @racket[call/cc]，而 @racket[neg²:id] 只用 @racket[λ] 写成。照同样的步子展开 @racket[(neg² call/cc)]，再把 @racket[neg²:id] 拆回 @racket[id]：
+@racket[call/cc] 自己就是这样一支 @racket[f]：@xref["02:same-arrow"]{「同一支箭头」}说过，@racket[(uncps neg²:id)] 就是 @racket[call/cc]，而 @racket[neg²:id] 只用 @racket[λ] 写成。要找的，是一支只用 @racket[λ] 写成、和 @racket[(neg² call/cc)] 行为一样的函数。照同样的步子展开 @racket[(neg² call/cc)]，再把 @racket[neg²:id] 拆回 @racket[id]：
 
 @racketblock[
 #,(hspace 2)(neg² call/cc)
@@ -123,6 +123,8 @@
 ≈ (neg (flip neg²:id))
 ≈ (neg (flip (neg (neg id))))
 = (neg (cps (neg id)))]
+
+前两步同上；第三步是@xref["02:same-arrow"]{「同一支箭头」}里的 @c{(cps call/cc) ≈ neg²:id}；第四步把 @racket[neg²:id] 换成行为相同的 @racket[(neg (neg id))]；最后一步用 @c{cps = (∘ flip neg)}，把 @racket[(flip (neg …))] 收回成 @racket[(cps …)]。
 
 最后一行从 @racket[id] 出发，依次用 @racket[neg]、@racket[cps]、@racket[neg]，一路都不碰 @racket[call/cc]。交齐参数，看它做了什么。展开时用上@xref["02:same-arrow"]{「同一支箭头」}里@tech{逆否箭头}那一行：@racket[(neg call/cc)] 就是用在 @math{¬p} 上的 @racket[cps:id]。
 
@@ -134,7 +136,7 @@
 
 @racket[call/cc] 不见了，剩下的只用 @racket[λ] 和函数调用：外层的计算交来一段 @racket[kkp]，再把同一条 @racket[kp] 交给它。从第 4 层到第 2 层，消去两层而不落底，正是@xref["02:count-k"]{「数一数 k」}里的 @racket[(neg cps:id)]，@tech{三重否定律}用在 @math{¬p} 上。
 
-@racket[neg]、@racket[cps]、@racket[neg] 这一串，用在别的@tech{宿主箭头}上也行，记作 @racket[join]；用在 @racket[id] 上的那一支，照名字的约定记作 @racket[join:id]：
+@racket[neg]、@racket[cps]、@racket[neg] 这一串把外面的两层 @math{¬¬} 并成一层，用在别的@tech{宿主箭头}上也行，记作 @racket[join]；用在 @racket[id] 上的那一支，照名字的约定记作 @racket[join:id]：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: join (∀ (p q) (→ (→𝒞 p q) (→𝒟 (¬¬ (¬¬ p)) (¬¬ q)))))
