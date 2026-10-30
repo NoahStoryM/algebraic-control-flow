@@ -80,9 +80,9 @@
    (list @elem{@racket[absurd]} @elem{@math{⊥ → q}}
          @elem{@defterm[#:en "principle of explosion"]{爆炸原理}})
    (list @elem{@racket[call/cc]} @elem{@math{(¬p → p) → p}}
-         @elem{@defterm{Clavius 律}})
+         @elem{@defterm[#:en "Clavius's law"]{Clavius 律}})
    (list @elem{@racket[call/cc]} @elem{@math{((p → q) → p) → p}}
-         @elem{@defterm{Peirce 律}})
+         @elem{@defterm[#:en "Peirce's law"]{Peirce 律}})
    (list @elem{@racket[call/cc]} @elem{@math{¬¬p → p}}
          @elem{@defterm[#:en "Double Negation Elimination" #:abbr "DNE"]{双重否定消除}}))]
 
@@ -100,7 +100,7 @@
 
 两样合起来，否定也对得上。@math{p} 为假，就是它的否定 @math{¬p} 为真：写得出一个 @math{p → ⊥} 类型的表达式。反过来，@math{p} 为真，@math{¬p} 就该是假的，写不出来。试着写一个 @math{@ty{Real} → ⊥}：一个总会交出结果的函数，函数体最终要交出一个值，可 @racket[⊥] 类型没有元素，交不出来。
 
-两样最基本的都对上了，四条定律就不是巧合。每个类型构造子都对应一个逻辑连接词：类型是命题，表达式是证明，构造程序就是构造证明。这个对应关系有一个名字：@defterm{Curry-Howard 对应}。
+两样最基本的都对上了，四条定律就不是巧合。每个类型构造子都对应一个逻辑连接词：类型是命题，表达式是证明，构造程序就是构造证明。这个对应关系有一个名字：@defterm[#:en "Curry–Howard correspondence"]{Curry-Howard 对应}。
 
 可这样一来，有件事说不通了。@tech{延续}的类型正是 @math{p → ⊥}，照这个对应，一条等实数的@tech{延续}本该不依赖任何假设就写不出来；我们却一直拿着，最后那版 @racket[mul] 里的 @racket[return] 就是。这些@tech{延续}都不是用 @racket[λ] 写出来的，是 @racket[cc]、@racket[call/cc] 在运行时捕获出来的。写不出的东西，@racket[cc] 凭什么交得出来？
 
@@ -114,7 +114,7 @@
 @racketblock[
 (: cc (∀ (p) (→ (∐ p (¬ p)))))]
 
-@racket[(cc)] 交出的不是只有 @math{¬p}，而是 @math{p ∐ ¬p}。@math{∐} 看上去像「或」，也就是@defterm{析取}
+@racket[(cc)] 交出的不是只有 @math{¬p}，而是 @math{p ∐ ¬p}。@math{∐} 看上去像「或」，也就是@defterm[#:en "disjunction"]{析取}
 @defsym["p ∨ q" "析取；不相交的联合 p ∐ q"]@math{∨}。照这个样子，@math{p ∐ ¬p} 说的是「@math{p} 成立，或者 @math{p} 不成立」，这正是逻辑里的@defterm[#:en "law of excluded middle"]{排中律}。
 
 @margin-note{两支分得开的联合，叫@defterm[#:en "disjoint union"]{不相交的联合}。打@tech{标记}是做到这一点的一种办法，其它办法见@xref["01:appendix"]{附录}。}
@@ -140,7 +140,7 @@
 
 @margin-note{这里的「零」说的是一次交出几个值，不是类型有几个元素。}
 
-那 @math{⊤} 对应什么？@racket[thunk] 不收参数，调用时交给它的是零个实参。把一次交出的值整体看成一组，零个值就是空的一组，只有这一种可能。@racket[(values)] 交出的正是零个值，结果类型写作 @racket[(Values)]。照这样整体来读，它对应恰好有一个元素的 @math{⊤}，@racket[thunk] 也就对应 @math{⊤ → p}。不收参数有了着落，那收多个参数、交多个值，又对应什么？@math{⊤} 正是@defterm{合取}
+那 @math{⊤} 对应什么？@racket[thunk] 不收参数，调用时交给它的是零个实参。把一次交出的值整体看成一组，零个值就是空的一组，只有这一种可能。@racket[(values)] 交出的正是零个值，结果类型写作 @racket[(Values)]。照这样整体来读，它对应恰好有一个元素的 @math{⊤}，@racket[thunk] 也就对应 @math{⊤ → p}。不收参数有了着落，那收多个参数、交多个值，又对应什么？@math{⊤} 正是@defterm[#:en "conjunction"]{合取}
 @defsym["p ∧ q" "合取；多个值 p × q"]@math{∧} 的单位元：
 
 @mm{p ⇔ p ∧ ⊤ ⇔ ⊤ ∧ p}
@@ -149,9 +149,9 @@
 
 @section[#:tag "01:watershed"]{分水岭}
 
-@racket[cc] 对上的@tech{排中律}，@racket[call/cc] 对上的 DNE，逻辑课本说都只在@defterm{经典逻辑}中成立。不承认它们，只承认构造出来的证明，就是@defterm{直觉主义逻辑}。在引入 @racket[cc] 和 @racket[call/cc] 之前，我们用到的函数、积、联合、@math{⊤}、@math{⊥}，都没有越出它的范围。
+@racket[cc] 对上的@tech{排中律}，@racket[call/cc] 对上的 DNE，逻辑课本说都只在@defterm[#:en "classical logic"]{经典逻辑}中成立。不承认它们，只承认构造出来的证明，就是@defterm[#:en "intuitionistic logic"]{直觉主义逻辑}。在引入 @racket[cc] 和 @racket[call/cc] 之前，我们用到的函数、积、联合、@math{⊤}、@math{⊥}，都没有越出它的范围。
 
-这两条经典定律，各有一条与之相对的定律，在直觉主义逻辑里照样成立。@tech{排中律}说 @math{p} 与 @math{¬p} 至少有一个成立；说两者不能同时成立，就是@defterm{矛盾律} @math{¬(¬p ∧ p)}。DNE 从 @math{¬¬p} 推出 @math{p}；箭头反过来，从 @math{p} 推出 @math{¬¬p}，就是@defterm[#:en "Double Negation Introduction" #:abbr "DNI"]{双重否定引入}。
+这两条经典定律，各有一条与之相对的定律，在直觉主义逻辑里照样成立。@tech{排中律}说 @math{p} 与 @math{¬p} 至少有一个成立；说两者不能同时成立，就是@defterm[#:en "law of non-contradiction"]{矛盾律} @math{¬(¬p ∧ p)}。DNE 从 @math{¬¬p} 推出 @math{p}；箭头反过来，从 @math{p} 推出 @math{¬¬p}，就是@defterm[#:en "Double Negation Introduction" #:abbr "DNI"]{双重否定引入}。
 
 成立的命题，照 @tech{Curry-Howard 对应}应该写得出程序。前面是从程序读出命题，这回反过来，从命题出发找程序。
 

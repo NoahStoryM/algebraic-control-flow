@@ -199,7 +199,7 @@
 = (fact/k 0 (λ (v) ((∘ k mul3 mul2) (* 1 v))))  =  (fact/k 0 (∘ k mul3 mul2 mul1))
 = ((∘ k mul3 mul2 mul1) 1)]
 
-每递归一层，新的@tech{延续}就是在旧的前面复合一次乘法。递归到底，交给@tech{延续}的是 @racket[1]：先乘 1，再乘 2，再乘 3，得到的 @racket[6] 交给 @racket[k]。调用栈没有增长，增长的是 @racket[k] 前面这一串函数：它们是堆上的闭包，一环接一环，叫作@defterm{闭包链}。@racket[k] 自己没有动过。
+每递归一层，新的@tech{延续}就是在旧的前面复合一次乘法。递归到底，交给@tech{延续}的是 @racket[1]：先乘 1，再乘 2，再乘 3，得到的 @racket[6] 交给 @racket[k]。调用栈没有增长，增长的是 @racket[k] 前面这一串函数：它们是堆上的闭包，一环接一环，叫作@defterm[#:en "closure chain"]{闭包链}。@racket[k] 自己没有动过。
 
 直接风格里也有不增长栈的写法：尾递归版本的 @racket[fact] 用一个累积器。
 

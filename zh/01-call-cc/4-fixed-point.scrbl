@@ -23,7 +23,7 @@
           [(thread-dead? t) (display s)]
           [else (sleep 0.01) (loop)])))]
 
-从 @racket[call/cc] 倒回 @racket[cc]，再倒回一步，就回到了起点：@racket[Label]。这个类型我们早就认识，却一直没拿来代入。@math{@ty{Label} = @ty{Label} → ⊥} 用 @math{¬} 改写，就是 @math{@ty{Label} = ¬@ty{Label}}：它的否定就是它自己，是@defterm{否定的不动点}。连 @racket[goto] 也是一个@tech{标签}：
+从 @racket[call/cc] 倒回 @racket[cc]，再倒回一步，就回到了起点：@racket[Label]。这个类型我们早就认识，却一直没拿来代入。@math{@ty{Label} = @ty{Label} → ⊥} 用 @math{¬} 改写，就是 @math{@ty{Label} = ¬@ty{Label}}：它的否定就是它自己，是@defterm[#:en "fixed point of negation"]{否定的不动点}。连 @racket[goto] 也是一个@tech{标签}：
 
 @mm{@ty{Label} → ⊥ = ¬@ty{Label} = @ty{Label}}
 
@@ -153,7 +153,7 @@
 
 输出和原版谜题一模一样。
 
-这段代码里没有 @racket[label]、@racket[cc]，也没有 @racket[set!]。原来由 @racket[cc] 捕获的@tech{延续}，现在都成了显式传递的参数：@racket[k0] 收到 @racket[kn]，@racket[kn+1] 收到 @racket[km]，每一次跳转都是把@tech{延续}交给下一个函数的尾调用。这种把@tech{延续}作为参数传递的写法，叫做@defterm[#:en "Continuation-Passing Style" #:abbr "CPS"]{延续传递风格}；把程序改写成这种写法，就是 @defterm{CPS 变换}。
+这段代码里没有 @racket[label]、@racket[cc]，也没有 @racket[set!]。原来由 @racket[cc] 捕获的@tech{延续}，现在都成了显式传递的参数：@racket[k0] 收到 @racket[kn]，@racket[kn+1] 收到 @racket[km]，每一次跳转都是把@tech{延续}交给下一个函数的尾调用。这种把@tech{延续}作为参数传递的写法，叫做@defterm[#:en "Continuation-Passing Style" #:abbr "CPS"]{延续传递风格}；把程序改写成这种写法，就是 @defterm[#:en "CPS transformation"]{CPS 变换}。
 
 反过来看，原来的谜题就是这样一组@bold{函数调用}，只是其中的@tech{延续}由 @racket[(label)] 在运行时捕获，而不是作为参数传进来。
 
@@ -165,7 +165,7 @@
 
 再看语言内置的 @racket[exit]。若把它当作无需任何假设就能用的常量，赋予它 @math{@ty{Byte} → ⊥} 的类型，那么 @racket[(λ (_) (exit 0))] 就能占据任意 @math{p → ⊥}。@racket[raise] 抛出异常，也不正常返回到抛出的位置，@racket[(λ (_) (raise 'oops))] 同样是一个 @math{¬p}。任何真命题的@tech{否定}都变成了非空，这类内置操作不能直接纳入同一套无条件证明的读法。@xref["01:program-type"]{「代入 Byte」}中由参数交来的 @racket[exit] 则算一个假设，不是这样的反例。
 
-第三种就是 @racket[Label]。@math{@ty{Label} = ¬@ty{Label}} 读作命题，就是一句「这句话是假的」。推一推：如果 @racket[Label] 为真（非空），@math{¬@ty{Label}} 也就非空，@racket[Label] 的@tech{否定}为真，@racket[Label] 为假。如果 @racket[Label] 为假（空），@math{¬@ty{Label}} 反倒有元素：空类型出发的函数总写得出来，就像 @racket[absurd] 填充了 @math{⊥ → p}；可 @math{¬@ty{Label} = @ty{Label}}，于是 @racket[Label] 又有了元素，变成了真。这就是@defterm{说谎者悖论}，它无法被一致地赋予真假值。阴阳谜题就像让它运行了起来：同一个@tech{标签}一会儿被调用，一会儿被交出去，永远落不了地。更简单的是把 @racket[goto] 交给它自己：@racket[(goto goto)] 的类型是 @racket[⊥]，却永远算不完。Agda 和 Coq 这样的一致类型论禁止这类定义；Racket 没有这个限制。
+第三种就是 @racket[Label]。@math{@ty{Label} = ¬@ty{Label}} 读作命题，就是一句「这句话是假的」。推一推：如果 @racket[Label] 为真（非空），@math{¬@ty{Label}} 也就非空，@racket[Label] 的@tech{否定}为真，@racket[Label] 为假。如果 @racket[Label] 为假（空），@math{¬@ty{Label}} 反倒有元素：空类型出发的函数总写得出来，就像 @racket[absurd] 填充了 @math{⊥ → p}；可 @math{¬@ty{Label} = @ty{Label}}，于是 @racket[Label] 又有了元素，变成了真。这就是@defterm[#:en "liar paradox"]{说谎者悖论}，它无法被一致地赋予真假值。阴阳谜题就像让它运行了起来：同一个@tech{标签}一会儿被调用，一会儿被交出去，永远落不了地。更简单的是把 @racket[goto] 交给它自己：@racket[(goto goto)] 的类型是 @racket[⊥]，却永远算不完。Agda 和 Coq 这样的一致类型论禁止这类定义；Racket 没有这个限制。
 
 每种情况下，严格的 Curry-Howard 解读都失效了：本应为空的@tech{否定}类型有了元素，本应非法的自指类型变得合法。不能把任意 Racket 表达式都当作证明。前面读出逻辑定律时，无限循环、内置的 @racket[exit]、抛出异常和自指类型，都不在这个读法之内；@racket[cc] 和 @racket[call/cc] 当作现成的操作，按它们的类型来用；它们内部怎样用 @racket[label]、@racket[set!] 实现，不算在证明里。
 
