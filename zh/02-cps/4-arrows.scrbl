@@ -227,7 +227,9 @@
 
 回到前面那个问题：@racket[cps:call/cc] 和 @racket[call/cc]，是同一个什么？有了两种否定，两个新 @racket[call/cc] 的类型可以从定义里读出来。拿 @racket[cps:call/cc] 来看。把它交出的结果的类型记作 @racket[p]。@racket[kp] 是这次调用的当前@tech{延续}，类型是 @racket[(¬ p)]；交给 @racket[cps:proc] 的 @racket[cps:kp] 是 @racket[(cps kp)]，类型是 @racket[(¬𝒦 p)]。
 
-@racket[cps:proc] 收下它，交回的计算又交给了 @racket[kp]，所以是 @racket[(¬¬ p)]。@racket[cps:proc] 因此是 @racket[(→𝒦 (¬𝒦 p) p)]。@racket[cps:call/cc] 先收 @racket[cps:proc]，再收 @racket[kp]，结果是 @racket[⊥]，它的类型就出来了。@racket[neg:call/cc] 同理：
+@racket[cps:proc] 和 @racket[cps:mul] 这些函数一样，收下参数，交出一段计算，计算的结果交给@tech{延续}参数。它收下的是 @racket[(¬𝒦 p)]，交出的计算拿到 @racket[kp]，把类型为 @racket[p] 的结果交过去。所以 @racket[cps:proc] 是 @racket[(→𝒦 (¬𝒦 p) p)]。
+
+@racket[cps:call/cc] 也是这样。它收下的是 @racket[cps:proc]，交出的计算同样拿到 @racket[kp]，把类型为 @racket[p] 的结果交过去。所以 @racket[cps:call/cc] 是 @racket[(→𝒦 (→𝒦 (¬𝒦 p) p) p)]。@racket[neg:call/cc] 同理：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: cps:call/cc (∀ (p) (→𝒦 (→𝒦 (¬𝒦 p) p) p)))
