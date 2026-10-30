@@ -10,7 +10,7 @@
 ;; 能在空格处或中文标点之后折，就不在一个词的中间折：离 80 栏不远时优先选这两种位置。
 ;; 改写时先把一段正文连成一行（两个中文字之间直接相连，其余用一个空格连接），再重新折。
 ;; 下面这些地方不动：
-;;   @examples[…]、@racketblock[…]、@out-block|{…}|、@tabular[…]、标题行等整块；
+;;   @examples[…]、@racketblock[…]、@out-block|{…}|、@codeblock|{…}|、@tabular[…]、标题行等整块；
 ;;   方括号里（@racket[…]、关键字参数）、字符串里、@math{…}/@mm{…}/@c{…} 里的空格。
 ;; 代码块里的长行要手工按 Racket 的缩进改。
 (provide char-cols line-cols)
@@ -32,7 +32,7 @@
 
 ;; 整块跳过的形式：从开头一行起，到方括号或 |{ }| 配平为止
 (define code-start
-  #px"^\\s*(#lang|@\\(|@(examples|racketblock|racketblock0|interaction|out-block|tabular|title|section|subsection|subsubsection|include-section|table-of-contents|mm)\\b)")
+  #px"^\\s*(#lang|@\\(|@(examples|racketblock|racketblock0|interaction|out-block|codeblock|tabular|title|section|subsection|subsubsection|include-section|table-of-contents|mm)\\b)")
 ;; 收尾一个块的行：之后的行不与它相连
 (define block-end #px"(\\}\\]|^\\s*\\])\\s*$")
 ;; 不与上一行相连的行：块级形式的开头，或单独的收尾括号

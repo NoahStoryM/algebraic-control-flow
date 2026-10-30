@@ -26,13 +26,14 @@ A series on continuations, CPS, delimited control, relations, monads and algebra
 ```sh
 export LC_ALL=C.UTF-8   # 否则 Racket 读不了中文路径与参数
 racket tools/run-blocks.rkt zh/01-call-cc/main.scrbl   # 第一篇已改用 Scribble 底本，例子在生成文档时运行
-racket tools/wrap-scrbl.rkt --check zh/main.scrbl zh/01-call-cc/*.scrbl   # 每行不超过 70 栏
+racket tools/wrap-scrbl.rkt --check zh/main.scrbl zh/0[12]-*/*.scrbl   # 每行不超过 80 栏
 racket tools/cmp-forms.rkt zh/01-call-cc/main.scrbl zh/01-call-cc/code.rkt
-racket tools/run-blocks.rkt zh/02-cps/article.md
+racket tools/run-blocks.rkt zh/02-cps/main.scrbl       # 第二篇也已改用 Scribble 底本
+racket tools/cmp-forms.rkt zh/02-cps/main.scrbl zh/02-cps/code.rkt
 racket tools/run-blocks.rkt zh/03-delimited/article.md
 racket tools/run-blocks.rkt zh/04-compiler/article.md
 racket tools/run-blocks.rkt zh/05-relations/article.md 描述关系的语言   # 照原样执行正文代码块，核对每处结果
-for n in 02-cps 03-delimited 04-compiler; do
+for n in 03-delimited 04-compiler; do
   racket tools/cmp-forms.rkt zh/$n/article.md zh/$n/code.rkt
 done
 racket tools/cmp-forms.rkt zh/05-relations/article.md zh/05-relations/code.rkt   # 正文的定义是否都在代码文件里

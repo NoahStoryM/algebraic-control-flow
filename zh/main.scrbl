@@ -19,6 +19,7 @@ Racket 语法，但不会被类型检查器验证。这些标注是描述预期�
 @table-of-contents[]
 
 @include-section["01-call-cc/main.scrbl"]
+@include-section["02-cps/main.scrbl"]
 
 @section[#:tag "glossary" #:style 'unnumbered]{术语表}
 
