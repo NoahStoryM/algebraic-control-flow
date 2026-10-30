@@ -102,8 +102,8 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 第 @math{i} 支的值配上@tech{标记} @math{i}。一支也没有的 @racket[(∐)]，就是
 @racket[(∪)]，也就是 @racket[⊥]。
 
-@margin-note{这一步回不去。几支有公共的元素时，同一个元素配上不同的@tech{标记}，
-在 @racket[∐] 里是两个，@racket[untag] 以后就成了一个，再也说不清它来自哪一支：
+@margin-note{这一步回不去。同一个元素出现在几支里，配上不同的@tech{标记}，在
+@racket[∐] 里就有几个，@racket[untag] 以后就成了一个，再也说不清它来自哪一支：
 @racket[∐] 比 @racket[∪] 多记着来源。}
 
 把@tech{标记}丢掉，就回到普通的并集：
