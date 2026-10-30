@@ -7,7 +7,7 @@
 @(define ev (make-acf-eval))
 @examples[#:eval ev #:hidden
 (define-type ⊥ (∪))
-(define-type (¬ p) (→ p ⊥))
+(define-type (¬ p ...) (→ p ... ⊥))
 (define-type (¬¬ q) (¬ (¬ q)))
 (define primitive-call/cc call/cc)
 (define (goto l) (l l))
@@ -20,7 +20,7 @@
 @margin-note{为了好读，这里的类型只用了一个类型变量 @math{p}；这个 @racket[cc] 和下面的 @racket[call/cc] 实际上也能交多个值，即 @racket[Values]：@racket[args] 收下全部参数，@c{apply values} 全部交出。}
 
 @examples[#:eval ev #:label #f #:no-prompt
-(: cc (∀ (p) (→ (∪ p (→ p ⊥)))))
+(: cc (∀ (p) (→ (∪ p (¬ p)))))
 (define (cc)
   (define saved #f)
   (define l (label))
@@ -48,7 +48,7 @@ control-context 库（@racketmodname[control/context]）里的 @racket[cc] 就�
 代价是分不分得开要由使用者负责：@math{p} 换成函数类型，值和@tech{延续}就未必分得清了。@racket[call/cc] 正碰上这种情况，只好把传回来的结果一律收进一张列表，用的是 @xref["01:disjoint-struct"]{第四种办法}：
 
 @examples[#:eval ev #:label #f #:no-prompt
-(: call/cc (∀ (p) (→ (→ (→ p ⊥) p) p)))
+(: call/cc (∀ (p) (→ (→ (¬ p) p) p)))
 (define (call/cc proc)
   (define x (cc))
   (if (list? x)

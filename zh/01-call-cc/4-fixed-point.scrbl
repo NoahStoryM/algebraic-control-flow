@@ -88,7 +88,7 @@
 要回答这个问题，得看清每一步跳向了谁。@xref["01:neg-q"]{「代入 ¬q」}里的调用链只有四步，手算就够了；这回停不下来，得让程序自己印出来。给每个@tech{延续}起一个名字：@racket[k0]、@racket[k1]、@racket[k2]……为此，这一节里先换一种否定类型：@tech{延续}带上一个编号，装进 @racket[cons] 对。
 
 @examples[#:eval ev #:label #f #:no-prompt
-(define-type (¬ p) (Pair (→ p ⊥) Natural))
+(define-type (¬ p ...) (Pair (→ p ... ⊥) Natural))
 (define-type Label (¬ Label))]
 
 @racket[Label] 照旧是它自己的否定，只是否定换了表示。插桩版的 @racket[label] 每捕获一个@tech{延续}，就给它配上一个新编号：
@@ -103,7 +103,9 @@
     (define ln (cons kn n))
     (apply-cont ln ln)))]
 
-交出去的 @racket[ln] 装着第 @racket[n] 条@tech{延续} @racket[kn] 和它的编号 @racket[n]，不再是能直接调用的函数，调用它的办法得我们自己规定。@racket[apply-cont] 的签名还是那一个，只是这里 @math{p} 取 @racket[Label]：向一个@tech{否定}交一个值，不管@tech{否定}怎样表示，都是这个操作。插桩版要印出两边的编号，所以用 @racket[match-define] 拆开两个对，印出谁跳向谁，再调用里面的函数：
+@margin-note{换回函数表示，@racket[apply-cont] 的类型就是@tech{矛盾律} @racket[(¬ (¬ p) p)] 取 @math{p = @ty{Label}}。这一节的 @racket[¬] 是对，@racket[apply-cont] 本身却仍是函数，所以它的类型照旧用 @racket[→] 写。}
+
+交出去的 @racket[ln] 装着第 @racket[n] 条@tech{延续} @racket[kn] 和它的编号 @racket[n]，不再是能直接调用的函数，调用它的办法得我们自己规定。@racket[apply-cont] 做的还是向一个@tech{否定}交一个值，不管@tech{否定}怎样表示，都是这个操作；这里 @math{p} 取 @racket[Label]。插桩版要印出两边的编号，所以用 @racket[match-define] 拆开两个对，印出谁跳向谁，再调用里面的函数：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: apply-cont (→ (¬ Label) Label ⊥))
