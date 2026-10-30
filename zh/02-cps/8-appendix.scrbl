@@ -37,10 +37,10 @@
 
 ;;; 宿主的箭头
 
-(define-type (→𝒟 p q) (→ p q))
 (define-type (→𝒞 p q) (→ p q))
+(define-type (→𝒟 p q) (→ p q))
 
-(: inj (∀ (p q) (→ (→𝒟 p q) (→𝒞 p q))))
+(: inj (∀ (p q) (→ (→𝒞 p q) (→𝒟 p q))))
 (define (inj f) f)
 
 ;;; 逆否箭头
@@ -50,8 +50,8 @@
 
 (: neg
    (∀ (p q)
-      (case→ (→ (→𝒞 p q) (→𝒰     p      q))
-             (→ (→𝒰 p q) (→𝒟 (¬¬ p) (¬¬ q))))))
+      (case→ (→ (→𝒟 p q) (→𝒰     p      q))
+             (→ (→𝒰 p q) (→𝒞 (¬¬ p) (¬¬ q))))))
 (define ((neg f) kq) (∘ kq f))
 
 
@@ -66,7 +66,7 @@
              (→ (→𝒦 p q) (→𝒰 p q)))))
 (define (((flip f) . y*) . x*) (apply (apply f x*) y*))
 
-(: cps (∀ (p q) (→ (→𝒞 p q) (→𝒦 p q))))
+(: cps (∀ (p q) (→ (→𝒟 p q) (→𝒦 p q))))
 (define cps (∘ flip neg))
 
 (: cps:id (∀ (q) (→𝒦 q q)))
@@ -119,6 +119,8 @@
 
 ;;; Clavius 律
 
+(define-type Label𝒦 (¬𝒦 Label𝒦))
+
 (: neg:call/cc  (∀ (p) (→𝒰 (→𝒰 (¬𝒰 p) p) p)))
 (: cps:call/cc  (∀ (p) (→𝒦 (→𝒦 (¬𝒦 p) p) p)))
 
@@ -132,16 +134,16 @@
 (: anf:eval (∀ (a) (→ (¬¬ a) a)))
 (define (anf:eval kka) (⊥->a (kka a->⊥)))
 
-(: uncps (∀ (p q) (→ (→𝒦 p q) (→𝒞 p q))))
+(: uncps (∀ (p q) (→ (→𝒦 p q) (→𝒟 p q))))
 (define (uncps cps:f) (∘ call/cc cps:f))
 
-(: unneg (∀ (p q) (→ (→𝒰 p q) (→𝒞 p q))))
+(: unneg (∀ (p q) (→ (→𝒰 p q) (→𝒟 p q))))
 (define unneg (∘ uncps flip))
 
 
 ;;; 再用一次 neg
 
-(: neg² (∀ (p q) (→ (→𝒞 p q) (→𝒟 (¬¬ p) (¬¬ q)))))
+(: neg² (∀ (p q) (→ (→𝒟 p q) (→𝒞 (¬¬ p) (¬¬ q)))))
 (define neg² (∘ neg neg))
 
 
@@ -150,10 +152,10 @@
 (: neg²:id (∀ (p) (→𝒦 (¬¬ p) p)))
 (define (neg²:id kkp) kkp)
 
-(: join (∀ (p q) (→ (→𝒟 p q) (→𝒟 (¬¬ (¬¬ p)) (¬¬ q)))))
+(: join (∀ (p q) (→ (→𝒞 p q) (→𝒞 (¬¬ (¬¬ p)) (¬¬ q)))))
 (define join (∘ neg cps neg))
 
-(: join:id (∀ (p) (→𝒟 (¬¬ (¬¬ p)) (¬¬ p))))
+(: join:id (∀ (p) (→𝒞 (¬¬ (¬¬ p)) (¬¬ p))))
 (define join:id (join id))
 
 

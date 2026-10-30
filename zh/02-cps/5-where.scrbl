@@ -25,7 +25,7 @@
 (define (((flip f) . y*) . x*) (apply (apply f x*) y*))
 (define cps:id (cps id))
 (define neg:id id)
-(define-type (→𝒞 p q) (→ p q))
+(define-type (→𝒟 p q) (→ p q))
 (define ((cps:call/cc cps:proc) kp) ((cps:proc (cps kp)) kp))
 (define ((neg:call/cc kp) neg:proc) ((neg:proc kp) (neg kp)))
 (define-syntax-rule (anf:let ([v e]) b)
@@ -71,7 +71,7 @@
 宿主若有 @racket[call/cc]，就能直接捕获当前@tech{延续}，填进编码的@tech{延续}参数：
 
 @examples[#:eval ev #:label #f #:no-prompt
-(: uncps (∀ (p q) (→ (→𝒦 p q) (→𝒞 p q))))
+(: uncps (∀ (p q) (→ (→𝒦 p q) (→𝒟 p q))))
 (define (uncps cps:f) (∘ call/cc cps:f))]
 
 @racket[((uncps cps:f) x)] 先算出 @racket[(cps:f x)]，一段等待@tech{延续}的计算，再交给 @racket[call/cc]，@racket[call/cc] 把当前@tech{延续}交给它。@racket[uncps] 收 @tech{CPS 箭头}，交出@tech{宿主箭头}，也就是一个普通的宿主函数，可以放进同一个 @racket[(+ 1 _)]：
@@ -113,16 +113,16 @@
 @racket[call/cc] 捕获的，是收到 @racket[p] 以后交给 @racket[kp] 这件剩下的工作。@racket[kp] 若是一条真正的@tech{延续}，交出去就不再回来，捕获到的就和 @racket[kp] 一样。把它交给 @racket[kkp]，和直接把 @racket[kp] 交给 @racket[kkp]，行为相同。
 
 
-两个方向都回到原处：@tech{宿主箭头}经 @racket[cps] 变成 @tech{CPS 箭头}，@tech{CPS 箭头}经 @racket[uncps] 变回@tech{宿主箭头}，来回什么也不丢。@tech{逆否箭头}和 @tech{CPS 箭头}之间，@racket[flip] 也是来回什么也不丢。把这几种转换画在一起，箭头的种类记在顶点上（𝒞、𝒰、𝒦 分别指@tech{宿主箭头}、@tech{逆否箭头}、@tech{CPS 箭头}），转换标在边上，就是一张@defterm[#:en "diagram"]{图表}：
+两个方向都回到原处：@tech{宿主箭头}经 @racket[cps] 变成 @tech{CPS 箭头}，@tech{CPS 箭头}经 @racket[uncps] 变回@tech{宿主箭头}，来回什么也不丢。@tech{逆否箭头}和 @tech{CPS 箭头}之间，@racket[flip] 也是来回什么也不丢。把这几种转换画在一起，箭头的种类记在顶点上（𝒟、𝒰、𝒦 分别指@tech{宿主箭头}、@tech{逆否箭头}、@tech{CPS 箭头}），转换标在边上，就是一张@defterm[#:en "diagram"]{图表}：
 
-@out-block|{ 𝒞 ←───────────┐
+@out-block|{ 𝒟 ←───────────┐
  │             │
 neg          uncps
  │             │
  ↓             │
  𝒰 ───flip───→ 𝒦}|
 
-从 𝒞 出发，经 @racket[neg]、@racket[flip] 到 𝒦，就是 @c{cps = (∘ flip neg)}；再经 @racket[uncps] 回到 𝒞，得到的还是原来的箭头。从 𝒦 出发，经 @racket[uncps] 回到 𝒞，再经 @racket[neg] 走到 𝒰，得到的是什么？展开只用到上面那条规律：
+从 𝒟 出发，经 @racket[neg]、@racket[flip] 到 𝒦，就是 @c{cps = (∘ flip neg)}；再经 @racket[uncps] 回到 𝒟，得到的还是原来的箭头。从 𝒦 出发，经 @racket[uncps] 回到 𝒟，再经 @racket[neg] 走到 𝒰，得到的是什么？展开只用到上面那条规律：
 
 @racketblock[
 #,(hspace 2)(((neg (uncps cps:f)) kq) x)
@@ -133,10 +133,10 @@ neg          uncps
 
 @racket[(neg (uncps cps:f))] 与 @racket[(flip cps:f)] 行为相同：@racket[flip] 从 𝒦 到 𝒰 的那个方向，就是 @racket[(∘ neg uncps)]，和 @c{cps = (∘ flip neg)} 正好对称。三条边绕成一个圈，从哪一处出发绕一圈，都回到原来的箭头；从一处沿不同的路径走到另一处，结果也都一样。图表有这种性质，就说它是@defterm[#:en "commutative"]{交换}的，叫作@defterm[#:en "commutative diagram"]{交换图表}。
 
-所以每条边都能由另外两条倒回去：@racket[uncps] 由 @racket[cps] 倒回，@racket[flip] 由 @racket[(∘ neg uncps)] 倒回。@racket[neg] 由 @racket[(∘ uncps flip)] 倒回，从 𝒰 回到 𝒞 本来没有直接的一条边，这一支撤销 @racket[neg]，记作 @racket[unneg]：
+所以每条边都能由另外两条倒回去：@racket[uncps] 由 @racket[cps] 倒回，@racket[flip] 由 @racket[(∘ neg uncps)] 倒回。@racket[neg] 由 @racket[(∘ uncps flip)] 倒回，从 𝒰 回到 𝒟 本来没有直接的一条边，这一支撤销 @racket[neg]，记作 @racket[unneg]：
 
 @examples[#:eval ev #:label #f #:no-prompt
-(: unneg (∀ (p q) (→ (→𝒰 p q) (→𝒞 p q))))
+(: unneg (∀ (p q) (→ (→𝒰 p q) (→𝒟 p q))))
 (define unneg (∘ uncps flip))]
 
 在 @racket[≈] 的意义下，三种写法是@defterm[#:en "isomorphic"]{同构}的：同一组箭头的三种写法。比较的范围要说清：比的是这一篇的@tech{延续}编码在 @racket[≈] 意义下的行为，而且要靠宿主有 @racket[call/cc]，@racket[uncps] 才写得出来；并不是任意具有这些类型的 Racket 函数都这样。
@@ -171,7 +171,7 @@ DNI 加两层，在这里就是 @racket[cps:id]：收下 @racket[p]，等一条 
 
 @xref["02:clavius"]{「新箭头下的 Clavius 律」}有了 @racket[cps:call/cc] 和 @racket[neg:call/cc]。照名字的约定，@racket[cps:car] 就是 @racket[(cps car)]；@racket[cps:call/cc] 却不是 @racket[(cps call/cc)]，它是整条 @tech{Clavius 律}换写出来的，@racket[proc] 也换成了新的箭头。那 @racket[(cps call/cc)] 和 @racket[(neg call/cc)] 又是什么？
 
-不换写定律，只把箭头搬过去。宿主的 @racket[call/cc] 照 DNE 来读，是一支@tech{宿主箭头} @math{¬¬p →@subscript{𝒞} p}：收下第 2 层的 @racket[kkp]，交出第 0 层的值。
+不换写定律，只把箭头搬过去。宿主的 @racket[call/cc] 照 DNE 来读，是一支@tech{宿主箭头} @math{¬¬p →@subscript{𝒟} p}：收下第 2 层的 @racket[kkp]，交出第 0 层的值。
 
 先看 @tech{CPS 箭头}。交给 @racket[(cps call/cc)] 一段 @racket[kkp] 和@tech{延续} @racket[kp]，用@xref["02:three-forms"]{「三种写法」}那条规律：
 
@@ -204,7 +204,7 @@ DNI 加两层，在这里就是 @racket[cps:id]：收下 @racket[p]，等一条 
 @tabular[#:style 'boxed #:row-properties '(bottom-border ())
   (list
    (list @elem{名字} @elem{由 @racket[id] 造出} @elem{箭头} @elem{展开到宿主} @elem{层数})
-   (list @racket[id] @elem{} @elem{@math{p →@subscript{𝒞} p}} @elem{@math{p → p}} @elem{0 → 0})
+   (list @racket[id] @elem{} @elem{@math{p →@subscript{𝒟} p}} @elem{@math{p → p}} @elem{0 → 0})
    (list @racket[neg:id] @racket[(neg id)] @elem{@math{p →@subscript{𝒰} p}} @elem{@math{¬p → ¬p}} @elem{1 → 1})
    (list @racket[cps:id] @racket[(cps id)] @elem{@math{p →@subscript{𝒦} p}} @elem{@math{p → ¬¬p}} @elem{0 → 2})
    (list @racket[neg²:id] @racket[(neg neg:id)] @elem{@math{¬¬p →@subscript{𝒦} p}} @elem{@math{¬¬p → ¬¬p}} @elem{2 → 2}))]
