@@ -179,21 +179,21 @@
 的@defterm[#:en "law of excluded middle"]{排中律}。
 
 @margin-note{两支分得开的联合，叫@defterm[#:en "disjoint union"]{不相交的联合}。
-打标记是做到这一点的一种办法，其它办法见@xref["01:appendix"]{附录}。}
+打@tech{标记}是做到这一点的一种办法，其它办法见@xref["01:appendix"]{附录}。}
 
 这回也检验一下。引入「@math{p} 或 @math{q}」有两种办法：由 @math{p} 的证明得到
 @math{p} 或 @math{q}，或者由 @math{q} 的证明得到 @math{p} 或 @math{q}；
-两种办法都记明引入的是哪一支。这对应两种带标记的构造：手里有一个 @math{p} 类型的
-@racket[a]，@racket[(cons a 0)] 就是一个 @math{p ∐ q}；有一个 @math{q} 类型的
-@racket[b]，@racket[(cons b 1)] 也是，标记记着给的是哪一支。反过来，
-使用「@math{p} 或 @math{q}」要分情况：在 @math{p} 的假设下推得出 @math{r}，在
-@math{q} 的假设下也推得出 @math{r}，就能从 @math{p} 或 @math{q} 推出
-@math{r}。@racket[match] 正是这样分两支的，@racket[mul] 和 @racket[call/cc] 里的
-@racket[match]，两支交出的是同一种类型的结果。@math{∐} 对上了析取。
+两种办法都记明引入的是哪一支。这对应两种带@tech{标记}的构造：手里有一个 @math{p}
+类型的 @racket[a]，@racket[(cons a 0)] 就是一个 @math{p ∐ q}；有一个 @math{q}
+类型的 @racket[b]，@racket[(cons b 1)] 也是，@tech{标记}记着给的是哪一支。
+反过来，使用「@math{p} 或 @math{q}」要分情况：在 @math{p} 的假设下推得出
+@math{r}，在 @math{q} 的假设下也推得出 @math{r}，就能从 @math{p} 或 @math{q}
+推出 @math{r}。@racket[match] 正是这样分两支的，@racket[mul] 和 @racket[call/cc]
+里的 @racket[match]，两支交出的是同一种类型的结果。@math{∐} 对上了析取。
 
 单位元也对得上。一支也没有的 @racket[(∐)] 就是 @racket[⊥]。@math{p ∐ ⊥}
-里，@math{⊥} 那一支没有元素，拿到的总是 @math{p} 那一支，去掉标记就是一个
-@math{p}；一个 @math{p} 配上标记，也就成了 @math{p ∐ ⊥}。
+里，@math{⊥} 那一支没有元素，拿到的总是 @math{p} 那一支，去掉@tech{标记}就是一个
+@math{p}；一个 @math{p} 配上@tech{标记}，也就成了 @math{p ∐ ⊥}。
 两边来回能换，@math{⊥ ∐ p} 也一样。逻辑里，假正是析取的单位元，
 @defsym["p ⇔ q" "互推：p 推出 q，q 也推出 p"]@math{⇔} 读作互推：
 

@@ -45,16 +45,16 @@
 @mm{@ty{Label} ∨ ¬@ty{Label} = @ty{Label} ∨ @ty{Label}}
 
 一真一假的两支，在这里分不出真假。@racket[(cc)] 交出的
-@math{@ty{Label} ∐ @ty{Label}} 里，两支还配着标记：每个@tech{标签} @math{l} 有
-@math{(l, 0)}、@math{(l, 1)} 两份，记着自己来自哪一支。
+@math{@ty{Label} ∐ @ty{Label}} 里，两支还配着@tech{标记}：每个@tech{标签}
+@math{l} 有 @math{(l, 0)}、@math{(l, 1)} 两份，记着自己来自哪一支。
 可@xref["01:label-from-call-cc"]{「从 call/cc 定义标签」}里，
 @tech{标签}是这样从 @racket[cc] 写出来的：
 
 @racketblock[
-(define (label) (car (cc)))]
+(define (label) (untag (cc)))]
 
-@racket[car] 丢掉了标记，两份并成一个 @math{l}，就像普通的并集不记来源。
-两支就坍缩成了一支：
+@racket[untag] 丢掉了@tech{标记}，两份并成一个 @math{l}，
+就像普通的并集不记来源。两支就坍缩成了一支：
 
 @mm{@ty{Label} ∪ @ty{Label} = @ty{Label}}
 

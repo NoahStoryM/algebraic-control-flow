@@ -69,7 +69,8 @@
 (module cc-to-label racket
   (require (only-in (submod ".." label-to-call/cc) cc))
   (provide label goto)
-  (define (label) (car (cc)))
+  (define untag car)
+  (define (label) (untag (cc)))
   (define (goto l) (l l)))
 
 (module tagged typed/racket/no-check
@@ -161,8 +162,8 @@
 (module untag typed/racket/no-check
   (provide untag)
   (define-type (∐ p0 p1 ...) (∪ (Pair p0 0) (Pair p1 1) ...))
-  (: untag (∀ (p0 p1) (→ (∐ p0 p1) (∪ p0 p1))))
-  (define (untag x) (car x)))
+  (: untag (∀ (p ...) (→ (∐ p ...) (∪ p ...))))
+  (define untag car))
 
 (module wait/fc typed/racket/no-check
   (require (only-in (submod ".." union-label-to-cc) cc call/cc))
