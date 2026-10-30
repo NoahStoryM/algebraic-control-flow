@@ -690,3 +690,18 @@
     (check-equal? (get-output-string out) "")
     (noisy 1)
     (check-equal? (get-output-string out) "!")))
+
+;; 正文交互块里的定义（.md 时代交互块不受 cmp-forms 核对，改成 .scrbl 后要在这里有一份）。
+(module* interactive #f
+  (require rackunit)
+  (define (cps:proc1 cps:k) ((cps *) 2 3))
+  (define (cps:proc2 cps:k) (λ (k) ((cps:k 10) (λ (v) (k (add1 v))))))
+  (define cps:mul1 (cps (λ (v) (* 1 v))))
+  (define cps:mul2 (cps (λ (v) (* 2 v))))
+  (define cps:mul3 (cps (λ (v) (* 3 v))))
+  (check-equal? (⊥->a ((cps:call/cc cps:proc1) (λ (v) (a->⊥ (add1 v))))) 7)
+  (check-equal? (⊥->a ((cps:call/cc cps:proc2) (λ (v) (a->⊥ (add1 v))))) 11)
+  (check-equal? (anf:eval ((∘𝒦 cps:mul3 (∘𝒦 cps:mul2 cps:mul1)) 1)) 6))
+
+(module+ test
+  (require (submod ".." interactive)))

@@ -17,8 +17,8 @@ zh/01-call-cc/5-conclusion.scrbl 结论与未解的线索；附录也各自单�
 ```
 
 - 每个文件以 `#lang acf/scribble` 开头（`scribble/lang/reader.rkt`、`lib/doc-lang.rkt`）：它就是 `scribble/manual` 加上 `scribble/example` 和 `acf.rkt` 的写法，不必再 `require`；`acf.rkt` 的 `defterm` 盖过 scribble/manual 自带的那个。要先 `raco pkg install --name acf`，`#lang acf/scribble` 才找得到。名字不用 `#lang acf`，把它留给以后（Noah 10/26）。
-- 每行不超过 80 栏（Noah 10/29，原为 70），中文字与全角标点算两栏。Scribble 会把行尾的换行排成一个空格，`#lang acf/scribble` 读入时去掉两侧都是中文字（含全角标点）的换行（`lib/cjk-join.rkt`），所以中文段落可以在任意两个字之间折行，排出来不多空格；中文与代码、英文之间的换行照常排成一个空格。Chrome 不会自己去掉这种换行（Firefox 会），所以这一步不能省。
-- `racket tools/wrap-scrbl.rkt 文件…` 先把每段连成一行再重新折：能在空格处或中文标点之后折就优先这样折，标点不放在行首，`--check` 只检查。代码块里的长行要手工按 Racket 的缩进改。
+- 中文正文每段写成一行，不折行（Noah 10/30；原先每行限 70、80 栏）。审稿看编译后的 HTML，源文件折行用处不大；折在全角标点之后、下一行以 `@racket` 开头时，排出来还会多一个空格。`racket tools/join-scrbl.rkt 文件…` 把每段连成一行（两个中文字之间、全角标点之后直接相连，其余用一个空格），`--check` 只检查。代码块按 Racket 的缩进手工排。
+- `#lang acf/scribble` 读入时仍会去掉两侧都是中文字（含全角标点）的换行（`lib/cjk-join.rkt`），手工折行时不多出空格；Chrome 不会自己去掉这种换行（Firefox 会）。以后的英文版可以照常折行。
 - 部的 `@title` 带 `#:style acf-style`；篇的 `@title` 带 `#:style chapter-style`，HTML 里每个小篇单独成页。
 - 小篇文件里，`@title` 是小篇名，`@section` 对应 .md 里的「#」，`@subsection` 对应「##」，`@subsubsection` 对应「###」。
 - 篇的引言写在篇的 `main.scrbl`，小篇之前；读者须知暂放系列前言 `zh/main.scrbl`。标题之间要有文字过渡：小篇标题、节标题后面先有一两句话，再接下一级标题。
@@ -71,6 +71,7 @@ scribble --markdown ++xref-in setup/xref load-collections-xref --dest out zh/mai
 | `@racketblock[…]` | 只排版、不运行：推导与等式、示意程序、不会停的程序 |
 | `@out-block\|{…}\|` | 不带语言的输出（如矩阵），原样排 |
 
+- `@racketblock` 第一行开头的空格会被丢掉（排版以第一个式子的位置为准）。第一行要缩进，好和下面的 `= …` 对齐时，写成 `#,(hspace 2)(let …)`；第一行中间还有要对齐的 `=` 时，不缩进，把空格挪到 `=` 前面（Noah 10/30）。
 - 注释写 `(code:comment "…")`，空行写 `(code:blank)`；方括号里的 `;` 注释会被读取器丢掉。
 - 不会停的程序要显示输出时，用 `(eval:alts 显示的程序 实际运行的程序)`：显示原程序，运行一个只截取前几行、再打出 `...` 的版本（见第一篇第四小篇的 `show-lines`）。
 - 需要从头换一套定义时（例如以另一个原语为起点），另建一个求值器，不在同一个里覆盖。
@@ -88,7 +89,7 @@ scribble --markdown ++xref-in setup/xref load-collections-xref --dest out zh/mai
 
 排出来是「**一等标签**（*first-class labels*）」「**双重否定引入**（*Double Negation Introduction*，DNI）」「**直觉主义逻辑**」，并登记进部末的术语表，按第一次出现的顺序排列，每项链回定义处。哪些词注英文仍按 STYLE.md。`@defterm` 底下就是 Scribble 的 `@deftech`。
 
-之后每次出现都写 `@tech{一等标签}`（照 ctp），读者从任何一处点进去都能跳回定义处。节标题里不加。复合词里的不加，例如「延续传递风格」里的「延续」、「双重否定引入」里的「否定」。同一术语在别处以不同字面出现时，写 `@tech[#:key "…"]{…}`。
+之后每次出现都写 `@tech{一等标签}`（照 ctp），读者从任何一处点进去都能跳回定义处。篇名、节标题里不加，标题里的代码名也写纯文字（Noah 10/30）。复合词里的不加，例如「延续传递风格」里的「延续」、「双重否定引入」里的「否定」。同一术语在别处以不同字面出现时，写 `@tech[#:key "…"]{…}`。
 
 ## 符号
 
@@ -120,7 +121,7 @@ export LC_ALL=C.UTF-8
 raco setup --pkgs acf                                  # 生成文档；例子出错就失败
 racket tools/run-blocks.rkt zh/01-call-cc/main.scrbl   # 同样实例化文档，并数一数各类代码块
 racket tools/cmp-forms.rkt zh/01-call-cc/main.scrbl zh/01-call-cc/code.rkt
-racket tools/wrap-scrbl.rkt --check zh/main.scrbl zh/01-call-cc/*.scrbl
+racket tools/join-scrbl.rkt --check zh/main.scrbl zh/0[12]-*/*.scrbl
 racket tools/cmp-conversion.rkt zh/0X-…/article.md zh/0X-…/main.scrbl   # 只在把一篇从 .md 转换过来时用
 ```
 

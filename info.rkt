@@ -21,7 +21,6 @@
 ;; prelude.rkt 不是模块（核对工具用 load 读入）；tools/ 是命令行脚本；check/ 是第四篇的核对材料。
 (define compile-omit-paths
   '("tools" "check"
-    "zh/02-cps/prelude.rkt"
     "zh/03-delimited/prelude.rkt" "zh/04-compiler/prelude.rkt"))
 ;; 只测各篇的 code.rkt，与 README 里的 raco test zh/*/code.rkt 一致。
 (define test-omit-paths '(#px"^(?!.*code[.]rkt$)"))

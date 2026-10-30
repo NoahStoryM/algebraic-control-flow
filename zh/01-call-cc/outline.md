@@ -469,3 +469,4 @@ Noah：Curry-Howard 对应是逐个构造子对应的，演示最基本的情况
 
 - 追加（Noah 10/30）：1.1.4 以 `cc` 为原语写回标签单独成段，说明为什么可以丢掉标记：`(cc)` 第一次交出配 1 的 `k`，经 `(goto k)` 即 `(k k)` 跳回，第二次交出配 0 的仍是 `k`，两支装的是同一个标签。不提阴阳谜题（不引用后文）；那里标签交给的是另一个标签，两支才不同。
 - 追加（Noah 10/30）：1.4「把标签交给标签」在阴阳谜题的说明后回指 1.1.4：那里能丢掉标记，是因为标签经 `goto` 跳回、带回的是它自己；`(yin yang)` 把 `yang` 交给 `yin`，`yin` 那次 `(label)` 再返回时交出的是 `yang`，不一定是 `yin` 自己（Noah 10/30：可能绕回 k0）。
+- 追加（Noah 10/30）：所有术语都注英文，英文版直接沿用。补上：蕴含 implication、否定 negation、Clavius 律 Clavius's law、Peirce 律 Peirce's law、Curry-Howard 对应 Curry–Howard correspondence、析取 disjunction、合取 conjunction、经典逻辑 classical logic、直觉主义逻辑 intuitionistic logic、矛盾律 law of non-contradiction、否定的不动点 fixed point of negation、CPS 变换 CPS transformation、说谎者悖论 liar paradox。

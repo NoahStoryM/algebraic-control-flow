@@ -93,13 +93,15 @@
 - .md 的篇（第二至五篇）：类型名在公式里用 `\text`，如 $\text{Natural}$。公式会吞掉花括号，含花括号的集合写成 Unicode 纯文本，不进公式，例如 {(a, b) ∈ A × B | b = f(a)}。
 - 不用破折号。
 
-**Scribble 写法**（第一篇起。Noah 10/26 提出参照 ctp，并定了引言的位置、标题间的过渡、`@tech` 与 `@racket`、每行 70 栏（10/29 改为 80 栏）、原生代码块、旁注的位置几条；公式、练习两条是 Claude 照 ctp 整理的。具体写法见 [lib/README.md](lib/README.md)）
+**Scribble 写法**（第一篇起。Noah 10/26 提出参照 ctp，并定了引言的位置、标题间的过渡、`@tech` 与 `@racket`、每行 70 栏（10/29 改为 80 栏，10/30 取消：中文每段一行）、原生代码块、旁注的位置几条；公式、练习两条是 Claude 照 ctp 整理的。具体写法见 [lib/README.md](lib/README.md)）
 
-- 文件以 `#lang acf/scribble` 开头：scribble/manual 加上本系列的写法，并在读入时去掉两个中文字之间的换行（Noah 10/26 定名，不占 `#lang acf`）。每行不超过 80 栏（按显示宽度，中文字算两栏），可以在空格处或两个中文字之间折行，尽量折在标点之后，标点不放在行首。`racket tools/wrap-scrbl.rkt` 自动折行，`--check` 检查。
+- 文件以 `#lang acf/scribble` 开头：scribble/manual 加上本系列的写法，并在读入时去掉两个中文字之间的换行（Noah 10/26 定名，不占 `#lang acf`）。中文正文每段写成一行，不折行（Noah 10/30：审稿看编译后的 HTML，折行用处不大，还会在全角标点后留下空格）。`racket tools/join-scrbl.rkt` 把段落连成一行，`--check` 检查。代码块仍按 Racket 的缩进排。以后的英文版可以照常折行。
 - 篇的引言写在篇的 `main.scrbl`，小篇之前。系列的引言等整个系列完结后再写；读者须知（Racket 版本、`typed/racket/no-check`、需要的预备知识）先放在系列前言 `zh/main.scrbl`。
 - 标题之间要有文字过渡：小篇标题、节标题后面不直接接下一级标题，至少先有一两句话。
-- 术语第一次出现写 `@defterm`（底下是 `@deftech`），之后每次出现都写 `@tech`。这样读者从后面任何一处点进去，都能跳回定义处，知道该补读哪里。节标题里不加。
+- 术语都注英文（`@defterm[#:en …]`），以后写英文版直接沿用（Noah 10/30）。
+- 术语第一次出现写 `@defterm`（底下是 `@deftech`），之后每次出现都写 `@tech`。这样读者从后面任何一处点进去，都能跳回定义处，知道该补读哪里。篇名、节标题里不加；标题里的代码名也不写 `@racket`、`@math`，写纯文字（Noah 10/30）。
 - 「一等标签」不作术语：术语是「标签」，「一等」照常写（Noah 10/26）。
+- 正文里的 `λ`、`lambda` 也写 `@racket[…]`；缩写的术语也链接：`@tech[#:key "延续传递风格"]{CPS}`、`@tech[#:key "A-范式"]{ANF}`，CPS 与 CPS 变换是两个术语（Noah 10/30）。
 - 代码名、能读成一个 S 表达式的代码片段写 `@racket[…]`，标识符会着色并链接到对应库的文档；读不成的（如 `#lang` 行）写 `@c{…}`。C 语言里的 `goto` 这类不是 Racket 绑定的名字，写 `@tt{…}`。
 - 代码块用 Scribble 原生的写法（Noah 10/26，照 amb 的 `amb-examples`）：例子写 `@examples`，生成文档时真的运行，打印和结果由 Racket 给出，不再手写；只排版不运行的（推导、示意、不会停的程序）写 `@racketblock`。不会停的程序要展示输出时，用 `eval:alts` 显示原程序、运行截取前几行的版本。
 - 公式写 `@math{…}`（Scribble 自带，不另起别名），只用 Unicode，不写 TeX；公式里的类型名写 `@ty{Label}`，排成正体；类型名单独出现、不在公式里时写 `@racket[Label]`，`Byte`、`Real` 由此链接到 Typed Racket 的文档。公式里不用 `@racket`（Noah 10/27）。`⊥` 也照此：指 Racket 里那个类型时写 `@racket[⊥]`，当作逻辑里的假、或在公式里时用 `@math`。「空类型」是术语，「非空」照常写（Noah 10/27）。

@@ -41,7 +41,7 @@
 
 (define (flatten-text x)
   (cond [(string? x) x]
-        [(and (pair? x) (symbol? (car x)))
+        [(and (pair? x) (symbol? (car x)) (list? (cdr x)))
          (define-values (_ args) (split-keywords (cdr x)))
          (string-append* (map flatten-text args))]
         [(list? x) (string-append* (map flatten-text x))]
@@ -73,7 +73,7 @@
           (cons (sblock kind forms (for/hash ([kw kws]) (values (car kw) (cdr kw))) file)
                 current-blocks)))
   (define (walk x dir file)
-    (when (and (pair? x) (symbol? (car x)))
+    (when (and (pair? x) (symbol? (car x)) (list? (cdr x)))
       (define head (car x))
       (define-values (kws args) (split-keywords (cdr x)))
       (case head
