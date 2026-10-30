@@ -191,7 +191,7 @@
 @examples[#:eval ev #:label #f #:no-prompt
 (define-type (¬𝒦 p) (→𝒦 p ⊥))]
 
-它是新箭头下的新类型，不是 @math{¬} 换了一种写法：展开到宿主，@math{¬@subscript{𝒦} p} 是 @math{p → ¬¬⊥}。@racket[cps:yin]、@racket[cps:yang] 的类型，自己的 @math{¬@subscript{𝒦}} 就是自己，是 @math{¬@subscript{𝒦}} 的不动点@defsym[@ty{Label𝒦} "¬𝒦 的不动点：Label𝒦 = ¬𝒦 Label𝒦，展开是 Label𝒦 → ¬¬⊥"]：
+它是新箭头下的新类型，不是 @math{¬} 换了一种写法：展开到宿主，@math{¬@subscript{𝒦} p} 是 @math{p → ¬¬⊥}。@racket[cps:yin]、@racket[cps:yang] 的类型于是满足：它的 @math{¬@subscript{𝒦}} 就是它自己。它是 @math{¬@subscript{𝒦}} 的不动点@defsym[@ty{Label𝒦} "¬𝒦 的不动点：Label𝒦 = ¬𝒦 Label𝒦，展开是 Label𝒦 → ¬¬⊥"]：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define-type Label𝒦 (¬𝒦 Label𝒦))
@@ -201,7 +201,7 @@
 
 @subsection[#:tag "02:clavius"]{新箭头下的 Clavius 律}
 
-回到那个问题。两个新 @racket[call/cc] 的类型，可以从定义里读出来。拿 @racket[cps:call/cc] 来看。把它交出的结果的类型记作 @racket[p]。@racket[kp] 是这次调用的当前@tech{延续}，等的就是这个结果，类型是 @racket[(¬ p)]。@racket[cps] 把它提升成 @racket[(→𝒦 p ⊥)]，也就是 @racket[(¬𝒦 p)]。用@tech{逆否箭头}写的否定同样记作 @defsym["¬𝒰 p" "用逆否箭头写的否定：p →𝒰 ⊥，展开是 ¬⊥ → ¬p"]@racket[¬𝒰]：
+回到前面那个问题：@racket[cps:call/cc] 和第一篇的 @racket[call/cc]，是同一个什么？两个新 @racket[call/cc] 的类型，可以从定义里读出来。拿 @racket[cps:call/cc] 来看。把它交出的结果的类型记作 @racket[p]。@racket[kp] 是这次调用的当前@tech{延续}，等的就是这个结果，类型是 @racket[(¬ p)]。@racket[cps] 把它提升成 @racket[(→𝒦 p ⊥)]，也就是 @racket[(¬𝒦 p)]。用@tech{逆否箭头}写的否定同样记作 @defsym["¬𝒰 p" "用逆否箭头写的否定：p →𝒰 ⊥，展开是 ¬⊥ → ¬p"]@racket[¬𝒰]：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define-type (¬𝒰 p) (→𝒰 p ⊥))]
