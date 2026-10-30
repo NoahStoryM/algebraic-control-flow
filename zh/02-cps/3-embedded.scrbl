@@ -174,15 +174,7 @@
 (define cps:id (cps id))
 (define (cps:label) (cps:call/cc cps:id))]
 
-交给它一个@tech{延续} @racket[k]，再展开：
-
-@racketblock[
-#,(hspace 2)((cps:label) k)
-= ((cps:call/cc cps:id) k)
-= ((cps:id (cps k)) k)
-= (k (cps k))]
-
-提升过的当前@tech{延续} @racket[(cps k)] 原样交给了 @racket[k]，和第一篇的 @racket[(label)] 一样。绑定得到的 @racket[cps:yin]、@racket[cps:yang]，就是这样的值。
+@racket[cps:call/cc] 交给 @racket[cps:id] 的，是提升过的当前@tech{延续}，@racket[cps:id] 把它原样交出。所以 @racket[(cps:label)] 交出的是提升过的当前@tech{延续}，和第一篇的 @racket[(label)] 一样。绑定得到的 @racket[cps:yin]、@racket[cps:yang]，就是这样的值。
 
 谜题写进 @racket[anf:let*]。中间还有打印：打印也是一步计算，只是结果用不着。一串计算依次做下去、只留最后一个的结果，就是 @racket[anf:begin]：把前面的结果绑定到一个用不着的变量 @racket[_] 上，忽略掉。
 
