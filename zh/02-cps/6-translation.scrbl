@@ -169,7 +169,7 @@
    (list @elem{@math{¬¬¬¬p →@subscript{𝒞} ¬¬p}} @racket[join:id]
          @racket[(neg (cps neg:id))] @elem{4 → 2}))]
 
-只有宿主那一行落到第 0 层。原来的 @racket[call/cc] 靠宿主的控制完成 @math{¬¬p → p}；改写以后，它有了一个 @math{¬¬¬¬p → ¬¬p} 的纯表示 @racket[join:id]，只用 DNI 和逆否就写得出。这并没有在纯语言里实现原来的 DNE：要取回原来类型的结果，仍然要靠运行边界上的控制能力。
+只有宿主那一行落到第 0 层。原来的 @racket[call/cc] 靠宿主的控制完成 @math{¬¬p → p}；改写以后，它有了一个 @math{¬¬¬¬p → ¬¬p} 的纯表示 @racket[join:id]，只用 DNI 和逆否就写得出。这并没有在纯语言里实现原来的 DNE：要取回原来类型的结果，仍然要靠 @racket[anf:eval] 这样在外面交进@tech{终结延续}、接住答案的控制能力。
 
 改变类型，同时把经典的操作改写成构造性的程序，这就是@defterm[#:en "negative translation"]{否定翻译}的思想。逻辑里，@tech{否定翻译}把经典证明改写成直觉主义证明。@xref["02:clavius"]{「新箭头下的 Clavius 律」}用的也是它：同一条经典定律，换用 @tech{CPS 箭头}来写，就成了直觉主义定理。
 

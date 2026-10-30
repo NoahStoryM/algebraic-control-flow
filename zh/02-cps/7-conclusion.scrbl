@@ -8,7 +8,7 @@
 
 边界上，这里的纯编码运行一次，需要宿主交进一条@tech{终结延续}。@racket[uncps] 用 @racket[call/cc] 捕获运行开始那一刻的当前@tech{延续}，直接交进去。@racket[anf:eval] 不捕获，交进去的是另一条，@racket[a->⊥]：它一调用就 @racket[raise]，由外面 @racket[⊥->a] 的 handler 把答案交回这一次调用处。@racket[anf:eval] 模拟的，是当前@tech{延续}接收结果的那份作用。两者的类型读出来都是 DNE：@racket[anf:eval] 是 @racket[(∀ (a) (→ (¬¬ a) a))]，@racket[uncps] 里的 @racket[call/cc] 也是。@xref["01:program-type"]{「代入 Byte」}说过，把程序运行起来、在出口接收结果，就是一次 DNE。
 
-这就是@xref["01:open-threads"]{「未解的线索」}里那个问题的回答：经典的控制有了纯的 @tech[#:key "延续传递风格"]{CPS} 表示，留在程序里面；提供@tech{终结延续}、运行编码并把答案交回宿主的 DNE，留在了编码之外的运行边界上。
+这就是@xref["01:open-threads"]{「未解的线索」}里那个问题的回答：经典的控制有了纯的 @tech[#:key "延续传递风格"]{CPS} 表示，留在程序里面；提供@tech{终结延续}、运行编码并把答案交回宿主的 DNE，留在了编码之外，留在 @racket[anf:eval] 里。
 
 @section[#:tag "02:open-threads"]{未解的线索}
 
