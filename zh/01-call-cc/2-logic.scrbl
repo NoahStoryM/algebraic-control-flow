@@ -53,13 +53,13 @@
 
 交给它一个只等@tech{延续}的计算，它从中把结果取出来。
 
-这样收紧，其实没有少掉什么。原来的类型允许 @racket[proc] 正常返回一个 @math{p}，最后那版 @racket[mul] 里的 @racket[λ] 就是这样，没遇到零，乘积是正常返回的。可调用 @racket[proc] 是 @racket[call/cc] 做的最后一件事，@racket[proc] 正常返回，返回值直接交到调用 @racket[call/cc] 的地方。所以交给 @racket[proc] 的@tech{延续} @racket[k]，和调用 @racket[proc] 这一处的@tech{延续}，都是调用 @racket[call/cc] 时的当前@tech{延续}，下面两个表达式行为相同：
+这样收紧，其实没有少掉什么。原来的类型允许 @racket[proc] 正常返回一个 @math{p}，最后那版 @racket[mul] 里的 @racket[λ] 就是这样，没遇到零，乘积是正常返回的。可调用 @racket[proc] 是 @racket[call/cc] 做的最后一件事，@racket[proc] 正常返回，返回值直接交到调用 @racket[call/cc] 的地方；交给 @racket[proc] 的@tech{延续} @racket[k]，通向的也正是那里。所以 @racket[proc] 正常返回 @racket[v]，和调用 @racket[(k v)] 原地跳一次，到的是同一个地方，交出的是同一个值。@xref["01:label-from-call-cc"]{「从 call/cc 定义标签」}里已经见过一次：@racket[(let/cc k (k k))] 和 @racket[(let/cc k k)] 没有分别。换成任何 @racket[proc] 都一样，下面两个表达式行为相同：
 
 @racketblock[
 (call/cc proc)
 (call/cc (λ (k) (k (proc k))))]
 
-第二行交给 @racket[call/cc] 的那整个 @racket[λ]，@racket[proc] 若正常返回，就再经 @racket[k] 交出结果，所以它从不正常返回，正是上面那种只等@tech{延续}的函数。
+第二行交给 @racket[call/cc] 的那整个 @racket[λ]，@racket[proc] 若正常返回，就再经 @racket[k] 交出结果，所以它从不正常返回，正是上面那种只等@tech{延续}的函数。@racket[proc] 取 @racket[(λ (k) k)]，这个 @racket[λ] 就是 @racket[(λ (k) (k k))]，也就是 @racket[goto]。
 
 于是手里有了四个类型，@racket[absurd] 的一个，@racket[call/cc] 的三个，都只用 @math{→} 和 @math{⊥}。它们像在说些什么？
 
