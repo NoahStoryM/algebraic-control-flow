@@ -190,13 +190,12 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 
 @racket[(call/cc goto)] 拿捕获的@tech{延续}当@tech{标签}，原地跳一次，又回到这里。@racket[goto] 并不正常返回，返回类型是 @racket[⊥] 也无妨：它把 @racket[k] 交给 @racket[k] 自己。@racket[(k k)] 跳回 @racket[(label)] 被调用的地方，让 @racket[call/cc] 带着 @racket[k] 再返回一次，所以 @racket[(label)] 的结果就是 @racket[k] 本身。以后 @racket[(goto l)] 跳回同一处，@racket[(label)] 又一次返回 @racket[l]，正是开头为一等@tech{标签}描述的行为。
 
-跳回去再交出 @racket[k]，和直接交出 @racket[k] 并没有分别。用 @racket[let/cc] 写出来，两种写法并排：
+跳回去再交出 @racket[k]，和直接交出 @racket[k] 并没有分别。用 @racket[let/cc] 写出来：
 
 @racketblock[
-(define (label) (let/cc k (k k)))
-(define (label) (let/cc k k))]
+(let/cc k (k k))  =  (let/cc k k)]
 
-前一种原地跳一次，带着 @racket[k] 回到这里；后一种直接交出 @racket[k]。@racket[(label)] 的结果都是 @racket[k]。
+左边原地跳一次，带着 @racket[k] 回到这里；右边直接交出 @racket[k]。结果都是 @racket[k]。
 
 圈也可以反过来绕。以@tech{标签}为原语，先写出 @racket[call/cc]，再由它写出 @racket[cc]，最后把 @racket[cc] 当作原语，写回@tech{标签}：
 
