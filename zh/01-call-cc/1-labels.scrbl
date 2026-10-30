@@ -91,16 +91,26 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
   @item{类型为 @math{p → ⊥} 的@tech{延续}：接受类型为 @math{p}
   的值且永不返回的函数（它跳回捕获点）。}
   @item{类型为 @math{p} 的值，在@tech{延续}被调用时收到。}]
-用的人得分得清拿到的是哪一种。我们给每种可能打上一个标签：值配上
-@racket[0]，@tech{延续}配上 @racket[1]，用 @racket[cons] 配成一对。
-这样合起来的类型，叫@defterm[#:en "tagged union"]{带标签的联合}，写作
-@defsym["p ∐ q" "带标签的联合：每支配上标签再并起来"]@racket[∐]：
+用的人得分得清拿到的是哪一种。我们给每种可能打上一个@defterm[#:en "tag"]{标记}：
+值配上 @racket[0]，@tech{延续}配上 @racket[1]，用 @racket[cons] 配成一对。
+这样合起来的类型，叫@defterm[#:en "tagged union"]{带标记的联合}，写作
+@defsym["p ∐ q" "带标记的联合：每支配上标记再并起来"]@racket[∐]：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define-type (∐ p0 p1 ...) (∪ (Pair p0 0) (Pair p1 1) ...))]
 
-第 @math{i} 支的值配上标签 @math{i}。一支也没有的 @racket[(∐)]，就是
+第 @math{i} 支的值配上@tech{标记} @math{i}。一支也没有的 @racket[(∐)]，就是
 @racket[(∪)]，也就是 @racket[⊥]。
+
+@margin-note{这一步回不去。同一个元素出现在几支里，配上不同的@tech{标记}，在
+@racket[∐] 里就有几个，@racket[untag] 以后就成了一个，再也说不清它来自哪一支：
+@racket[∐] 比 @racket[∪] 多记着来源。}
+
+把@tech{标记}丢掉，就回到普通的并集：
+
+@examples[#:eval ev #:label #f #:no-prompt
+(: untag (∀ (p ...) (→ (∐ p ...) (∪ p ...))))
+(define untag car)]
 
 我们把这个操作符叫做 @racket[cc]（@racket[current-continuation] 的缩写）：
 
@@ -148,8 +158,8 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 (mul 2 3 4)
 (mul 2 0 3)]
 
-@racket[match] 按标签分两支。@racket[for/fold] 一边遍历 @racket[r*]，一边累积
-@racket[res]；@racket[#:result] 指定遍历结束后交出什么。
+@racket[match] 按@tech{标记}分两支。@racket[for/fold] 一边遍历 @racket[r*]，
+一边累积 @racket[res]；@racket[#:result] 指定遍历结束后交出什么。
 
 第一次求值 @racket[(cc)] 时，交出的配着 @racket[1]，是一个@tech{延续}，绑定到
 @racket[return]，开始折叠。如果遇到零，调用 @racket[(return r)]，
@@ -166,8 +176,9 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 区分收到的是哪一支。这行得通，只是程序员又多了一件要操心的事。
 能不能把分支也一并消除？
 
-不再返回带标签的联合让调用者去分支，而是让调用者传入一个函数 @racket[proc]，
-直接把@tech{延续}作为参数交给它。分支挪进操作符内部，对用户不可见：
+不再返回@tech{带标记的联合}让调用者去分支，而是让调用者传入一个函数
+@racket[proc]，直接把@tech{延续}作为参数交给它。分支挪进操作符内部，
+对用户不可见：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: call/cc (∀ (p) (→ (→ (→ p ⊥) p) p)))
@@ -262,7 +273,8 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 (define primitive-call/cc call/cc)
 (define (goto l) (l l))
 (define (label) (primitive-call/cc goto))
-(define-syntax-rule (let/cc k body ...) (call/cc (λ (k) body ...)))]
+(define-syntax-rule (let/cc k body ...) (call/cc (λ (k) body ...)))
+(define untag car)]
 @examples[#:eval ev2 #:label #f #:no-prompt
 (define (call/cc proc)
   (define first? #t)
@@ -280,11 +292,16 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 
 这个 @racket[call/cc] 的写法和 @racket[cc] 一样，只是把@tech{延续}交给
 @racket[proc]，而不是交给调用者。由它写 @racket[cc]，只要给交出的@tech{延续}配上
-@racket[1]，再让它跳回来时配上 @racket[0]。以 @racket[cc]
-为原语，@tech{标签}就是 @racket[(cc)] 交出的东西去掉标签：
+@racket[1]，再让它跳回来时配上 @racket[0]。
+
+最后以 @racket[cc] 为原语，写回@tech{标签}。@racket[(cc)] 第一次交出的，是配着
+@racket[1] 的@tech{延续} @racket[k]。把它当作@tech{标签}，跳回来靠的是
+@racket[(goto k)]，也就是 @racket[(k k)]：@racket[k] 带回来的正是它自己。于是
+@racket[(cc)] 第二次交出的，是配着 @racket[0] 的 @racket[k]。
+两支装的是同一个@tech{标签}，@tech{标记}没有什么要分辨的，丢掉就是：
 
 @examples[#:eval ev2 #:label #f #:no-prompt
-(define (label) (car (cc)))
+(define label (compose untag cc))
 (define (goto l) (l l))]
 
 无论从哪一个出发，另外两个都写得出来：三种表述在@bold{表达能力上等价}。
@@ -295,11 +312,11 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
   (list
    (list ""
          @elem{一等@tech{标签} (@racket[goto] + @racket[label])}
-         @elem{值与@tech{延续}的带标签的联合 (@racket[cc])}
+         @elem{值与@tech{延续}的@tech{带标记的联合} (@racket[cc])}
          @elem{高阶回调 (@racket[call/cc])})
    (list @elem{@bold{涉及的类型}}
          @elem{只有 @racket[Label]}
-         @elem{带标签的联合 @math{p ∐ (p → ⊥)}}
+         @elem{带@tech{标记}的联合 @math{p ∐ (p → ⊥)}}
          @elem{高阶：@math{((p → ⊥) → p) → p}})   (list @elem{@bold{使用者需要可变状态？}}
          @elem{是：要在跳转间带值，就得用 @racket[set!]}
          @elem{否}
