@@ -103,7 +103,7 @@
     (define ln (cons kn n))
     (apply-cont ln ln)))]
 
-交出去的 @racket[ln] 装着第 @racket[n] 条@tech{延续} @racket[kn] 和它的编号 @racket[n]，不再是能直接调用的函数，调用它的办法得我们自己规定。@racket[apply-cont] 的签名还是那一个，只是这里 @math{p} 取 @racket[Label]：向一个@tech{否定}交一个值，不管@tech{否定}怎样表示，都是这个操作。插桩版要印出两边的编号，所以用 @racket[match-define] 拆开两个对，印出谁跳向谁，再调用里面的函数：
+交出去的 @racket[ln] 装着第 @racket[n] 条@tech{延续} @racket[kn] 和它的编号 @racket[n]，不再是能直接调用的函数，调用它的办法得我们自己规定。@racket[apply-cont] 做的还是向一个@tech{否定}交一个值，不管@tech{否定}怎样表示，都是这个操作；这里 @math{p} 取 @racket[Label]。这一节的 @racket[¬] 是对，不再是函数，所以 @racket[apply-cont] 的类型照旧用 @racket[→] 写。插桩版要印出两边的编号，所以用 @racket[match-define] 拆开两个对，印出谁跳向谁，再调用里面的函数：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: apply-cont (→ (¬ Label) Label ⊥))

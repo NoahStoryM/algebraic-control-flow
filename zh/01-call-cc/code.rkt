@@ -110,9 +110,10 @@
   (require (only-in racket/base [call/cc primitive-call/cc]))
   (provide label goto cc call/cc mul)
   (define-type ⊥ (∪))
+  (define-type (¬ p ...) (→ p ... ⊥))
   (define (goto l) (l l))
   (define (label) (primitive-call/cc goto))
-  (: cc (∀ (p) (→ (∪ p (→ p ⊥)))))
+  (: cc (∀ (p) (→ (∪ p (¬ p)))))
   (define (cc)
     (define saved #f)
     (define l (label))
@@ -128,7 +129,7 @@
           (if (zero? r)
               (result r)
               (* res r)))))
-  (: call/cc (∀ (p) (→ (→ (→ p ⊥) p) p)))
+  (: call/cc (∀ (p) (→ (→ (¬ p) p) p)))
   (define (call/cc proc)
     (define x (cc))
     (if (list? x)
@@ -164,7 +165,7 @@
   (require (only-in (submod ".." tagged) [cc tagged:cc]))
   (define-type ⊥ (∪))
   (define-type (∐ p0 p1 ...) (∪ (Pair p0 0) (Pair p1 1) ...))
-  (define-type (¬ p) (→ p ⊥))
+  (define-type (¬ p ...) (→ p ... ⊥))
   (: cc (∀ (p) (→ (∐ p (¬ p)))))
   (define cc tagged:cc)
   (provide cc))
@@ -179,7 +180,7 @@
   (require (only-in (submod ".." union-label-to-cc) cc call/cc))
   (provide wait/fc run-wait/fc)
   (define-type ⊥ (∪))
-  (define-type (¬ p) (→ p ⊥))
+  (define-type (¬ p ...) (→ p ... ⊥))
   (define-type (¬¬ q) (¬ (¬ q)))
   (: wait/fc (∀ (q) (→ (¬¬ q) (¬¬ q))))
   (define (wait/fc kk)
@@ -355,15 +356,15 @@
 
 (module stage-13 typed/racket/no-check
   (define-type ⊥ (∪))
-  (define-type (¬ p) (→ p ⊥))
+  (define-type (¬ p ...) (→ p ... ⊥))
   (provide (all-defined-out))
 )
 
 (module stage-14 typed/racket/no-check
   (define-type ⊥ (∪))
-  (define-type (¬ p) (→ p ⊥))
+  (define-type (¬ p ...) (→ p ... ⊥))
   (define-type (¬¬ p) (¬ (¬ p)))
-  (: apply-cont (∀ (p) (→ (¬ p) p ⊥)))
+  (: apply-cont (∀ (p) (¬ (¬ p) p)))
 
   (define (apply-cont kv v) (kv v))
   (provide (all-defined-out))
@@ -371,8 +372,8 @@
 
 (module triple-negation typed/racket/no-check
   (define-type ⊥ (∪))
-  (define-type (¬ p) (→ p ⊥))
-  (: apply-cont (∀ (p) (→ (¬ p) p ⊥)))
+  (define-type (¬ p ...) (→ p ... ⊥))
+  (: apply-cont (∀ (p) (¬ (¬ p) p)))
   (define (apply-cont kv v) (kv v))
   (define-type (¬¬  q) (¬ (¬  q)))
   (define-type (¬¬¬ q) (¬ (¬¬ q)))
