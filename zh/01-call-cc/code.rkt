@@ -48,6 +48,16 @@
   (define (goto l) (l l))
   (define (label) (call/cc goto)))
 
+;; 1.1：用 let/cc 写，原地跳一次再交出 k，或者直接交出 k
+(module let/cc-goto-label racket
+  (provide label goto)
+  (define (goto l) (l l))
+  (define (label) (let/cc k (k k))))
+
+(module let/cc-label racket
+  (provide label)
+  (define (label) (let/cc k k)))
+
 (module label-to-call/cc racket
   (require racket/undefined (only-in racket/base [call/cc primitive-call/cc]))
   (provide label goto cc call/cc)
@@ -202,6 +212,8 @@
   (require rackunit "../../tools/check-output-prefix.rkt"
            (prefix-in a: (submod ".." label-to-cc))
            (prefix-in b: (submod ".." call/cc-to-label))
+           (prefix-in lg: (submod ".." let/cc-goto-label))
+           (prefix-in lk: (submod ".." let/cc-label))
            (prefix-in c: (submod ".." label-to-call/cc))
            (prefix-in d: (submod ".." cc-to-label))
            (prefix-in e: (submod ".." label-to-cc/return))
@@ -221,6 +233,8 @@
       x))
   (for ([pair (list (cons a:label a:goto)
                    (cons b:label b:goto)
+                   (cons lg:label lg:goto)
+                   (cons lk:label b:goto)
                    (cons c:label c:goto)
                    (cons d:label d:goto)
                    (cons ua:label ua:goto)

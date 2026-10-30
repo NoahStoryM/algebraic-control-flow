@@ -59,6 +59,8 @@
 (call/cc proc)
 (call/cc (λ (k) (k (proc k))))]
 
+@xref["01:label-from-call-cc"]{「从 call/cc 定义标签」}里已经见过一次：@racket[proc] 取 @racket[(λ (k) k)]，第二行的 @racket[λ] 就是 @racket[(λ (k) (k k))]，也就是 @racket[goto]。两行正是那里并排的两种 @racket[label]，@racket[(let/cc k k)] 和 @racket[(let/cc k (k k))]。
+
 第二行交给 @racket[call/cc] 的那整个 @racket[λ]，@racket[proc] 若正常返回，就再经 @racket[k] 交出结果，所以它从不正常返回，正是上面那种只等@tech{延续}的函数。
 
 于是手里有了四个类型，@racket[absurd] 的一个，@racket[call/cc] 的三个，都只用 @math{→} 和 @math{⊥}。它们像在说些什么？
