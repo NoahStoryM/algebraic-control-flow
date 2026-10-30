@@ -70,7 +70,9 @@
 @defsym["¬p" "p 的否定：p → ⊥，延续的类型"]@math{¬p}。@tech{延续}的类型正是 @math{p → ⊥}，每个@tech{延续}都是一个@tech{否定}：
 
 @examples[#:eval ev #:label #f #:no-prompt
-(define-type (¬ p) (→ p ⊥))]
+(define-type (¬ p ...) (→ p ... ⊥))]
+
+@racket[¬] 和 @racket[→] 一样，参数可以不止一个：@racket[(¬ p q)] 就是 @racket[(→ p q ⊥)]。
 
 用 @math{¬} 改写，四个类型都成了逻辑课本里有名字的定律：
 
@@ -158,10 +160,10 @@
 先看@tech{矛盾律}。@math{¬p ∧ p} 是一个 @math{¬p} 和一个 @math{p} 放在一起，对应函数的两个参数；整体取否定，结果是 @math{⊥}。所以要写的是这样一个函数：收下一个@tech{延续} @racket[kv] 和一个值 @racket[v]，得到 @math{⊥}。手里能产生 @math{⊥} 的只有 @racket[kv]，能交给它的只有 @racket[v]，写法几乎是被类型逼出来的：
 
 @examples[#:eval ev #:label #f #:no-prompt
-(: apply-cont (∀ (p) (→ (¬ p) p ⊥)))
+(: apply-cont (∀ (p) (¬ (¬ p) p)))
 (define (apply-cont kv v) (kv v))]
 
-这就是调用@tech{延续}。最后那版 @racket[mul] 里的 @racket[(return r)]，就是一次 @racket[apply-cont]。
+类型写成 @racket[(¬ (¬ p) p)]，正好照着 @math{¬(¬p ∧ p)} 读。这就是调用@tech{延续}。最后那版 @racket[mul] 里的 @racket[(return r)]，就是一次 @racket[apply-cont]。
 
 再看 DNI。给一个值 @racket[v]，要交出一个 @math{¬¬p}，也就是一个收下 @math{¬p}、结果为 @math{⊥} 的函数。理由和刚才一样，只能写成 @racket[(λ (kv) (kv v))]。做的还是调用，只是值先到，@tech{延续}后到。从 @racket[v] 得到这个函数，就是 @racket[(curryr apply-cont)]：先给定 @racket[apply-cont] 的第二个参数。
 

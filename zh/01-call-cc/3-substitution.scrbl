@@ -5,7 +5,7 @@
 @(define ev (make-acf-eval))
 @examples[#:eval ev #:hidden
 (define-type ⊥ (∪))
-(define-type (¬ p) (→ p ⊥))]
+(define-type (¬ p ...) (→ p ... ⊥))]
 
 @xref["01:watershed"]{「分水岭」}从定律出发找程序。这一节接着从定律出发，换一个办法：代入。
 
