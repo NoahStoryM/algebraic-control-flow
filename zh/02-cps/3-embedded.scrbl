@@ -159,7 +159,7 @@
 
 第一篇的 @racket[label] 可以写成 @racket[(let/cc k k)]：捕获当前@tech{延续}，直接交出来。照样写进嵌入语言，会碰到一个问题：@racket[anf:let/cc] 的主体得是一段计算，@racket[cps:k] 却只是一个值。
 
-直接风格里，返回一个值什么也不用写。嵌入语言里，得有一段计算来做这件事：收到@tech{延续}，把值原样交给它。这就是 @racket[(cps id)]：
+直接风格里，返回值 @racket[v]，写 @racket[v] 就行。嵌入语言里，返回 @racket[v] 要写成一段计算 @racket[(λ (k) (k v))]：把要返回的值交给@tech{延续}参数。收下 @racket[v]、交出这段计算的，就是 @racket[(cps id)]：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define cps:id (cps id))]
@@ -169,11 +169,16 @@
 @examples[#:eval ev #:label #f #:no-prompt
 (define (cps:label) (anf:let/cc cps:k (cps:id cps:k)))]
 
+@racket[(λ (cps:k) (cps:id cps:k))] 只是把 @racket[cps:k] 转交给 @racket[cps:id]，所以：
+
+@racketblock[
+(anf:let/cc cps:k (cps:id cps:k))  =  (cps:call/cc cps:id)]
+
 一步步展开：
 
 @racketblock[
 #,(hspace 2)((cps:label) k)
-= ((cps:call/cc (λ (cps:k) (cps:id cps:k))) k)
+= ((cps:call/cc cps:id) k)
 = ((cps:id (cps k)) k)
 = (k (cps k))]
 
