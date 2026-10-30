@@ -1,8 +1,8 @@
 #lang acf/scribble
 
-@title[#:tag "02:2-embedded"]{再把延续藏起来}
+@title[#:tag "02:3-embedded"]{再把延续藏起来}
 
-@tech{延续}交到了手里，代价是每一个都要亲手写。@racket[let] 当初替我们写好了它们，现在能不能请绑定的语法再写一次？
+绑定的语法替我们写的，正是那个等待结果的 @racket[λ]。照它的样子，给手写的延续也造一个绑定。
 
 @(define ev (make-acf-eval))
 @examples[#:eval ev #:hidden
@@ -38,11 +38,7 @@
           [(thread-dead? t) (display s)]
           [else (sleep 0.01) (loop)])))]
 
-@section[#:tag "02:embedded"]{嵌入语言}
-
-回想@xref["02:anf"]{「求值顺序与 ANF」}里的观察。@racket[let] 脱糖为 @racket[lambda] 调用，@tech{延续}藏在 @racket[let] 里面：等待结果的那个 @racket[λ] 不用我们写，绑定的语法替我们写了。@tech{CPS 变换}把@tech{延续}拉出来变成显式参数，这个 @racket[λ] 就得亲手写。能不能反过来：用 @racket[let] 语法把 @tech[#:key "延续传递风格"]{CPS} 的@tech{延续}再藏回去？
-
-@subsection[#:tag "02:hide-again"]{再次隐藏延续}
+@section[#:tag "02:hide-again"]{再次隐藏延续}
 
 先看一个具体例子：@racket[(fact/k 2 k)] 的@tech{闭包链} @racket[(∘ k mul2 mul1)]，两步乘法。把两步用 @racket[cps] 提升，像 @racket[fact/k] 那样手写@tech{延续}：
 
@@ -71,7 +67,7 @@
 @examples[#:eval ev #:label #f
 (anf:eval (anf:let ([v (cps:mul1 1)]) (cps:mul2 v)))]
 
-@subsection[#:tag "02:early-return"]{提前返回}
+@section[#:tag "02:early-return"]{提前返回}
 
 手写的 @tech[#:key "延续传递风格"]{CPS} 版 @racket[mul] 有两处要程序员亲自动手：正常路径上，每一步都要写出新的@tech{延续} @racket[(λ (v) (k (* v r)))]；遇到零时，要手动改调 @racket[a->⊥]。不写@tech{延续}，用宿主自己的 @racket[let/cc]、@racket[let*]、@racket[if] 和原语，@racket[mul] 可以这样写：
 
@@ -157,7 +153,7 @@
 
 @racket[cps:loop] 和 @racket[cps:car] 一样收值、交出计算，所以它的递归调用也写在 @racket[anf:let*] 里。@racket[anf:let/cc] 把当前@tech{延续}交给程序，名字叫 @racket[cps:return]。遇零时调用它，和@xref["02:k-in-hand"]{「手中的延续」}里的 @racket[cps:proc2] 一样，计算改走保存的@tech{延续}，还没做完的乘法全部跳过。其余每一步的@tech{延续}都由 @racket[anf:let*] 接好，程序员不需要触碰。最后一步同时用到 @racket[res] 和更早的 @racket[r]：宏把后面的代码嵌进前面绑定的函数体，@racket[r] 一路看得见，所以照样能写。
 
-@subsection[#:tag "02:yin-yang"]{阴阳谜题}
+@section[#:tag "02:yin-yang"]{阴阳谜题}
 
 @racket[cps:return] 只用来跳出循环。第一篇的阴阳谜题对@tech{延续}要求更多：被捕获的@tech{延续}要作为值传来传去，再被调用。
 
@@ -206,108 +202,4 @@
 
 @racket[cps:yin] 是提升过的@tech{延续}，所以能像 @racket[cps:mul] 这些函数一样直接调用。它包着的，就是@xref["02:position"]{「计算的位置」}里那样的一条@tech{延续}：@racket[(cps:label)] 把它所在的位置捕获下来，交给程序。这个位置也是从出口那条@tech{延续}一步步接出来的，出口那一条，是 @racket[anf:eval] 在计算开始时交进来的。
 
-@section[#:tag "02:two-arrows"]{两种箭头}
-
-@xref["02:early-return"]{「提前返回」}里的 @racket[anf:let*]，一个绑定套着一个绑定。@racket[anf:let] 的写法和 @racket[let] 一样，也就碰上@xref["02:laws"]{「结合律与单位律」}同样的问题：几步可以嵌在 @racket[b] 里，也可以先接成一段，嵌进 @racket[e]；还可以插一个只换名的绑定。三步嵌在 @racket[b] 里：
-
-@racketblock[
-(anf:let ([y (cps:f x)])
-  (anf:let ([z (cps:g y)])
-    (cps:h z)))]
-
-先把前两步接成一段，嵌进 @racket[e]：
-
-@racketblock[
-(anf:let ([z (anf:let ([y (cps:f x)])
-               (cps:g y))])
-  (cps:h z))]
-
-只换名的绑定也有。@racket[anf:let] 的右边得是一段计算，只换名，用的就是阴阳谜题里那段什么也不做的计算 @racket[cps:id]。两种只换名的写法，都该和直接写 @racket[(cps:f x)] 一样：
-
-@racketblock[
-(anf:let ([y (cps:id x)]) (cps:f y))
-(anf:let ([y (cps:f x)]) (cps:id y))]
-
-两种嵌套交出的，是同一段计算吗？只换名的绑定，真的可有可无吗？
-
-@subsection[#:tag "02:bind-compose"]{绑定就是复合}
-
-问题一样，解法也可以借来。那里把 @racket[let] 看成复合，问题就成了复合是否满足@tech{结合律}与@tech{单位律}。这里也把一次绑定看成一次复合：照 @racket[anf:let] 的样子，先 @racket[cps:f] 再 @racket[cps:g]，接成一支新的箭头，记作 @racket[∘𝒦]（取 continuation 的字母）：
-
-@examples[#:eval ev #:label #f #:no-prompt
-(define ((∘𝒦 cps:g cps:f) x)
-  (anf:let ([y (cps:f x)])
-    (cps:g y)))]
-
-和宿主里 @racket[let] 的那条等式并排：
-
-@racketblock[
-(let     ([y     (f x)])     (g y))  =  ((∘      g     f) x)
-(anf:let ([y (cps:f x)]) (cps:g y))  =  ((∘𝒦 cps:g cps:f) x)]
-
-@margin-note{这些等式说的是行为相同，用的是@xref["02:split-k"]{「把延续独立出来」}里的那个前提：两层参数之间不做别的事。比如 @racket[cps:f] 一收到参数就打印，@racket[(∘𝒦 cps:id cps:f)] 就会把打印推迟到收到@tech{延续}之后。}
-
-@racket[let] 是 @racket[∘] 的另一种写法，@racket[anf:let] 是 @racket[∘𝒦] 的另一种写法，多出来的是中间结果的名字。嵌在 @racket[b] 里，写成复合是 @racket[(∘𝒦 (∘𝒦 cps:h cps:g) cps:f)]；嵌进 @racket[e] 里，是 @racket[(∘𝒦 cps:h (∘𝒦 cps:g cps:f))]；两种换名，是在 @racket[cps:f] 的两头接上 @racket[cps:id]。想让这几种写法行为一样，@racket[∘𝒦] 就得像 @racket[∘] 一样，满足@tech{结合律}与@tech{单位律}：
-
-@racketblock[
-(∘𝒦 cps:h (∘𝒦 cps:g cps:f))  =  (∘𝒦 (∘𝒦 cps:h cps:g) cps:f)
-(∘𝒦 cps:f cps:id)  =  cps:f
-(∘𝒦 cps:id cps:f)  =  cps:f]
-
-
-@subsection[#:tag "02:via-contrapositive"]{借道逆否复合}
-
-@racket[∘𝒦] 满足这两条运算律吗？先拿例子试试。再提升一支 @racket[mul3]，用 @racket[(fact/k 3 k)] 的三步乘法比较两种分组：
-
-@examples[#:eval ev #:label #f
-(define cps:mul3 (cps (λ (v) (* 3 v))))
-(anf:eval ((∘𝒦 cps:mul3 (∘𝒦 cps:mul2 cps:mul1)) 1))
-(anf:eval ((∘𝒦 (∘𝒦 cps:mul3 cps:mul2) cps:mul1) 1))]
-
-两种分组算得一样。一般也是这样吗？不必逐条展开，可以借已有的运算律。先给两种写法的箭头起名：照 @racket[cps] 写法的叫@defterm[#:en "CPS arrow"]{CPS 箭头}，记作 @math{→@subscript{𝒦}}；照 @racket[neg] 写法的叫@defterm[#:en "contrapositive arrow"]{逆否箭头}，记作 @math{→@subscript{𝒰}}（U 取掉头转弯的意思：箭头的方向倒了过来）。前面名字以 @racket[cps:]、@racket[neg:] 开头的函数，就分别是这两种箭头：
-
-@examples[#:eval ev #:label #f #:no-prompt
-(define-type (→𝒦 p q) (→    p (¬¬ q)))
-(define-type (→𝒰 p q) (← (¬ p) (¬ q)))]
-
-@math{p →@subscript{𝒦} q} 收到 @math{p}，交出等着 @math{q} 的计算。@math{p →@subscript{𝒰} q} 用的是反向箭头 @racket[←]：它从 @math{p} 写到 @math{q}，函数却从 @math{¬q} 指向 @math{¬p}。有了名字，前面几个函数的类型可以重写；@xref["02:early-return"]{「提前返回」}里 @racket[cps:loop] 的类型，也就是 @racket[(→𝒦 (Listof Real) Real)]：
-
-@examples[#:eval ev #:label #f #:no-prompt
-(: neg  (∀ (p q) (→ (→ p q) (→𝒰 p q))))
-(: cps  (∀ (p q) (→ (→ p q) (→𝒦 p q))))
-(: flip (∀ (p q) (case→ (→ (→𝒰 p q) (→𝒦 p q))
-                        (→ (→𝒦 p q) (→𝒰 p q)))))
-(: cps:id (∀ (q) (→𝒦 q q)))
-(: ∘𝒦 (∀ (p1 p2 p3) (→ (→𝒦 p2 p3) (→𝒦 p1 p2) (→𝒦 p1 p3))))]
-
-@racket[case→] 列出同一个函数的几种类型，调用时按交给它的参数取用其中一种：这两行是 @racket[flip] 同一段代码的两种读法，第一行从 𝒰 搬到 𝒦，第二行搬回来。普通函数经 @racket[neg] 变成@tech{逆否箭头}，经 @racket[cps] 变成 @tech{CPS 箭头}，@racket[flip] 在两种箭头之间来回。沿用@xref["02:split-k"]{「把延续独立出来」}的前提，来回一趟，什么也不丢。
-
-@tech{逆否箭头}也能复合吗？@racket[flip] 把它们一一对到 @tech{CPS 箭头}，那就把 @racket[∘𝒦] 原样搬过去：两支各 @racket[flip] 成 @tech{CPS 箭头}，用 @racket[∘𝒦] 接起来，再 @racket[flip] 回来：
-
-@examples[#:eval ev #:label #f #:no-prompt
-(define (∘𝒰       neg:g        neg:f)
-  (flip (∘𝒦 (flip neg:g) (flip neg:f))))]
-
-搬过来的复合是什么？把 @racket[(flip neg:g)]、@racket[(flip neg:f)] 记作 @racket[cps:g]、@racket[cps:f]，交齐@tech{延续} @racket[k] 和输入 @racket[x]，展开：
-
-@racketblock[
-#,(hspace 2)(((∘𝒰 neg:g neg:f) k) x)
-= (((∘𝒦 cps:g cps:f) x) k)
-= ((cps:f x) (λ (y) ((cps:g y) k)))
-= ((neg:f (λ (y) ((neg:g k) y))) x)
-= ((neg:f (neg:g k)) x)
-= (((∘ neg:f neg:g) k) x)
-= (((⨾ neg:g neg:f) k) x)]
-
-倒数第三步靠的还是那个前提。搬过来的，原来就是反向复合 @racket[⨾]：先用 @racket[neg:g]，再用 @racket[neg:f]。@xref["02:position"]{「计算的位置」}用几次 @racket[neg] 接出@tech{闭包链}，也是这样接的。于是@tech{逆否箭头}的复合直接取 @racket[⨾]，单位元取 @racket[id]，记作 @racket[neg:id]：
-
-@examples[#:eval ev #:label #f #:no-prompt
-(: ∘𝒰 (∀ (p1 p2 p3) (→ (→𝒰 p2 p3) (→𝒰 p1 p2) (→𝒰 p1 p3))))
-(define ∘𝒰 ⨾)
-
-(: neg:id (∀ (q) (→𝒰 q q)))
-(define neg:id id)]
-
-@racket[⨾] 有@tech{结合律}与@tech{单位律}，@racket[∘𝒰] 也就有：分组无关紧要，@racket[neg:id] 接在哪一头都不改变什么。@racket[id] 搬回 @tech{CPS 箭头}这边，正是 @racket[cps:id]。@racket[flip] 来回一趟什么也不丢，@racket[∘𝒦] 搬过去是 @racket[∘𝒰]，两条运算律也就跟着搬了回来：两种嵌套的 @racket[anf:let] 交出同样的计算，只换名的绑定可有可无。
-
-@bold{练习}：反过来，只用 @racket[∘𝒰] 和 @racket[flip] 写出 @racket[∘𝒦]，验证它与由 @racket[anf:let] 给出的定义行为相同。
+@racket[anf:let] 照 @racket[let] 的样子写成。@racket[let] 有@tech{结合律}与@tech{单位律}，@racket[anf:let] 也有吗？

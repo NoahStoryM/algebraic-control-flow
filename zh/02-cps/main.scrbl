@@ -11,8 +11,11 @@
 
 @table-of-contents[]
 
-@include-section["1-continuations.scrbl"]
-@include-section["2-embedded.scrbl"]
-@include-section["3-translation.scrbl"]
-@include-section["4-conclusion.scrbl"]
-@include-section["5-appendix.scrbl"]
+@include-section["1-anf-cps.scrbl"]
+@include-section["2-split.scrbl"]
+@include-section["3-embedded.scrbl"]
+@include-section["4-arrows.scrbl"]
+@include-section["5-where.scrbl"]
+@include-section["6-translation.scrbl"]
+@include-section["7-conclusion.scrbl"]
+@include-section["8-appendix.scrbl"]
