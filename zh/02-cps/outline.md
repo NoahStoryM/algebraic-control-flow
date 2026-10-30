@@ -241,7 +241,7 @@
 
 ## 改写成 Scribble（Noah 10/30：直接写 .scrbl，结构先照现行大纲，写好再看）
 
-- 文件：`main.scrbl`（篇的引言）、`1-continuations.scrbl`「把延续交到手里」（大纲 1–3）、`2-embedded.scrbl`「再把延续藏起来」（4–5）、`3-translation.scrbl`「经典的控制去了哪里」（6–8）、`4-conclusion.scrbl`、`5-appendix.scrbl`（完整代码）。小篇名是 Claude 拟的，请 Noah 定。各小篇标题下补一两句过渡。
+- 文件：`main.scrbl`（篇的引言）、`1-continuations.scrbl`「从 ANF 到 CPS」（Noah 10/30 定）（大纲 1–3）、`2-embedded.scrbl`「再把延续藏起来」（4–5）、`3-translation.scrbl`「经典的控制去了哪里」（6–8）、`4-conclusion.scrbl`、`5-appendix.scrbl`（完整代码）。小篇名是 Claude 拟的，请 Noah 定。各小篇标题下补一两句过渡。
 - 开头（第 0 节）：去掉「大家好」、篇目回顾和两根线头，改成接第一篇「未解的线索」的那个问题：整个程序都把余下的工作作为参数交来，走到原来调用 `call/cc` 的地方，当前延续本来就在手里，还要捕获什么。
 - 7.3「数一数 k」压成桥接：回指「否定塔」，只留本篇独有的三件事：DNI 就是 `cps:id`（`kkp = (cps:id p)` 时一步 β 回到 `(kp p)`）；任意 `kkp` 要经 7.2 的 `≈` 与 `call/cc`（DNE）；三重否定律就是 `(neg cps:id)`，和第一篇的 `triple-negation` 一样。第 0 层的说明压成一句。
 - 回指第一篇的地方改成链接：`call/cc` 的几种类型（原「那条看不见的延续」，改说 `proc` 正常返回走的也正是交给它的延续）、分水岭、代入 Byte、否定塔、代入 ¬q。

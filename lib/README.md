@@ -88,7 +88,7 @@ scribble --markdown ++xref-in setup/xref load-collections-xref --dest out zh/mai
 
 排出来是「**一等标签**（*first-class labels*）」「**双重否定引入**（*Double Negation Introduction*，DNI）」「**直觉主义逻辑**」，并登记进部末的术语表，按第一次出现的顺序排列，每项链回定义处。哪些词注英文仍按 STYLE.md。`@defterm` 底下就是 Scribble 的 `@deftech`。
 
-之后每次出现都写 `@tech{一等标签}`（照 ctp），读者从任何一处点进去都能跳回定义处。节标题里不加。复合词里的不加，例如「延续传递风格」里的「延续」、「双重否定引入」里的「否定」。同一术语在别处以不同字面出现时，写 `@tech[#:key "…"]{…}`。
+之后每次出现都写 `@tech{一等标签}`（照 ctp），读者从任何一处点进去都能跳回定义处。篇名、节标题里不加，标题里的代码名也写纯文字（Noah 10/30）。复合词里的不加，例如「延续传递风格」里的「延续」、「双重否定引入」里的「否定」。同一术语在别处以不同字面出现时，写 `@tech[#:key "…"]{…}`。
 
 ## 符号
 

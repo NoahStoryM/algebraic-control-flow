@@ -60,7 +60,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 
 这里的 @racket[ret] 是一个「返回@tech{标签}」。遇到零时，@racket[(goto ret)] 并不直接跳到函数末尾。@racket[ret] 是在 @racket[when] 之前创建的，控制回到 @racket[(define ret (label))]，@racket[(label)] 再次返回。这时 @racket[first?] 已经是 @racket[#f]，整个 @racket[when] 被跳过，函数交出 @racket[result]，也就是刚存进去的零。布尔标志 @racket[first?] 就是用来分辨这是第一次进入，还是经 @racket[goto] 跳回来的。
 
-@section[#:tag "01:cc"]{从标签到延续：@racket[cc] 操作符}
+@section[#:tag "01:cc"]{从标签到延续：cc 操作符}
 
 两个例子都依赖@bold{修改可变状态}（@racket[set!]）来在跳转之间传递信息。@racket[goto] 是一张单程票，@tech{标签}本身不携带任何数据，所以我们不得不通过副作用来进入正确的状态。第二个例子中的标志 @racket[first?] 与乘法无关：它存在的唯一目的就是区分「我们是第一次运行，还是刚刚跳回来？」
 
@@ -127,7 +127,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 
 第一次求值 @racket[(cc)] 时，交出的配着 @racket[1]，是一个@tech{延续}，绑定到 @racket[return]，开始折叠。如果遇到零，调用 @racket[(return r)]，触发@tech{延续}：控制跳回求值 @racket[(cc)] 的位置，这一回交出的配着 @racket[0]，就是 @racket[r]，第一支立即返回。如果没有遇到零，@racket[for/fold] 的 @racket[#:result] 子句在折叠结束后调用 @racket[(return res)]，同样跳回，交出累积乘积 @racket[res]。两条路径都通过@tech{延续} @racket[return] 汇合，不需要可变状态，也不需要标志。
 
-@section[#:tag "01:call-cc"]{消除分支：@racket[call/cc]}
+@section[#:tag "01:call-cc"]{消除分支：call/cc}
 
 @racket[cc] 消除了可变状态，但带来了新的要求：@bold{分支}。每次调用 @racket[(cc)] 的返回值都有两种可能，程序员必须用 @racket[match] 区分收到的是哪一支。这行得通，只是程序员又多了一件要操心的事。能不能把分支也一并消除？
 
@@ -161,7 +161,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 
 标志、可变状态、@racket[match] 的分支都不见了。没有遇到零，@racket[for/fold] 正常结束，乘积作为 @racket[proc] 的返回值交出；遇到零，@racket[(return r)] 把零直接交给 @racket[mul] 的调用者。@tech{延续}有了一个名字，叫 @racket[return]。许多语言里内建的那个 @racket[return]，在这里是一个普通的值，由 @racket[call/cc] 交到我们手上。
 
-@section[#:tag "01:label-from-call-cc"]{从 @racket[call/cc] 定义标签}
+@section[#:tag "01:label-from-call-cc"]{从 call/cc 定义标签}
 
 从@tech{标签}出发，我们写出了 @racket[cc]，又由 @racket[cc] 写出了 @racket[call/cc]。再走一步，能不能由 @racket[call/cc] 写回@tech{标签}，绕成一个圈？这一步要把 @racket[call/cc] 当作原语：手上只有它，没有@tech{标签}。Racket 自带的 @racket[call/cc] 就是这样一个原语。
 

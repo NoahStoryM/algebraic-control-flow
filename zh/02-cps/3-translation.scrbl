@@ -294,7 +294,7 @@ DNI 加两层，在这里就是 @racket[cps:id]：收下 @racket[p]，等一条 
 
 两端对得上的，前面倒见过一支：@racket[neg²:id]。展开到宿主，它是 @math{¬¬p → ¬¬p}，从第 2 层到第 2 层。@xref["02:same-arrow"]{「同一支箭头」}还认出，它就是 @racket[(neg neg:id)]：逆否箭头的恒等，再用一次 @racket[neg]。
 
-@subsection[#:tag "02:neg-again"]{再用一次 @racket[neg]}
+@subsection[#:tag "02:neg-again"]{再用一次 neg}
 
 逆否箭头既然反了一次，就再反一次。交给 @racket[neg] 一支逆否箭头 @racket[neg:f]，得到的 @racket[(neg neg:f)] 是 @math{¬¬p → ¬¬q}：方向正了，两端都裹着 @math{¬¬}，宿主的 @racket[∘] 就能接。它只在@tech{延续}前面接上 @racket[neg:f]：@racket[neg:f] 是纯的，它也是纯的，落在 𝒟 里。落到的却不是原来那支箭头，@math{p} 换成了 @math{¬¬p}。
 
@@ -323,7 +323,7 @@ DNI 加两层，在这里就是 @racket[cps:id]：收下 @racket[p]，等一条 
 
 右边的三角形仍然@tech{交换}；左边 𝒟 的那一半不@tech{交换}。一支逆否箭头沿 @racket[neg]、@racket[inj] 走到 𝒞，得到的是 @math{¬¬p → ¬¬q}；沿 @racket[flip]、@racket[uncps] 走到 𝒞，得到的是 @math{p → q}。两条路连类型都对不上，这一半只标出箭头怎样转换。
 
-@subsection[#:tag "02:translate-call-cc"]{翻译 @racket[call/cc]}
+@subsection[#:tag "02:translate-call-cc"]{翻译 call/cc}
 
 @racket[neg²] 的类型写出了想得到的接口：𝒞 里的箭头 @math{p → q}，换成 𝒟 里的 @math{¬¬p → ¬¬q}。要真正落进 𝒟，还得交出相应的纯程序。@racket[(neg² f)] 本身不一定是：它运行时仍原样调用 @racket[f]，@racket[f] 若用了宿主的 @racket[call/cc]，包一层以后照样依赖它，类型写成 @math{→@subscript{𝒟}} 改变不了这一点。
 
@@ -393,7 +393,7 @@ DNI 加两层，在这里就是 @racket[cps:id]：收下 @racket[p]，等一条 
 
 改变类型，同时把经典的操作改写成构造性的程序，这就是@defterm[#:en "negative translation"]{否定翻译}的思想。逻辑里，@tech{否定翻译}把经典证明改写成直觉主义证明。@xref["02:clavius"]{「新箭头下的 Clavius 律」}用的也是它：同一条经典定律，换用 CPS 箭头来写，就成了直觉主义定理。
 
-@subsection[#:tag "02:mul"]{从 @racket[mul] 到 @racket[cps:mul]}
+@subsection[#:tag "02:mul"]{从 mul 到 cps:mul}
 
 @racket[call/cc] 的例子展示了一个经典操作怎样取得纯表示。@xref["02:early-return"]{「提前返回」}则已经把整段程序按结构改写成了纯的 CPS 程序。照宿主的 @racket[mul] 一行行改写，程序的结构一模一样，换掉的只有三样：@racket[let/cc] 换成了 @racket[anf:let/cc]，@racket[let*]、@racket[if] 换成了 @racket[anf:let*]、@racket[anf:if]，原语换成了提升过的 @racket[cps:car]、@racket[cps:*] 这些。这几处替换是我们亲手做的；宏做的，是把替换后的各步接起来。
 

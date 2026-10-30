@@ -1,6 +1,6 @@
 #lang acf/scribble
 
-@title[#:tag "02:1-continuations"]{把延续交到手里}
+@title[#:tag "02:1-continuations"]{从 ANF 到 CPS}
 
 求值的每一步，都有一段余下的工作在等它的结果。这些工作平时藏在表达式的嵌套里，先把它们一段段找出来。
 

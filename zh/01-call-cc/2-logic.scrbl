@@ -22,7 +22,7 @@
 
 这样的调用可以出现在任何位置。最后那版 @racket[mul] 里，@racket[(return r)] 和 @racket[(* res r)] 是 @racket[if] 的两个分支，一个交出 @racket[⊥]，一个交出实数，不考虑子类型的话，类型对不上；@racket[for/fold] 要的是实数，@racket[(return r)] 交不出实数，程序却照样运行。这是为什么？
 
-@section[#:tag "01:call-cc-types"]{@racket[call/cc] 的几种类型}
+@section[#:tag "01:call-cc-types"]{call/cc 的几种类型}
 
 答案在 @racket[⊥] 本身。先造一个奇怪的函数：
 
@@ -66,7 +66,7 @@
 @section[#:tag "01:from-bottom"]{读成命题}
 
 @math{⊥} 看上去像逻辑里的假，
-@defsym["p → q" "蕴含；函数类型"]@math{→} 看上去像「如果……那么……」，也就是@defterm{蕴含}。照这个样子，@math{p → ⊥} 说的是「如果 @math{p}，那么假」，也就是 @math{p} 不成立。这是@defterm{否定}
+@defsym["p → q" "蕴含；函数类型"]@math{→} 看上去像「如果……那么……」，也就是@defterm[#:en "implication"]{蕴含}。照这个样子，@math{p → ⊥} 说的是「如果 @math{p}，那么假」，也就是 @math{p} 不成立。这是@defterm[#:en "negation"]{否定}
 @defsym["¬p" "p 的否定：p → ⊥，延续的类型"]@math{¬p}。@tech{延续}的类型正是 @math{p → ⊥}，每个@tech{延续}都是一个@tech{否定}：
 
 @examples[#:eval ev #:label #f #:no-prompt

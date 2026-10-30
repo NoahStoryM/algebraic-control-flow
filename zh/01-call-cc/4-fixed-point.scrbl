@@ -29,7 +29,7 @@
 
 层数还数得下去吗？以 @racket[Label] 为底，它外面包一层否定，得到的 @math{¬@ty{Label}} 还是 @racket[Label]；再包一层，还是 @racket[Label]。层号照样数得下去，可每一层都是同一个类型。可以把它想成一座无穷高的否定塔，每一层都是同一个 @racket[Label]；层数在这里不再能区分角色，分不清一个@tech{标签}是被调用的那个，还是交出去的那个。
 
-@section[#:tag "01:label-sub"]{代入 @racket[Label]}
+@section[#:tag "01:label-sub"]{代入 Label}
 
 把 @racket[Label] 代入@tech{排中律} @math{p ∨ ¬p}。按定义，@math{¬@ty{Label}} 就是 @racket[Label]，两个分支成了同一个类型：
 
