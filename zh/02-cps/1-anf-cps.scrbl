@@ -270,7 +270,7 @@
 
 @tech[#:key "延续传递风格"]{CPS} 真正的力量不在于尾递归，而在于@tech{延续}成了@bold{一等值}。@tech{延续}就是函数，可以存储、复制、丢弃，也可以改为调用另一个。@racket[call/cc] 靠在运行时捕获当前@tech{延续}，给了我们这种能力。在 @tech[#:key "延续传递风格"]{CPS} 里，当前@tech{延续}已经是一个显式的参数。
 
-第一篇用 @racket[cc] 写过 @racket[mul]：遇到零就短路。在 @tech[#:key "延续传递风格"]{CPS} 里，@tech{延续}就是普通的函数参数，同样的短路可以直接写出来：
+第一篇的@xref["01:cc"]{「从标签到延续：cc 操作符」}用 @racket[cc] 写过 @racket[mul]：遇到零就短路。在 @tech[#:key "延续传递风格"]{CPS} 里，@tech{延续}就是普通的函数参数，同样的短路可以直接写出来：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: mul (→ Real * Real))

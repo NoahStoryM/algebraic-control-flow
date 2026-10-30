@@ -49,7 +49,7 @@
 (: cps (∀ (p q) (→ (→ p q) (→    p (¬¬ q)))))
 (: neg (∀ (p q) (→ (→ p q) (← (¬ p) (¬ q)))))]
 
-@racket[(cps f)] 先收操作数，交出的 @math{¬¬q} 是一段还没开始的计算：@racket[((cps +) 1 2)] 就是还没开始的 @racket[(+ 1 2)]。第一篇里，这样的值有类型：程序就是一个 @math{¬¬@ty{Byte}}，等操作系统交来 @racket[exit] 才运行。
+@racket[(cps f)] 先收操作数，交出的 @math{¬¬q} 是一段还没开始的计算：@racket[((cps +) 1 2)] 就是还没开始的 @racket[(+ 1 2)]。第一篇的@xref["01:program-type"]{「代入 Byte」}里，这样的值有类型：程序就是一个 @math{¬¬@ty{Byte}}，等操作系统交来 @racket[exit] 才运行。
 
 @racket[(neg f)] 先收@tech{延续}：交给它一条等 @math{q} 的@tech{延续} @racket[kq]，它交回一条等 @math{p} 的@tech{延续}：这条@tech{延续}拿到 @math{p}，先交给 @racket[f] 算出 @math{q}，再交给 @racket[kq]。@racket[f] 从 @math{p} 到 @math{q}，@racket[(neg f)] 却从 @math{¬q} 到 @math{¬p}，方向反了过来，所以它的类型用@xref["02:laws"]{「结合律与单位律」}里的反向箭头 @racket[←] 来写。
 
@@ -121,7 +121,7 @@ k2  =  (∘ k3 mul3)  =  ((neg mul3) k3)]
 
 @section[#:tag "02:k-in-hand"]{手中的延续}
 
-第一篇用 @racket[cc] 实现 @racket[call/cc]：先由 @racket[(cc)] 取得当前@tech{延续}，再把它交给 @racket[proc]。在 @tech[#:key "延续传递风格"]{CPS} 里，这一步不必做。@xref["02:first-class-control"]{「一等控制」}说过，当前@tech{延续}已经是一个显式的参数：照 @racket[cps] 的写法也好，照 @racket[neg] 的写法也好，函数收到的@tech{延续}参数，就是这次调用之后要做的事。那么照这两种写法，@racket[call/cc] 该怎么写？
+第一篇的@xref["01:call-cc"]{「消除分支：call/cc」}用 @racket[cc] 实现 @racket[call/cc]：先由 @racket[(cc)] 取得当前@tech{延续}，再把它交给 @racket[proc]。在 @tech[#:key "延续传递风格"]{CPS} 里，这一步不必做。@xref["02:first-class-control"]{「一等控制」}说过，当前@tech{延续}已经是一个显式的参数：照 @racket[cps] 的写法也好，照 @racket[neg] 的写法也好，函数收到的@tech{延续}参数，就是这次调用之后要做的事。那么照这两种写法，@racket[call/cc] 该怎么写？
 
 @margin-note{@defsym["cps:f" "照 cps 的写法：(cps f)"]@defsym["neg:f" "照 neg 的写法：(neg f)"]名字的前缀标出写法：@racket[cps:kp] 就是 @racket[(cps kp)]，@racket[neg:kp] 就是 @racket[(neg kp)]；以后 @racket[cps:f]、@racket[neg:f] 都照这个约定。@racket[cps:call/cc]、@racket[neg:call/cc] 是例外：它们照两种写法重写了 @racket[call/cc] 的意思，不是 @racket[(cps call/cc)]、@racket[(neg call/cc)]。}
 

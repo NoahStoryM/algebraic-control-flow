@@ -155,9 +155,9 @@
 
 @section[#:tag "02:yin-yang"]{阴阳谜题}
 
-@racket[cps:return] 只用来跳出循环。第一篇的阴阳谜题对@tech{延续}要求更多：被捕获的@tech{延续}要作为值传来传去，再被调用。
+@racket[cps:return] 只用来跳出循环。第一篇的@xref["01:yin-yang"]{阴阳谜题}对@tech{延续}要求更多：被捕获的@tech{延续}要作为值传来传去，再被调用。
 
-先把第一篇的 @racket[label] 写进嵌入语言。它可以写成 @racket[(let/cc k k)]：捕获当前@tech{延续}，再把它作为结果返回。@racket[let/cc] 换成 @racket[anf:let/cc]；返回照@xref["02:cps"]{「延续与 CPS」}的办法，不交回给调用者，而是交给@tech{延续}参数 @racket[k]。于是 @racket[(let/cc k k)] 写成：
+先把第一篇@xref["01:label-from-call-cc"]{「从 call/cc 定义标签」}里的 @racket[label] 写进嵌入语言。它可以写成 @racket[(let/cc k k)]：捕获当前@tech{延续}，再把它作为结果返回。@racket[let/cc] 换成 @racket[anf:let/cc]；返回照@xref["02:cps"]{「延续与 CPS」}的办法，不交回给调用者，而是交给@tech{延续}参数 @racket[k]。于是 @racket[(let/cc k k)] 写成：
 
 @racketblock[
 (anf:let/cc cps:k (λ (k) (k cps:k)))]
