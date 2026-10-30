@@ -3,13 +3,15 @@
 @title[#:tag "01:appendix"]{附录：模拟不相交的联合}
 
 正文读作「或」的，是@tech{不相交的联合}：拿到一个值，要分得清它来自哪一支。Typed
-Racket 自带的 @racket[∪] 是普通的并集，不记来源。正文用标签做到不相交，
+Racket 自带的 @racket[∪] 是普通的并集，不记来源。正文用标记做到不相交，
 这不是唯一的办法。下面列出四种，用到的代码大多在文中出现过，
-或者就是正文代码不打标签的写法。
+或者就是正文代码不打标记的写法。
 
 @(define ev (make-acf-eval))
 @examples[#:eval ev #:hidden
 (define-type ⊥ (∪))
+(define-type (¬ p) (→ p ⊥))
+(define-type (∐ p0 p1 ...) (∪ (Pair p0 0) (Pair p1 1) ...))
 (define primitive-call/cc call/cc)
 (define (goto l) (l l))
 (define (label) (primitive-call/cc goto))]
@@ -34,7 +36,7 @@ Racket 自带的 @racket[∪] 是普通的并集，不记来源。正文用标�
 
 control-context 库（@racketmodname[control/context]）里的 @racket[cc]
 就是这样定义的，另外还做了一些这里用不到的处理。@racket[(cc)]
-交出的不是值就是@tech{延续}，没有标签。@racket[mul] 的结果是实数，@tech{延续}是
+交出的不是值就是@tech{延续}，没有标记。@racket[mul] 的结果是实数，@tech{延续}是
 函数，用 @racket[real?] 就分得开：
 
 @examples[#:eval ev #:label #f #:no-prompt
@@ -65,7 +67,7 @@ control-context 库（@racketmodname[control/context]）里的 @racket[cc]
       (apply values x)
       (proc (λ args (x args)))))]
 
-不打标签，三种表述照样可以互相定义，每一步都把上一步当作原语。
+不打标记，三种表述照样可以互相定义，每一步都把上一步当作原语。
 最后一步和@xref["01:label-from-call-cc"]{正文}一样：
 
 @racketblock[
@@ -96,21 +98,38 @@ control-context 库（@racketmodname[control/context]）里的 @racket[cc]
 (define (label) (cc))
 (define (goto l) (l l))]
 
-和正文相比，@racket[cc] 不用给两支配标签，写回@tech{标签}时也不用 @racket[car]：
+和正文相比，@racket[cc] 不用给两支配标记，写回@tech{标签}时也不用 @racket[car]：
 两支直接并在一起，正是 @xref["01:label-sub"]{「代入 Label」}里的坍
 缩，@math{@ty{Label} ∪ @ty{Label} = @ty{Label}}。
 
-@section[#:tag "01:disjoint-tag"]{打标签}
+@section[#:tag "01:disjoint-tag"]{打标记}
 
 这是正文的做法，见@xref["01:cc"]{「从标签到延续」}。看集合最清楚：集合
 @math{X = {a, b}}、@math{Y = {b, c}} 的并集里，@math{b} 说不清来自哪一边。
-每一边配上标签再并起来，
+每一边配上标记再并起来，
 
-@mm{X + Y = X × {0} ∪ Y × {1}}
+@mm{X ∐ Y = X × {0} ∪ Y × {1}}
 
-两边就不相交了，检查标签就是一个谓词。丢掉标签，总有一个从 @math{X + Y} 到
-@math{X ∪ Y} 的映射；@math{X ∩ Y = {}} 时它是一一对应，用不着标签，
-这就回到了上一种。@racket[∐] 用 @racket[cons] 把值和标签配成一对。
+两边就不相交了，检查标记就是一个谓词。@racket[∐] 用 @racket[cons]
+把值和标记配成一对。反过来，丢掉标记，总有一个从 @math{X ∐ Y} 到 @math{X ∪ Y}
+的映射：
+
+@examples[#:eval ev #:label #f #:no-prompt
+(: untag (∀ (p0 p1) (→ (∐ p0 p1) (∪ p0 p1))))
+(define (untag x) (car x))]
+
+@examples[#:eval ev #:label #f
+(untag (cons 'b 0))
+(untag (cons 'b 1))]
+
+两个不同的元素，到这里成了同一个 @racket['b]。@math{X ∩ Y = {}} 时，
+@racket[untag] 是一一对应，用不着标记，这就回到了上一种。
+
+正文以 @racket[cc] 为原语写回@tech{标签}时，@racket[(car (cc))] 做的正是
+@racket[(untag (cc))]。@math{p} 取 @ty{Label} 时，@math{¬@ty{Label}} 也是
+@ty{Label}，丢掉标记以后，两支并成一支：
+
+@mm{@ty{Label} ∐ ¬@ty{Label} → @ty{Label} ∪ ¬@ty{Label} = @ty{Label}}
 
 @section[#:tag "01:disjoint-state"]{赋值修改变量}
 
@@ -120,13 +139,54 @@ control-context 库（@racketmodname[control/context]）里的 @racket[cc]
 正文 @racket[cc] 里的 @racket[first?]，@xref["01:disjoint-already"]{「两边本来就
 不相交」}里 @racket[cc] 和 @racket[call/cc] 的 @racket[saved]，也是这样。
 
+不打标记的 @racket[cc] 交出的两支都是函数时，就没有现成的谓词分得开了。下面的
+@racket[wait/fc]（@italic{wait for future continuation}）
+用的就是那一节不打标记的 @racket[cc]：
+
+@examples[#:eval ev #:label #f #:no-prompt
+(: wait/fc (∀ (q) (→ (¬ (¬ q)) (¬ (¬ q)))))
+(define (wait/fc kk)
+  (define first? #t)
+  (: k (∪ (¬ q) (¬ (¬ q))))
+  (define k (cc))
+  (unless first? (kk k))
+  (set! first? #f)
+  k)]
+
+第一次求值 @racket[(cc)]，@racket[k] 是 @racket[cc] 交出的@tech{延续}，
+等的是一个 @math{¬q}，类型为 @math{¬¬q}。这时 @racket[first?] 还是 @racket[#t]，
+跳过 @racket[unless]，改成 @racket[#f]，把 @racket[k] 交出去。以后有人把一个
+@math{¬q} 交给它，控制跳回 @racket[(cc)]，@racket[k] 重新绑定为这个 @math{¬q}；
+这一回 @racket[first?] 是 @racket[#f]，@racket[k] 交给了 @racket[kk]。@racket[k]
+的两种情形都是函数，像 @racket[mul] 那样用 @racket[real?] 分不开，只好由
+@racket[first?] 来记。
+
+@racket[call/cc] 交给 @racket[proc] 的，是调用处已经有的@tech{延续}；
+@racket[wait/fc] 交给 @racket[kk] 的，要等以后调用它的人交来。@racket[kk]
+也总在第一次求值 @racket[(cc)] 的地方运行，而不在调用处：
+
+@examples[#:eval ev #:label #f #:no-prompt
+(define a (make-parameter 1))
+(define b 111)
+(define f (wait/fc (λ (k) (k (* (a) b)))))]
+
+@examples[#:eval ev #:label #f
+(call/cc f)
+(set! b 222)
+(call/cc f)
+(parameterize ([a 2])
+  (call/cc f))]
+
+@racket[b] 是变量，每次读到的都是它此刻的值；@racket[(a)] 却总是 @racket[1]，
+调用处的 @racket[parameterize] 看不见。
+
 这一种和其它三种不同：值本身不带来源，类型上看不出两支，得靠可变状态才分得开。
 正文从@tech{标签}走到 @racket[cc]，要摆脱的正是它。@racket[cc] 并没有消除它，
-只是把它藏进了自己里面，交给使用者的是打好标签的值。
+只是把它藏进了自己里面，交给使用者的是打好标记的值。
 
 @section[#:tag "01:disjoint-struct"]{为分支定义专门的结构}
 
-几支有公共的元素，又不想给每一支都打标签，可以留下一支原样不动，
+几支有公共的元素，又不想给每一支都打标记，可以留下一支原样不动，
 把其余各支分别包进专门的结构，原样的那一支的元素永远不是这些结构。
 @xref["01:disjoint-already"]{「两边本来就不相交」}里已经这样用过两
 回。@racket[(λ args …)] 总把参数收成一张列表，哪怕参数本身是 @racket[#f]，存进
@@ -141,13 +201,14 @@ control-context 库（@racketmodname[control/context]）里的 @racket[cc]
 (struct b (v))
 (struct c (v))]
 
-用的时候依次检查，两种结构体都不是的，就属于 @racket[a]：
+用的时候按结构体分支，两种结构体都不是的，就属于 @racket[a]：
 
 @racketblock[
-(cond
-  [(b? x) ... (b-v x) ...]
-  [(c? x) ... (c-v x) ...]
-  [else   ... x ...])]
+(match x
+  [(b v) ... v ...]
+  [(c v) ... v ...]
+  [_     ... x ...])]
 
-这一种和打标签本质相同，都是给值做记号。打标签时记号是数据，@racket[0] 或
-@racket[1]；这里记号是结构本身。
+这一种和打标记本质相同：打标记时，标记是数据 @racket[0] 或 @racket[1]，
+@racket[match] 认的是 @racket[(cons v 1)]；这里标记是结构本身，认的是
+@racket[(b v)]。

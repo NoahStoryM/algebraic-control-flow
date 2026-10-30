@@ -158,15 +158,42 @@
   (define cc tagged:cc)
   (provide cc))
 
+(module untag typed/racket/no-check
+  (provide untag)
+  (define-type (∐ p0 p1 ...) (∪ (Pair p0 0) (Pair p1 1) ...))
+  (: untag (∀ (p0 p1) (→ (∐ p0 p1) (∪ p0 p1))))
+  (define (untag x) (car x)))
+
+(module wait/fc typed/racket/no-check
+  (require (only-in (submod ".." union-label-to-cc) cc call/cc))
+  (provide wait/fc run-wait/fc)
+  (define-type ⊥ (∪))
+  (define-type (¬ p) (→ p ⊥))
+  (: wait/fc (∀ (q) (→ (¬ (¬ q)) (¬ (¬ q)))))
+  (define (wait/fc kk)
+    (define first? #t)
+    (: k (∪ (¬ q) (¬ (¬ q))))
+    (define k (cc))
+    (unless first? (kk k))
+    (set! first? #f)
+    k)
+  (define (run-wait/fc)
+    (define a (make-parameter 1))
+    (define b 111)
+    (define f (wait/fc (λ (k) (k (* (a) b)))))
+    (list (call/cc f)
+          (begin (set! b 222) (call/cc f))
+          (parameterize ([a 2]) (call/cc f)))))
+
 (module disjoint-struct racket
   (provide (all-defined-out))
   (struct b (v))
   (struct c (v))
   (define (which x)
-    (cond
-      [(b? x) (list 'b (b-v x))]
-      [(c? x) (list 'c (c-v x))]
-      [else   (list 'a x)])))
+    (match x
+      [(b v) (list 'b v)]
+      [(c v) (list 'c v)]
+      [_     (list 'a x)])))
 
 (module+ test
   (require rackunit "../../tools/check-output-prefix.rkt"
@@ -179,7 +206,9 @@
            (prefix-in ub: (submod ".." union-call/cc-to-label))
            (prefix-in uc: (submod ".." union-label-to-call/cc))
            (prefix-in ud: (submod ".." union-cc-to-label))
-           (prefix-in ds: (submod ".." disjoint-struct)))
+           (prefix-in ds: (submod ".." disjoint-struct))
+           (prefix-in ut: (submod ".." untag))
+           (prefix-in wf: (submod ".." wait/fc)))
 
   (define (count-to-seven label goto)
     (let ([x 0])
@@ -202,6 +231,9 @@
   (check-equal? (a:mul 2 3 0 4) 0)
   (check-equal? (map ds:which (list 1 (ds:b 1) (ds:c 1) '(c 1)))
                 '((a 1) (b 1) (c 1) (a (c 1))))
+  (check-equal? (list (ut:untag (cons 'b 0)) (ut:untag (cons 'b 1))) '(b b))
+  (check-equal? (ua:call/cc (wf:wait/fc (λ (k) (k 42)))) 42)
+  (check-equal? (wf:run-wait/fc) '(111 222 222))
   (check-equal? (ua:mul) 1)
   (check-equal? (ua:mul 2 3 4) 24)
   (check-equal? (ua:mul 2 0 3) 0)
