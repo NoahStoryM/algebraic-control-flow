@@ -124,7 +124,7 @@ Label」}里的坍缩，@math{@ty{Label} ∪ @ty{Label} = @ty{Label}}。
 不相交」}里 @racket[cc] 和 @racket[call/cc] 的 @racket[saved]，也是这样。
 
 不打@tech{标记}的 @racket[cc] 交出的两支都是函数时，就没有现成的谓词分得开了。
-下面的 @racket[wait/fc]（@italic{wait for future continuation}）
+下面的 @racket[wait/fc]（@racket[wait-for-future-continuation] 的缩写）
 用的就是那一节不打@tech{标记}的 @racket[cc]：
 
 @examples[#:eval ev #:label #f #:no-prompt
