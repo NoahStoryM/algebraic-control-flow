@@ -7,7 +7,7 @@
 @(define ev (make-acf-eval))
 @examples[#:eval ev #:hidden
 (define-type ⊥ (∪))
-(define-type (¬ p) (→ p ⊥))
+(define-type (¬ p ...) (→ p ... ⊥))
 (define-type (¬¬ p) (¬ (¬ p)))]
 
 @section[#:tag "02:anf"]{求值顺序与 ANF}
@@ -167,14 +167,14 @@
 那就让每个函数都额外接受这样一个参数 @racket[k]，代表「我算完之后该做什么」。函数不再把值返回给调用者，而是直接交给 @racket[k]。@racket[fact] 的 @tech[#:key "延续传递风格"]{CPS} 版本：
 
 @examples[#:eval ev #:label #f #:no-prompt
-(: fact/k (→ Natural (¬ Natural) ⊥))
+(: fact/k (¬ Natural (¬ Natural)))
 (define (fact/k n k)
   (if (= n 0)
       (k 1)
       (fact/k (- n 1)
               (λ (v) (k (* n v))))))
 
-(: fib/k (→ Natural (¬ Natural) ⊥))
+(: fib/k (¬ Natural (¬ Natural)))
 (define (fib/k n k)
   (if (< n 2)
       (k n)
@@ -184,7 +184,7 @@
                       (λ (w)
                         (k (+ v w))))))))]
 
-读一下类型：@racket[(→ Natural (¬ Natural) ⊥)]。接收一个自然数和一个@tech{延续} @math{¬@ty{Natural}}，返回 @math{⊥}。函数不再「返回」值：它把结果交给@tech{延续}，自己不再回来。
+读一下类型：@racket[(¬ Natural (¬ Natural))]。接收一个自然数和一个@tech{延续} @math{¬@ty{Natural}}，返回 @math{⊥}。函数不再「返回」值：它把结果交给@tech{延续}，自己不再回来。
 
 代码的形状变了。@racket[fact/k] 的递归调用 @racket[(fact/k (- n 1) (λ (v) ...))] 是整个 @racket[if] 分支的最后一个动作，后面没有任何待执行的表达式。@racket[fib/k] 也是：每个递归调用都处于尾位置。递归调用与对@tech{延续}的调用，都成了尾调用。
 
@@ -214,7 +214,7 @@
 把它也变换成 @tech[#:key "延续传递风格"]{CPS}：
 
 @examples[#:eval ev #:label #f #:no-prompt
-(: fact/k (→ Natural (¬ Natural) ⊥))
+(: fact/k (¬ Natural (¬ Natural)))
 (define (fact/k n k)
   (let loop/k ([n n] [acc 1] [k k])
     (if (= n 0)
@@ -275,7 +275,7 @@
 @examples[#:eval ev #:label #f #:no-prompt
 (: mul (→ Real * Real))
 (define (mul . r*)
-  (: loop/k (→ (Listof Real) (→ Real ⊥) ⊥))
+  (: loop/k (¬ (Listof Real) (¬ Real)))
   (define (loop/k r* k)
     (if (null? r*)
         (k (*))

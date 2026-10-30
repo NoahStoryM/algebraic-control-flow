@@ -15,7 +15,7 @@
 ;;; 类型别名
 
 (define-type ⊥ (∪))
-(define-type (¬  a) (→ a ⊥))
+(define-type (¬ a ...) (→ a ... ⊥))
 (define-type (¬¬ a) (¬ (¬ a)))
 
 
@@ -30,16 +30,16 @@
 
 ;;; 宿主的箭头
 
-(define-type (→𝒞 p q) (→ p q))
-(define-type (→𝒟 p q) (→ p q))
+(define-type (→𝒞 p ... q) (→ p ... q))
+(define-type (→𝒟 p ... q) (→ p ... q))
 
 (: inj (∀ (p q) (→ (→𝒞 p q) (→𝒟 p q))))
 (define (inj f) f)
 
 ;;; 逆否箭头
 
-(define-type (→𝒰 p q) (← (¬ p) (¬ q)))
-(define-type (¬𝒰 p)   (→𝒰 p ⊥))
+(define-type (→𝒰 p ... q) (← (¬ p ...) (¬ q)))
+(define-type (¬𝒰 p ...)   (→𝒰 p ... ⊥))
 
 (: neg
    (∀ (p q)
@@ -50,8 +50,8 @@
 
 ;;; CPS 箭头
 
-(define-type (→𝒦 p q) (→ p (¬¬ q)))
-(define-type (¬𝒦 p)   (→𝒦 p ⊥))
+(define-type (→𝒦 p ... q) (→ p ... (¬¬ q)))
+(define-type (¬𝒦 p ...)   (→𝒦 p ... ⊥))
 
 (: flip
    (∀ (p q)
@@ -381,9 +381,9 @@
 
 (module stage-5 typed/racket/no-check
   (define-type ⊥ (∪))
-  (define-type (¬ p) (→ p ⊥))
+  (define-type (¬ p ...) (→ p ... ⊥))
   (define-type (¬¬ p) (¬ (¬ p)))
-  (: fact/k (→ Natural (¬ Natural) ⊥))
+  (: fact/k (¬ Natural (¬ Natural)))
 
   (define (fact/k n k)
     (if (= n 0)
@@ -391,7 +391,7 @@
         (fact/k (- n 1)
                 (λ (v) (k (* n v))))))
 
-  (: fib/k (→ Natural (¬ Natural) ⊥))
+  (: fib/k (¬ Natural (¬ Natural)))
 
   (define (fib/k n k)
     (if (< n 2)
@@ -418,9 +418,9 @@
 
 (module stage-7 typed/racket/no-check
   (define-type ⊥ (∪))
-  (define-type (¬ p) (→ p ⊥))
+  (define-type (¬ p ...) (→ p ... ⊥))
   (define-type (¬¬ p) (¬ (¬ p)))
-  (: fact/k (→ Natural (¬ Natural) ⊥))
+  (: fact/k (¬ Natural (¬ Natural)))
 
   (define (fact/k n k)
     (let loop/k ([n n] [acc 1] [k k])
@@ -442,13 +442,13 @@
 
 (module stage-11 typed/racket/no-check
   (define-type ⊥ (∪))
-  (define-type (¬ p) (→ p ⊥))
+  (define-type (¬ p ...) (→ p ... ⊥))
   (define-type (¬¬ p) (¬ (¬ p)))
   (require (submod ".." stage-9))
   (: mul (→ Real * Real))
 
   (define (mul . r*)
-    (: loop/k (→ (Listof Real) (→ Real ⊥) ⊥))
+    (: loop/k (¬ (Listof Real) (¬ Real)))
     (define (loop/k r* k)
       (if (null? r*)
           (k (*))
@@ -476,7 +476,7 @@
 
 (module stage-15 typed/racket/no-check
   (define-type ⊥ (∪))
-  (define-type (¬ p) (→ p ⊥))
+  (define-type (¬ p ...) (→ p ... ⊥))
   (define-type (¬¬ p) (¬ (¬ p)))
   (define (((neg f) kq) . p*) (kq (apply f p*)))
   (define (((cps f) . p*) kq) (kq (apply f p*)))
@@ -494,7 +494,7 @@
 
 (module stage-17 typed/racket/no-check
   (define-type ⊥ (∪))
-  (define-type (¬ p) (→ p ⊥))
+  (define-type (¬ p ...) (→ p ... ⊥))
   (define-type (¬¬ p) (¬ (¬ p)))
   (define (((flip f) . y*) . x*) (apply (apply f x*) y*))
   (: flip (∀ (p q) (case→ (→ (→ (¬ q) (¬ p)) (→ p (¬¬ q)))
@@ -504,7 +504,7 @@
 
 (module stage-22 typed/racket/no-check
   (define-type ⊥ (∪))
-  (define-type (¬ p) (→ p ⊥))
+  (define-type (¬ p ...) (→ p ... ⊥))
   (define-type (¬¬ p) (¬ (¬ p)))
   (define-type (→𝒰 p q) (→ (¬ q) (¬ p)))
   (provide (all-defined-out))
@@ -513,8 +513,8 @@
 (module stage-clavius typed/racket/no-check
   ;; 「新箭头下的 Clavius 律」：回顾第一篇 call/cc 的类型，用 𝒟 的写法。
   (define-type ⊥ (∪))
-  (define-type (→𝒟 p q) (→ p q))
-  (define-type (¬𝒟 p) (→𝒟 p ⊥))
+  (define-type (→𝒟 p ... q) (→ p ... q))
+  (define-type (¬𝒟 p ...) (→𝒟 p ... ⊥))
   (: call/cc (∀ (p) (→𝒟 (→𝒟 (¬𝒟 p) p) p)))
 )
 

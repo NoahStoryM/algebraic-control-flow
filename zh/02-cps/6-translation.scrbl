@@ -5,11 +5,11 @@
 @(define ev (make-acf-eval))
 @examples[#:eval ev #:hidden
 (define-type ⊥ (∪))
-(define-type (¬ p) (→ p ⊥))
+(define-type (¬ p ...) (→ p ... ⊥))
 (define-type (¬¬ p) (¬ (¬ p)))
 (define-type (← q p) (→ p q))
-(define-type (→𝒦 p q) (→    p (¬¬ q)))
-(define-type (→𝒰 p q) (← (¬ p) (¬ q)))
+(define-type (→𝒦 p ... q) (→    p ... (¬¬ q)))
+(define-type (→𝒰 p ... q) (← (¬ p ...) (¬ q)))
 (define ∘ compose)
 (define id (∘))
 (define (⨾ . f*) (apply ∘ (reverse f*)))
@@ -23,7 +23,7 @@
 (define (((flip f) . y*) . x*) (apply (apply f x*) y*))
 (define cps:id (cps id))
 (define neg:id id)
-(define-type (→𝒟 p q) (→ p q))
+(define-type (→𝒟 p ... q) (→ p ... q))
 (define (uncps cps:f) (∘ call/cc cps:f))
 (define (neg²:id kkp) kkp)
 (define ((cps:call/cc cps:proc) kp) ((cps:proc (cps kp)) kp))
@@ -63,7 +63,7 @@
 @xref["02:back-to-host"]{「回到宿主」}的 @racket[uncps] 把 @tech{CPS 箭头}变成宿主函数，里面用的是 @racket[call/cc]。这一章说的@tech{宿主箭头} 𝒟，指的是这里讨论的计算：普通的函数，加上 @racket[call/cc] 这样的控制，按@xref["02:three-forms"]{「三种写法」}约定的行为相同来比较；打印、状态这类别的作用不算在内。其中纯的那一部分，记作 𝒞@defsym["p →𝒞 q" "纯的宿主函数 p → q；𝒞 取 constructive"]：由 @racket[λ]、函数应用和纯原语写成，自己不引入控制，递归只限于能终止的情形；作为参数交进来的函数，也要是纯的。这样的构造填入纯参数时仍是纯的。运行时交进去的@tech{终结延续}由外部提供，调用它以后的退出，不算纯程序内部的构造。@tech{CPS 箭头}和@tech{逆否箭头}指的也是这些计算的纯写法，前面名字以 @racket[cps:]、@racket[neg:] 开头的箭头都这样写成。𝒟 和 𝒞 的类型都是普通的函数类型，区别只在函数怎么写，类型检查不出来。纯函数也是宿主函数，@racket[inj]（injection，注入）把它原样放进 𝒟：
 
 @examples[#:eval ev #:label #f #:no-prompt
-(define-type (→𝒞 p q) (→ p q))
+(define-type (→𝒞 p ... q) (→ p ... q))
 
 (: inj (∀ (p q) (→ (→𝒞 p q) (→𝒟 p q))))
 (define (inj f) f)]

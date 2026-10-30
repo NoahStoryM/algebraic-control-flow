@@ -7,7 +7,7 @@
 @(define ev (make-acf-eval))
 @examples[#:eval ev #:hidden
 (define-type ⊥ (∪))
-(define-type (¬ p) (→ p ⊥))
+(define-type (¬ p ...) (→ p ... ⊥))
 (define-type (¬¬ p) (¬ (¬ p)))
 (define-type (← q p) (→ p q))
 (define ∘ compose)
@@ -109,10 +109,10 @@
 两种分组算得一样。一般也是这样吗？不必逐条展开，可以借已有的运算律：把它搬到一种已经认识的复合上，运算律就一起跟过来。先给两种写法的箭头起名：照 @racket[cps] 写法的叫@defterm[#:en "CPS arrow"]{CPS 箭头}，记作@defsym["p →𝒦 q" "CPS 箭头：p → ¬¬q；𝒦 取 continuation"] @math{→@subscript{𝒦}}；照 @racket[neg] 写法的叫@defterm[#:en "contrapositive arrow"]{逆否箭头}，记作@defsym["p →𝒰 q" "逆否箭头：¬q → ¬p；𝒰 取掉头转弯（U-turn）"] @math{→@subscript{𝒰}}。前面名字以 @racket[cps:]、@racket[neg:] 开头的函数，就分别是这两种箭头：
 
 @examples[#:eval ev #:label #f #:no-prompt
-(define-type (→𝒦 p q) (→    p (¬¬ q)))
-(define-type (→𝒰 p q) (← (¬ p) (¬ q)))]
+(define-type (→𝒦 p ... q) (→    p ... (¬¬ q)))
+(define-type (→𝒰 p ... q) (← (¬ p ...) (¬ q)))]
 
-@margin-note{和 @racket[→] 一样，@racket[→𝒦] 也可以收任意多个参数，最后一个是结果：@racket[(→𝒦 p ... q)] 就是 @racket[(→ p ... (¬¬ q))]；没有参数时，@racket[(→𝒦 q)] 就是 @racket[(→ (¬¬ q))]。@racket[cps] 用 @tt{. p*} 把参数原样交给 @racket[f]，本来就不限个数。这里只写一个参数的情形。}
+@margin-note{@tt{p ...} 表示任意多个参数，和 @racket[→] 一样，最后一个是结果；没有参数时，@racket[(→𝒦 q)] 就是 @racket[(→ (¬¬ q))]。@racket[cps]、@racket[neg] 用 @tt{. p*} 把参数原样交给 @racket[f]，本来就不限个数。}
 
 @math{p →@subscript{𝒦} q} 收到 @math{p}，交出等着 @math{q} 的计算。@math{p →@subscript{𝒰} q} 用的是反向箭头 @racket[←]：它从 @math{p} 写到 @math{q}，函数却从 @math{¬q} 指向 @math{¬p}。有了名字，前面几个函数的类型可以重写；@xref["02:early-return"]{「提前返回」}里 @racket[cps:loop] 的类型，也就是 @racket[(→𝒦 (Listof Real) Real)]：
 
@@ -179,7 +179,7 @@
 两种新箭头有了名字，宿主里普通的函数也给一个，叫@defterm[#:en "host arrow"]{宿主箭头}，记作@defsym["p →𝒟 q" "宿主箭头：普通的函数 p → q；𝒟 取 direct style"] @math{→@subscript{𝒟}}，好和它们并排：
 
 @examples[#:eval ev #:label #f #:no-prompt
-(define-type (→𝒟 p q) (→ p q))]
+(define-type (→𝒟 p ... q) (→ p ... q))]
 
 三种箭头，各是一种命题形状：
 
@@ -203,14 +203,14 @@
 这和 @racket[Label] 是同一个样子：@racket[(define-type Label (→ Label ⊥))]。到 @math{⊥} 的@tech{宿主箭头}是否定，@racket[Label] 是它的不动点，读成命题就是@tech{说谎者悖论}。照这个样子，把到 @math{⊥} 的 @tech[#:key "延续传递风格"]{CPS} 箭头也看作否定，记作 @defsym["¬𝒦 p" "用 CPS 箭头写的否定：p →𝒦 ⊥，展开是 p → ¬¬⊥"]@racket[¬𝒦]：
 
 @examples[#:eval ev #:label #f #:no-prompt
-(define-type (¬𝒦 p) (→𝒦 p ⊥))]
+(define-type (¬𝒦 p ...) (→𝒦 p ... ⊥))]
 
 它是新箭头下的新类型，不是 @math{¬} 换了一种写法：展开到宿主，@math{¬@subscript{𝒦} p} 是 @math{p → ¬¬⊥}。@racket[(cps kp)] 的类型就是 @math{¬@subscript{𝒦} p}。@racket[Label𝒦] 是 @math{¬@subscript{𝒦}} 的不动点@defsym[@ty{Label𝒦} "¬𝒦 的不动点：Label𝒦 = ¬𝒦 Label𝒦，展开是 Label𝒦 → ¬¬⊥"]，@math{@ty{Label𝒦} = ¬@subscript{𝒦} @ty{Label𝒦}}，读成命题还是说谎者：换了一种否定，自己仍是自己的否定。展开到宿主，@math{@ty{Label𝒦} = @ty{Label𝒦} → ¬¬⊥}，仍是 @racket[Label] 那样的递归类型，只是调用的结果多了计算这一层。阴阳谜题照样停不下来，自指并没有因为写成 @tech[#:key "延续传递风格"]{CPS} 而消失。
 
 逆否箭头也一样。交给 @racket[neg:proc] 的 @racket[neg:kp] 是 @racket[(neg kp)]，类型是 @math{p →@subscript{𝒰} ⊥}。把到 @math{⊥} 的逆否箭头记作 @defsym["¬𝒰 p" "用逆否箭头写的否定：p →𝒰 ⊥，展开是 ¬⊥ → ¬p"]@racket[¬𝒰]，它的不动点记作 @defsym[@ty{Label𝒰} "¬𝒰 的不动点：Label𝒰 = ¬𝒰 Label𝒰，展开是 ¬⊥ → ¬Label𝒰"]@racket[Label𝒰]：
 
 @examples[#:eval ev #:label #f #:no-prompt
-(define-type (¬𝒰 p) (→𝒰 p ⊥))
+(define-type (¬𝒰 p ...) (→𝒰 p ... ⊥))
 (define-type Label𝒰 (¬𝒰 Label𝒰))]
 
 展开到宿主，@math{¬@subscript{𝒰} p} 是 @math{¬⊥ → ¬p}，@math{@ty{Label𝒰} = ¬⊥ → ¬@ty{Label𝒰}}。读成命题，它同样是说谎者。
@@ -230,7 +230,7 @@
 把宿主 𝒟 里的否定记作 @racket[¬𝒟]，@racket[call/cc] 的类型是：
 
 @examples[#:eval ev #:label #f #:no-prompt
-(define-type (¬𝒟 p) (→𝒟 p ⊥))
+(define-type (¬𝒟 p ...) (→𝒟 p ... ⊥))
 
 (: call/cc (∀ (p) (→𝒟 (→𝒟 (¬𝒟 p) p) p)))]
 

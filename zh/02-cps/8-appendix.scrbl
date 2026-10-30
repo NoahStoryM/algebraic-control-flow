@@ -22,7 +22,7 @@
 ;;; 类型别名
 
 (define-type ⊥ (∪))
-(define-type (¬  a) (→ a ⊥))
+(define-type (¬ a ...) (→ a ... ⊥))
 (define-type (¬¬ a) (¬ (¬ a)))
 
 
@@ -37,16 +37,16 @@
 
 ;;; 宿主的箭头
 
-(define-type (→𝒞 p q) (→ p q))
-(define-type (→𝒟 p q) (→ p q))
+(define-type (→𝒞 p ... q) (→ p ... q))
+(define-type (→𝒟 p ... q) (→ p ... q))
 
 (: inj (∀ (p q) (→ (→𝒞 p q) (→𝒟 p q))))
 (define (inj f) f)
 
 ;;; 逆否箭头
 
-(define-type (→𝒰 p q) (← (¬ p) (¬ q)))
-(define-type (¬𝒰 p)   (→𝒰 p ⊥))
+(define-type (→𝒰 p ... q) (← (¬ p ...) (¬ q)))
+(define-type (¬𝒰 p ...)   (→𝒰 p ... ⊥))
 
 (: neg
    (∀ (p q)
@@ -57,8 +57,8 @@
 
 ;;; CPS 箭头
 
-(define-type (→𝒦 p q) (→ p (¬¬ q)))
-(define-type (¬𝒦 p)   (→𝒦 p ⊥))
+(define-type (→𝒦 p ... q) (→ p ... (¬¬ q)))
+(define-type (¬𝒦 p ...)   (→𝒦 p ... ⊥))
 
 (: flip
    (∀ (p q)
