@@ -104,6 +104,12 @@
 签}。@racket[(yin yang)] 就是一次函数调用：同一个类型，@racket[yin]
 当作@tech{延续}，@racket[yang] 当作交给它的值。
 
+这一次调用和以往都不一样。@xref["01:label-from-call-cc"]{「从 call/cc
+定义标签」}里能丢掉@tech{标记}，是因为@tech{标签}跳回来靠的是 @racket[goto]，
+带回来的是它自己，@racket[(cc)] 的两支装着同一个@tech{标签}。@racket[(yin yang)]
+却把 @racket[yang] 交给了 @racket[yin]：@racket[yin] 那次 @racket[(label)]
+再返回时，交出的不再是 @racket[yin]，而是另一个@tech{标签}。
+
 程序里没有循环，没有计数器，也没有 @racket[set!]：只有两次 @racket[(label)]、
 两次打印和一次调用。输出却是一道无限增长的阶梯，每一轮都比上一轮多打印一个
 @racket[*]。多出来的那个 @racket[*]，记在了哪里？
