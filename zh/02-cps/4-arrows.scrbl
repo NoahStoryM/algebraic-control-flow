@@ -70,7 +70,7 @@
 
 @subsection[#:tag "02:bind-compose"]{绑定就是复合}
 
-@margin-note{𝒦 取 continuation（@tech{延续}）的首字母。}
+@margin-note{𝒦 取@tech{延续}变量惯用的字母 k。}
 
 问题一样，解法也可以借来。那里把 @racket[let] 看成复合，问题就成了复合是否满足@tech{结合律}与@tech{单位律}。这里也把一次绑定看成一次复合：照 @racket[anf:let] 的样子，先 @racket[cps:f] 再 @racket[cps:g]，接成一支新的箭头，记作@defsym["g ∘𝒦 f" "CPS 箭头的复合，由 anf:let 给出"] @racket[∘𝒦]：
 
@@ -106,7 +106,7 @@
 
 @margin-note{𝒰 取 U-turn，掉头转弯：@tech{逆否箭头}的方向倒了过来。}
 
-两种分组算得一样。一般也是这样吗？不必逐条展开，可以借已有的运算律：把它搬到一种已经认识的复合上，运算律就一起跟过来。先给两种写法的箭头起名：照 @racket[cps] 写法的叫@defterm[#:en "CPS arrow"]{CPS 箭头}，记作@defsym["p →𝒦 q" "CPS 箭头：p → ¬¬q；𝒦 取 continuation"] @math{→@subscript{𝒦}}；照 @racket[neg] 写法的叫@defterm[#:en "contrapositive arrow"]{逆否箭头}，记作@defsym["p →𝒰 q" "逆否箭头：¬q → ¬p；𝒰 取掉头转弯（U-turn）"] @math{→@subscript{𝒰}}。前面名字以 @racket[cps:]、@racket[neg:] 开头的函数，就分别是这两种箭头：
+两种分组算得一样。一般也是这样吗？不必逐条展开，可以借已有的运算律：把它搬到一种已经认识的复合上，运算律就一起跟过来。先给两种写法的箭头起名：照 @racket[cps] 写法的叫@defterm[#:en "CPS arrow"]{CPS 箭头}，记作@defsym["p →𝒦 q" "CPS 箭头：p → ¬¬q；𝒦 取延续变量惯用的字母 k"] @math{→@subscript{𝒦}}；照 @racket[neg] 写法的叫@defterm[#:en "contrapositive arrow"]{逆否箭头}，记作@defsym["p →𝒰 q" "逆否箭头：¬q → ¬p；𝒰 取掉头转弯（U-turn）"] @math{→@subscript{𝒰}}。前面名字以 @racket[cps:]、@racket[neg:] 开头的函数，就分别是这两种箭头，类型里的每一个箭头都是这一种：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define-type (→𝒦 p ... q) (→    p ... (¬¬ q)))
@@ -250,13 +250,13 @@
 
 @mm{(¬@subscript{𝒦} p →@subscript{𝒦} p) →@subscript{𝒦} p = (¬@subscript{𝒦} p → ¬¬p) → ¬p → ⊥}
 
-@math{¬p} 在箭头左边，是参数，就是 @racket[kp]。宿主的 @tech{Clavius 律}只收 @racket[proc] 一个输入，手里没有否定，只能凭空去造；用 @tech{CPS 箭头}写，这个否定作为参数交了进来。交给 @racket[cps:proc] 的 @math{¬@subscript{𝒦} p}，是 @racket[cps] 从 @racket[kp] 加工出来的。
+@math{¬p} 在箭头左边，是参数，就是 @racket[kp]。宿主的 @tech{Clavius 律}只收 @racket[proc] 一个输入，手里没有否定，只能凭空去造；用 @tech{CPS 箭头}写，这个否定作为参数交了进来。交给 @racket[cps:proc] 的 @math{¬@subscript{𝒦} p}，是 @racket[cps] 从 @racket[kp] 加工出来的。结论也换了：交出的是一段 @math{¬¬p} 的计算，并没有构造出一个 @math{p}。
 
 这个 @math{¬@subscript{𝒦} p} 能不能凭空造出来？@math{¬@subscript{𝒦} p} 展开是 @math{p → ¬¬⊥}；手里若有一个 @math{¬¬⊥} 的值，把类型为 @math{⊥ → ⊥} 的 @racket[id] 交给它，就得到 @math{⊥} 的值，所以 @math{¬¬⊥} 和 @math{⊥} 一样空。对非空的 @math{p}，同样凭空造不出 @math{¬@subscript{𝒦} p}。
 
 @racket[cps:call/cc] 做的，是@xref["01:watershed"]{「分水岭」}构造性那一侧的事：消耗交到手里的否定。
 
-所以展开后的这条公式，已经不是宿主里的 @tech{Clavius 律}，而是一条直觉主义定理：按照 Curry-Howard，它有闭合的、有类型的纯 @racket[λ] 项，就是 @racket[cps:call/cc]。@racket[neg:call/cc] 也一样。同一条经典定律，换用 @tech{CPS 箭头}或@tech{逆否箭头}来写，就成了直觉主义定理。经典的控制并没有消失，宿主要捕获的那条@tech{延续}，成了显式的参数。
+所以展开后的这条公式，已经不是宿主里的 @tech{Clavius 律}，而是一条直觉主义定理：按照 Curry-Howard，它有闭合的、有类型的纯 @racket[λ] 项，就是 @racket[cps:call/cc]。@racket[neg:call/cc] 也一样。这条经典定律换用 @tech{CPS 箭头}或@tech{逆否箭头}得到的两种翻译，展开后都是直觉主义定理。经典的控制并没有消失，宿主要捕获的那条@tech{延续}，成了显式的参数。
 
 这和说谎者正好相反。同样换了箭头，自指的说谎者还是悖论；经典的 @tech{Clavius 律}却成了定理。
 
