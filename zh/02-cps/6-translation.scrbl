@@ -157,7 +157,7 @@
 
 @bold{练习}：沿第二张图表从 𝒦 经 𝒰 走到 𝒞：先 @racket[flip]、再 @racket[neg]，记作 @racket[cps->neg²]。验证 @racket[(cps->neg² neg²:id)] 就是 @racket[join:id]。
 
-同一支 @racket[call/cc]，沿图表换成各种写法。前三行是同一个 @math{¬¬p → p} 写在三种箭头上，最后一行换了类型；层数按展开到宿主以后来数（后三行与原 @racket[call/cc] 的行为对应，用的是@xref["02:three-forms"]{「三种写法」}那条规律的前提）：
+同一支 @racket[call/cc]，沿图表换成各种写法。前三行的类型外形都是 @math{¬¬p → p}，只是写在三种箭头上，最后一行换了类型；层数按展开到宿主以后来数（后三行与原 @racket[call/cc] 的行为对应，用的是@xref["02:three-forms"]{「三种写法」}那条规律的前提）：
 
 @tabular[#:style 'boxed #:row-properties '(bottom-border ())
   (list
