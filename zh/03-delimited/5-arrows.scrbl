@@ -66,9 +66,9 @@
 
 程序拿到的 @racket[(neg kₐp)] 是一个映射：给它一条等着 @math{a} 的@tech{延续}，它把保存的局部工作接在前面。调用它，局部的工作做完就正常返回，当前的@tech{延续}接着运行。
 
-@racket[call/cc] 交出的@tech{延续}不接在当前@tech{延续}前面，而是把它丢掉。照@xref["03:meta"]{「元延续」}的分解，调用这条@tech{延续}，保存的局部工作做完，答案越过边界，交给那时的@tech{元延续}，一直走到整个程序的出口。从局部计算内部看，那里没有任何值能返回，是全局的空 @math{⊥}。所以交给程序的箭头不再落在 @math{⊥ᵃ} 上，而是落在 @math{⊥} 上：@math{¬@subscript{𝒰ₐ}p}，形状和@xref["02:liar"]{「说谎者」}里的 @math{¬@subscript{𝒰}p} 一样。
+@racket[call/cc] 交出的@tech{延续}不接在当前@tech{延续}前面，而是把它丢掉。照@xref["03:meta"]{「元延续」}的分解，调用这条@tech{延续}，保存的局部工作做完，答案越过边界，交给调用时边界外的工作，不再回到这段局部计算里。从局部计算内部看，那里没有任何值能返回，是全局的空 @math{⊥}。所以交给程序的箭头不再落在 @math{⊥ᵃ} 上，而是落在 @math{⊥} 上：@math{¬@subscript{𝒰ₐ}p}，形状和@xref["02:liar"]{「说谎者」}里的 @math{¬@subscript{𝒰}p} 一样。
 
-@math{¬@subscript{𝒰ₐ}p} 展开是 @racket[(← (¬ₐ p) (¬ₐ ⊥))]，一个从 @math{¬ₐ⊥ = ⊥ → a} 到 @math{¬ₐp} 的函数。它收到的参数是调用处的@tech{延续}，等着一个 @math{⊥} 类型的结果，就是前面说的那条 @math{¬⊥} 的@tech{延续}换了@tech{基}。这个参数和@xref["01:call-cc-types"]{「call/cc 的几种类型」}里的 @racket[absurd] 一样，是函数，却永远调用不了：没有 @math{⊥} 类型的值可以交给它。它参与不了任何计算，只能丢掉。@racket[neg*] 正是这样做的，不理会这个参数，直接交出手里的 @math{kₐp}：
+@math{¬@subscript{𝒰ₐ}p} 展开是 @racket[(← (¬ₐ p) (¬ₐ ⊥))]，一个从 @math{¬ₐ⊥ = ⊥ → a} 到 @math{¬ₐp} 的函数。它收到的参数是调用处的@tech{延续}，等着一个 @math{⊥} 类型的结果，就是前面说的那条 @math{¬⊥} 的@tech{延续}换了@tech{基}。这个参数和@xref["01:call-cc-types"]{「call/cc 的几种类型」}里的 @racket[absurd] 一样，是一个函数，却没有 @math{⊥} 类型的值可以交给它。@racket[neg*] 因此直接略过它，交出保存的@tech{局部延续} @math{kₐp}：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: neg* (∀ (p a) (→ (¬ₐ p) (¬𝒰ₐ p))))
@@ -82,12 +82,12 @@
 
 两个控制运算符保存的是同一份局部工作 @math{kₐp}。@racket[neg:call/lc] 交出的@tech{延续}，调用时把这份工作接在当前@tech{延续}前面，做完正常返回；@racket[neg:call/cc] 交出的@tech{延续}，调用时丢掉当前@tech{延续}，只留下这份工作。
 
-两个类型只差 @math{¬} 的一个下标，也就是最里面那支箭头的终点：@racket[neg:call/lc] 的是 @math{⊥ᵃ}，@racket[neg:call/cc] 的是 @math{⊥}。把 @math{→@subscript{𝒰ₐ}} 读作蕴含，终点记作 @math{q}，得到 @math{((p → q) → p) → p}，正是 @tech{Peirce 律}；@math{q = ⊥} 时，它就是 @tech{Clavius 律}。从局部计算内部看，@math{⊥ᵃ} 是@tech{局部空}，@racket[neg:call/lc] 的类型也是 @tech{Clavius 律}的样子，只是落在局部的空上；从外面看，@math{⊥ᵃ} 就是 @math{a}，它是 @math{q = a} 的 @tech{Peirce 律}。@xref["01:call-cc-types"]{「call/cc 的几种类型」}里，借助 @racket[absurd]，两条定律在操作上分不出来。在这里它们分开了：@tech{延续}落在当前的@tech{基}上，会回到调用处；落在 @math{⊥} 上，就不会。
+两个类型只差 @math{¬} 的一个下标，也就是最里面那支箭头的终点：@racket[neg:call/lc] 的是 @math{⊥ᵃ}，@racket[neg:call/cc] 的是 @math{⊥}。把 @math{→@subscript{𝒰ₐ}} 读作蕴含，终点记作 @math{q}，得到 @math{((p → q) → p) → p}，正是 @tech{Peirce 律}；@math{q = ⊥} 时，它就是 @tech{Clavius 律}。用@tech{局部否定}来记，@racket[neg:call/lc] 也有 @tech{Clavius 律}的外形；把落点 @math{⊥ᵃ} 展开成 @math{a}，就是 @math{q = a} 的 @tech{Peirce 律}外形。@xref["01:call-cc-types"]{「call/cc 的几种类型」}里，借助 @racket[absurd]，两条定律在操作上分不出来。在这里，两个实现分开了：@racket[neg:call/lc] 把保存的工作接在当前@tech{延续}之前，做完回到调用处；@racket[neg:call/cc] 丢掉当前的@tech{局部延续}。
 
-这些构造搬得到 @tech{CPS 箭头}上。@racket[flip] 对任何两层柯里化的函数都成立，@tech{基}换成 @math{a} 也不例外，仍然在两种写法之间来回：
+这些构造搬得到 @tech{CPS 箭头}上。@racket[flip] 对任何两层柯里化的函数都成立，@tech{基}换成 @math{a} 也不例外，仍然在两种写法之间来回；只要两层参数之间不做别的事，来回一趟行为不变，@xref["02:split-k"]{「延续独占一层」}说过：
 
 @examples[#:eval ev #:label #f #:no-prompt
-(: flip (∀ (p q) (case→ (→ (→𝒰ₐ p q) (→𝒦ₐ p q))
+(: flip (∀ (p q a) (case→ (→ (→𝒰ₐ p q) (→𝒦ₐ p q))
                         (→ (→𝒦ₐ p q) (→𝒰ₐ p q)))))
 (define (((flip f) . y*) . x*) (apply (apply f x*) y*))]
 
@@ -149,6 +149,6 @@ DNE 的外形，终点换成了答案，就成了三重否定，有一个只用 
 (define ((anf:reset kₐkₐa) kₓa)
   (kₓa (anf:eval kₐkₐa)))]
 
-@racket[anf:eval] 把 @racket[id] 交给里面的计算，运行得到答案 @math{a}。外面的@tech{延续} @math{kₓa : a → x} 接过这个值，接着做自己的工作。同一个值，在里面已经是答案，越过边界就成了普通的结果。里面从恒等函数开始，一层层积起局部的工作；外面等着它交出答案，这正是@xref["03:stack-slice"]{「栈的切片」}里看到的边界。@racket[anf:reset] 的类型把两侧分别写了出来：里面以 @math{a} 为@tech{基}，外面以 @math{x} 为@tech{基}，每次 @racket[reset] 都在边界处换一次@tech{基}。
+@racket[anf:eval] 把 @racket[id] 交给里面的计算，运行得到答案 @math{a}。外面的@tech{延续} @math{kₓa : a → x} 接过这个值，接着做自己的工作。同一个值，在里面已经是答案，越过边界就成了普通的结果。里面从恒等函数开始，一层层积起局部的工作；外面等着它交出答案，这正是@xref["03:stack-slice"]{「栈的切片」}里看到的边界。@racket[anf:reset] 的类型把两侧分别写了出来：里面以 @math{a} 为@tech{基}，外面以 @math{x} 为@tech{基}，@racket[reset] 两侧的@tech{基}可以分别选取。
 
 局部计算不再需要 @racket[raise]，靠的是两件事：@math{⊥} 换成了 @math{⊥ᵃ}，普通结果的类型 @racket[Real] 也换成了 @math{@ty{Real}ᵃ}。前一件已经用到底了；后一件，在代码里却找不到。@xref["03:local-k"]{「局部延续」}以后，代码一直只传一个@tech{延续}，答案那一支到哪里去了？

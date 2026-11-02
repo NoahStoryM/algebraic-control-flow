@@ -48,7 +48,7 @@
 (: neg* (∀ (p a) (→ (¬ₐ p) (¬𝒰ₐ p))))
 (define ((neg* kₐp) _k) kₐp)
 
-(: flip (∀ (p q) (case→ (→ (→𝒰ₐ p q) (→𝒦ₐ p q))
+(: flip (∀ (p q a) (case→ (→ (→𝒰ₐ p q) (→𝒦ₐ p q))
                         (→ (→𝒦ₐ p q) (→𝒰ₐ p q)))))
 (define (((flip f) . y*) . x*) (apply (apply f x*) y*))
 
