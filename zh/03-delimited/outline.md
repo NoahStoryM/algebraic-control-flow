@@ -248,5 +248,5 @@
 3. `ans` 保留结构体，作为@tech{标记}，链接 `01:disjoint-struct`（Noah 同意）。
 4. 文献先不引（Noah：否定翻译有很多种，为免出错隐去名字的出处；文献等第一部差不多冻结再补）。正文删去「（Thielecke, 2002）」，「double-barrelled CPS」只留名字。数学库已记 Thielecke；Friedman 1978 补进了 `math/background.md` 的文献表（数学库 #58，已合并）。A-翻译一节照数学背景 1.8，「省掉 `iₐ`」写成特化，不说成同构。
 5. 规约规则照 Racket 文档的写法，保留 `=>`（Noah）。
-6. **阴阳谜题的栈累积**（Noah：这一章用 `let/lc` 代替 `let/cc`，两者的差距也许可以体现；留到第四章也行）。Claude 实测（Racket 9.3，见 #126 的回复）：原生 `racket/control` 版，`let/lc` 的谜题内存随行数增长，`let/cc` 的不增长；`anf:` 编码版两者都看不出，`(cps kₐp)` 每次只多留一个宿主帧，四千行以内测不出来。建议见 #126，等 Noah 定。
+6. **阴阳谜题的栈累积**（Noah：这一章用 `let/lc` 代替 `let/cc`，两者的差距也许可以体现；留到第四章也行）。Claude 实测（Racket 9.3，见 #126 的回复）：原生 `racket/control` 版，`let/lc` 的谜题内存随行数增长，`let/cc` 的不增长；`anf:` 编码版两者都看不出，`(cps kₐp)` 每次只多留一个宿主帧，四千行以内测不出来。建议见 #126，等 Noah 定。Noah 又问第四章分别编译两版能否对上：能，两份输出只差 `(cps kₐp)` 与 `(cps* kₐp)` 的形状，`let/lc` 版内存一直涨，`let/cc` 版不涨（数据见 #126）。编码版先前测不出来，是因为 `neg` 用 `compose` 定义，Racket 的 `compose` 省掉了 `values`；照定义写的 `cps` 也涨。正文若谈栈，例子要用照定义写的那一种。
 
