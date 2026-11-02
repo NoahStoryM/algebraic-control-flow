@@ -68,7 +68,7 @@
 
 两条路都回到了 @racket[(+ 1 _)]。@racket[a->⊥] 一调用就 @racket[raise]，是外面那层 @racket[⊥->a] 的 handler 接住答案，交回调用处，加 1 接着做。@racket[anf:eval] 没有捕获调用处的@tech{延续}，是借 @racket[raise] 与 handler 把答案送回来的。
 
-宿主若有 @racket[call/cc]，就能直接捕获当前@tech{延续}，填进编码的@tech{延续}参数：
+@defsym["uncps" "把 CPS 箭头放回宿主：用 call/cc 捕获当前延续，填进延续参数"]宿主若有 @racket[call/cc]，就能直接捕获当前@tech{延续}，填进编码的@tech{延续}参数：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: uncps (∀ (p q) (→ (→𝒦 p q) (→𝒟 p q))))
@@ -82,7 +82,7 @@
 
 结果和 @racket[anf:eval] 那两行一样，这回却没有 handler 去接：正常乘完的 @racket[24]，和遇零从 @racket[cps:return] 跳出来的 @racket[0]，交给的都是 @racket[call/cc] 填进去的那条@tech{延续}本身，也就是 @racket[(+ 1 _)]。@xref["02:k-in-hand"]{「手中的延续」}在编码里实现 @racket[call/cc]，把当前@tech{延续}交给程序；这里用宿主的 @racket[call/cc] 运行编码，把当前@tech{延续}交进编码。
 
-宿主函数经 @racket[cps] 提升，再经 @racket[uncps] 放回，还是原来那个吗？对纯函数 @racket[f]，展开看：
+宿主函数经 @racket[cps] 提升，再经 @racket[uncps] 放回，还是原来那个吗？对@tech{宿主箭头} @racket[f]，展开看：
 
 @racketblock[
 ((uncps (cps f)) . p*)  =  (call/cc ((cps f) . p*))
@@ -131,7 +131,7 @@ neg          uncps
 ≈ ((cps:f x) kq)
 = (((flip cps:f) kq) x)]
 
-@racket[(neg (uncps cps:f))] 与 @racket[(flip cps:f)] 行为相同：@racket[flip] 从 𝒦 到 𝒰 的那个方向，就是 @racket[(∘ neg uncps)]，和 @c{cps = (∘ flip neg)} 正好对称。三条边绕成一个圈，从哪一处出发绕一圈，都回到原来的箭头；从一处沿不同的路径走到另一处，结果也都一样。图表有这种性质，就说它是@defterm[#:en "commutative"]{交换}的，叫作@defterm[#:en "commutative diagram"]{交换图表}。
+@racket[(neg (uncps cps:f))] 与 @racket[(flip cps:f)] 行为相同：@racket[flip] 从 𝒦 到 𝒰 的那个方向，就是 @racket[(∘ neg uncps)]，和 @c{cps = (∘ flip neg)} 正好对称。三条边绕成一个圈，从哪一处出发绕一圈，都回到原来的箭头；因此从一处走到另一处，多绕几圈也不改变结果。图表有这种性质，就说它是@defterm[#:en "commutative"]{交换}的，叫作@defterm[#:en "commutative diagram"]{交换图表}。
 
 所以每条边都能由另外两条倒回去：@racket[uncps] 由 @racket[cps] 倒回，@racket[flip] 由 @racket[(∘ neg uncps)] 倒回。@racket[neg] 由 @racket[(∘ uncps flip)] 倒回，从 𝒰 回到 𝒟 本来没有直接的一条边，这一支撤销 @racket[neg]，记作 @racket[unneg]：
 
@@ -171,7 +171,7 @@ DNI 加两层，在这里就是 @racket[cps:id]：收下 @racket[p]，等一条 
 
 @section[#:tag "02:same-arrow"]{同一支箭头}
 
-@xref["02:clavius"]{「Clavius 律」}有了 @racket[cps:call/cc] 和 @racket[neg:call/cc]。照名字的约定，@racket[cps:car] 就是 @racket[(cps car)]；@racket[cps:call/cc] 却不是 @racket[(cps call/cc)]，它是整条 @tech{Clavius 律}换写出来的，@racket[proc] 也换成了新的箭头。那 @racket[(cps call/cc)] 和 @racket[(neg call/cc)] 又是什么？
+@xref["02:clavius"]{「Clavius 律」}有了 @racket[cps:call/cc] 和 @racket[neg:call/cc]。@racket[cps:car] 就是 @racket[(cps car)]；@racket[cps:call/cc] 却不是 @racket[(cps call/cc)]：照名字的约定，它类型里的箭头全是 @math{→@subscript{𝒦}}，@racket[proc] 也换成了新的箭头，整条 @tech{Clavius 律}换写了一遍。那 @racket[(cps call/cc)] 和 @racket[(neg call/cc)] 又是什么？
 
 不换写定律，只把箭头搬过去。宿主的 @racket[call/cc] 照 DNE 来读，是一支@tech{宿主箭头} @math{¬¬p →@subscript{𝒟} p}：收下第 2 层的 @racket[kkp]，交出第 0 层的值。
 
@@ -183,7 +183,7 @@ DNI 加两层，在这里就是 @racket[cps:id]：收下 @racket[p]，等一条 
 = (let ([p (call/cc kkp)]) (kp p))
 ≈ (kkp kp)]
 
-收下 @racket[kkp]，把@tech{延续} @racket[kp] 原样交给它：这支箭头什么也不运行，收下一段计算，原样交出。代码和 @racket[id] 一样，类型却是一支 @tech{CPS 箭头}：从 @math{¬¬p} 到 @math{p}。这和@xref["02:via-contrapositive"]{「借道逆否复合」}里的 @racket[neg:id] 是同一种情形：定义相同，箭头的种类不同。记作 @racket[neg²:id]：
+@defsym["neg²:id" "(neg (neg id))：¬¬p →𝒦 p，也是 ¬¬p →𝒞 ¬¬p；(cps call/cc) 的纯表示"]收下 @racket[kkp]，把@tech{延续} @racket[kp] 原样交给它：这支箭头什么也不运行，收下一段计算，原样交出。代码和 @racket[id] 一样，类型却是一支 @tech{CPS 箭头}：从 @math{¬¬p} 到 @math{p}。这和@xref["02:via-contrapositive"]{「借道逆否复合」}里的 @racket[neg:id] 是同一种情形：定义相同，箭头的种类不同。记作 @racket[neg²:id]：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: neg²:id (∀ (p) (→𝒦 (¬¬ p) p)))
@@ -194,7 +194,7 @@ DNI 加两层，在这里就是 @racket[cps:id]：收下 @racket[p]，等一条 
 @racketblock[
 (cps call/cc)  ≈  neg²:id]
 
-@math{¬¬p →@subscript{𝒦} p} 看上去也像 DNE；展开到宿主，它只是 @math{¬¬p → ¬¬p}，从第 2 层到第 2 层。名字照前缀的约定读：@racket[neg²] 指连用两次 @racket[neg]，@racket[neg²:id] 就是 @racket[(neg (neg id))]，也就是 @racket[(neg neg:id)]。验证一下：@racket[(neg neg:id)] 收下 @racket[kkp]，交出 @racket[(∘ kkp id)]，行为和 @racket[kkp] 一样。反过来，把它交给 @racket[uncps]，沿图表回到宿主，得到的正是 @racket[call/cc]：
+@math{¬¬p →@subscript{𝒦} p} 看上去也像 DNE；展开到宿主，它只是 @math{¬¬p → ¬¬p}，从第 2 层到第 2 层。名字的由来：@racket[neg²] 指连用两次 @racket[neg]，@racket[neg²:id] 就是 @racket[(neg (neg id))]，也就是 @racket[(neg neg:id)]。验证一下：@racket[(neg neg:id)] 收下 @racket[kkp]，交出 @racket[(∘ kkp id)]，行为和 @racket[kkp] 一样。反过来，把它交给 @racket[uncps]，沿图表回到宿主，得到的正是 @racket[call/cc]：
 
 @racketblock[
 (uncps neg²:id)  ≈  (uncps (cps call/cc))  =  call/cc]

@@ -141,16 +141,16 @@
 = ((∘ h g f) x)
 = ((⨾ f g h) x)]
 
-从类型看，复合是把首尾相接的箭头拼成一支：@racket[(∘ g f)] 里，@racket[f] 从 @racket[p1] 到 @racket[p2]，@racket[g] 从 @racket[p2] 到 @racket[p3]，拼起来就是从 @racket[p1] 到 @racket[p3]。@racket[⨾] 也是拼接，只是参数的次序反了过来，拼的是反着写的箭头。把箭头反着写，结果在左边，参数在右边，记作@defsym["q ← p" "反向箭头：从 p 到 q 的函数，结果写在左边"] @racket[←]：@racket[(← q p)] 就是 @racket[(→ p q)]。用 @racket[→] 写出 @racket[∘] 接两支时的类型，用 @racket[←] 写出 @racket[⨾] 接两支时的类型，两行只差把 @racket[→] 换成 @racket[←]：
+从类型看，复合是把首尾相接的箭头拼成一支：@racket[(∘ g f)] 里，@racket[f] 从 @racket[p1] 到 @racket[p2]，@racket[g] 从 @racket[p2] 到 @racket[p3]，拼起来就是从 @racket[p1] 到 @racket[p3]。@racket[⨾] 也是拼接，只是参数的次序反了过来，拼的是反着写的箭头。把箭头反着写，结果在左边，参数在右边，记作@defsym["q ← p" "反向箭头：从 p 到 q 的函数，结果写在左边"] @racket[←]：@racket[(← q p)] 就是 @racket[(→ p q)]。用 @racket[→] 写出 @racket[∘] 接两支时的类型，用 @racket[←] 写出 @racket[⨾] 接两支时的类型：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define-type (← q p) (→ p q))
 
 (: ∘ (∀ (p1 p2 p3) (→ (→ p2 p3) (→ p1 p2) (→ p1 p3))))
-(: ⨾ (∀ (p1 p2 p3) (→ (← p2 p3) (← p1 p2) (← p1 p3))))
+(: ⨾ (∀ (p3 p2 p1) (→ (← p2 p1) (← p3 p2) (← p3 p1))))
 (define (⨾ . f*) (apply ∘ (reverse f*)))]
 
-读 @racket[⨾] 那一行：第一支 @racket[(← p2 p3)] 从 @racket[p3] 到 @racket[p2]，先算；第二支 @racket[(← p1 p2)] 从 @racket[p2] 到 @racket[p1]，后算；拼成从 @racket[p3] 到 @racket[p1]。@racket[⨾] 只是把参数顺序倒过来的 @racket[∘]，两条运算律原样继承下来，@racket[(⨾)] 也是 @racket[id]。
+读 @racket[⨾] 那一行：第一支 @racket[(← p2 p1)] 从 @racket[p1] 到 @racket[p2]，先算；第二支 @racket[(← p3 p2)] 从 @racket[p2] 到 @racket[p3]，后算；拼成从 @racket[p1] 到 @racket[p3]。@racket[∘] 那一行的参数从右往左读，@racket[⨾] 那一行从左往右读，读出的都是 @racket[p1]、@racket[p2]、@racket[p3]。@racket[⨾] 只是把参数顺序倒过来的 @racket[∘]：反的是书写的次序，算的次序不变。两条运算律原样继承下来，@racket[(⨾)] 也是 @racket[id]。
 
 
 @section[#:tag "02:cps"]{延续与 CPS}
@@ -211,7 +211,7 @@
         acc
         (loop (- n 1) (* n acc)))))]
 
-把它也变换成 @tech[#:key "延续传递风格"]{CPS}：
+把它也变换成 @tech[#:key "延续传递风格"]{CPS}，重新定义 @racket[fact/k]，换成累积器的版本：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: fact/k (¬ Natural (¬ Natural)))

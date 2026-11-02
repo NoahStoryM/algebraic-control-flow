@@ -123,7 +123,7 @@ k2  =  (∘ k3 mul3)  =  ((neg mul3) k3)]
 
 @xref["01:call-cc"]{「消除分支：call/cc」}用 @racket[cc] 实现 @racket[call/cc]：先由 @racket[(cc)] 取得当前@tech{延续}，再把它交给 @racket[proc]。在 @tech[#:key "延续传递风格"]{CPS} 里，这一步不必做。@xref["02:first-class-control"]{「一等控制」}说过，当前@tech{延续}已经是一个显式的参数：照 @racket[cps] 的写法也好，照 @racket[neg] 的写法也好，函数收到的@tech{延续}参数，就是这次调用之后要做的事。那么照这两种写法，@racket[call/cc] 该怎么写？
 
-@margin-note{@defsym["cps:f" "照 cps 的写法：(cps f)"]@defsym["neg:f" "照 neg 的写法：(neg f)"]名字的前缀标出写法：@racket[cps:kp] 就是 @racket[(cps kp)]，@racket[neg:kp] 就是 @racket[(neg kp)]；以后 @racket[cps:f]、@racket[neg:f] 都照这个约定。@racket[cps:call/cc]、@racket[neg:call/cc] 是例外：它们照两种写法重写了 @racket[call/cc] 的意思，不是 @racket[(cps call/cc)]、@racket[(neg call/cc)]。}
+@margin-note{@defsym["cps:f" "照 cps 的写法写成的函数；参数、参数的参数中的函数也照这个写法"]@defsym["neg:f" "照 neg 的写法写成的函数；参数、参数的参数中的函数也照这个写法"]名字的前缀标出写法：以 @racket[cps:] 开头的函数，照 @racket[cps] 的写法收参数、交结果；它的参数、参数的参数……凡是函数的，也都照这个写法。@racket[neg:] 同理。@racket[(cps f)] 只改最外面一层，@racket[f] 的参数原样不动：@racket[f] 不收函数时，@racket[(cps f)] 就是 @racket[cps:f]，比如 @racket[cps:car]、下面的 @racket[cps:kp]；@racket[f] 收函数时就不一样了。@racket[call/cc] 收的 @racket[proc] 是函数，@racket[cps:call/cc] 收的 @racket[cps:proc] 也得照 @racket[cps] 的写法，所以 @racket[cps:call/cc] 要另写，不是 @racket[(cps call/cc)]。}
 
 照 @racket[call/cc] 自己的意思写，先看它收到什么。@racket[cps:call/cc] 照 @racket[cps] 的写法，先收到输入 @racket[cps:proc]，再收到@tech{延续} @racket[kp]；@racket[neg:call/cc] 照 @racket[neg] 的写法，次序反过来，先收到 @racket[kp]，再收到 @racket[neg:proc]：
 

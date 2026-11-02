@@ -8,7 +8,7 @@
 (define (list->values v*) (apply values v*))
 
 (define-type (← q p) (→ p q))
-(: ⨾ (∀ (p ...) (→ (← pn-1 pn) ... (← p1 p2) (← p1 pn))))
+(: ⨾ (∀ (p ...) (→ (← p2 p1) ... (← pn pn-1) (← pn p1))))
 (define (⨾ . f*) (apply ∘ (reverse f*)))
 
 

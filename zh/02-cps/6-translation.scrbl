@@ -84,13 +84,15 @@
       (case→ (→ (→𝒟 p q) (→𝒰     p      q))
              (→ (→𝒰 p q) (→𝒞 (¬¬ p) (¬¬ q))))))]
 
-@margin-note{类型标的是箭头之间的对应：宿主里的一支箭头，对应 𝒞 里的一支 @math{¬¬p → ¬¬q}。@racket[neg²] 只把 @racket[f] 包上两层，并不改写 @racket[f] 的内部；若交进来的 @racket[f] 本来就是纯的，包出来的也已经是纯的。}
+@margin-note{@racket[neg²] 只把 @racket[f] 包上两层，并不改写 @racket[f] 的内部；若交进来的 @racket[f] 本来就是纯的，包出来的也已经是纯的。}
 
-两次 @racket[neg] 连起来，记作 @racket[neg²]。@tech{宿主箭头} @math{p → q} 进来，出去的是 @math{¬¬p → ¬¬q}，每个类型裹上一层 @math{¬¬}：
+两次 @racket[neg] 连起来，记作 @racket[neg²]。@tech{宿主箭头} @math{p → q} 进来，出去的是 @math{¬¬p → ¬¬q}，每个类型裹上一层 @math{¬¬}。下面的类型标的是箭头之间的对应：宿主里的一支箭头，对应 𝒞 里的一支 @math{¬¬p → ¬¬q}；代码给出的，是保留原函数的包装：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: neg² (∀ (p q) (→ (→𝒟 p q) (→𝒞 (¬¬ p) (¬¬ q)))))
 (define neg² (∘ neg neg))]
+
+@racket[neg²:id] 就是 @racket[(neg² id)]。它标在 𝒦 上，是 @math{¬¬p →@subscript{𝒦} p}；作为纯的@tech{宿主箭头}，它也是 @math{¬¬p →@subscript{𝒞} ¬¬p}，𝒞 里 @math{¬¬p} 上的恒等箭头。两种读法展开到宿主，都是 @math{¬¬p → ¬¬p}。
 
 把 𝒞 和 @racket[inj] 也画进前面那张图表：
 
@@ -118,29 +120,26 @@
 
 第二步照 @racket[neg²] 的定义，第三步用的是 @c{neg = (∘ flip cps)}，最后一步是@xref["02:three-forms"]{「三种写法」}里的 @c{(cps (uncps cps:f)) ≈ cps:f}，放进 @racket[neg]、@racket[flip] 里仍然成立，那里的旁注说过。右边只用 @racket[λ] 和函数调用，@racket[cps:f] 是纯的，它也落在 𝒞 里。
 
-@racket[call/cc] 自己就是这样一支 @racket[f]：@xref["02:same-arrow"]{「同一支箭头」}说过，@racket[(uncps neg²:id)] 就是 @racket[call/cc]，而 @racket[neg²:id] 只用 @racket[λ] 写成。要找的，是一支只用 @racket[λ] 写成、和 @racket[(neg² call/cc)] 行为一样的函数。照同样的步子展开 @racket[(neg² call/cc)]，再把 @racket[neg²:id] 拆回 @racket[id]：
+@racket[call/cc] 自己就是这样一支 @racket[f]：@xref["02:same-arrow"]{「同一支箭头」}说过，@racket[(uncps neg²:id)] 就是 @racket[call/cc]，而 @racket[neg²:id] 只用 @racket[λ] 写成。要找的，是一支只用 @racket[λ] 写成、和 @racket[(neg² call/cc)] 行为一样的函数。那里还说过，@racket[(neg call/cc)] 就是用在 @math{¬p} 上的 @racket[cps:id]。两边再套一层 @racket[neg]：
 
 @racketblock[
 #,(hspace 2)(neg² call/cc)
 = (neg (neg call/cc))
-= (neg (flip (cps call/cc)))
-≈ (neg (flip neg²:id))
-≈ (neg (flip (neg (neg id))))
-= (neg (cps (neg id)))]
+≈ (neg cps:id)]
 
-前两步同上；第三步是@xref["02:same-arrow"]{「同一支箭头」}里的 @c{(cps call/cc) ≈ neg²:id}；第四步把 @racket[neg²:id] 换成行为相同的 @racket[(neg (neg id))]；最后一步用 @c{cps = (∘ flip neg)}，把 @racket[(flip (neg …))] 收回成 @racket[(cps …)]。
-
-最后一行从 @racket[id] 出发，依次用 @racket[neg]、@racket[cps]、@racket[neg]，一路都不碰 @racket[call/cc]。交齐参数，看它做了什么。展开时用上@xref["02:same-arrow"]{「同一支箭头」}里@tech{逆否箭头}那一行：@racket[(neg call/cc)] 就是用在 @math{¬p} 上的 @racket[cps:id]。
+第一步照 @racket[neg²] 的定义；第二步把 @racket[(neg call/cc)] 换成行为相同的 @racket[cps:id]，放进 @racket[neg] 里仍然成立，@xref["02:three-forms"]{「三种写法」}的旁注说过。这里的 @racket[cps:id] 用在 @math{¬p} 上。交齐参数，看它做了什么：
 
 @racketblock[
 #,(hspace 2)(((neg² call/cc) kkkkp) kp)
-= (kkkkp ((neg call/cc) kp))
-≈ (kkkkp (cps:id kp))
+≈ (((neg cps:id) kkkkp) kp)
+= (kkkkp (cps:id kp))
 = (kkkkp (λ (kkp) (kkp kp)))]
 
 @racket[call/cc] 不见了，剩下的只用 @racket[λ] 和函数调用：外层的计算交来一段 @racket[kkp]，再把同一条 @racket[kp] 交给它。从第 4 层到第 2 层，消去两层而不落底，正是@xref["02:count-k"]{「数一数 k」}里的 @racket[(neg cps:id)]，@tech{三重否定律}用在 @math{¬p} 上。
 
-@racket[neg]、@racket[cps]、@racket[neg] 这一串把外面的两层 @math{¬¬} 并成一层，用在别的纯箭头上也行，记作 @racket[join]；用在 @racket[id] 上的那一支，照名字的约定记作 @racket[join:id]：
+@racket[neg:id] 就是 @racket[id]，所以 @racket[cps:id] 也就是 @racket[(cps (neg id))]，@racket[(neg cps:id)] 是从 @racket[id] 出发，依次用 @racket[neg]、@racket[cps]、@racket[neg] 得到的，一路都不碰 @racket[call/cc]。
+
+@defsym["join" "(∘ neg cps neg)：把外面的两层 ¬¬ 并成一层"]@defsym["join:id" "(join id)：¬¬¬¬p →𝒞 ¬¬p，call/cc 的纯翻译"]这一串把外面的两层 @math{¬¬} 并成一层，用在别的纯箭头上也行，记作 @racket[join]；用在 @racket[id] 上的那一支记作 @racket[join:id]：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: join (∀ (p q) (→ (→𝒞 p q) (→𝒞 (¬¬ (¬¬ p)) (¬¬ q)))))
@@ -173,7 +172,7 @@
 
 只有宿主那一行落到第 0 层。原来的 @racket[call/cc] 靠宿主的控制完成 @math{¬¬p → p}；改写以后，它有了一个 @math{¬¬¬¬p → ¬¬p} 的纯表示 @racket[join:id]，只用 DNI 和逆否就写得出。这并没有在纯语言里实现原来的 DNE：要取回原来类型的结果，仍然要靠 @racket[anf:eval] 这样在外面交进@tech{终结延续}、接住答案的控制能力。
 
-改变类型，同时把经典的操作改写成构造性的程序，这就是@defterm[#:en "negative translation"]{否定翻译}的思想。逻辑里，@tech{否定翻译}把经典证明改写成直觉主义证明。@xref["02:clavius"]{「新箭头下的 Clavius 律」}用的也是它：同一条经典定律，换用 @tech{CPS 箭头}来写，就成了直觉主义定理。
+改变类型，同时把经典的操作改写成构造性的程序，这就是@defterm[#:en "negative translation"]{否定翻译}的思想。逻辑里，@tech{否定翻译}把经典证明改写成直觉主义证明。@xref["02:clavius"]{「Clavius 律」}用的也是它：@tech{Clavius 律}换用 @tech{CPS 箭头}得到的翻译，展开后是直觉主义定理。
 
 @section[#:tag "02:mul"]{从 mul 到 cps:mul}
 
