@@ -18,4 +18,4 @@
 
 程序的类型 @math{¬¬@ty{Byte}} 里也有一个 @math{⊥}：程序调用 @racket[exit] 以后不再回来，可进程终止以后，操作系统还在运行，接着处理退出码。对程序来说是终点的 @math{⊥}，从外面看并没有结束。@math{⊥} 到底是什么？
 
-那是@hyperlink["https://zhuanlan.zhihu.com/p/2032178684895946051"]{另一篇文章}的故事了。
+@racket[anf:eval] 的经典性，全系在这一对名字上：交出一条通向 @math{⊥} 的@tech{延续}，再从 @math{⊥} 那里把答案接回来。要是 @math{⊥} 不再是终点，这一步还需要 @racket[raise] 吗？@racket[anf:eval] 还是 DNE 吗？它的类型又该读成什么？
