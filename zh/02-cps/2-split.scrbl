@@ -27,7 +27,7 @@
 
 @racket[zero?/k] 在 @racket[zero?] 的结果外面套一层 @racket[k] 调用，就完成了包装。可这层包装，每个函数都得手写一遍。要自动化，就要一个通用的包装：交给它任意函数 @racket[f]，交回 @racket[f] 的 @tech[#:key "延续传递风格"]{CPS} 版本。
 
-@racket[zero?/k] 的两个参数是两种东西：@racket[x] 交给 @racket[zero?] 去算，@racket[k] 只等着接住结果。通用的包装要把这两种参数分开处理，前一种原样交给 @racket[f]，后一种接住 @racket[f] 的结果。挤在同一层参数表里，它们就得一次交齐。柯里化让@tech{延续}独占一层，和其余参数分开，两层就能分开交：先交其余参数，得到一段还没开始的计算；先交@tech{延续}，得到一个把@tech{延续}换成另一条@tech{延续}的函数。两种次序各有用处，都写出来。@tech{延续}独立在内层还是外层，操作上没有区别，函数体都一样：
+@defsym["cps" "把宿主函数提升成 CPS 箭头：延续在后"]@defsym["neg" "把宿主函数提升成逆否箭头：延续在前"]@racket[zero?/k] 的两个参数是两种东西：@racket[x] 交给 @racket[zero?] 去算，@racket[k] 只等着接住结果。通用的包装要把这两种参数分开处理，前一种原样交给 @racket[f]，后一种接住 @racket[f] 的结果。挤在同一层参数表里，它们就得一次交齐。柯里化让@tech{延续}独占一层，和其余参数分开，两层就能分开交：先交其余参数，得到一段还没开始的计算；先交@tech{延续}，得到一个把@tech{延续}换成另一条@tech{延续}的函数。两种次序各有用处，都写出来。@tech{延续}独立在内层还是外层，操作上没有区别，函数体都一样：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define (((cps f) . p*) kq) (kq (apply f p*)))  (code:comment "延续在后")
@@ -53,7 +53,7 @@
 
 @racket[(neg f)] 先收@tech{延续}：交给它一条等 @math{q} 的@tech{延续} @racket[kq]，它交回一条等 @math{p} 的@tech{延续}：这条@tech{延续}拿到 @math{p}，先交给 @racket[f] 算出 @math{q}，再交给 @racket[kq]。@racket[f] 从 @math{p} 到 @math{q}，@racket[(neg f)] 却从 @math{¬q} 到 @math{¬p}，方向反了过来，所以它的类型用@xref["02:laws"]{「结合律与单位律」}里的反向箭头 @racket[←] 来写。
 
-两者的差别只在柯里化的方向：@tech{延续}在前还是在后。既然是参数顺序的差别，交换顺序就能在两种写法之间来回：
+@defsym["flip" "交换两层柯里化参数的次序；在逆否箭头与 CPS 箭头之间来回"]两者的差别只在柯里化的方向：@tech{延续}在前还是在后。既然是参数顺序的差别，交换顺序就能在两种写法之间来回：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: flip (∀ (x y z) (→ (→ x (→ y z)) (→ y (→ x z)))))

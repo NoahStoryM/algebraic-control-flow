@@ -116,7 +116,7 @@
 
 再看只换名的 @racket[let]。@racket[let] 定下计算顺序，靠的是先算 @racket[e]、后算 @racket[b]。@racket[(let ([y x]) (f y))] 把 @racket[x] 改叫 @racket[y] 再交给 @racket[f]，@racket[(let ([y (f x)]) y)] 给 @racket[f] 的结果起名 @racket[y] 再原样交出。两种写法里都只有 @racket[f] 一步计算，没有先后可分，和直接写 @racket[(f x)] 行为一样。
 
-换名的那一步什么也不做，收到什么就原样交出什么。这样的函数，@racket[∘] 自己就给得出来。@racket[(∘ g f)] 把两个函数接成一个；只给一个，@racket[(∘ f)] 就是 @racket[f] 本身；一个也不给，@racket[(∘)] 什么也没接上，收到什么就交出什么。把它记作 @racket[id]：
+@defsym["id" "恒等函数，(∘) 也就是 values"]换名的那一步什么也不做，收到什么就原样交出什么。这样的函数，@racket[∘] 自己就给得出来。@racket[(∘ g f)] 把两个函数接成一个；只给一个，@racket[(∘ f)] 就是 @racket[f] 本身；一个也不给，@racket[(∘)] 什么也没接上，收到什么就交出什么。把它记作 @racket[id]：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define ∘ compose)
@@ -125,8 +125,8 @@
 @racket[∘] 就是 Racket 的 @racket[compose]，@racket[id] 就是 Racket 的 @racket[values]。前面 @racket[let] 的两种换名写法，化成复合，多出来的正是 @racket[id]：
 
 @racketblock[
-(let ([y (f x)])   y)   =  ((∘ id f) x)  =  (f x)
-(let ([y    x]) (f y))  =  ((∘ f id) x)  =  (f x)]
+(let ([y (f x)])   y)   =  (let ([y (f x)]) (id y))  =  ((∘ id f) x)  =  (f x)
+(let ([y    x]) (f y))  =  (let ([y (id x)]) (f y))  =  ((∘ f id) x)  =  (f x)]
 
 @racket[id] 接在哪一头都不改变什么：@racket[(∘ id f)] 和 @racket[(∘ f id)] 都等于 @racket[(∘ f)]，也就是 @racket[f]。这条性质叫@defterm[#:en "identity law"]{单位律}，@racket[id] 是 @racket[∘] 的单位元。
 
@@ -247,7 +247,7 @@
 
 结果打印出来了，进程也随之终止。@racket[exit] 一调用，整段计算就到此为止。启动时交进去的这条@tech{延续}，就是前面那条@tech{闭包链}的终点：值走完整条链，最后抵达的是它，所以叫它@defterm[#:en "terminal continuation"]{终结延续}。可是用 @racket[exit] 做@tech{终结延续}，进程一结束，就没法拿着结果继续工作。
 
-我们需要另一个类型为 @math{a → ⊥} 的函数：它不返回，也不杀死进程，而是把答案送到一个取得回来的地方。@racket[raise] 正合适：它不返回，handler 又能捕获它抛出的值。要的只有两件事：@racket[a->⊥] 把答案抛出去，@racket[⊥->a] 在外面接住。再用一个专门的 struct，把我们的答案和别的异常区分开：
+@defsym["a->⊥" "终结延续：把答案包进 ans 抛出"]@defsym["⊥->a" "接住 a->⊥ 抛出的答案，交回调用处"]我们需要另一个类型为 @math{a → ⊥} 的函数：它不返回，也不杀死进程，而是把答案送到一个取得回来的地方。@racket[raise] 正合适：它不返回，handler 又能捕获它抛出的值。要的只有两件事：@racket[a->⊥] 把答案抛出去，@racket[⊥->a] 在外面接住。再用一个专门的 struct，把我们的答案和别的异常区分开：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (struct (r) ans ([a* : (Listof r)]) #:type-name Ans)
@@ -257,6 +257,8 @@
 (define (a->⊥ . a*) (raise (ans a*)))
 (define-syntax-rule (⊥->a exp)
   (with-handlers ([ans? (∘ list->values ans-a*)]) exp))]
+
+@margin-note{@racket[ans] 装的是列表，取出时用 @racket[list->values]，是为了顺带兼容多值；正文的例子只用单值。}
 
 @racket[a->⊥] 把值包进 @racket[ans] struct 并抛出。@racket[⊥->a] 安装一个 handler 来捕获这个 struct 并提取内容，@racket[list->values] 把收到的列表拆回多个返回值。命名反映了类型层面的操作：@racket[a->⊥] 把值送入 @math{⊥}（抛出），@racket[⊥->a] 把值取回（捕获）。
 
@@ -291,6 +293,6 @@
 (mul 1 2 3 4)
 (mul 1 2 0 3 4)]
 
-正常路径上，累积的乘积沿着 @racket[k] 交回去。遇到零时，跳过 @racket[k]，直接调用 @racket[a->⊥]。@racket[k] 代表「继续乘下去然后返回结果」的@tech{延续}；@racket[a->⊥] 代表「直接跳出整个循环，把值交给 handler」的@tech{延续}。选择调用哪一个，就是选择走哪条控制流。不需要 @racket[call/cc]。@tech{延续}是普通的函数，切换@tech{延续}是普通的函数调用。
+正常路径上，累积的乘积沿着 @racket[k] 交回去。遇到零时，跳过 @racket[k]，直接调用 @racket[a->⊥]。@racket[k] 代表「继续乘下去然后返回结果」的@tech{延续}；@racket[a->⊥] 代表「直接结束整段计算，把值交给 handler」的@tech{延续}。选择调用哪一个，就是选择走哪条控制流。不需要 @racket[call/cc]。@tech{延续}是普通的函数，切换@tech{延续}是普通的函数调用。
 
 但代价也很明显：程序员必须亲手编写每一个@tech{延续}，把 @racket[k] 穿过每一层调用。能否自动化 @tech[#:key "延续传递风格"]{CPS} 包装？

@@ -446,6 +446,15 @@
   (define (cc) (call/cc values))
 )
 
+(module signature-case typed/racket/no-check
+  (define-type ⊥ (∪))
+  ;; 1.2.1：三种类型写进一个 case→
+  (: call/cc (∀ (p q) (case→ (→ (→ (→ p ⊥) p) p)
+                             (→ (→ (→ p q) p) p)
+                             (→ (→ (→ p ⊥) ⊥) p))))
+  (define (cc) (call/cc values))
+)
+
 (module signature-5 typed/racket/no-check
   (define-type ⊥ (∪))
   (: absurd  (∀ (q)   (→ ⊥ q)))

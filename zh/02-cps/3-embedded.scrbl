@@ -57,7 +57,7 @@
 (define-syntax-rule (anf:let ([v e]) b)
   (λ (k) (e (λ (v) (b k)))))]
 
-@defsym["anf:eval" "运行一段计算：交进终结延续 a->⊥，由 ⊥->a 接住答案"]@racket[anf:let] 自己也交出一段计算，收到@tech{延续}后才开始运行。展开出来的，除了程序员写下的箭头，只有 @racket[λ] 和函数调用。@racket[cps:] 箭头加上绑定的语法，就成了一门嵌在宿主里的小语言：宏充当编译器，把类似 @tech[#:key "A-范式"]{ANF} 的写法翻译成 @math{¬¬} 编码的 @tech[#:key "延续传递风格"]{CPS}。编译出来的程序还要有人运行，这门语言还缺一个解释器：交给程序@tech{终结延续} @racket[a->⊥]，再用 @racket[⊥->a] 接住答案：
+@defsym["anf:eval" "运行一段计算：交进终结延续 a->⊥，由 ⊥->a 接住答案"]@racket[anf:let] 自己也交出一段计算，收到@tech{延续}后才开始运行。展开出来的，除了程序员写下的箭头，只有 @racket[λ] 和函数调用。@racket[cps:] 箭头加上绑定的语法，就成了一门嵌在宿主里的小语言（宿主，就是运行它的 Racket 本身）：宏充当编译器，把类似 @tech[#:key "A-范式"]{ANF} 的写法翻译成 @math{¬¬} 编码的 @tech[#:key "延续传递风格"]{CPS}。编译出来的程序还要有人运行，这门语言还缺一个解释器：交给程序@tech{终结延续} @racket[a->⊥]，再用 @racket[⊥->a] 接住答案：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define (anf:eval kka) (⊥->a (kka a->⊥)))]
@@ -168,13 +168,13 @@
 #,(hspace 2)(anf:let/cc cps:k (λ (k) (k cps:k)))
 = (cps:call/cc (λ (cps:k) (λ (k) (k cps:k))))]
 
-交给 @racket[cps:call/cc] 的这个函数，收下一个值 @racket[v]，交出 @racket[(λ (k) (k v))]：一段计算，收到@tech{延续}就把 @racket[v] 原样交给它。这正是 @racket[((cps id) v)]。所以这个函数就是 @racket[(cps id)]，记作 @racket[cps:id]，@racket[label] 写作：
+@defsym["cps:id" "(cps id)：CPS 箭头的单位元，p → ¬¬p 即 DNI"]交给 @racket[cps:call/cc] 的这个函数，收下一个值 @racket[v]，交出 @racket[(λ (k) (k v))]：一段计算，收到@tech{延续}就把 @racket[v] 原样交给它。这正是 @racket[((cps id) v)]。所以这个函数就是 @racket[(cps id)]，记作 @racket[cps:id]，@racket[label] 写作：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define cps:id (cps id))
 (define (cps:label) (cps:call/cc cps:id))]
 
-@racket[(cps:label)] 交出一段计算。收到@tech{延续} @racket[k] 后，@racket[cps:call/cc] 把提升过的 @racket[(cps k)] 交给 @racket[cps:id]，@racket[cps:id] 再把它原样交给 @racket[k]，也就是 @racket[(k (cps k))]。直接风格里是 @racket[(k k)]，把@tech{延续}交给它自己；这里交给 @racket[k] 的，是提升过的它自己。绑定得到的 @racket[cps:yin]、@racket[cps:yang]，就是这样的值。
+@racket[(cps:label)] 交出一段计算。收到@tech{延续} @racket[k] 后，@racket[cps:call/cc] 把提升过的 @racket[(cps k)] 交给 @racket[cps:id]，@racket[cps:id] 再把它原样交给 @racket[k]，也就是 @racket[(k (cps k))]。直接风格里是 @racket[(k k)]：@xref["01:rules"]{「读出规律」}里改了名的谜题，@racket[(let/cc k0 (k0 k0))] 就是把 @racket[k0] 交给它自己。这里交给 @racket[k] 的，是换成了嵌入语言接口、提升过的它自己。绑定得到的 @racket[cps:yin]、@racket[cps:yang]，就是这样的值。
 
 谜题写进 @racket[anf:let*]。中间还有打印：打印也是一步计算，只是结果用不着。一串计算依次做下去、只留最后一个的结果，就是 @racket[anf:begin]：把前面的结果绑定到一个用不着的变量 @racket[_] 上，忽略掉。
 

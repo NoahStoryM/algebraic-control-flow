@@ -2,7 +2,7 @@
 
 @title[#:tag "02:appendix"]{附录：库代码}
 
-这里收的是正文定义的各种箭头、变换和 @racket[anf:] 宏，@racket[cps:mul]、阴阳谜题这些例子不在其中。这里的 @racket[anf:] 宏处理多值和多个表达式组成的函数体；正文给的是单值、单个函数体的写法。
+这里收的是正文定义的各种箭头、变换和 @racket[anf:] 宏，@racket[cps:mul]、阴阳谜题这些例子不在其中。这里的 @racket[anf:] 宏处理多值，@racket[anf:let] 的主体也可以是几段计算，依次运行；正文给的是单值、单段计算的写法。@racket[anf:let/cc] 的主体照普通 Racket 函数体写，可以先作内部定义，最后一个表达式交出要运行的计算。
 
 @codeblock|{
 #lang typed/racket/no-check
@@ -144,7 +144,9 @@
 
 ;;; 再用一次 neg
 
-(: neg² (∀ (p q) (→ (→𝒟 p q) (→𝒞 (¬¬ p) (¬¬ q)))))
+(: neg² (∀ (p q) (case→ (→ (→𝒞 p q) (→𝒞 (¬¬ p) (¬¬ q)))
+                        (→ (→𝒟 p q) (→𝒟 (¬¬ p) (¬¬ q)))
+                        (→ (→𝒟 p q) (→𝒞 (¬¬ p) (¬¬ q))))))
 (define neg² (∘ neg neg))
 
 

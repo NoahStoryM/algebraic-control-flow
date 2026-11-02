@@ -53,13 +53,22 @@
 
 交给它一个只等@tech{延续}的计算，它从中把结果取出来。
 
-这样收紧，其实没有少掉什么。原来的类型允许 @racket[proc] 正常返回一个 @math{p}，最后那版 @racket[mul] 里的 @racket[λ] 就是这样，没遇到零，乘积是正常返回的。可调用 @racket[proc] 是 @racket[call/cc] 做的最后一件事，@racket[proc] 正常返回，返回值直接交到调用 @racket[call/cc] 的地方；交给 @racket[proc] 的@tech{延续} @racket[k]，通向的也正是那里。所以 @racket[proc] 正常返回 @racket[v]，和调用 @racket[(k v)] 原地跳一次，到的是同一个地方，交出的是同一个值。@xref["01:label-from-call-cc"]{「从 call/cc 定义标签」}里已经见过一次：@racket[(let/cc k (k k))] 和 @racket[(let/cc k k)] 没有分别。换成任何 @racket[proc] 都一样，下面两个表达式行为相同：
+这样收紧，其实没有少掉什么。原来的类型允许 @racket[proc] 正常返回一个 @math{p}，最后那版 @racket[mul] 里的 @racket[λ] 就是这样，没遇到零，乘积是正常返回的。可调用 @racket[proc] 是 @racket[call/cc] 做的最后一件事，@racket[proc] 正常返回，返回值直接交到调用 @racket[call/cc] 的地方；交给 @racket[proc] 的@tech{延续} @racket[k]，通向的也正是那里。所以 @racket[proc] 正常返回 @racket[v]，和调用 @racket[(k v)] 原地跳一次，到的是同一个地方，交出的是同一个值。@xref["01:label-from-call-cc"]{「从 call/cc 定义标签」}里已经见过一次：@racket[(let/cc k (k k))] 和 @racket[(let/cc k k)] 没有分别。@racket[proc] 若正常返回，交出的是一个值；在这个前提下，换成任何 @racket[proc] 都一样，下面两个表达式行为相同：
 
 @racketblock[
 (call/cc proc)
 (call/cc (λ (k) (k (proc k))))]
 
 第二行交给 @racket[call/cc] 的那整个 @racket[λ]，@racket[proc] 若正常返回，就再经 @racket[k] 交出结果，所以它从不正常返回，正是上面那种只等@tech{延续}的函数。@racket[proc] 取 @racket[(λ (k) k)]，这个 @racket[λ] 就是 @racket[(λ (k) (k k))]，也就是 @racket[goto]。
+
+同一个 @racket[call/cc] 有了三种类型。把它们写进一个 @racket[case→]：
+
+@racketblock[
+(: call/cc (∀ (p q) (case→ (→ (→ (→ p ⊥) p) p)
+                           (→ (→ (→ p q) p) p)
+                           (→ (→ (→ p ⊥) ⊥) p))))]
+
+@racket[case→] 列出同一个操作的几种类型读法。使用时，看手里的输入是什么，也看这一步要得到什么，选取适用的那一种；几种可以同时适用，运行的始终是同一段代码。
 
 于是手里有了四个类型，@racket[absurd] 的一个，@racket[call/cc] 的三个，都只用 @math{→} 和 @math{⊥}。它们像在说些什么？
 
@@ -88,7 +97,7 @@
    (list @elem{@racket[call/cc]} @elem{@math{¬¬p → p}}
          @elem{@defterm[#:en "Double Negation Elimination" #:abbr "DNE"]{双重否定消除}}))]
 
-四个程序，恰好对上四条有名的定律。这只是字面上的相像，还是真有其事？
+两个程序的四个类型，恰好对上四条有名的定律。这只是字面上的相像，还是真有其事？
 
 检验起来并不费事。这些类型都由 @math{→} 和 @math{⊥} 搭起来，只要这两样最基本的对上了，搭出来的整体也就对上了。
 
