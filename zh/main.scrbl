@@ -14,6 +14,7 @@
 
 @include-section["01-call-cc/main.scrbl"]
 @include-section["02-cps/main.scrbl"]
+@include-section["03-delimited/main.scrbl"]
 
 @section[#:tag "glossary" #:style 'unnumbered]{术语表}
 

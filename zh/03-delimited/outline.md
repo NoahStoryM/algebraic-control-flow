@@ -250,3 +250,14 @@
 5. 规约规则照 Racket 文档的写法，保留 `=>`（Noah）。
 6. **阴阳谜题的栈累积**（Noah：这一章用 `let/lc` 代替 `let/cc`，两者的差距也许可以体现；留到第四章也行）。Claude 实测（Racket 9.3，见 #126 的回复）：原生 `racket/control` 版，`let/lc` 的谜题内存随行数增长，`let/cc` 的不增长；`anf:` 编码版两者都看不出，`(cps kₐp)` 每次只多留一个宿主帧，四千行以内测不出来。建议见 #126，等 Noah 定。Noah 又问第四章分别编译两版能否对上：能，两份输出只差 `(cps kₐp)` 与 `(cps* kₐp)` 的形状，`let/lc` 版内存一直涨，`let/cc` 版不涨（数据见 #126）。编码版先前测不出来，是因为 `neg` 用 `compose` 定义，Racket 的 `compose` 省掉了 `values`；照定义写的 `cps` 也涨。正文若谈栈，例子要用照定义写的那一种。**Noah 11/2 定**：两条建议都照办，第三章只点来由（两处各一句），第四章并排编译两版。（`compose` 省掉 `values` 是 Noah 几年前提交给 Racket 的。）
 
+
+### 正文初稿（Claude 11/2）
+
+照上面的切分写完了全章 `.scrbl`，`code.rkt` 按新记法重写（库代码 + 各节独立版本的子模块），`article.md`、`blocks.rktd`、`prelude.rkt` 删去。写的时候自己定下、请 Noah 过目的几处：
+
+- 「局部空」「局部答案」「局部终结延续」「平凡表示」都作了术语（*local bottom*、*local answer*、*local terminal continuation*、*trivial representation*）；「double-barrelled CPS」作术语，不注出处。
+- 节名：「定界延续」下分「从 return 到 shift」「四个例子」「定界延续与 CPS」「规约规则」；「局部否定下的箭头」下分「换了基的箭头」「两个 call/cc」「求值与边界」；A-翻译一节下分「A-翻译」「只传一个延续」；最后一节下分「元延续成了变量」「取出局部延续」。
+- 「从 return 到 shift」加了一行等式 `(((cps anf:eval) kₐkₐa) kₐa) = (kₐa (anf:eval kₐkₐa))`，让「非尾调用」有东西可看，「元延续」回指它。
+- 「求值与边界」把 `anf:eval` 的类型先写成 `(→ (¬ₐ¬ₐ a) a)`，再照「值域是 ⊥ᵃ 的箭头写成 ¬ₐ」认出它是 `(¬ₐ¬ₐ¬ₐ a)`，作为引言第二、三问的回答。
+- 「用 call/cc 造定界延续」：旧稿「与 `wait/fc` 同一个模式」换成和第一章 `cc` 的对照（先 `set!` 存好，再跳）；初始的 `meta-k` 仍是 `exit`。
+- 待 Astra 核：两个下标的类型（`neg`、`cps` 的 `case→`，`neg*`、`cps*`、两个 `call/cc`、`cps:abort`、`anf:reset`）；`neg:call/lc` 的类型「从内部看是局部的 Clavius 律，从外面看是 q = a 的 Peirce 律」的说法；结论里「这条边界，每次函数调用都有」一段。

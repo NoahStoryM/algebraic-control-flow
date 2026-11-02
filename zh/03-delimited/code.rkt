@@ -2,82 +2,79 @@
 
 (provide (all-defined-out))
 
+(: ∘ (∀ (p ...) (→ (→ pn-1 pn) ... (→ p1 p2) (→ p1 pn))))
 (define ∘ compose)
 (define id (∘))
 
+(define-type (← q p) (→ p q))
+(: ⨾ (∀ (p ...) (→ (← p2 p1) ... (← pn pn-1) (← pn p1))))
+(define (⨾ . f*) (apply ∘ (reverse f*)))
 
-;;; 类型
+
+;;; 局部否定（平凡表示）
 ;; a、x 是答案类型参数；类型标注只作设计说明，不经类型检查
 
-(define-type (→𝒞 p q) (→ p q))              ; 纯的宿主箭头
-(define-type (←𝒞 q p) (→𝒞 p q))
-
 (define-type ⊥ (∪))
-(define-type ⊥ᵃ a)                          ; 局部空：平凡表示
-(define-type (¬ₐ p) (→𝒞 p ⊥ᵃ))
+(define-type ⊥ᵃ a)                            ; 局部空：平凡表示下就是 a
+(define-type (¬ₐ p ...) (→ p ... ⊥ᵃ))
 (define-type (¬ₐ¬ₐ p) (¬ₐ (¬ₐ p)))
 (define-type (¬ₐ¬ₐ¬ₐ p) (¬ₐ (¬ₐ¬ₐ p)))
-
-(define-type (→𝒰ₐ p q) (←𝒞 (¬ₐ p) (¬ₐ q)))  ; 局部逆否箭头
-(define-type (→𝒦ₐ p q) (→𝒞 p (¬ₐ¬ₐ q)))    ; 局部 CPS 箭头
-;; 下标换成 x（¬ₓ、¬ₓ¬ₓ、→𝒰ₓ），就是以 x 为基的同一组类型
-
-
-;;; 预复合、交换参数、恒等、丢弃
-
-(: neg  (∀ (p q) (case→ (→ (→𝒞 p q) (←𝒞 (¬ₐ p) (¬ₐ q)))
-                        (→ (←𝒞 q p) (→𝒞 (¬ₐ q) (¬ₐ p))))))
-(define ((neg f) kₐq) (∘ kₐq f))
-
-(: flip (∀ (p q) (case→ (→ (←𝒞 (¬ₐ p) q) (→𝒞 p (¬ₐ q)))
-                        (→ (→𝒞 p (¬ₐ q)) (←𝒞 (¬ₐ p) q)))))
-(define (((flip f) . y*) . x*) (apply (apply f x*) y*))
+;; 下标换成 x（¬ₓ、¬ₓ¬ₓ、→𝒰ₓ……），就是以 x 为基的同一组类型
 
 (: a->⊥ᵃ (∀ (a) (¬ₐ a)))
 (define a->⊥ᵃ id)
 
-(: neg* (∀ (p a) (→ (¬ₐ p) (→𝒰ₐ p ⊥))))
+
+;;; 宿主的箭头
+
+(define-type (→𝒟 p ... q) (→ p ... q))
+
+
+;;; 以 a 为基的两种箭头
+;; ¬ 的下标是落点，箭头的下标是基；¬ 后面没有下标就落在全局的 ⊥ 上
+
+(define-type (→𝒰ₐ p ... q) (← (¬ₐ p ...) (¬ₐ q)))
+(define-type (→𝒦ₐ p ... q) (→ p ... (¬ₐ¬ₐ q)))
+
+(define-type (¬ₐ𝒰ₓ p ...) (→𝒰ₓ p ... ⊥ᵃ))
+(define-type (¬ₐ𝒦ₓ p ...) (→𝒦ₓ p ... ⊥ᵃ))
+(define-type (¬𝒰ₐ  p ...) (→𝒰ₐ p ... ⊥))
+(define-type (¬𝒦ₐ  p ...) (→𝒦ₐ p ... ⊥))
+
+(: neg (∀ (p q a x) (case→ (→ (→𝒟 p q) (→𝒰ₓ  p q))
+                           (→ (¬ₐ  p)  (¬ₐ𝒰ₓ p)))))
+(define ((neg f) kq) (∘ kq f))
+
+(: neg* (∀ (p a) (→ (¬ₐ p) (¬𝒰ₐ p))))
 (define ((neg* kₐp) _k) kₐp)
 
+(: flip (∀ (p q) (case→ (→ (→𝒰ₐ p q) (→𝒦ₐ p q))
+                        (→ (→𝒦ₐ p q) (→𝒰ₐ p q)))))
+(define (((flip f) . y*) . x*) (apply (apply f x*) y*))
 
-;;; 以下由上面四个运算与宿主的基本函数组合而成
-
-;;; 复合
-
-(: ⨾ (∀ (p ...) (→ (←𝒞 pn-1 pn) ... (←𝒞 p1 p2) (←𝒞 p1 pn))))
-(define (⨾ . f*) (apply ∘ (reverse f*)))
-
-(: ∘𝒰 (∀ (p ...) (→ (→𝒰ₐ pn-1 pn) ... (→𝒰ₐ p1 p2) (→𝒰ₐ p1 pn))))
-(define ∘𝒰 ⨾)
-
-(: cps  (∀ (p q) (case→ (→ (→𝒞 p q) (→𝒞 p (¬ₐ¬ₐ q)))
-                        (→ (←𝒞 q p) (←𝒞 (¬ₐ¬ₐ q) p)))))
-(: cps* (∀ (p a) (→ (¬ₐ p) (→𝒦ₐ p ⊥))))
+(: cps  (∀ (p q a x) (case→ (→ (→𝒟 p q) (→𝒦ₓ  p q))
+                            (→ (¬ₐ  p)  (¬ₐ𝒦ₓ p)))))
+(: cps* (∀ (p a) (→ (¬ₐ p) (¬𝒦ₐ p))))
 (define cps  (∘ flip neg))
 (define cps* (∘ flip neg*))
-
-(: ∘𝒦 (∀ (p ...) (→ (→𝒦ₐ pn-1 pn) ... (→𝒦ₐ p1 p2) (→𝒦ₐ p1 pn))))
-(define (∘𝒦 . cps:f*) (flip (apply ∘𝒰 (map flip cps:f*))))
-
-(: neg² (∀ (p q) (→ (→𝒞 p q) (→𝒞 (¬ₐ¬ₐ p) (¬ₐ¬ₐ q)))))
-(define neg² (∘ neg neg))
-
 
 
 ;;; 控制运算符
 
-(: neg:call/lc (∀ (p a) (→𝒰ₐ (→𝒰ₐ (→𝒰ₐ p ⊥ᵃ) p) p)))
-(: neg:call/cc (∀ (p a) (→𝒰ₐ (→𝒰ₐ (→𝒰ₐ p ⊥)  p) p)))
-(define ((neg:call/lc kₐp) neg:proc) ((neg:proc kₐp) (neg  kₐp)))
+(: neg:call/lc (∀ (p a) (→𝒰ₐ (→𝒰ₐ (¬ₐ𝒰ₐ p) p) p)))
+(define ((neg:call/lc kₐp) neg:proc) ((neg:proc kₐp) (neg kₐp)))
+
+(: neg:call/cc (∀ (p a) (→𝒰ₐ (→𝒰ₐ (¬𝒰ₐ p) p) p)))
 (define ((neg:call/cc kₐp) neg:proc) ((neg:proc kₐp) (neg* kₐp)))
 
-(: cps:call/lc (∀ (p a) (→𝒦ₐ (→𝒦ₐ (→𝒦ₐ p ⊥ᵃ) p) p)))
-(: cps:call/cc (∀ (p a) (→𝒦ₐ (→𝒦ₐ (→𝒦ₐ p ⊥)  p) p)))
+(: cps:call/lc (∀ (p a) (→𝒦ₐ (→𝒦ₐ (¬ₐ𝒦ₐ p) p) p)))
+(: cps:call/cc (∀ (p a) (→𝒦ₐ (→𝒦ₐ (¬𝒦ₐ  p) p) p)))
+
 (define ((cps:call/lc cps:proc) kₐp) ((cps:proc (cps  kₐp)) kₐp))
 (define ((cps:call/cc cps:proc) kₐp) ((cps:proc (cps* kₐp)) kₐp))
 
 
-;;; 求值与定界
+;;; 求值与边界
 
 (: cps:id (∀ (p a) (→𝒦ₐ p p)))
 (define cps:id (cps id))
@@ -85,10 +82,9 @@
 (: anf:eval (∀ (a) (¬ₐ¬ₐ¬ₐ a)))
 (define anf:eval (cps:id a->⊥ᵃ))
 
-(: anf:reset (∀ (a) (→ (¬ₐ¬ₐ a) (∀ (x) (¬ₓ¬ₓ a)))))
+(: anf:reset (∀ (a x) (→ (¬ₐ¬ₐ a) (¬ₓ¬ₓ a))))
 (define anf:reset (cps anf:eval))
 
-(: cps:abort (∀ (a) (→𝒦ₐ a ⊥)))
 (define cps:abort (cps* a->⊥ᵃ))
 
 
@@ -99,14 +95,7 @@
     [(_ () b* ...)
      (anf:begin b* ...)]
     [(_ ([v* e]) b* ...)
-     (let ([kkv e])
-       (: id       (→𝒦ₐ (¬ₐ¬ₐ p) p))
-       (: cps:kv   (→𝒦ₐ       p  q))
-       (: cps:kkkv (→𝒦ₐ (¬ₐ¬ₐ p) q))
-       (define (id kkv) kkv)
-       (define (cps:kv . v*) (anf:begin b* ...))
-       (define cps:kkkv (∘𝒦 cps:kv id))
-       (cps:kkkv kkv))]
+     (λ (k) (e (λ v* ((anf:begin b* ...) k))))]
     [(_ ([v* e] [v** e*] ...) b* ...)
      (anf:let*-values ([v* e])
        (anf:let*-values ([v** e*] ...)
@@ -120,21 +109,17 @@
 (define-syntax-rule (anf:let* ([v e] ...) b* ...)
   (anf:let*-values ([(v) e] ...) b* ...))
 
-(define-syntax-rule (anf:if test conseq alt)
-  (let ([kkb test])
-    (: id       (→𝒦ₐ (¬ₐ¬ₐ Boolean) Boolean))
-    (: cps:kb   (→𝒦ₐ       Boolean  q))
-    (: cps:kkkb (→𝒦ₐ (¬ₐ¬ₐ Boolean) q))
-    (define (id kkb) kkb)
-    (define (cps:kb . b*) (if (equal? b* '(#f)) alt conseq))
-    (define cps:kkkb (∘𝒦 cps:kb id))
-    (cps:kkkb kkb)))
+(define-syntax-rule (anf:let ([v e]) b* ...)
+  (anf:let* ([v e]) b* ...))
 
-(define-syntax-rule (anf:let/lc cps:k b* ...)
-  (cps:call/lc (λ (cps:k) b* ...)))
+(define-syntax-rule (anf:if test conseq alt)
+  (λ (k) (test (λ b* ((if (equal? b* '(#f)) alt conseq) k)))))
 
 (define-syntax-rule (anf:let/cc cps:k b* ...)
   (cps:call/cc (λ (cps:k) b* ...)))
+
+(define-syntax-rule (anf:let/lc cps:k b* ...)
+  (cps:call/lc (λ (cps:k) b* ...)))
 
 (define-syntax-rule (anf:shift cps:k e)
   (anf:let/lc cps:k
@@ -153,9 +138,10 @@
 (define cps:display   (cps display))
 (define cps:displayln (cps displayln))
 
+
 (module+ test
   (require rackunit racket/control "../../tools/check-output-prefix.rkt")
-  ;; 同一条局部延续：不用、调用一次、调用两次。
+  ;; 「四个例子」：同一条局部延续，不用、调用一次、调用两次。
   (define (example step)
     (anf:eval
      (anf:let* ([v (anf:reset
@@ -170,6 +156,29 @@
    (example (λ () (anf:shift cps:k
                   (anf:let* ([r (cps:k 3)]) (cps:k r)))))
    17)
+  ;; 「两个 call/cc」：call/lc 交出的延续会返回，call/cc 交出的不会。
+  (define (early call)
+    (anf:eval
+     (call
+      (λ (cps:return)
+        (define (cps:loop r*)
+          (anf:if (cps:null? r*)
+                  (cps:*)
+                  (anf:let* ([r (cps:car r*)]
+                             [r (anf:if (cps:zero? r) (cps:return r) (cps:id r))]
+                             [r* (cps:cdr r*)]
+                             [res (cps:loop r*)])
+                    (cps:* res r))))
+        (cps:loop '(1 2 0 3 4))))))
+  (check-equal? (early cps:call/cc) 0)
+  (check-equal? (early cps:call/lc) 0)
+  ;; 「求值与边界」：anf:eval 交进 id；anf:reset 展开。
+  (check-equal? (anf:eval (λ (k) (k 12))) 12)
+  (check-equal? ((anf:reset (λ (k) (k 5))) add1) 6)
+  ;; neg 两种写法、flip 来回一趟。
+  (check-equal? (((neg add1) number->string) 4) "5")
+  (check-equal? ((((flip (flip cps)) add1) 4) values) 5)
+  ;; 「元延续」的阴阳谜题：let/lc 版输出不变。
   (define-syntax-rule (let/lc k body) (shift k (k body)))
   (check-true
    (output-starts-with?
@@ -177,15 +186,16 @@
       (reset
        (let ([kn (let/lc k0 k0)])
          (displayln #\@)
-         (let ([k (let/lc kn+1 kn+1)])
+         (let ([km (let/lc kn+1 kn+1)])
            (display #\*)
-           (kn k)))))
+           (kn km)))))
     "@\n*@\n**@\n***@")))
 
 
 ;; 正文推导中的独立版本，同名定义各有自己的作用域。
 
-(module stage-1 racket
+;; 「函数调用」：一等标签版与假想的 return 版。
+(module call racket
   (define (goto l) (l l))
   (define (label) (call/cc goto))
   (define (mul . r*)
@@ -200,32 +210,24 @@
           (goto ret))
         (set! result (* result r))))
     result)
+  (module* hypothetical racket
+    ;; 正文假设的宿主 return：测试时用当前函数的退出延续实现。
+    (provide (all-defined-out))
+    (define current-return (make-parameter values))
+    (define (return v) ((current-return) v))
+    (define (mul . r*)
+      (define result (*))
+      (for ([r (in-list r*)])
+        (when (zero? r) (return 0))
+        (set! result (* result r)))
+      (return result)))
+  (provide (all-defined-out)))
+
+;; 「返回答案」「边界的两侧」：结构体表示。
+(module tagged typed/racket/no-check
   (provide (all-defined-out))
-)
-
-(module stage-2 racket
-  ;; 正文假设的宿主 return：测试时用当前函数的退出延续实现。
-  (define current-return (make-parameter values))
-  (define (return v) ((current-return) v))
-  (define (mul . r*)
-    (define result (*))
-    (for ([r (in-list r*)])
-      (when (zero? r) (return 0))
-      (set! result (* result r)))
-    (return result))
-  (provide (all-defined-out))
-)
-
-(module stage-3 typed/racket/no-check
-
   (struct (r) ans ([a : r]) #:type-name Ans)
-  (provide (all-defined-out))
-)
-
-(module stage-4 typed/racket/no-check
-  (require (submod ".." stage-3))
   (: mul (→ Real * Real))
-
   (define (mul . r*)
     (: real* (→ Real Real (∪ Real (Ans Real))))
     (define (real* a b)
@@ -239,40 +241,20 @@
         [(null? r*) (ans result)]
         [else (loop (cdr r*) (real* (car r*) result))]))
     (ans-a (loop r* (*))))
-  (provide (all-defined-out))
-)
-
-(module stage-6 typed/racket/no-check
-  (require (submod ".." stage-3))
   (define-type ⊥ᵃ (Ans Real))
-
   (define ⊥ᵃ?   ans?)
-
   (define a->⊥ᵃ ans)
-
   (define ⊥ᵃ->a ans-a)
-  (provide (all-defined-out))
-)
+  (define-type Realᵃ (∪ Real ⊥ᵃ)))
 
-(module stage-7 typed/racket/no-check
-  (require (submod ".." stage-6))
-  (define-type Realᵃ (∪ Real ⊥ᵃ))
+;; 「局部延续」「逃逸与丢弃」：结构体表示下的局部版本。
+(module local typed/racket/no-check
   (provide (all-defined-out))
-)
-
-(module stage-8 typed/racket/no-check
-  (require (submod ".." stage-6))
-  (define-type (¬ₐ p) (→ p ⊥ᵃ))
-  (provide (all-defined-out))
-)
-
-(module stage-9 typed/racket/no-check
-  (require (submod ".." stage-6))
-  (define-type (¬ₐ p) (→ p ⊥ᵃ))
+  (require (submod ".." tagged))
+  (define-type (¬ₐ p ...) (→ p ... ⊥ᵃ))
   (: mul (→ Real * Real))
-
   (define (mul . r*)
-    (: loop/kₐ (→ (Listof Real) (¬ₐ Real) ⊥ᵃ))
+    (: loop/kₐ (¬ₐ (Listof Real) (¬ₐ Real)))
     (define (loop/kₐ r* kₐ)
       (if (null? r*)
           (kₐ (*))
@@ -281,181 +263,75 @@
                 (a->⊥ᵃ r)
                 (loop/kₐ (cdr r*) (λ (v) (kₐ (* v r))))))))
     (⊥ᵃ->a (loop/kₐ r* a->⊥ᵃ)))
-  (provide (all-defined-out))
-)
-
-(module stage-11 typed/racket/no-check
-  (require (submod ".." stage-6))
   (define (((cps f) . p*) kₐq) (kₐq (apply f p*)))
-
-  (define ((cps:call/cc cps:proc) kₐp) ((cps:proc (cps kₐp)) kₐp))
-
   (define (anf:eval kₐkₐa) (⊥ᵃ->a (kₐkₐa a->⊥ᵃ)))
-  (provide (all-defined-out))
-)
-
-(module stage-15 typed/racket/no-check
-
   (define (((cps* kₐp) . p*) _kₐq) (apply kₐp p*))
+  (module* leaky #f
+    (provide (all-defined-out))
+    (define ((cps:call/cc cps:proc) kₐp) ((cps:proc (cps kₐp)) kₐp)))
+  (module* fixed #f
+    (provide (all-defined-out))
+    (define ((cps:call/cc cps:proc) kₐp) ((cps:proc (cps* kₐp)) kₐp)))
+  ;; 「边界中的边界」：结构体表示下手写 ⊥ᵃ->a 的 call/lc。
+  (module* struct-lc #f
+    (provide (all-defined-out))
+    (define ((cps:call/lc cps:proc) kₐp)
+      (define (kp p) (⊥ᵃ->a (kₐp p)))
+      ((cps:proc (cps kp)) kₐp))))
+
+;; 「边界中的边界」：平凡表示。
+(module trivial typed/racket/no-check
   (provide (all-defined-out))
-)
-
-(module stage-17 typed/racket/no-check
   (define id values)
-
   (define-type ⊥ᵃ Real)
-
-  (define-type (¬ₐ p) (→ p ⊥ᵃ))
-
-  (define ⊥ᵃ->a id)
-  (provide (all-defined-out))
-)
-
-(module stage-21 typed/racket/no-check
-  (define id values)
+  (define a->⊥ᵃ id)
   (define ⊥ᵃ->a id)
   (define (((cps f) . p*) kₐq) (kₐq (apply f p*)))
-  (define ((cps:call/lc cps:proc) kₐp)
-    (define (kp p) (⊥ᵃ->a (kₐp p)))
-    ((cps:proc (cps kp)) kₐp))
-  (provide (all-defined-out))
-)
-
-(module stage-22 typed/racket/no-check
-  (define id values)
-  (define ⊥ᵃ->a id)
-  (define a->⊥ᵃ id)
+  (define ((cps:call/lc cps:proc) kₐp) ((cps:proc (cps kₐp)) kₐp))
   (define (anf:eval kₐkₐa) (⊥ᵃ->a (kₐkₐa a->⊥ᵃ)))
-  (provide (all-defined-out))
-)
+  (define anf:reset (cps anf:eval))
+  ;; 「求值与边界」：anf:reset 展开以后。
+  (module* expanded #f
+    (provide (all-defined-out))
+    (define ((anf:reset kₐkₐa) kₓa)
+      (kₓa (anf:eval kₐkₐa)))))
 
-(module stage-27 racket
-  (require racket/control)
-  (define (abort . v*) (shift _ (apply values v*)))
+;; 「从 return 到 shift」「规约规则」「元延续」：用 Racket 原生的 shift 写出的几种定义。
+(module native racket
   (provide (all-defined-out))
-)
-
-(module stage-40 racket
-  (require (rename-in (except-in racket/control abort) [shift primitive-shift]) (only-in (submod ".." stage-27) abort))
-  (define (call/lc proc) (primitive-shift k (proc k)))
+  (require (rename-in (only-in racket/control reset shift) [shift primitive-shift]))
+  (module* via-shift racket
+    (provide (all-defined-out))
+    (require racket/control)
+    (define-syntax-rule (let/lc k body) (shift k (k body)))
+    (define (abort . v*) (shift _ (apply values v*))))
+  (define (abort . v*) (primitive-shift _ (apply values v*)))
+  (define (call/lc proc) (primitive-shift k (k (proc k))))
   (define-syntax-rule (let/lc k body ...)
     (call/lc (λ (k) body ...)))
-
   (define-syntax-rule (shift k expr)
     (let/lc k (let ([v expr]) (abort v))))
-  (provide (all-defined-out))
-)
-
-(module stage-41 racket
-  (require (submod ".." stage-40) (only-in (submod ".." stage-27) abort))
   (define ∘ compose)
   (define (call/cc proc)
-    (let/lc k (proc (∘ abort k))))
-  (provide (all-defined-out))
-)
+    (let/lc k (proc (∘ abort k)))))
 
-(module stage-47 typed/racket/no-check
-  (define-type ⊥ᵃ Real)
-  (define-type (¬ₐ p) (→ p ⊥ᵃ))
-  (define-type (¬ₐ¬ₐ p) (¬ₐ (¬ₐ p)))
-  (define-type (→𝒞 p q) (→ p q))
-  (define-type (←𝒞 q p) (→𝒞 p q))
-  (define-type (→𝒰ₐ p q) (←𝒞 (¬ₐ p) (¬ₐ q)))
-  (define-type (→𝒦ₐ p q) (→𝒞 p (¬ₐ¬ₐ q)))
-  (define ((neg f) kₐq) (compose kₐq f))
-  (: neg (∀ (p q) (→ (→𝒞 p q) (∀ (a) (→𝒰ₐ p q)))))
+;; 「局部否定下的箭头」：先给出的 anf:eval。
+(module eval-first typed/racket/no-check
   (provide (all-defined-out))
-)
-
-(module stage-48 typed/racket/no-check
-  (define-type ⊥ᵃ Real)
-  (define-type (¬ₐ p) (→ p ⊥ᵃ))
-  (define-type (¬ₐ¬ₐ p) (¬ₐ (¬ₐ p)))
-  (define-type (→𝒞 p q) (→ p q))
-  (define-type (←𝒞 q p) (→𝒞 p q))
-  (define-type (→𝒰ₐ p q) (←𝒞 (¬ₐ p) (¬ₐ q)))
-  (define-type (→𝒦ₐ p q) (→𝒞 p (¬ₐ¬ₐ q)))
-  (define ((neg f) kₐq) (compose kₐq f))
-  (: neg (∀ (p a) (→ (¬ₐ p) (∀ (x) (→𝒰ₓ p ⊥ᵃ)))))
-  (provide (all-defined-out))
-)
-
-(module stage-53 typed/racket/no-check
-  (define-type ⊥ᵃ Real)
-  (define-type (¬ₐ p) (→ p ⊥ᵃ))
-  (define-type (¬ₐ¬ₐ p) (¬ₐ (¬ₐ p)))
-  (define-type (→𝒞 p q) (→ p q))
-  (define-type (←𝒞 q p) (→𝒞 p q))
-  (define-type (→𝒰ₐ p q) (←𝒞 (¬ₐ p) (¬ₐ q)))
-  (define-type (→𝒦ₐ p q) (→𝒞 p (¬ₐ¬ₐ q)))
-  (define (((flip f) . y*) . x*) (apply (apply f x*) y*))
-  (: flip (∀ (p q) (case→ (→ (→𝒰ₐ p q) (→𝒦ₐ p q))
-                          (→ (→𝒦ₐ p q) (→𝒰ₐ p q)))))
-  (provide (all-defined-out))
-)
-
-(module stage-54 typed/racket/no-check
-  (define-type ⊥ᵃ Real)
-  (define-type (¬ₐ p) (→ p ⊥ᵃ))
-  (define-type (¬ₐ¬ₐ p) (¬ₐ (¬ₐ p)))
-  (define-type (→𝒞 p q) (→ p q))
-  (define-type (←𝒞 q p) (→𝒞 p q))
-  (define-type (→𝒰ₐ p q) (←𝒞 (¬ₐ p) (¬ₐ q)))
-  (define-type (→𝒦ₐ p q) (→𝒞 p (¬ₐ¬ₐ q)))
-  (define cps (compose (λ (f) (λ (v) (λ (k) (k (f v))))) values))
-  (: cps  (∀ (p a) (→ (¬ₐ p) (∀ (x) (→𝒦ₓ p ⊥ᵃ)))))
-  (provide (all-defined-out))
-)
-
-(module stage-56 typed/racket/no-check
   (define id values)
-  (define-type ⊥ᵃ Real)
-  (define-type (¬ₐ p) (→ p ⊥ᵃ))
-  (define-type (¬ₐ¬ₐ p) (¬ₐ (¬ₐ p)))
-  (define-type (→𝒞 p q) (→ p q))
-  (define-type (←𝒞 q p) (→𝒞 p q))
-  (define-type (→𝒰ₐ p q) (←𝒞 (¬ₐ p) (¬ₐ q)))
-  (define-type (→𝒦ₐ p q) (→𝒞 p (¬ₐ¬ₐ q)))
+  (: a->⊥ᵃ (∀ (a) (¬ₐ a)))
   (define a->⊥ᵃ id)
   (: anf:eval (∀ (a) (→ (¬ₐ¬ₐ a) a)))
+  (define (anf:eval kₐkₐa) (kₐkₐa a->⊥ᵃ)))
 
-  (define (anf:eval kₐkₐa) (kₐkₐa a->⊥ᵃ))
+;; 「否定翻译与 A-翻译」：两条延续的 mul。
+(module two typed/racket/no-check
   (provide (all-defined-out))
-)
-
-(module stage-57 typed/racket/no-check
   (define id values)
-  (define-type ⊥ᵃ Real)
-  (define-type (¬ₐ p) (→ p ⊥ᵃ))
-  (define-type (¬ₐ¬ₐ p) (¬ₐ (¬ₐ p)))
-  (define-type (→𝒞 p q) (→ p q))
-  (define-type (←𝒞 q p) (→𝒞 p q))
-  (define-type (→𝒰ₐ p q) (←𝒞 (¬ₐ p) (¬ₐ q)))
-  (define-type (→𝒦ₐ p q) (→𝒞 p (¬ₐ¬ₐ q)))
-  (define cps:id (λ (p) (λ (k) (k p))))
-  (: cps:id (∀ (p a) (→ p (¬ₐ¬ₐ p))))
-  (provide (all-defined-out))
-)
-
-(module stage-59 typed/racket/no-check
-  (define id values)
-  (define ⊥ᵃ->a id)
-  (define a->⊥ᵃ id)
-  (define (anf:eval kₐkₐa) (kₐkₐa a->⊥ᵃ))
-  (define ((anf:reset kₐkₐa) kₓa)
-    (kₓa (anf:eval kₐkₐa)))
-  (provide (all-defined-out))
-)
-
-(module stage-60 typed/racket/no-check
-  (define id values)
-  (define-type ⊥ᵃ Real)
-  (define-type (¬ₐ p) (→ p ⊥ᵃ))
   (define a->⊥ᵃ id)
   (: mul (→ Real * Real))
-
   (define (mul . r*)
-    (: loop/ki (→ (Listof Real) (¬ₐ Real) (¬ₐ Real) ⊥ᵃ))
+    (: loop/ki (¬ₐ (Listof Real) (¬ₐ Real) (¬ₐ Real)))
     (define (loop/ki r* kₐ iₐ)
       (if (null? r*)
           (kₐ (*))
@@ -463,54 +339,72 @@
             (if (zero? r)
                 (iₐ r)
                 (loop/ki (cdr r*) (λ (v) (kₐ (* v r))) iₐ)))))
-    (loop/ki r* a->⊥ᵃ a->⊥ᵃ))
-  (provide (all-defined-out))
-)
+    (loop/ki r* a->⊥ᵃ a->⊥ᵃ)))
 
-(module stage-62 typed/racket/no-check
-  (define-type ⊥ᵃ Real)
-  (define-type (¬ₐ p) (→ p ⊥ᵃ))
-  (define-type (¬ₐ¬ₐ p) (¬ₐ (¬ₐ p)))
-  (define-type (→𝒞 p q) (→ p q))
-  (define-type (←𝒞 q p) (→𝒞 p q))
-  (define-type (→𝒰ₐ p q) (←𝒞 (¬ₐ p) (¬ₐ q)))
-  (define-type (→𝒦ₐ p q) (→𝒞 p (¬ₐ¬ₐ q)))
-  (define ((neg f) kₐq) (compose kₐq f))
-  (define (((cps f) . p*) kₐq) (kₐq (apply f p*)))
-  (define (((flip f) . y*) . x*) (apply (apply f x*) y*))
-  (: neg  (∀ (p q) (case→ (→ (→𝒞 p q) (←𝒞 (¬ₐ p) (¬ₐ q)))
-                          (→ (←𝒞 q p) (→𝒞 (¬ₐ q) (¬ₐ p))))))
-  (: cps  (∀ (p q) (case→ (→ (→𝒞 p q) (→𝒞 p (¬ₐ¬ₐ q)))
-                          (→ (←𝒞 q p) (←𝒞 (¬ₐ¬ₐ q) p)))))
-  (: flip (∀ (p q) (case→ (→ (←𝒞 (¬ₐ p) q) (→𝒞 p (¬ₐ q)))
-                          (→ (→𝒞 p (¬ₐ q)) (←𝒞 (¬ₐ p) q)))))
+;; 「用 call/cc 造定界延续」：元延续成了变量。
+(module from-call-cc racket
   (provide (all-defined-out))
-)
+  (define meta-k exit)
+  (define (abort . v*) (apply meta-k v*))
+  (define (call/prompt thk)
+    (define k0 meta-k)
+    (let/cc k1
+      (set! meta-k (λ v* (set! meta-k k0) (apply k1 v*)))
+      (call-with-values thk abort)))
+  (define-syntax-rule (reset b b* ...)
+    (call/prompt (λ () b b* ...)))
+  (define (call/lc proc)
+    (let/cc k
+      (define (local-k . v*)
+        (reset (apply k v*)))
+      (proc local-k)))
+  (define-syntax-rule (shift k b b* ...)
+    (call/lc (λ (k) (call-with-values (λ () b b* ...) abort)))))
 
 (module+ test
-  (require racket/control
-           (prefix-in label: (submod ".." stage-1))
-           (prefix-in hypothetical: (submod ".." stage-2))
-           (prefix-in tagged: (submod ".." stage-4))
-           (prefix-in local: (submod ".." stage-9))
-           (prefix-in simple: (submod ".." stage-11))
-           (prefix-in corrected: (submod ".." stage-15))
-           (prefix-in ordinary: (submod ".." stage-22))
-           (prefix-in return: (submod ".." stage-40))
-           (prefix-in call: (submod ".." stage-41))
-           (prefix-in reset: (submod ".." stage-59))
-           (prefix-in early: (submod ".." stage-60)))
-  (for ([mul (list label:mul tagged:mul local:mul early:mul)])
-    (check-equal? (mul 2 3 4) 24)
-    (check-equal? (mul 2 0 4) 0))
+  (require (prefix-in label: (submod ".." call))
+           (prefix-in hypothetical: (submod ".." call hypothetical))
+           (prefix-in tagged: (submod ".." tagged))
+           (prefix-in local: (submod ".." local))
+           (prefix-in leaky: (submod ".." local leaky))
+           (prefix-in fixed: (submod ".." local fixed))
+           (prefix-in struct: (submod ".." local struct-lc))
+           (prefix-in trivial: (submod ".." trivial))
+           (prefix-in expanded: (submod ".." trivial expanded))
+           (prefix-in native: (submod ".." native))
+           (prefix-in first: (submod ".." eval-first))
+           (prefix-in two: (submod ".." two))
+           (prefix-in cc: (submod ".." from-call-cc)))
+  (for ([mul (list label:mul tagged:mul local:mul two:mul)])
+    (check-equal? (mul 1 2 3 4) 24)
+    (check-equal? (mul 1 2 0 3 4) 0))
   (check-equal?
    (call/cc (λ (k)
               (parameterize ([hypothetical:current-return k])
                 (hypothetical:mul 2 0 4))))
    0)
-  (check-equal? (simple:anf:eval ((simple:cps add1) 3)) 4)
-  (check-equal? (((corrected:cps* values) 9) (λ (_) (error 'discard "should not run"))) 9)
-  (check-equal? (ordinary:anf:eval (λ (k) (k 12))) 12)
-  (check-equal? (reset (return:shift k (k 3))) 3)
-  (check-equal? (reset (call:call/cc (λ (k) (k 4)))) 4)
-  (check-equal? ((reset:anf:reset (λ (k) (k 5))) values) 5))
+  ;; 结构体表示下，(cps kₐp) 让答案漏给乘法；cps* 修好；手写 ⊥ᵃ->a 的 call/lc 也行。
+  (define ((struct-early call) _)
+    (local:anf:eval
+     (call
+      (λ (cps:return)
+        (λ (k) (((local:cps *) 1 2) (λ (v) ((cps:return 0) (λ (w) (k (* v w)))))))))))
+  (check-exn exn:fail:contract? (λ () ((struct-early leaky:cps:call/cc) #f)))
+  (check-equal? ((struct-early fixed:cps:call/cc) #f) 0)
+  (check-equal? ((struct-early struct:cps:call/lc) #f) 0)
+  (check-equal? (trivial:anf:eval ((trivial:cps add1) 3)) 4)
+  (check-equal? ((trivial:anf:reset (λ (k) (k 5))) add1) 6)
+  (check-equal? ((expanded:anf:reset (λ (k) (k 5))) add1) 6)
+  ;; 原生 shift 写出的定义，以及「元延续」的 105。
+  (check-equal? (reset (native:shift k (k 3))) 3)
+  (check-equal? (reset (native:call/cc (λ (k) (k 4)))) 4)
+  (check-equal?
+   (let ([k (reset (let ([x (native:call/cc (λ (k) (native:abort k)))]) (+ x 2)))])
+     (+ (reset (k 3)) 100))
+   105)
+  (check-equal? (first:anf:eval (λ (k) (k 7))) 7)
+  ;; 「用 call/cc 造定界延续」的四个例子。
+  (check-equal? (let ([v (cc:reset (let* ([x 3] [y (+ 2 x)]) (cc:abort y)))]) (+ 10 v)) 15)
+  (check-equal? (let ([v (cc:reset (let* ([x (cc:shift k 3)] [y (+ 2 x)]) (cc:abort y)))]) (+ 10 v)) 13)
+  (check-equal? (let ([v (cc:reset (let* ([x (cc:shift k (k 3))] [y (+ 2 x)]) (cc:abort y)))]) (+ 10 v)) 15)
+  (check-equal? (let ([v (cc:reset (let* ([x (cc:shift k (let ([r (k 3)]) (k r)))] [y (+ 2 x)]) (cc:abort y)))]) (+ 10 v)) 17))

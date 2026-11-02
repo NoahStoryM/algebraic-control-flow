@@ -65,7 +65,7 @@
 @racketblock[
 (∘ a->⊥ᵃ mul1 mul2 mul3 mul4)]
 
-上一章排在最前面的是@tech{终结延续} @racket[a->⊥]，@racket[a->⊥ᵃ] 在这里是同一个角色：@tech{闭包链}的底，一个空栈。不同的是，@racket[a->⊥ᵃ] 只是一个普通的构造函数，不借用语言的跳转，所以整条@tech{闭包链}也都是普通的函数，算的是这段局部计算的答案。它们是局部计算里还没做完的工作，叫@tech{局部延续}，名副其实。
+原来排在最前面的是@tech{终结延续} @racket[a->⊥]，@racket[a->⊥ᵃ] 在这里是同一个角色：@tech{闭包链}的底，一个空栈。不同的是，@racket[a->⊥ᵃ] 只是一个普通的构造函数，不借用语言的跳转，所以整条@tech{闭包链}也都是普通的函数，算的是这段局部计算的答案。它们是局部计算里还没做完的工作，叫@tech{局部延续}，名副其实。
 
 前一版的 @racket[loop] 每一步都要检查 @racket[(⊥ᵃ? result)]，在这里，这个检查消失了。@tech[#:key "延续传递风格"]{CPS} 把栈上的帧搬进了堆上的闭包，所有调用都在尾位置，栈上只有一层，根本没有需要检查的中间层。@racket[(mul 1 2 0 3 4)] 遇到零时，手里的@tech{局部延续}是 @racket[(∘ a->⊥ᵃ mul1 mul2)]。程序没有调用它，而是越过 @racket[mul1]、@racket[mul2]，直接调用最前面的 @racket[a->⊥ᵃ]：@racket[(a->⊥ᵃ r)] 交出答案，原路返回就是了。
 
@@ -125,7 +125,7 @@
 @racketblock[
 (((cps kₐp) . p*) kₐq)  =  (kₐq (kₐp . p*))]
 
-@racket[(cps kₐp)] 收下参数，调用 @racket[kₐp]，再把结果交给当前@tech{延续} @racket[kₐq]。@racket[(kₐp . p*)] 不在尾位置：外面还有 @racket[kₐq] 等着它返回。可在上一章的版本里，等着的 @racket[kq] 从来没有被调用过。@xref["02:k-in-hand"]{「手中的延续」}里，@racket[cps:proc2] 后面那一步加 1「再也轮不到」：@racket[kp] 一路走到@tech{终结延续} @racket[a->⊥]，一调用就 @racket[raise] 走了，不再回来，等着它的 @racket[kq] 也就永远轮不到。宿主的跳转一直在替我们丢掉 @racket[kq]，只是我们没有注意到。
+@racket[(cps kₐp)] 收下参数，调用 @racket[kₐp]，再把结果交给当前@tech{延续} @racket[kₐq]。@racket[(kₐp . p*)] 不在尾位置：外面还有 @racket[kₐq] 等着它返回。可在原来以 @math{⊥} 为终点的版本里，等着的 @racket[kq] 从来没有被调用过。@xref["02:k-in-hand"]{「手中的延续」}里，@racket[cps:proc2] 后面那一步加 1「再也轮不到」：@racket[kp] 一路走到@tech{终结延续} @racket[a->⊥]，一调用就 @racket[raise] 走了，不再回来，等着它的 @racket[kq] 也就永远轮不到。宿主的跳转一直在替我们丢掉 @racket[kq]，只是我们没有注意到。
 
 @tech{局部延续}不会跳走。@racket[(kₐp . p*)] 交出一个 @racket[ans]，正常返回，@racket[(kₐq …)] 第一次真的运行了。报错说的就是这件事：@racket[kₐq] 把答案当作中间结果交给了乘法，乘法不认识它。
 

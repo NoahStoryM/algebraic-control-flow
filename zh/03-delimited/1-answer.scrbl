@@ -98,7 +98,7 @@
 
 整个程序的 @math{⊥} 也是这样一个答案。@xref["01:program-type"]{「代入 Byte」}里，程序是一个 @math{¬¬@ty{Byte}}，由操作系统交来 @racket[exit]。进程终止时交出一个 @racket[Byte] 类型的退出码：从进程内部看，@racket[exit] 之后再也没有运算能拿着退出码接着算；从操作系统看，退出码是一个普通的字节，操作系统拿着它接着工作。@racket[exit] 之于进程，就像 @racket[ans] 之于 @racket[loop]。
 
-@defsym["⊥ᵃ?" "判断一个值是不是局部答案，这里就是 ans?"]@defsym["a->⊥ᵃ" "把值送进局部空，成为局部答案"]@defsym["⊥ᵃ->a" "在边界外从局部空里取出答案"]给这段局部计算的答案和边界上的两个操作起名，照上一章 @racket[a->⊥]、@racket[⊥->a] 的样子：
+@defsym["⊥ᵃ?" "判断一个值是不是局部答案，这里就是 ans?"]@defsym["a->⊥ᵃ" "把值送进局部空，成为局部答案"]@defsym["⊥ᵃ->a" "在边界外从局部空里取出答案"]给这段局部计算的答案和边界上的两个操作起名，照 @racket[a->⊥]、@racket[⊥->a] 的样子：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define-type ⊥ᵃ (Ans Real))

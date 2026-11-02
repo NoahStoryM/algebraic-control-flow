@@ -54,7 +54,7 @@
             (+ x 2)))])
   (+ (reset (k 3)) 100))]
 
-第一个 @racket[reset] 里，@racket[let/cc] 捕获当前的@tech{延续}，@racket[(abort k)] 把它作为答案交出来。@racket[k] 带着的局部工作是加二。第二个 @racket[reset] 里调用 @racket[(k 3)]，展开是 @racket[(abort (k′ 3))]，@racket[k′] 是捕获时的那条@tech{局部延续}：它做完加二，得到 @racket[5]，@racket[abort] 再把 @racket[5] 送出当前的边界，也就是第二个 @racket[reset]。边界外的加一百照常执行，得到 @racket[105]。
+第一个 @racket[reset] 里，@racket[let/cc] 捕获当前的@tech{延续}，@racket[(abort k)] 把它作为答案交出来，它带着的局部工作是加二。第二个 @racket[reset] 里调用 @racket[(k 3)]。照上面的定义，这条@tech{延续}先把 @racket[3] 交给捕获时的@tech{局部延续}，做完加二，得到 @racket[5]，再把 @racket[5] 交给 @racket[abort]；@racket[abort] 用的是调用时的@tech{元延续}，把 @racket[5] 送出当前的边界，也就是第二个 @racket[reset]。边界外的加一百照常执行，得到 @racket[105]。
 
 当然，捕获和调用时最近的边界若是同一次 @racket[reset] 划出来的，边界外等着的就是同一份工作，调用时的@tech{元延续}也就是捕获时的那一条。
 
@@ -67,7 +67,7 @@
 = (reset (reset E[v]))
 = (reset E[v])]
 
-后两步展开 @racket[k]：@racket[let/lc] 拿到的 @racket[k] 和 @racket[shift] 拿到的一样，是 @racket[(λ (v) (reset E[v]))]；再用@xref["03:rules"]{「规约规则」}里两层边界等于一层的那条。在 @racket[reset] 的尾位置，跳转和普通的调用落到同一个地方：在这层边界里，把 @racket[v] 放回捕获时的上下文 @c{E}。
+后两步展开 @racket[k]：@racket[let/lc] 拿到的 @racket[k] 和 @racket[shift] 拿到的一样，是 @c{(λ (v) (reset E[v]))}；再用@xref["03:rules"]{「规约规则」}里两层边界等于一层的那条。在 @racket[reset] 的尾位置，跳转和普通的调用落到同一个地方：在这层边界里，把 @racket[v] 放回捕获时的上下文 @c{E}。
 
 所以，@racket[let/cc] 捕获的@tech{延续}若只在 @racket[reset] 的尾位置调用，就可以改用 @racket[let/lc]，只捕获@tech{局部延续}。@xref["02:yin-yang"]{「阴阳谜题」}里，@racket[label] 写成了 @racket[(let/cc k k)]；谜题里的@tech{延续}恰好只在这样的尾位置调用。照@xref["01:rules"]{「读出规律」}的名字写谜题，把 @racket[let/cc] 换成 @racket[let/lc]：
 
@@ -121,4 +121,4 @@
 
 整个程序在操作系统眼里，也是这样的结构。操作系统交给程序一个空栈，@tech{终结延续}是 @racket[exit]，程序是一段交出 @racket[Byte] 类型答案的局部计算。@racket[id] 之于局部计算，就像 @racket[exit] 之于整个程序：标出这一层已经没有剩下的工作。
 
-@tech{换基}落到栈上，是沿边界切的一刀。上一章那些箭头，都建在以 @math{⊥} 为@tech{基}的否定上；@tech{基}换成 @math{a}，它们还成立吗？
+@tech{换基}落到栈上，是沿边界切的一刀。@xref["02:4-arrows"]{「两种箭头与命题」}里那些箭头，都建在以 @math{⊥} 为@tech{基}的否定上；@tech{基}换成 @math{a}，它们还成立吗？
