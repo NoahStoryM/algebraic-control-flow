@@ -46,7 +46,7 @@
 @examples[#:eval ev #:hidden
 (define-syntax-rule (let/cc k body ...) (call/cc (λ (k) body ...)))]
 
-留意，@racket[k] 是捕获时的@tech{局部延续}，可调用 @racket[abort]，调用的是调用时的@tech{元延续}，不是捕获时的那一条。把捕获和调用放进两个不同的 @racket[reset]，差别就显出来了：
+所以 @racket[shift] 定义得出 @racket[call/cc]，只有一处要留意。@racket[k] 是捕获时的@tech{局部延续}；@racket[abort] 调用的，却是调用时的@tech{元延续}，不是 @racket[k] 被捕获时的那一条。下面的 @racket[let/cc] 就用这个 @racket[call/cc] 定义，@racket[reset] 用 Racket 自己的。把捕获和调用放进两个不同的 @racket[reset]，差别就显出来了：
 
 @examples[#:eval ev #:label #f
 (let ([k (reset

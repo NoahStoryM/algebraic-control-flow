@@ -65,11 +65,11 @@
 @racketblock[
 (∘ a->⊥ᵃ mul1 mul2 mul3 mul4)]
 
-原来排在最前面的是@tech{终结延续} @racket[a->⊥]，@racket[a->⊥ᵃ] 在这里是同一个角色：@tech{闭包链}的底，一个空栈。不同的是，@racket[a->⊥ᵃ] 只是一个普通的构造函数，不借用语言的跳转，所以整条@tech{闭包链}也都是普通的函数，算的是这段局部计算的答案。它们是局部计算里还没做完的工作，叫@tech{局部延续}，名副其实。
+原来写在 @racket[∘] 最左边、最后才调用的，是@tech{终结延续} @racket[a->⊥]；@racket[a->⊥ᵃ] 在这里是同一个角色：@tech{闭包链}的底，一个空栈。不同的是，@racket[a->⊥ᵃ] 只是一个普通的构造函数，不借用语言的跳转，所以整条@tech{闭包链}也都是普通的函数，算的是这段局部计算的答案。它们是局部计算里还没做完的工作，叫@tech{局部延续}，名副其实。
 
-前一版的 @racket[loop] 每一步都要检查 @racket[(⊥ᵃ? result)]，在这里，这个检查消失了。@tech[#:key "延续传递风格"]{CPS} 把栈上的帧搬进了堆上的闭包，所有调用都在尾位置，栈上只有一层，根本没有需要检查的中间层。@racket[(mul 1 2 0 3 4)] 遇到零时，手里的@tech{局部延续}是 @racket[(∘ a->⊥ᵃ mul1 mul2)]。程序没有调用它，而是越过 @racket[mul1]、@racket[mul2]，直接调用最前面的 @racket[a->⊥ᵃ]：@racket[(a->⊥ᵃ r)] 交出答案，原路返回就是了。
+前一版的 @racket[loop] 每一步都要检查 @racket[(⊥ᵃ? result)]，在这里，这个检查消失了。@tech[#:key "延续传递风格"]{CPS} 把栈上的帧搬进了堆上的闭包，所有调用都在尾位置，栈上只有一层，根本没有需要检查的中间层。@racket[(mul 1 2 0 3 4)] 遇到零时，手里的@tech{局部延续}是 @racket[(∘ a->⊥ᵃ mul1 mul2)]。程序没有调用它，而是越过 @racket[mul1]、@racket[mul2]，直接调用写在最左边的 @racket[a->⊥ᵃ]：@racket[(a->⊥ᵃ r)] 交出答案，原路返回就是了。
 
-回头看这次替换。四样东西里，@math{⊥} 是另外三样共同的落点：@math{¬p} 指向它，@racket[a->⊥] 把值送进它，@racket[⊥->a] 从它那里取回答案。把这个落点从 @math{⊥} 换成 @math{⊥ᵃ}，另外三样跟着换成局部的版本，代码的结构一点没变，@tech{闭包链}也只换了最前面的那一个。所有@tech{延续}都落在同一个终点上，这个终点可以叫作它们的@defterm[#:en "base"]{基}；这次替换，就是一次@defterm[#:en "change of base"]{换基}。
+回头看这次替换。四样东西里，@math{⊥} 是另外三样共同的落点：@math{¬p} 指向它，@racket[a->⊥] 把值送进它，@racket[⊥->a] 从它那里取回答案。把这个落点从 @math{⊥} 换成 @math{⊥ᵃ}，另外三样跟着换成局部的版本，代码的结构一点没变，@tech{闭包链}也只换了最左边的那一个。所有@tech{延续}都落在同一个终点上，这个终点可以叫作它们的@defterm[#:en "base"]{基}；这次替换，就是一次@defterm[#:en "change of base"]{换基}。
 
 @section[#:tag "03:escape-discard"]{逃逸与丢弃}
 
@@ -98,7 +98,7 @@
             [w (cps:* v 3)])
    (cps:+ w 100)))]
 
-用 @racket[cps:call/cc] 提前退出，就出事了：
+用 @racket[cps:call/cc] 提前退出，就出事了。这回的循环把遇零的那一步写进一个绑定：遇零就 @racket[cps:return]，否则原样交出，后面的循环都写在它之后。这样，调用 @racket[cps:return] 以后还有没做的工作，看得出它有没有被丢掉：
 
 @examples[#:eval ev #:label #f
 (eval:error
@@ -132,10 +132,10 @@
 @defsym["cps*" "把局部延续提升成丢弃当前延续的 CPS 箭头"]既然 @racket[(kₐp . p*)] 已经得到了答案，直接交出就行，不必理会 @racket[kₐq]：
 
 @examples[#:eval ev #:label #f #:no-prompt
-(define (((cps* kₐp) . p*) _kₐq) (apply kₐp p*))
+(define (((cps* kₐp) . p*) kₐq) (apply kₐp p*))
 (define ((cps:call/cc cps:proc) kₐp) ((cps:proc (cps* kₐp)) kₐp))]
 
-@racket[cps*] 丢掉当前@tech{延续} @racket[_kₐq]，用保存的 @racket[kₐp] 直接交出答案。对 @racket[kₐp] 的调用也回到了尾位置，再没有谁等它返回。跳转就是替换当前@tech{延续}：@racket[goto] 和 @racket[call/cc] 靠语言内置的机制替换，@racket[cps*] 亲手做了同样的事。
+@racket[cps*] 收下当前@tech{延续} @racket[kₐq]，却不用它，用保存的 @racket[kₐp] 直接交出答案。对 @racket[kₐp] 的调用也回到了尾位置，再没有谁等它返回。跳转就是替换当前@tech{延续}：@racket[goto] 和 @racket[call/cc] 靠语言内置的机制替换，@racket[cps*] 亲手做了同样的事。
 
 换上修好的 @racket[cps:call/cc]，再跑一遍前面的例子，遍历在遇到零的那一步停了下来：
 
@@ -173,7 +173,7 @@
 
 链上只剩那一串乘法。
 
-回到刚才报错的 @racket[(kₐq (kₐp . p*))]：@racket[(kₐp . p*)] 现在交出 @math{⊥ᵃ}，也就是 @racket[Real]；@racket[kₐq] 收到一个 @racket[Real]，类型对得上，被 @racket[cps*] 丢掉的 @racket[kₐq] 不必再丢。于是原来那个 @racket[cps:call/cc] 的定义本来就有意义，只是捕获的不再是会跳走的@tech{延续}，而是一个普通函数，@tech{局部延续}：
+回到刚才报错的 @racket[(kₐq (kₐp . p*))]：@racket[(kₐp . p*)] 现在交出 @math{⊥ᵃ}，在这里就是 @racket[Real]；调用 @racket[(cps kₐp)] 的地方，等的正是一个 @math{⊥ᵃ}（例子里它在乘法的位置上，等一个实数），类型对得上，被 @racket[cps*] 丢掉的 @racket[kₐq] 不必再丢。于是原来那个 @racket[cps:call/cc] 的定义本来就有意义，只是捕获的不再是会跳走的@tech{延续}，而是一个普通函数，@tech{局部延续}：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define ((cps:call/lc cps:proc) kₐp) ((cps:proc (cps kₐp)) kₐp))]

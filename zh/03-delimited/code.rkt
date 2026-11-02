@@ -46,7 +46,7 @@
 (define ((neg f) kq) (∘ kq f))
 
 (: neg* (∀ (p a) (→ (¬ₐ p) (¬𝒰ₐ p))))
-(define ((neg* kₐp) _k) kₐp)
+(define ((neg* kₐp) k) kₐp)
 
 (: flip (∀ (p q a) (case→ (→ (→𝒰ₐ p q) (→𝒦ₐ p q))
                         (→ (→𝒦ₐ p q) (→𝒰ₐ p q)))))
@@ -265,7 +265,7 @@
     (⊥ᵃ->a (loop/kₐ r* a->⊥ᵃ)))
   (define (((cps f) . p*) kₐq) (kₐq (apply f p*)))
   (define (anf:eval kₐkₐa) (⊥ᵃ->a (kₐkₐa a->⊥ᵃ)))
-  (define (((cps* kₐp) . p*) _kₐq) (apply kₐp p*))
+  (define (((cps* kₐp) . p*) kₐq) (apply kₐp p*))
   (module* leaky #f
     (provide (all-defined-out))
     (define ((cps:call/cc cps:proc) kₐp) ((cps:proc (cps kₐp)) kₐp)))

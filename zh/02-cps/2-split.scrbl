@@ -35,13 +35,13 @@
 
 这样的函数头是嵌套 @racket[λ] 的简写：@racket[(define (((cps f) . p*) kq) body)] 就是 @racket[(define (cps f) (λ p* (λ (kq) body)))]，一层括号收一层参数，@tt{. p*} 把其余参数收成列表，原样交给 @racket[f]，不管 @racket[f] 收几个参数。
 
+这只是把 @racket[f] 整个包上一层：@racket[f] 自己里面的计算照旧，@racket[cps] 并不改写它的内部。
+
 拿 @racket[+] 各走一遍。@racket[(cps +)] 先收操作数 @racket[1]、@racket[2]，交出一个等着@tech{延续}的值；再交给它一个@tech{延续}，计算才开始。@racket[(neg +)] 次序反过来，先收@tech{延续}，再收操作数：
 
 @examples[#:eval ev #:label #f
 (⊥->a (((cps +) 1 2) (λ (v) (a->⊥ (* v 10)))))
 (⊥->a (((neg +) (λ (v) (a->⊥ (* v 10)))) 1 2))]
-
-这只是把 @racket[f] 整个包上一层：@racket[f] 自己里面的计算照旧，@racket[cps] 并不改写它的内部。
 
 操作上一样，类型却不同：
 

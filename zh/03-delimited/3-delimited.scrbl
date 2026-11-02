@@ -12,7 +12,7 @@
 (define a->⊥ᵃ id)
 (define ⊥ᵃ->a id)
 (define (((cps f) . p*) kₐq) (kₐq (apply f p*)))
-(define (((cps* kₐp) . p*) _kₐq) (apply kₐp p*))
+(define (((cps* kₐp) . p*) kₐq) (apply kₐp p*))
 (define ((cps:call/lc cps:proc) kₐp) ((cps:proc (cps  kₐp)) kₐp))
 (define ((cps:call/cc cps:proc) kₐp) ((cps:proc (cps* kₐp)) kₐp))
 (define (anf:eval kₐkₐa) (⊥ᵃ->a (kₐkₐa a->⊥ᵃ)))
@@ -79,6 +79,8 @@
 
 @racket[shift] 做了两件事，捕获与跳转，也可以只留一件。主体捕获了@tech{局部延续}，又把结果交回给它，跳转就被撤销了，只剩下捕获：@racket[(shift k (k e))] 就是 @racket[(let/lc k e)]。主体不理会捕获的@tech{局部延续}，只剩下跳转：@racket[(shift _ e)] 就是 @racket[(abort e)]。倒过来读这条等式，@tt{return} 就是丢掉了@tech{局部延续}的 @racket[shift]。
 
+这两条等式也可以不用嵌入语言，写成直接风格：@racket[reset]、@racket[shift] 就用 Racket 的 @racket[racket/control] 里那两个，@racket[let/lc] 和 @racket[abort] 照等式定义：
+
 @racketblock[
 (define-syntax-rule (let/lc k body) (shift k (k body)))
 (define (abort . v*) (shift _ (apply values v*)))]
@@ -121,7 +123,7 @@
                   (cps:abort y)))])
    (cps:+ 10 v)))]
 
-@racket[(cps:k 3)] 做完保存的工作，得到 @racket[5]。@racket[cps:k] 来自 @racket[cps:call/lc]，调用它时，@racket[⊥ᵃ->a] 包着一段局部计算，取出答案；所以里面的 @racket[cps:abort] 交出的 @racket[5]，正常返回到 @racket[anf:shift] 的主体。
+@racket[(cps:k 3)] 做完保存的工作，得到 @racket[5]。@racket[cps:k] 来自 @racket[cps:call/lc]，是一个普通的函数：调用它，做完局部的工作，链底的 @racket[id] 把答案原样交回；所以里面的 @racket[cps:abort] 交出的 @racket[5]，正常返回到 @racket[anf:shift] 的主体。
 
 主体的结果就是这个 @racket[5]，@racket[anf:shift] 再把它作为所在那段局部计算的答案交出。外面仍然得到 @racket[15]，和第一个例子一样。@racket[(shift k (k e))] 就是 @racket[(let/lc k e)]；@racket[e] 不用 @racket[k] 时，捕获也可以省去，所以第三个例子和第一个是同一段计算。
 
@@ -250,6 +252,8 @@
    (list @tech[#:key "A-范式"]{ANF} @racket[(let ([v exp] [k (λ (w) body1)]) body)])
    (list @elem{@tech[#:key "A-范式"]{ANF} 加 @racket[reset]、@racket[shift]} @racket[(reset (let ([w (let ([v exp]) (shift k body))]) body1))]))]
 
+这几张表里，每一组都是同一个程序的几种写法，从一种改成另一种，照着形状换就行。
+
 @section[#:tag "03:rules"]{规约规则}
 
 前面的分析一直和 @tech[#:key "延续传递风格"]{CPS} 的实现绑在一起。脱开实现，只要两条@defterm[#:en "reduction rule"]{规约规则}：
@@ -260,11 +264,11 @@
 (reset E[(shift k expr)])
   => (reset (let ([k (λ (v) (reset E[v]))]) expr))]
 
-@defsym["E[e]" "求值上下文 E 里，把 e 放进那个空位"]@racket[val] 是一个值；@racket[E] 是不跨过另一层 @racket[reset] 的@defterm[#:en "evaluation context"]{求值上下文}，@c{E[v]} 表示把值 @racket[v] 放回 @racket[shift] 所在的位置。第一条：边界以内已经是一个值，直接取出。
+@defsym["E[e]" "求值上下文 E 里，把 e 放进那个空位"]@racket[val] 是一个值；@racket[E] 是不跨过另一层 @racket[reset] 的@defterm[#:en "evaluation context"]{求值上下文}，@c{E[v]} 表示把值 @racket[v] 放回 @racket[shift] 所在的位置。比如第三个例子里，@racket[shift] 到 @racket[reset] 之间的上下文是 @c{(let* ([x □] [y (+ 2 x)]) (abort y))}，□ 就是 @racket[shift] 所在的那个空位。第一条：边界以内已经是一个值，直接取出。
 
 第二条是 @racket[shift] 的规约：把从 @racket[shift] 到 @racket[reset] 之间的上下文 @racket[E] 取出来，包成函数 @c{(λ (v) (reset E[v]))} 绑定给 @racket[k]，再在边界以内执行 @racket[expr]。规则里有两个 @racket[reset]。
 
-前面用 @racket[shift] 定义了 @racket[let/lc] 和 @racket[abort]；反过来，@racket[shift] 也能由这两个定义。和@xref["01:compare"]{「比较」}里的三种控制操作符一样，@racket[shift] 与 @racket[let/lc] 加 @racket[abort] 可以互相定义。@racket[shift] 是给@tech{局部延续}起了名字的 @tt{return}：用 @racket[let/lc] 给@tech{局部延续}起名，用 @racket[abort] 交出答案：
+前面用 @racket[shift] 定义了 @racket[let/lc] 和 @racket[abort]；反过来，@racket[shift] 也能由这两个定义，下面的 @racket[let/lc] 就是这个方向的写法。和@xref["01:compare"]{「比较」}里的三种控制操作符一样，@racket[shift] 与 @racket[let/lc] 加 @racket[abort] 可以互相定义。@racket[shift] 是给@tech{局部延续}起了名字的 @tt{return}：用 @racket[let/lc] 给@tech{局部延续}起名，用 @racket[abort] 交出答案：
 
 @racketblock[
 (define-syntax-rule (let/lc k body ...)
@@ -277,7 +281,7 @@
 
 里面那层 @racket[reset] 藏在 @racket[k] 的定义里：@c{(λ (v) (reset E[v]))}。@tech{平凡表示}下，@tech{局部延续}就是普通的函数，调用 @racket[k] 就是一次普通的函数调用。@tech[#:key "延续传递风格"]{CPS} 把局部的工作搬进堆上的闭包，空出来的宿主栈用来定界，调用 @racket[k] 时分配的新栈帧，就是一次新的定界。
 
-@racket[k] 要是在某个 @racket[reset] 的尾位置调用，@racket[(reset (k v))] 展开是 @c{(reset (reset E[v]))}，两层边界紧挨在一起。两层等于一层：@racket[(reset (reset e))] 与 @racket[(reset e)] 行为一样。用上面两条规则比较两边。@racket[e] 是值时，两边都规约成这个值。@racket[e] 执行 @racket[shift] 时，@racket[shift] 只取到最近的一层 @racket[reset]，两边取到的上下文 @racket[E] 相同：
+@racket[k] 要是在某个 @racket[reset] 的尾位置调用，@racket[(reset (k v))] 展开是 @c{(reset (reset E[v]))}，两层边界紧挨在一起。两层等于一层：在这两条规则下，@racket[(reset (reset e))] 与 @racket[(reset e)] 行为一样。用这两条规则比较两边。@racket[e] 是值时，两边都规约成这个值。@racket[e] 执行 @racket[shift] 时，@racket[shift] 只取到最近的一层 @racket[reset]，两边取到的上下文 @racket[E] 相同：
 
 @racketblock[
 (reset (reset E[(shift k expr)]))

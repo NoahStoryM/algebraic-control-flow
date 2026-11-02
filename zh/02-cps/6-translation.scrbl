@@ -107,7 +107,7 @@
 │             ↓             │
 └────neg───── 𝒰 ───flip───→ 𝒦}|
 
-右边的三角形仍然@tech{交换}；左边 𝒞 的那一半不@tech{交换}。从 𝒰 出发，沿 @racket[flip]、@racket[uncps] 回到 𝒟，是还原：得到原来的 @math{p → q}，靠的是 @racket[call/cc]。沿 @racket[neg] 走到 𝒞，是翻译：落到纯的箭头，代价是类型成了 @math{¬¬p → ¬¬q}，再经 @racket[inj] 放进 𝒟 也还是它。两条路连类型都对不上，这一半只标出箭头怎样转换。
+右边的三角形仍然@tech{交换}；左边 𝒞 的那一半谈不上@tech{交换}。从 𝒰 出发，沿 @racket[flip]、@racket[uncps] 回到 𝒟，是还原：得到原来的 @math{p → q}，靠的是 @racket[call/cc]。沿 @racket[neg] 走到 𝒞，是翻译：落到纯的箭头，代价是类型成了 @math{¬¬p → ¬¬q}，再经 @racket[inj] 放进 𝒟 也还是它。两条路连类型都对不上，这一半只标出箭头怎样转换。
 
 @section[#:tag "02:translate-call-cc"]{翻译 call/cc}
 

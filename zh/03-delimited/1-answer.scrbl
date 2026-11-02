@@ -94,11 +94,11 @@
 
 @tech{空类型}是联合的单位元，@xref["01:types-to-logic"]{「析取与合取」}里，它也是析取的单位元。给它添上答案这一支，得到的正是答案的类型；在眼前的 @racket[mul] 里，@math{⊥ᵃ} 就是 @racket[(Ans Real)]。
 
-@defsym["⊥ᵃ" "局部空：一段局部计算的答案类型；从内部看是空，从外部看是答案"]这个名字也对得上 @racket[loop] 的行为。收到 @racket[ans] 以后，它不再调用 @racket[real*]，不再乘，只把答案交出去。对这段局部计算来说，得出答案和结束是同一件事。答案不会再作为普通结果参与里面的运算，@math{⊥ᵃ} 因此充当@defterm[#:en "local bottom"]{局部空}；到了边界外面，@racket[ans-a] 却能从中取出一个普通的实数，交给调用者接着用。从内部看到的@tech{局部空}，从外部看就是@defterm[#:en "local answer"]{局部答案}。
+@defsym["⊥ᵃ" "局部空：一段局部计算的答案类型；从内部看是空，从外部看是答案"]这个名字也对得上 @racket[loop] 的行为。收到 @racket[ans] 以后，它不再调用 @racket[real*]，不再乘，只把答案交出去。对这段局部计算来说，得出答案和结束是同一件事。答案不会再作为普通结果参与里面的运算，@math{⊥ᵃ} 因此充当@defterm[#:en "local bottom"]{局部空}；到了边界外面，@racket[ans-a] 却能从中取出一个普通的实数，交给调用者接着用。从内部看到的@tech{局部空}，从外部看就是@defterm[#:en "local answer"]{局部答案}。「空」说的是这段计算拿到它以后再没有工作可做，不是说 @math{⊥ᵃ} 没有元素：@racket[(ans 0)] 就是它的一个元素。
 
 整个程序的 @math{⊥} 也是这样一个答案。@xref["01:program-type"]{「代入 Byte」}里，程序是一个 @math{¬¬@ty{Byte}}，由操作系统交来 @racket[exit]。进程终止时交出一个 @racket[Byte] 类型的退出码：从进程内部看，@racket[exit] 之后再也没有运算能拿着退出码接着算；从操作系统看，退出码是一个普通的字节，操作系统拿着它接着工作。@racket[exit] 之于进程，就像 @racket[ans] 之于 @racket[loop]。
 
-@defsym["⊥ᵃ?" "判断一个值是不是局部答案，这里就是 ans?"]@defsym["a->⊥ᵃ" "把值送进局部空，成为局部答案"]@defsym["⊥ᵃ->a" "在边界外从局部空里取出答案"]给这段局部计算的答案和边界上的两个操作起名，照 @racket[a->⊥]、@racket[⊥->a] 的样子：
+@defsym["⊥ᵃ?" "判断一个值是不是局部答案，这里就是 ans?"]@defsym["a->⊥ᵃ" "把值送进局部空，成为局部答案"]@defsym["⊥ᵃ->a" "在边界外从局部空里取出答案"]给这段局部计算的答案和边界上的两个操作起名，照 @racket[a->⊥]、@racket[⊥->a] 的样子。答案类型 @math{a} 在这个例子里取 @racket[Real]：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define-type ⊥ᵃ (Ans Real))
