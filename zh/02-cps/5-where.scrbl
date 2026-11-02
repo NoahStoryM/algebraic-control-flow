@@ -133,7 +133,7 @@ neg          uncps
 
 @racket[(neg (uncps cps:f))] 与 @racket[(flip cps:f)] 行为相同：@racket[flip] 从 𝒦 到 𝒰 的那个方向，就是 @racket[(∘ neg uncps)]，和 @c{cps = (∘ flip neg)} 正好对称。三条边绕成一个圈，从哪一处出发绕一圈，都回到原来的箭头；因此从一处走到另一处，多绕几圈也不改变结果。图表有这种性质，就说它是@defterm[#:en "commutative"]{交换}的，叫作@defterm[#:en "commutative diagram"]{交换图表}。
 
-所以每条边都能由另外两条倒回去：@racket[uncps] 由 @racket[cps] 倒回，@racket[flip] 由 @racket[(∘ neg uncps)] 倒回。@racket[neg] 由 @racket[(∘ uncps flip)] 倒回，从 𝒰 回到 𝒟 本来没有直接的一条边，这一支撤销 @racket[neg]，记作 @racket[unneg]：
+@defsym["unneg" "撤销 neg：(∘ uncps flip)，要靠 call/cc"]所以每条边都能由另外两条倒回去：@racket[uncps] 由 @racket[cps] 倒回，@racket[flip] 由 @racket[(∘ neg uncps)] 倒回。@racket[neg] 由 @racket[(∘ uncps flip)] 倒回，从 𝒰 回到 𝒟 本来没有直接的一条边，这一支撤销 @racket[neg]，记作 @racket[unneg]：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: unneg (∀ (p q) (→ (→𝒰 p q) (→𝒟 p q))))
@@ -141,11 +141,11 @@ neg          uncps
 
 @margin-note{这里的同构只就本章的@tech{延续}编码、在 @racket[≈] 的意义下说，@racket[uncps] 还要靠宿主的 @racket[call/cc] 才写得出来；并不是任意具有这些类型的 Racket 函数都这样。}
 
-在 @racket[≈] 的意义下，三种写法是@defterm[#:en "isomorphic"]{同构}的：同一组箭头的三种写法。到这里，嵌入语言写出的箭头放得回宿主，放回去行为不变；可放回去要靠宿主的 @racket[call/cc]。
+在 @racket[≈] 的意义下，三种写法是@defterm[#:en "isomorphic"]{同构}的：同一组箭头的三种写法。到这里，嵌入语言写出的箭头放得回宿主，放回去行为不变；可放回去要靠宿主的 @racket[call/cc]。三种写法互相转换不丢行为，以后在哪种写法里推导都行，推完再搬回来。
 
 @section[#:tag "02:count-k"]{数一数 k}
 
-名字里的 @racket[k] 一直在数否定的层数，@xref["01:layers"]{「否定塔」}数过：@racket[kv] 等 @racket[v]，@racket[kkv] 等 @racket[kv]，多一层的正好接收少一层的。那里的几条规则，在这一章里都有了现成的写法。
+名字里的 @racket[k] 一直在数否定的层数，@xref["01:layers"]{「否定塔」}数过：@racket[kv] 等 @racket[v]，@racket[kkv] 等 @racket[kv]，多一层的正好接收少一层的。那里的几条规则，在这一章里都有了现成的写法。把前面这些箭头换回层数来看，哪一步越过了第 0 层，一数就知道。
 
 DNI 加两层，在这里就是 @racket[cps:id]：收下 @racket[p]，等一条 @racket[kp] 来，再把 @racket[p] 交给它。@xref["02:cps"]{「延续与 CPS」}开头那串等式，把 @racket[(k e)] 改写成 @racket[((λ (k) (k e)) (λ (v) b))]，做的就是这一步。交来的若正是 @racket[(cps:id p)]，把 @racket[kp] 交给它，照定义一步就回到原处：
 
@@ -171,7 +171,7 @@ DNI 加两层，在这里就是 @racket[cps:id]：收下 @racket[p]，等一条 
 
 @section[#:tag "02:same-arrow"]{同一支箭头}
 
-@xref["02:clavius"]{「Clavius 律」}有了 @racket[cps:call/cc] 和 @racket[neg:call/cc]。@racket[cps:car] 就是 @racket[(cps car)]；@racket[cps:call/cc] 却不是 @racket[(cps call/cc)]：照名字的约定，它类型里的箭头全是 @math{→@subscript{𝒦}}，@racket[proc] 也换成了新的箭头，整条 @tech{Clavius 律}换写了一遍。那 @racket[(cps call/cc)] 和 @racket[(neg call/cc)] 又是什么？
+@xref["02:clavius"]{「Clavius 律」}末尾问过：@racket[cps:call/cc] 还算不算原来的 @racket[call/cc]？@racket[cps:call/cc] 是整条定律的翻译；要和它比较，先得知道原来的 @racket[call/cc] 自己搬到 @tech{CPS 箭头}上是什么。@racket[cps:car] 就是 @racket[(cps car)]；@racket[cps:call/cc] 却不是 @racket[(cps call/cc)]：照名字的约定，它类型里的箭头全是 @math{→@subscript{𝒦}}，@racket[proc] 也换成了新的箭头，整条 @tech{Clavius 律}换写了一遍。那 @racket[(cps call/cc)] 和 @racket[(neg call/cc)] 又是什么？
 
 不换写定律，只把箭头搬过去。宿主的 @racket[call/cc] 照 DNE 来读，是一支@tech{宿主箭头} @math{¬¬p →@subscript{𝒟} p}：收下第 2 层的 @racket[kkp]，交出第 0 层的值。
 

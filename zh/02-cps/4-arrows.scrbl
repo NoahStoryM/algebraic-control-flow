@@ -126,7 +126,7 @@
 (: cps:id (∀ (q) (→𝒦 q q)))
 (: ∘𝒦 (∀ (p1 p2 p3) (→ (→𝒦 p2 p3) (→𝒦 p1 p2) (→𝒦 p1 p3))))]
 
-@racket[case→] 列出同一个函数的几种类型，调用时按交给它的参数取用其中一种：这两行是 @racket[flip] 同一段代码的两种读法，第一行从 𝒰 搬到 𝒦，第二行搬回来。普通函数经 @racket[neg] 变成@tech{逆否箭头}，经 @racket[cps] 变成 @tech{CPS 箭头}，@racket[flip] 在两种箭头之间来回。沿用@xref["02:split-k"]{「延续独占一层」}的前提，来回一趟，什么也不丢。
+@racket[case→] 列出同一个函数的几种类型读法，@xref["01:call-cc-types"]{「call/cc 的几种类型」}见过：这两行是 @racket[flip] 同一段代码的两种读法，第一行从 𝒰 搬到 𝒦，第二行搬回来。普通函数经 @racket[neg] 变成@tech{逆否箭头}，经 @racket[cps] 变成 @tech{CPS 箭头}，@racket[flip] 在两种箭头之间来回。沿用@xref["02:split-k"]{「延续独占一层」}的前提，来回一趟，什么也不丢。
 
 @tech{逆否箭头}也能复合吗？@racket[flip] 把它们一一对到 @tech{CPS 箭头}，那就把 @racket[∘𝒦] 原样搬过去：两支各 @racket[flip] 成 @tech{CPS 箭头}，用 @racket[∘𝒦] 接起来，再 @racket[flip] 回来：
 
@@ -147,7 +147,7 @@
 
 第一步照 @racket[∘𝒰] 和 @racket[flip] 的定义展开，第二步展开 @racket[∘𝒦]，第三步把 @racket[cps:f]、@racket[cps:g] 换回 @racket[flip] 之前的 @racket[neg:f]、@racket[neg:g]。第四步把 @racket[(λ (y) ((neg:g k) y))] 化简成 @racket[(neg:g k)]，靠的是@xref["02:split-k"]{「延续独占一层」}的那个前提：@racket[neg:g] 收到 @racket[k] 时只造出一个函数，什么别的也不做。最后两步是 @racket[∘] 与 @racket[⨾] 的定义。
 
-搬过来的，原来就是反向复合 @racket[⨾]：先用 @racket[neg:g]，再用 @racket[neg:f]。@xref["02:position"]{「计算的位置」}用几次 @racket[neg] 接出@tech{闭包链}，也是这样接的。于是@tech{逆否箭头}的复合@defsym["g ∘𝒰 f" "逆否箭头的复合，就是 ⨾"]直接取 @racket[⨾]，单位元取 @racket[id]，记作 @racket[neg:id]：
+@defsym["neg:id" "逆否箭头的单位元，就是 id"]搬过来的，原来就是反向复合 @racket[⨾]：先用 @racket[neg:g]，再用 @racket[neg:f]。@xref["02:position"]{「计算的位置」}用几次 @racket[neg] 接出@tech{闭包链}，也是这样接的。于是@tech{逆否箭头}的复合@defsym["g ∘𝒰 f" "逆否箭头的复合，就是 ⨾"]直接取 @racket[⨾]，单位元取 @racket[id]，记作 @racket[neg:id]：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: ∘𝒰 (∀ (p1 p2 p3) (→ (→𝒰 p2 p3) (→𝒰 p1 p2) (→𝒰 p1 p3))))
@@ -260,7 +260,7 @@
 
 所以展开后的这条公式，已经不是宿主里的 @tech{Clavius 律}，而是一条直觉主义定理：按照 Curry-Howard，它有闭合的、有类型的纯 @racket[λ] 项，就是 @racket[cps:call/cc]。@racket[neg:call/cc] 也一样。这条经典定律换用 @tech{CPS 箭头}或@tech{逆否箭头}得到的两种翻译，展开后都是直觉主义定理。经典的控制并没有消失，宿主要捕获的那条@tech{延续}，成了显式的参数。
 
-这和说谎者正好相反。同样换了箭头，自指的说谎者还是悖论；经典的 @tech{Clavius 律}却成了定理。
+这和说谎者正好相反。同样换了箭头，说谎者的翻译仍是悖论，@tech{Clavius 律}的翻译却是定理。
 
 到这里，开头的第一个问题有了回答：走到原来调用 @racket[call/cc] 的地方，不必捕获，交进来的@tech{延续}参数就够用；两个新 @racket[call/cc] 也没有越过「分水岭」，它们只消耗交到手里的否定。
 

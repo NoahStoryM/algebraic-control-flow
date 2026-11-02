@@ -35,7 +35,7 @@
 
 @mm{@ty{Label} ∨ ¬@ty{Label} = @ty{Label} ∨ @ty{Label}}
 
-一真一假的两支，在这里分不出真假。@racket[(cc)] 交出的 @math{@ty{Label} ∐ @ty{Label}} 里，两支还配着@tech{标记}：每个@tech{标签} @math{l} 有 @math{(l, 0)}、@math{(l, 1)} 两份，记着自己来自哪一支。可@xref["01:label-from-call-cc"]{「从 call/cc 定义标签」}里，@tech{标签}是这样从 @racket[cc] 写出来的：
+原本分别对应 @racket[Label] 和 @math{¬@ty{Label}} 的两支，在这里成了同一个类型。@racket[(cc)] 交出的 @math{@ty{Label} ∐ @ty{Label}} 里，两支还配着@tech{标记}：每个@tech{标签} @math{l} 有 @math{(l, 0)}、@math{(l, 1)} 两份，记着自己来自哪一支。可@xref["01:label-from-call-cc"]{「从 call/cc 定义标签」}里，@tech{标签}是这样从 @racket[cc] 写出来的：
 
 @racketblock[
 (define label (compose untag cc))]
@@ -144,7 +144,24 @@
 
 一般地，把第 @math{n} 条@tech{延续}记作 @racket[kn]。右边是交出去的参数，总是最近捕获的那条@tech{延续}，记作 @racket[km]；左边是当前被调用的那条。调用的若是 @racket[(kn+1 km)]，打印一个 @racket[*]，下一步就是 @racket[(kn km)]，把同一个 @racket[km] 交给前一条：@racket[kn+1] 被捕获时，@racket[yin] 绑的正是 @racket[kn]，它记下的就是这一条。调用的若是 @racket[(k0 km)]，打印 @c|{@}|，下一步捕获一条新的 @racket[km+1]，从 @racket[(km+1 km+1)] 开始。每到一次 @racket[k0]，就多一条@tech{延续}，下一行就要多退一步，多打印一个 @racket[*]。多出来的那个 @racket[*]，就记在@tech{延续}里：每条 @racket[kn+1] 都记着前一条 @racket[kn]，一条接一条连成链。
 
-这条规律只说@tech{延续}之间谁调用谁、交出的是什么，照着写成函数就行：跳向一条@tech{延续}，就是调用它；捕获一条新@tech{延续}，就是定义一个新函数。
+先照这些名字，把原来的谜题改写一遍。@racket[(label)] 就是 @racket[(let/cc k (k k))]，@xref["01:label-from-call-cc"]{「从 call/cc 定义标签」}见过。外层的 @racket[let/cc] 只执行一次，捕获的@tech{延续}叫 @racket[k0]，交来的值原来叫 @racket[yin]，改叫 @racket[kn]；内层的 @racket[let/cc] 每次都捕获一条新的，叫 @racket[kn+1]，交来的值原来叫 @racket[yang]，改叫 @racket[km]：
+
+@examples[#:eval ev #:label #f
+(eval:alts
+ (let ([kn (let/cc k0 (k0 k0))])
+   (displayln #\@)
+   (let ([km (let/cc kn+1 (kn+1 kn+1))])
+     (display #\*)
+     (kn km)))
+ (show-lines 5
+  (λ ()
+    (let ([kn (let/cc k0 (k0 k0))])
+      (displayln #\@)
+      (let ([km (let/cc kn+1 (kn+1 kn+1))])
+        (display #\*)
+        (kn km))))))]
+
+这条规律只说@tech{延续}之间谁调用谁、交出的是什么，照着写成函数就行：跳向一条@tech{延续}，就是调用它；捕获一条新@tech{延续}，就是定义一个新函数。把上面的 @racket[let/cc] 换成 @racket[define]：
 
 @examples[#:eval ev #:label #f
 (define (k0 kn)
@@ -155,7 +172,7 @@
   (kn+1 kn+1))
 (eval:alts (k0 k0) (show-lines 5 (λ () (k0 k0))))]
 
-输出和原版谜题一模一样。
+输出和原版谜题一模一样。两段程序逐字对得上：@racket[(k0 k0)]、@racket[(kn+1 kn+1)]、@racket[(kn km)] 原样不动，换掉的只有 @racket[let/cc] 和 @racket[define]。
 
 这段代码里没有 @racket[label]、@racket[cc]，也没有 @racket[set!]。原来由 @racket[cc] 捕获的@tech{延续}，现在都成了显式传递的参数：@racket[k0] 收到 @racket[kn]，@racket[kn+1] 收到 @racket[km]，每一次跳转都是把@tech{延续}交给下一个函数的尾调用。这种把@tech{延续}作为参数传递的写法，叫做@defterm[#:en "Continuation-Passing Style" #:abbr "CPS"]{延续传递风格}；把程序改写成这种写法，就是 @defterm[#:en "CPS transformation"]{CPS 变换}。
 
