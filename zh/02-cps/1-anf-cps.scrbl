@@ -51,7 +51,7 @@
              [w   (fib n-2)])
         (+ v w))))]
 
-@racket[let*] 的每个绑定从上到下依次执行，中间不跳跃。@racket[fib] 中先算 @racket[(fib n-1)] 再算 @racket[(fib n-2)]，不再需要知道 Racket 的求值策略，代码本身就是策略的忠实记录。这种把所有中间计算命名、排成序列的形式叫作@defterm[#:en "A-Normal Form" #:abbr "ANF"]{A-范式}。
+@racket[let*] 的每个绑定从上到下依次执行，中间不跳跃。@racket[fib] 中先算 @racket[(fib n-1)] 再算 @racket[(fib n-2)]，不再需要知道 Racket 的求值策略，代码本身就是策略的忠实记录。这种把所有中间计算命名、排成序列的形式叫作@defterm[#:en "A-Normal Form" #:abbr "ANF"]{A-范式}。@racket[if] 本身已经定下先算测试、再算一支分支；这里只展开了递归调用周围的步骤，测试照旧写在原处，完整的 @tech[#:key "A-范式"]{ANF} 连它也要命名。
 
 但 @racket[let] 不是什么新东西。它脱糖为 @racket[lambda] 调用：
 
@@ -247,7 +247,7 @@
 
 结果打印出来了，进程也随之终止。@racket[exit] 一调用，整段计算就到此为止。启动时交进去的这条@tech{延续}，就是前面那条@tech{闭包链}的终点：值走完整条链，最后抵达的是它，所以叫它@defterm[#:en "terminal continuation"]{终结延续}。可是用 @racket[exit] 做@tech{终结延续}，进程一结束，就没法拿着结果继续工作。
 
-我们需要另一个类型为 @math{a → ⊥} 的函数：它不返回，也不杀死进程，而是把答案送到一个取得回来的地方。@racket[raise] 正合适：它不返回，handler 又能捕获它抛出的值。再用一个专门的 struct，把我们的答案和别的异常区分开：
+我们需要另一个类型为 @math{a → ⊥} 的函数：它不返回，也不杀死进程，而是把答案送到一个取得回来的地方。@racket[raise] 正合适：它不返回，handler 又能捕获它抛出的值。要的只有两件事：@racket[a->⊥] 把答案抛出去，@racket[⊥->a] 在外面接住。再用一个专门的 struct，把我们的答案和别的异常区分开：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (struct (r) ans ([a* : (Listof r)]) #:type-name Ans)
@@ -264,7 +264,7 @@
 (⊥->a (fact/k 5 a->⊥))
 (⊥->a (fib/k 10 a->⊥))]
 
-@tech[#:key "延续传递风格"]{CPS} 函数运行起来，@racket[a->⊥] 充当@tech{终结延续}，@tech{闭包链}接在它前面一环环长出来；@racket[⊥->a] 在外面接住答案。异常只是借来取回答案的出口，@tech[#:key "延续传递风格"]{CPS} 本身只要求启动时有一条@tech{延续}可交。
+@tech[#:key "延续传递风格"]{CPS} 函数运行起来，@racket[a->⊥] 充当@tech{终结延续}，@tech{闭包链}接在它前面一环环长出来；@racket[⊥->a] 在外面接住答案。
 
 @subsection[#:tag "02:first-class-control"]{一等控制}
 

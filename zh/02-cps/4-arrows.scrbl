@@ -106,7 +106,7 @@
 
 @margin-note{𝒰 取 U-turn，掉头转弯：@tech{逆否箭头}的方向倒了过来。}
 
-两种分组算得一样。一般也是这样吗？不必逐条展开，可以借已有的运算律：把它搬到一种已经认识的复合上，运算律就一起跟过来。先给两种写法的箭头起名：照 @racket[cps] 写法的叫@defterm[#:en "CPS arrow"]{CPS 箭头}，记作@defsym["p →𝒦 q" "CPS 箭头：p → ¬¬q；𝒦 取延续变量惯用的字母 k"] @math{→@subscript{𝒦}}；照 @racket[neg] 写法的叫@defterm[#:en "contrapositive arrow"]{逆否箭头}，记作@defsym["p →𝒰 q" "逆否箭头：¬q → ¬p；𝒰 取掉头转弯（U-turn）"] @math{→@subscript{𝒰}}。前面名字以 @racket[cps:]、@racket[neg:] 开头的函数，就分别是这两种箭头，类型里的每一个箭头都是这一种：
+两种分组算得一样。一般也是这样吗？不必逐条展开，可以借已有的运算律：把它搬到一种已经认识的复合上，运算律就一起跟过来。路线分四步：给两种写法的箭头起名；用 @racket[flip] 把 @racket[∘𝒦] 搬到@tech{逆否箭头}那边；认出搬过去的就是 @racket[⨾]；再把 @racket[⨾] 的运算律搬回来。先给两种写法的箭头起名：照 @racket[cps] 写法的叫@defterm[#:en "CPS arrow"]{CPS 箭头}，记作@defsym["p →𝒦 q" "CPS 箭头：p → ¬¬q；𝒦 取延续变量惯用的字母 k"] @math{→@subscript{𝒦}}；照 @racket[neg] 写法的叫@defterm[#:en "contrapositive arrow"]{逆否箭头}，记作@defsym["p →𝒰 q" "逆否箭头：¬q → ¬p；𝒰 取掉头转弯（U-turn）"] @math{→@subscript{𝒰}}。前面名字以 @racket[cps:]、@racket[neg:] 开头的函数，就分别是这两种箭头，类型里的每一个箭头都是这一种：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define-type (→𝒦 p ... q) (→    p ... (¬¬ q)))
@@ -260,4 +260,6 @@
 
 这和说谎者正好相反。同样换了箭头，自指的说谎者还是悖论；经典的 @tech{Clavius 律}却成了定理。
 
-三种箭头之间，@racket[cps] 和 @racket[neg] 都从宿主出发，@racket[flip] 在后两种之间来回。还缺一个方向：嵌入语言写出的 @tech{CPS 箭头}，怎样回到宿主？
+到这里，开头的第一个问题有了回答：走到原来调用 @racket[call/cc] 的地方，不必捕获，交进来的@tech{延续}参数就够用；两个新 @racket[call/cc] 也没有越过「分水岭」，它们只消耗交到手里的否定。
+
+可这也带出了第二个问题。写出来的是 @tech{Clavius 律}的翻译，是另一条命题；宿主里那条经典的 @math{¬¬p → p} 并没有因此被证出来。那 @racket[cps:call/cc] 模拟的，还算不算原来的 @racket[call/cc]？经典性又到哪里去了？要回答，得把嵌入语言写出的 @tech{CPS 箭头}放回宿主，和原来的 @racket[call/cc] 比一比。三种箭头之间，@racket[cps] 和 @racket[neg] 都从宿主出发，@racket[flip] 在后两种之间来回，还缺的正是回到宿主的方向。
