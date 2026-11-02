@@ -77,6 +77,8 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 @examples[#:eval ev #:label #f #:no-prompt
 (define-type (∐ p0 p1 ...) (∪ (Pair p0 0) (Pair p1 1) ...))]
 
+@margin-note{这一行是记法，意思照正文读：省略号表示后面还有几支，@tech{标记}依次是 0、1、2……Typed Racket 的省略号做不到逐支编号，也写不出零支的 @racket[(∐)]；这里的类型标注本来就当伪代码用。}
+
 第 @math{i} 支的值配上@tech{标记} @math{i}。一支也没有的 @racket[(∐)]，就是 @racket[(∪)]，也就是 @racket[⊥]。
 
 @margin-note{这一步回不去。同一个元素出现在几支里，配上不同的@tech{标记}，在 @racket[∐] 里就有几个，@racket[untag] 以后就成了一个，再也说不清它来自哪一支：@racket[∐] 比 @racket[∪] 多记着来源。}
@@ -224,7 +226,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 
 这个 @racket[call/cc] 的写法和 @racket[cc] 一样，只是把@tech{延续}交给 @racket[proc]，而不是交给调用者。由它写 @racket[cc]，只要给交出的@tech{延续}配上 @racket[1]，再让它跳回来时配上 @racket[0]。
 
-最后以 @racket[cc] 为原语，写回@tech{标签}。@racket[(cc)] 第一次交出的，是配着 @racket[1] 的@tech{延续} @racket[k]。把它当作@tech{标签}，跳回来靠的是 @racket[(goto k)]，也就是 @racket[(k k)]：@racket[k] 带回来的正是它自己。于是 @racket[(cc)] 第二次交出的，是配着 @racket[0] 的 @racket[k]。两支装的是同一个@tech{标签}，@tech{标记}没有什么要分辨的，丢掉就是：
+最后以 @racket[cc] 为原语，写回@tech{标签}。@racket[(cc)] 第一次交出的，是配着 @racket[1] 的@tech{延续} @racket[k]。把它当作@tech{标签}，跳回来靠的是 @racket[(goto k)]，也就是 @racket[(k k)]：@racket[k] 带回来的正是它自己。于是 @racket[(cc)] 第二次交出的，是配着 @racket[0] 的 @racket[k]。两支装的是同一个@tech{标签}，@tech{标记}没有什么要分辨的，丢掉就是。@racket[untag] 接在 @racket[(cc)] 后面，也就在 @racket[(cc)] 捕获的@tech{延续}里，两次交出都要经过它：
 
 @examples[#:eval ev2 #:label #f #:no-prompt
 (define label (compose untag cc))
@@ -248,7 +250,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
          @elem{否}
          @elem{否})
    (list @elem{@bold{要分辨返回值？}}
-         @elem{否}
+         @elem{否：靠可变状态分辨第一次进入与跳回}
          @elem{是：必须区分 @math{p} 和 @math{p → ⊥}}
          @elem{否}))]
 
