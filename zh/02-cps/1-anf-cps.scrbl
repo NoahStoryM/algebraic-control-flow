@@ -51,7 +51,7 @@
              [w   (fib n-2)])
         (+ v w))))]
 
-@racket[let*] 的每个绑定从上到下依次执行，中间不跳跃。@racket[fib] 中先算 @racket[(fib n-1)] 再算 @racket[(fib n-2)]，不再需要知道 Racket 的求值策略，代码本身就是策略的忠实记录。这种把所有中间计算命名、排成序列的形式叫作@defterm[#:en "A-Normal Form" #:abbr "ANF"]{A-范式}。这里只展开了递归调用周围的步骤，@racket[if] 的测试照旧写在原处；完整的 @tech[#:key "A-范式"]{ANF} 连它也要命名。
+@racket[let*] 的每个绑定从上到下依次执行，中间不跳跃。@racket[fib] 中先算 @racket[(fib n-1)] 再算 @racket[(fib n-2)]，不再需要知道 Racket 的求值策略，代码本身就是策略的忠实记录。这种把所有中间计算命名、排成序列的形式叫作@defterm[#:en "A-Normal Form" #:abbr "ANF"]{A-范式}。@racket[if] 本身已经定下先算测试、再算一支分支；这里只展开了递归调用周围的步骤，测试照旧写在原处，完整的 @tech[#:key "A-范式"]{ANF} 连它也要命名。
 
 但 @racket[let] 不是什么新东西。它脱糖为 @racket[lambda] 调用：
 
