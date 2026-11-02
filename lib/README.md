@@ -48,6 +48,7 @@ scribble --markdown ++xref-in setup/xref load-collections-xref --dest out zh/mai
 | `@bold{…}`、`@italic{…}` | 加粗、斜体（不是术语时用） |
 | `@hyperlink["url"]{文字}` | 外部链接 |
 | `@margin-note{…}` | 旁注（原先的「注意」框），放在它所补充的段落的上面 |
+| `@music{巴赫《哥德堡变奏曲》咏叹调}` | 配乐的题记，独占一段，紧接在章或节的标题下面；只写曲名（Noah 11/2） |
 | `@bold{练习}：…` | 练习，写成普通段落，不加框 |
 
 正文里的 `@`、不配对的 `{` `}` 要写成 `@"@"`、`@"{"`。

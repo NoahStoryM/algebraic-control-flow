@@ -48,6 +48,8 @@
 
 @section[#:tag "01:yin-yang"]{把标签交给标签}
 
+@music{史蒂夫·赖希《Clapping Music》}
+
 之前的例子里，我们总是先用 @racket[(label)] 造一个@tech{标签}，存进变量，再交给 @racket[goto] 跳回去。省掉中间的变量，就是：
 
 @racketblock[

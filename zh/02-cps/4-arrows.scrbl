@@ -97,6 +97,8 @@
 
 @subsection[#:tag "02:via-contrapositive"]{借道逆否复合}
 
+@music{巴赫《音乐的奉献》螃蟹卡农}
+
 @racket[∘𝒦] 满足这两条运算律吗？先拿例子试试。再提升一支 @racket[mul3]，用 @racket[(fact/k 3 k)] 的三步乘法比较两种分组：
 
 @examples[#:eval ev #:label #f
