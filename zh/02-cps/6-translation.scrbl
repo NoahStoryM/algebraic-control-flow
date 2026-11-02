@@ -87,9 +87,11 @@
 两次 @racket[neg] 连起来，记作 @racket[neg²]。@tech{宿主箭头} @math{p → q} 进来，出去的是 @math{¬¬p → ¬¬q}，每个类型裹上一层 @math{¬¬}。代码只把 @racket[f] 包上两层，并不改写 @racket[f] 的内部。它有三种箭头读法：纯的进来，纯的出去；@tech{宿主箭头}进来，包出来的仍是@tech{宿主箭头}；@tech{宿主箭头}进来，读到 𝒞 里：
 
 @examples[#:eval ev #:label #f #:no-prompt
-(: neg² (∀ (p q) (case→ (→ (→𝒞 p q) (→𝒞 (¬¬ p) (¬¬ q)))
-                        (→ (→𝒟 p q) (→𝒟 (¬¬ p) (¬¬ q)))
-                        (→ (→𝒟 p q) (→𝒞 (¬¬ p) (¬¬ q))))))
+(: neg²
+   (∀ (p q)
+      (case→ (→ (→𝒞 p q) (→𝒞 (¬¬ p) (¬¬ q)))
+             (→ (→𝒟 p q) (→𝒟 (¬¬ p) (¬¬ q)))
+             (→ (→𝒟 p q) (→𝒞 (¬¬ p) (¬¬ q))))))
 (define neg² (∘ neg neg))]
 
 第三行从 𝒟 读到 𝒞，输出指的是和包装行为相同的那个纯表示，不是包装本身。给 @racket[call/cc] 加包装，闭包里仍有宿主的 @racket[call/cc]；它在 𝒞 里所指的纯表示，要另外写出来。
