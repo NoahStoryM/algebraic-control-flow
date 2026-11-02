@@ -25,7 +25,7 @@
          c mm ty
          define-tech tech/guide tech/refer
          defterm defsym glossary-table symbol-table
-         xref
+         xref music
          (rename-out [note fn])
          acf-style chapter-style)
 
@@ -118,6 +118,14 @@
     (if (char=? (string-ref piece 0) #\space)
         (hspace (string-length piece))
         piece)))
+
+;; ---------------------------------------------------------------------------
+;; 配乐的题记
+;;
+;; @music{巴赫《哥德堡变奏曲》咏叹调}：独占一段，排在标题下面，前面加 ♪。
+;; 只写曲名，不写选曲的理由，也不放链接（Noah 11/2）。
+(define (music . content)
+  (paragraph (make-style "AcfMusic" '()) (cons "♪ " content)))
 
 ;; ---------------------------------------------------------------------------
 ;; 行内
