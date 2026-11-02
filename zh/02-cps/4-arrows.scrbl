@@ -2,7 +2,7 @@
 
 @title[#:tag "02:4-arrows"]{两种箭头与命题}
 
-嵌入语言里，每一次绑定都把两段计算接了起来。这一节先看接法：@racket[let] 的@tech{结合律}与@tech{单位律}，@racket[anf:let] 还有没有。再回到开头的问题：@racket[cps:call/cc] 只用 @racket[λ] 就写成了，@xref["01:watershed"]{「分水岭」}却说当前@tech{延续}凭空拿不到，两者怎么对得上？两件事都要从这些写法的类型里看。
+嵌入语言里，每一次绑定都把两段计算接了起来。接法有没有规律，写下的类型又说了什么？@racket[cps:call/cc] 只用 @racket[λ] 就写成了，@xref["01:watershed"]{「分水岭」}却说当前@tech{延续}凭空拿不到，两者怎么对得上，也要从这些类型里看。
 
 @(define ev (make-acf-eval))
 @examples[#:eval ev #:hidden
