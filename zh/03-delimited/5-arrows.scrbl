@@ -40,13 +40,13 @@
 
 @mm{(⊥ᵃ → x) → (p → x)}
 
-它是一支以 @math{x} 为@tech{基}、从 @math{p} 指向 @math{⊥ᵃ} 的@tech{逆否箭头}，@math{p →@subscript{𝒰ₓ} ⊥ᵃ}。展开式里看得出 @math{a} 和 @math{x} 为什么可以不同：@math{⊥ᵃ} 是 @math{kₐp} 自己交出的答案，@math{x} 是收到的@tech{延续}的终点。落点直接写在箭头里，@racket[neg] 的两种读法写进同一个 @racket[case→]：
+它是一支以 @math{x} 为@tech{基}、从 @math{p} 指向 @math{⊥ᵃ} 的@tech{逆否箭头}，@math{p →@subscript{𝒰ₓ} ⊥ᵃ}。落点直接写在箭头里，@racket[neg] 的两种读法写进同一个 @racket[case→]：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: neg (∀ (p q a x) (case→ (→ (→𝒟 p q) (→𝒰ₓ p q))
                            (→ (¬ₐ p)    (→𝒰ₓ p ⊥ᵃ)))))]
 
-第一行是@xref["02:via-contrapositive"]{「借道逆否复合」}的读法，只是@tech{基}可以任选；第二行是把它用在@tech{局部延续}上。第二章从 𝒰 读到 𝒞 的那种读法，这一节用不上，不再列出。@math{kₐp} 的终点 @math{⊥ᵃ} 由它自己定下，箭头的@tech{基} @math{x} 由用到它的地方定下，两者不必相同。
+第一行是@xref["02:via-contrapositive"]{「借道逆否复合」}的读法，只是@tech{基}可以任选；第二行是把它用在@tech{局部延续}上。第二章从 𝒰 读到 𝒞 的那种读法，这一节用不上，不再列出。
 
 @section[#:tag "03:two-call-cc"]{两个 call/cc}
 
