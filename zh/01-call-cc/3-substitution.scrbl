@@ -157,6 +157,4 @@
 
 @racket[body] 也可能根本不调用 @racket[k]，自己算完，正常返回一个值，比如 @racket[7]。这时两边就不一样了。绕道第 0 层时，@racket[7] 回到 @racket[let/cc] 的位置，接着还会做 @racket[(kp 7)]。直接配对时，@racket[7] 交回调用 @racket[kkp] 的地方，@racket[kp] 根本没有用上。@racket[kkp] 的类型是 @math{¬¬p}，结果也是 @math{⊥}，排除的正是这种情形。@racket[body] 可以调用 @racket[k]，可以从别的出口离开，也可以一直算下去，只是不能正常返回。
 
-@margin-note{这里比较时，@tech{延续}只拿来调用，也不借动态环境分辨调用 @racket[kp] 的位置：绕道第 0 层时，先回到捕获的地方才调用 @racket[kp]；直接配对时，就在调用处调用 @racket[kp]。程序若用 @racket[continuation?] 分辨收到的是不是原生的@tech{延续}，或者借异常处理器这类动态环境分辨这两个位置，也能把两种写法分开。}
-
-所以，只要 @racket[kp] 和 @racket[kkp] 都像类型说的那样不回来，绕到第 0 层就什么也没有多出来：@racket[(kp (call/cc kkp))] 和 @racket[(kkp kp)] 行为相同。手里已经有 @racket[kp]，要做的只是把结果交给它，直接写 @racket[(kkp kp)] 就行，不必落到第 0 层。要对任意 @math{p}、任意一段 @racket[kkp]，只凭 @racket[kkp] 统一交出一个 @math{p}，这才是 @tech[#:key "双重否定消除"]{DNE}。
+所以，在上面追过的这两种走法里，绕到第 0 层再调用 @racket[kp]，和直接把 @racket[kp] 交给 @racket[kkp]，行为相同：绕到第 0 层，什么也没有多出来。手里已经有 @racket[kp]，要做的只是把结果交给它，直接写 @racket[(kkp kp)] 就行，不必落到第 0 层。要对任意 @math{p}、任意一段 @racket[kkp]，只凭 @racket[kkp] 统一交出一个 @math{p}，这才是 @tech[#:key "双重否定消除"]{DNE}。

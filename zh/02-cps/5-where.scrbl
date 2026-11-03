@@ -102,7 +102,7 @@
 = (kq (call/cc (cps:f p)))
 ≈ ((cps:f p) kq)]
 
-前两步照定义展开。最后一步用的是@xref["01:pairing"]{「三种配对」}的规律：手里有 @racket[kkp] 和 @racket[kp]，先用 @racket[call/cc] 取出 @math{p} 再交给 @racket[kp]，和直接把 @racket[kp] 交给 @racket[kkp]，行为相同。这里 @racket[kp] 和 @racket[kkp] 调用后都不向调用处返回；@racket[kkp] 可以调用交给它的@tech{延续}，也可以从别处离开，或者一直算下去。这种行为相同，记作@defsym["a ≈ b" "行为相同：沿用「三种配对」的约定，再加「三种写法」旁注里的两条"] @racket[≈]，比 @racket[=] 弱：
+前两步照定义展开。最后一步用的是@xref["01:pairing"]{「三种配对」}的规律：手里有 @racket[kkp] 和 @racket[kp]，先用 @racket[call/cc] 取出 @math{p} 再交给 @racket[kp]，和直接把 @racket[kp] 交给 @racket[kkp]，行为相同。这里 @racket[kp] 和 @racket[kkp] 调用后都不向调用处返回；@racket[kkp] 可以调用交给它的@tech{延续}，也可以从别处离开，或者一直算下去。这种行为相同，记作@defsym["a ≈ b" "行为相同，比较约定见「三种写法」旁注"] @racket[≈]，比 @racket[=] 弱：
 
 @racketblock[
 #,(hspace 2)(let ([p (call/cc kkp)]) (kp p))
