@@ -84,7 +84,7 @@
       (case→ (→ (→𝒟 p q) (→𝒰     p      q))
              (→ (→𝒰 p q) (→𝒞 (¬¬ p) (¬¬ q))))))]
 
-从宿主出发，两次 @racket[neg] 连起来，走的正是这条路：一支 @math{p →@subscript{𝒟} q} 的控制计算，对应一支纯的 @math{¬¬p →@subscript{𝒞} ¬¬q}，每个类型裹上一层 @math{¬¬}。这个对应记作 @racket[neg²]。
+从宿主出发，沿 @racket[neg] 走两次，类型上走的正是这条路：一支 @math{p →@subscript{𝒟} q} 的控制计算，对应一支纯的 @math{¬¬p →@subscript{𝒞} ¬¬q}，每个类型裹上一层 @math{¬¬}。这个对应记作 @racket[neg²]。
 
 这支纯箭头怎样得到？取这支控制计算的纯 @tech[#:key "延续传递风格"]{CPS} 表示 @racket[cps:f]，也就是 @racket[f] 是 @racket[(uncps cps:f)]，先 @racket[flip]、再 @racket[neg]：@racket[(flip cps:f)] 是 @math{¬q → ¬p}，再取一次逆否，正好是 @math{¬¬p → ¬¬q}。@racket[cps:f] 是纯的，@racket[(neg (flip cps:f))] 也只用 @racket[λ] 和函数调用，落在 𝒞 里。这一章的控制计算，都是这样从纯的 @tech{CPS 箭头}经 @racket[uncps] 得来的。
 
@@ -142,7 +142,7 @@
 
 @racket[call/cc] 不见了，剩下的只用 @racket[λ] 和函数调用：外层的计算交来一段 @racket[kkp]，再把同一条 @racket[kp] 交给它。从第 4 层到第 2 层，消去两层而不落底，正是@xref["02:same-arrow"]{「同一支箭头」}里的 @racket[(neg cps:id)]，@tech{三重否定律}用在 @math{¬p} 上。
 
-@racket[neg:id] 就是 @racket[id]，所以 @racket[cps:id] 也就是 @racket[(cps (neg id))]，@racket[(neg cps:id)] 是从 @racket[id] 出发，依次用 @racket[neg]、@racket[cps]、@racket[neg] 得到的，一路都不碰 @racket[call/cc]。
+@racket[neg:id] 就是 @racket[id]，所以 @racket[cps:id] 也就是 @racket[(cps neg:id)]，@racket[(neg cps:id)] 是从 @racket[id] 出发，依次用 @racket[neg]、@racket[cps]、@racket[neg] 得到的，一路都不碰 @racket[call/cc]。
 
 @defsym["join" "(∘ neg cps neg)：把外面的两层 ¬¬ 并成一层"]@defsym["join:id" "(join id)：¬¬¬¬p →𝒞 ¬¬p，call/cc 的纯翻译"]这一串把外面的两层 @math{¬¬} 并成一层，用在别的纯箭头上也行，记作 @racket[join]；用在 @racket[id] 上的那一支记作 @racket[join:id]：
 
