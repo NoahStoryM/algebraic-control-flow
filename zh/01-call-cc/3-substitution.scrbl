@@ -70,8 +70,6 @@
 
 @racket[triple-negation] 里的几个名字，@racket[q]、@racket[kq]、@racket[kkq]、@racket[kkkq]，差的只是外面叠了几个否定。数一数，刚才的做法能说得更清楚。
 
-@subsection[#:tag "01:count-layers"]{数层数}
-
 以 @racket[q] 为底，把 @racket[q] 算作第 0 层。@racket[kq] 等一个 @racket[q]，是第 1 层；@racket[kkq] 等一个 @racket[kq]，是第 2 层；@racket[kkkq] 等一个 @racket[kkq]，是第 3 层。多一层的类型，正是「接收少一层的值、结果为 @math{⊥}」的函数类型；名字替我们数着，有几个 @racket[k]，就比底多几层。
 
 @racket[triple-negation] 收下第 3 层的 @racket[kkkq]，交出第 1 层的 @racket[kq]。@racket[kq] 拿到第 0 层的 @racket[q] 以后做了两件事：先把 @racket[q] 包成 @racket[kkq]，从第 0 层升到第 2 层；再把 @racket[kkq] 交给 @racket[kkkq]，第 3 层与第 2 层相遇，得到 @math{⊥}。
@@ -104,11 +102,13 @@
 
 在这座否定塔上，两种逻辑的区别，就在第 0 层是否与其余的偶数层合并：从上面落回第 0 层，只有经典逻辑做得到。
 
-可落到第 0 层的那个值，常常只是要交给下一步，和第 1 层的一条@tech{延续}配对。这样绕道第 0 层，和直接配对比，多出了什么？
+不过，从第 2 层取出第 0 层的值，往往不是要把它留着，而是马上交给一条等着它的@tech{延续}：最后照样是相邻两层相遇，调用一次@tech{延续}。先绕到第 0 层再相遇，和不绕路、直接相遇，有没有区别？
 
 @subsection[#:tag "01:pairing"]{两种配对}
 
-手里有一段等着@tech{延续}的计算 @racket[kkp]，在第 2 层；又有一条等着 @math{p} 的@tech{延续} @racket[kp]，在第 1 层。两者奇偶不同，正好相邻，用@tech{矛盾律}直接配对，把 @racket[kp] 交给 @racket[kkp]，只用到交到手里的东西。经典逻辑还多一条路：先用 @tech[#:key "双重否定消除"]{DNE} 落到第 0 层，取出 @math{p}，再与第 1 层的 @racket[kp] 配对。@tech[#:key "双重否定消除"]{DNE} 用 @racket[call/cc] 写：
+手里有一段等着@tech{延续}的计算 @racket[kkp]，在第 2 层；又有一条等着 @math{p} 的@tech{延续} @racket[kp]，在第 1 层。两者相邻，直接配对就是 @racket[(kkp kp)]：把低一层的交给高一层，这就是@tech{矛盾律}。前面见过的配对都是这个样子：@racket[triple-negation] 里的 @racket[(kkkq kkq)]，第 3 层遇上第 2 层；@racket[kkq] 里的 @racket[(k q)]，第 1 层遇上第 0 层。最低的这一对 @racket[(kp p)]，就是最平常的函数调用。
+
+这些配对只用到交到手里的东西。经典逻辑还多一条路：先用 @tech[#:key "双重否定消除"]{DNE} 把 @racket[kkp] 落到第 0 层，取出 @math{p}，再用最低的那一对 @racket[(kp p)]。@tech[#:key "双重否定消除"]{DNE} 用 @racket[call/cc] 写：
 
 @racketblock[
 (kkp kp)
