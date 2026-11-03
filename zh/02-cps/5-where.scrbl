@@ -85,9 +85,10 @@
 宿主函数经 @racket[cps] 提升，再经 @racket[uncps] 放回，还是原来那个吗？对@tech{宿主箭头} @racket[f]，展开看：
 
 @racketblock[
-((uncps (cps f)) . p*)  =  (call/cc ((cps f) . p*))
-                        =  (call/cc (λ (kq) (kq (f . p*))))
-                        =  (f . p*)]
+#,(hspace 2)((uncps (cps f)) . p*)
+= (call/cc ((cps f) . p*))
+= (call/cc (λ (kq) (kq (f . p*))))
+= (f . p*)]
 
 第三步用的是@xref["01:call-cc-types"]{「call/cc 的几种类型」}里的道理：@racket[proc] 正常返回，走的也正是交给它的那条@tech{延续}，只是没有写出来。这里反过来，@racket[(kq …)] 处在尾位置，@racket[kq] 就是调用 @racket[call/cc] 这一处的当前@tech{延续}，显式调用它和直接返回 @racket[(f . p*)] 汇入同一个出口。提起来再放回去，还是原来的函数。
 
