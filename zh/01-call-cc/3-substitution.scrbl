@@ -100,29 +100,27 @@
 
 经典逻辑的塔分成偶数层、奇数层两类，直觉主义逻辑多出一类：第 0 层。从上面落回第 0 层，只有经典逻辑做得到。
 
-不过，要是从第 2 层取出第 0 层的值，只是为了马上交给一条等着它的@tech{延续}，最后照样是相邻两层相遇，调用一次@tech{延续}。让两层相遇，构造性的办法也有。经典逻辑绕到第 0 层的这一步，和它们有没有区别？
+第 0 层特殊在哪里？第 1 层往上，每一层都是函数，等着下一层交来东西才动；只有第 0 层是一个现成的值，落到这里，就得当场把它交出来。可要是落下来拿到的值，只是为了马上交给一条等着它的@tech{延续}，最后照样是第 1 层遇上第 0 层，调用一次@tech{延续}。这样落一次地，和不落地、直接让上面两层相遇，有没有区别？
 
-@subsection[#:tag "01:pairing"]{三种配对}
+@subsection[#:tag "01:pairing"]{两种配对}
 
-手里有一段等着@tech{延续}的计算 @racket[kkp]，在第 2 层；又有一条等着 @math{p} 的@tech{延续} @racket[kp]，在第 1 层。让它们相遇，有三种办法。
+手里有一段等着@tech{延续}的计算 @racket[kkp]，在第 2 层；又有一条等着 @math{p} 的@tech{延续} @racket[kp]，在第 1 层。让它们相遇，有两种办法。
 
-第一种最直接。两者相邻，把低一层的交给高一层，@racket[(kkp kp)]，这就是@tech{矛盾律}。前面见过的配对都是这个样子：@racket[triple-negation] 里的 @racket[(kkkq kkq)]，第 3 层遇上第 2 层；@racket[kkq] 里的 @racket[(k q)]，第 1 层遇上第 0 层。
-
-第二种先往上走。用 @tech[#:key "双重否定引入"]{DNI} 把第 1 层的 @racket[kp] 升到第 3 层，再和第 2 层的 @racket[kkp] 相遇，@racket[triple-negation] 把 @racket[q] 升成 @racket[kkq]，也是这样做的：
+一种不落地。两者相邻，把低一层的交给高一层，@racket[(kkp kp)]，这就是@tech{矛盾律}。前面见过的配对都是这个样子：@racket[triple-negation] 里的 @racket[(kkkq kkq)]，第 3 层遇上第 2 层；@racket[kkq] 里的 @racket[(k q)]，第 1 层遇上第 0 层。也可以先往上走，用 @tech[#:key "双重否定引入"]{DNI} 把 @racket[kp] 升到第 3 层，再和 @racket[kkp] 相遇，@racket[triple-negation] 把 @racket[q] 升成 @racket[kkq] 就是这样做的：
 
 @racketblock[
 (define (kkkp kkp) (kkp kp))
 (kkkp kkp)]
 
-照定义展开一步，@racket[(kkkp kkp)] 就是 @racket[(kkp kp)]，和第一种是同一个计算。这两种只用到交到手里的东西，是构造性的。
+照定义展开一步，@racket[(kkkp kkp)] 就是 @racket[(kkp kp)]，还是同一个计算。不落地的配对只用到交到手里的东西，是构造性的。
 
-第三种往下走，只有经典逻辑做得到：用 @tech[#:key "双重否定消除"]{DNE} 把第 2 层的 @racket[kkp] 落到第 0 层，取出 @math{p}，再和第 1 层的 @racket[kp] 相遇，@racket[(kp p)]。@tech[#:key "双重否定消除"]{DNE} 用 @racket[call/cc] 写，名字 @racket[p] 只用一次，也可以不起：
+另一种先落地，只有经典逻辑做得到：用 @tech[#:key "双重否定消除"]{DNE} 把第 2 层的 @racket[kkp] 落到第 0 层，取出 @math{p}，再和第 1 层的 @racket[kp] 相遇，@racket[(kp p)]。@tech[#:key "双重否定消除"]{DNE} 用 @racket[call/cc] 写，名字 @racket[p] 只用一次，也可以不起：
 
 @racketblock[
 #,(hspace 2)(let ([p (call/cc kkp)]) (kp p))
 = (kp (call/cc kkp))]
 
-绕到第 0 层的这一种，和前两种有没有区别？拿一个具体的 @racket[kkp] 试，@racket[kp] 用 @racket[let/cc] 捕获。外面的 @racket[(+ 10 …)]、@racket[(+ 100 …)] 让跳没跳走看得见：
+拿一个具体的 @racket[kkp] 试，@racket[kp] 用 @racket[let/cc] 捕获。外面的 @racket[(+ 10 …)]、@racket[(+ 100 …)] 让跳没跳走看得见：
 
 @examples[#:eval ev #:label #f
 (define p 5)
@@ -132,7 +130,7 @@
 
 两行都是 @racket[105]：@racket[5] 交给 @racket[kp]，跳回 @racket[let/cc] 返回的地方，加十那一步跳过了。
 
-这个 @racket[kkp] 是用 @tech[#:key "双重否定引入"]{DNI} 把 @racket[5] 升到第 2 层得来的，和 @racket[triple-negation] 里的 @racket[kkq] 一个样子，第三种办法把它取了回来。一步步改写，看得更清楚：
+这个 @racket[kkp] 是用 @tech[#:key "双重否定引入"]{DNI} 把 @racket[5] 升到第 2 层得来的，和 @racket[triple-negation] 里的 @racket[kkq] 一个样子，落地的配对把它取了回来。一步步改写，看得更清楚：
 
 @racketblock[
 #,(hspace 2)(call/cc kkp)
@@ -141,7 +139,7 @@
 = (let/cc k p)
 = p]
 
-前两步照定义展开。第三步用的是@xref["01:call-cc-types"]{「call/cc 的几种类型」}里的道理：@racket[p] 算出一个值，显式跳到 @racket[k] 和正常返回，去的是同一个出口。第四步，@racket[k] 已经用不到，捕获也就可以省去。取回的 @racket[p] 再交给 @racket[kp]，就是 @racket[(kp 5)]，和第一种一样。
+前两步照定义展开。第三步用的是@xref["01:call-cc-types"]{「call/cc 的几种类型」}里的道理：@racket[p] 算出一个值，显式跳到 @racket[k] 和正常返回，去的是同一个出口。第四步，@racket[k] 已经用不到，捕获也就可以省去。取回的 @racket[p] 再交给 @racket[kp]，就是 @racket[(kp 5)]，和不落地的配对一样。
 
 上面的 @racket[kkp] 是 @racket[(λ (k) (k p))]，函数体就是 @racket[(k p)]。一般的 @racket[kkp] 写成 @racket[(λ (k) body)]，@racket[body] 不一定是 @racket[(k p)]，也就不一定这样展得开。把两种写法都照定义展开：
 

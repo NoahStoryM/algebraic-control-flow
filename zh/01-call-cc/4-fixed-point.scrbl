@@ -31,7 +31,7 @@
 
 @section[#:tag "01:label-sub"]{代入 Label}
 
-把 @racket[Label] 代入@tech{排中律} @math{p ∨ ¬p}。按定义，@math{¬@ty{Label}} 就是 @racket[Label]，两个分支成了同一个类型：
+前面代入的都是 @tech[#:key "双重否定消除"]{DNE}，这回换成 @racket[cc] 对应的@tech{排中律}：把 @racket[Label] 代入 @math{p ∨ ¬p}。按定义，@math{¬@ty{Label}} 就是 @racket[Label]，两个分支成了同一个类型：
 
 @mm{@ty{Label} ∨ ¬@ty{Label} = @ty{Label} ∨ @ty{Label}}
 
@@ -188,6 +188,4 @@
 
 第三种就是 @racket[Label]。@math{@ty{Label} = ¬@ty{Label}} 读作命题，就是一句「这句话是假的」。推一推：如果 @racket[Label] 为真（非空），@math{¬@ty{Label}} 也就非空，@racket[Label] 的@tech{否定}为真，@racket[Label] 为假。如果 @racket[Label] 为假（空），@math{¬@ty{Label}} 反倒有元素：空类型出发的函数总写得出来，就像 @racket[absurd] 填充了 @math{⊥ → p}；可 @math{¬@ty{Label} = @ty{Label}}，于是 @racket[Label] 又有了元素，变成了真。这就是@defterm[#:en "liar paradox"]{说谎者悖论}，它无法被一致地赋予真假值。阴阳谜题就像让它运行了起来：同一个@tech{标签}一会儿被调用，一会儿被交出去，永远落不了地。更简单的是把 @racket[goto] 交给它自己：@racket[(goto goto)] 的类型是 @racket[⊥]，却永远算不完。Agda 和 Coq 这样的一致类型论禁止这类定义；Racket 没有这个限制。
 
-每种情况下，严格的 Curry-Howard 解读都失效了：本应为空的@tech{否定}类型有了元素，本应非法的自指类型变得合法。不能把任意 Racket 表达式都当作证明。前面读出逻辑定律时，无限循环、内置的 @racket[exit]、抛出异常和自指类型，都不在这个读法之内；@racket[cc] 和 @racket[call/cc] 当作现成的操作，按它们的类型来用；它们内部怎样用 @racket[label]、@racket[set!] 实现，不算在证明里。
-
-前面真正用到的是两条规则：按给定的类型使用控制操作符，程序里交进来的东西，在证明里算假设。在这个范围内，程序的类型推导对应逻辑证明；除了交进来的东西，不再依赖别的时候，得到的才是相应命题的无条件证明。加入控制操作，就多了@tech{排中律}、@tech[#:key "双重否定消除"]{DNE} 这样的推理规则。
+每种情况下，严格的 Curry-Howard 解读都失效了：本应为空的@tech{否定}类型有了元素，本应非法的自指类型变得合法。不能把任意 Racket 表达式都当作证明。前面读出逻辑定律时，用的是一个更窄的范围：无限循环、内置的 @racket[exit]、抛出异常和自指类型都不算；@racket[cc] 和 @racket[call/cc] 当作现成的操作，按给定的类型来用，内部怎样用 @racket[label]、@racket[set!] 实现，不算在证明里；程序里交进来的东西，在证明里算假设。在这个范围内，程序的类型推导对应逻辑证明；一个假设也不用的，才是相应命题的无条件证明。加入控制操作，就多了@tech{排中律}、@tech[#:key "双重否定消除"]{DNE} 这样的推理规则。
