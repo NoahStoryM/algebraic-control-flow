@@ -2,7 +2,7 @@
 
 @title[#:tag "03:3-delimited"]{定界延续}
 
-提前返回，就是把值直接交给这段局部计算的出口。出口那一条@tech{局部延续}，一直在手边。
+@xref["03:nested"]{「边界中的边界」}里，@tech{局部延续}做完会返回。把它当作普通函数，保存起来再调用一次，会接着做哪一段工作？先从提前返回说起：它就是把值直接交给这段局部计算的出口，出口那一条@tech{局部延续}，一直在手边。
 
 @(define ev (make-acf-eval))
 @examples[#:eval ev #:hidden
@@ -43,7 +43,7 @@
 @examples[#:eval ev #:label #f #:no-prompt
 (define cps:abort (cps* a->⊥ᵃ))]
 
-@defsym["cps:abort" "(cps* a->⊥ᵃ)：丢掉当前延续，把值交给局部终结延续"]照名字的约定，@racket[cps:abort] 是一支 @tech{CPS 箭头}；它不是把哪个 @racket[abort] 用 @racket[cps] 提升出来的，而是 @racket[cps*] 用在 @racket[a->⊥ᵃ] 上。它丢掉当前@tech{延续}，把值交给@tech{局部终结延续}：从@tech{闭包链}上的任何一处跳到链底，值成为这段局部计算的答案。回看@xref["03:escape-discard"]{「逃逸与丢弃」}里用 @racket[cps:call/cc] 提前退出的例子：
+@defsym["cps:abort" "(cps* a->⊥ᵃ)：丢掉当前延续，把值交给局部终结延续"]照名字的约定，@racket[cps:abort] 是一支 @tech{CPS 箭头}；它不是用 @racket[cps] 提升出来的，而是 @racket[cps*] 用在 @racket[a->⊥ᵃ] 上。它丢掉当前@tech{延续}，把值交给@tech{局部终结延续}：从@tech{闭包链}上的任何一处跳到链底，值成为这段局部计算的答案。回看@xref["03:escape-discard"]{「逃逸与丢弃」}里用 @racket[cps:call/cc] 提前退出的例子：
 
 @racketblock[
 (anf:eval
@@ -60,7 +60,7 @@
 
 @racket[(anf:eval kₐkₐa)] 不在尾位置：宿主在当前的帧里记着「拿到答案后调用 @racket[kₐa]」这件待办的工作。
 
-@tech[#:key "延续传递风格"]{CPS} 把栈上的帧搬进了堆上的闭包，靠尾调用往前推。宿主的栈不必再替局部的工作留帧，空出来，正好用来定界：里面的工作由显式的@tech{延续}表示，外面的等待由宿主的帧记着。里面算完，普通地返回，交出答案；外面拿着答案接着算。这正是这一章开头那件事：调用一个函数时，调用者记下返回的地方，函数体执行，算完再回来。在 @racket[anf:reset] 里面用 @racket[cps:abort]，就是从这次调用 @tt{return}。
+@xref["03:local-k"]{「局部延续」}说过，宿主的栈不必再替局部的工作留帧，空出来，正好用来定界：里面的工作由显式的@tech{延续}表示，外面的等待由宿主的帧记着。里面算完，普通地返回，交出答案；外面拿着答案接着算。这正是这一章开头那件事：调用一个函数时，调用者记下返回的地方，函数体执行，算完再回来。在 @racket[anf:reset] 里面用 @racket[cps:abort]，就是从这次调用 @tt{return}。
 
 @xref["03:nested"]{「边界中的边界」}已经表明，被 @tt{return} 丢掉的那段工作是一个普通函数：调用它，就做完剩下的局部工作，正常返回结果。程序要是既能拿到这个函数，又能交出答案，就可以选择调用、保存，还是丢掉它。@racket[cps:call/lc] 拿到函数，@racket[cps:abort] 交出答案，两个接起来：
 
@@ -149,46 +149,7 @@
 
 @racket[shift] 能把剩下的工作交给程序，可实现它的时候，没有借助宿主原生的捕获。四个例子共用同一段局部工作：收下 @racket[x]，加二，交出答案。化简以后，这段工作以什么样子出现，@racket[shift] 的主体又怎样和它对接？
 
-第一、第三个例子是同一段计算。@racket[(shift k (k e))] 就是 @racket[(let/lc k e)]，@racket[e] 不用 @racket[k] 时，@racket[let/lc] 可以化简成 @racket[e]；@racket[e] 里没有控制操作时，@racket[(reset (abort e))] 就是 @racket[e]。照这两条化简第三个例子，写成直接风格的 @racket[let]：
-
-@racketblock[
-#,(hspace 2)(let ([v (reset
-                (let* ([x (shift k (k 3))]
-                       [y (+ 2 x)])
-                  (abort y)))])
-    (+ 10 v))
-= (let ([v (let ([x 3]) (+ 2 x))])
-    (+ 10 v))]
-
-化简以后，是普通的 @tech[#:key "A-范式"]{ANF}。里面的 @racket[(let ([x 3]) (+ 2 x))] 脱糖就是 @racket[((λ (x) (+ 2 x)) 3)]，@racket[(λ (x) (+ 2 x))] 是等着 @racket[x] 的那段工作，也就是@tech{局部延续}。把它命名为 @racket[k]：
-
-@racketblock[
-#,(hspace 2)((λ (v) (+ 10 v))
-   ((λ (k) (k 3))
-    (λ (x) (+ 2 x))))
-= ((λ (v) (+ 10 v)) (+ 2 3))
-= 15]
-
-拿到@tech{延续}立刻调用，就是普通的绑定：@racket[((λ (k) (k e)) (λ (v) body))] 与 @racket[(let ([v e]) body)] 行为一样。
-
-第二个例子不碰 @racket[k]，@racket[shift] 就是 @tt{return}，跳过了加二。消去末尾的 @racket[abort]：
-
-@racketblock[
-(let ([v (reset
-           (let ([x (abort 3)])
-             (+ 2 x)))])
-  (+ 10 v))]
-
-丢掉当前的@tech{局部延续}，改把值交给@tech{局部终结延续} @racket[id]。@racket[(id 3)] 就是 @racket[3]，于是主体成了 @racket[(λ (_) 3)]：
-
-@examples[#:eval ev #:label #f
-((λ (v) (+ 10 v))
- ((λ (_) 3)
-  (λ (x) (+ 2 x))))]
-
-@racket[(λ (x) (+ 2 x))] 交进去了，主体却没有调用它。前三个例子到这里都是见过的东西：第一、第三个是不带控制操作的普通计算，第二个是替换@tech{延续}的提前返回。
-
-把这两份 @tech[#:key "延续传递风格"]{CPS} 的主体，和 @racket[shift] 的主体放在一起。第一份用一次 @racket[k]，第二份不用：
+第一、第三个例子是同一段计算，第二个是一次提前返回。照@xref["03:abort-shift"]{「从 return 到 shift」}里的两条等式化简成直接风格、消去末尾的 @racket[abort]，那段等着 @racket[x] 的工作都是 @racket[(λ (x) (+ 2 x))]，也就是@tech{局部延续}。拿到@tech{延续}立刻调用，就是普通的绑定：@racket[((λ (k) (k e)) (λ (v) body))] 与 @racket[(let ([v e]) body)] 行为一样；不调用它，就是把值直接交出，跳过了加二。把这两种 @tech[#:key "延续传递风格"]{CPS} 的主体和 @racket[shift] 的主体放在一起：
 
 @racketblock[
 (shift k (k 3))     (code:comment "主体对应 (λ (k) (k 3))")
@@ -204,7 +165,7 @@
              (+ 2 x)))])
   (+ 10 v))]
 
-加二的@tech{延续}和外面的加十，都和前两份相同，只有主体不同：
+加二的@tech{延续} @racket[(λ (x) (+ 2 x))] 和外面的加十都不变，只有主体不同：
 
 @examples[#:eval ev #:label #f
 ((λ (v) (+ 10 v))
@@ -266,9 +227,9 @@
 
 @defsym["E[e]" "求值上下文 E 里，把 e 放进那个空位"]@racket[val] 是一个值；@racket[E] 是不跨过另一层 @racket[reset] 的@defterm[#:en "evaluation context"]{求值上下文}，@c{E[v]} 表示把值 @racket[v] 放回 @racket[shift] 所在的位置。比如第三个例子里，@racket[shift] 到 @racket[reset] 之间的上下文是 @c{(let* ([x □] [y (+ 2 x)]) (abort y))}，□ 就是 @racket[shift] 所在的那个空位。第一条：边界以内已经是一个值，直接取出。
 
-第二条是 @racket[shift] 的规约：把从 @racket[shift] 到 @racket[reset] 之间的上下文 @racket[E] 取出来，包成函数 @c{(λ (v) (reset E[v]))} 绑定给 @racket[k]，再在边界以内执行 @racket[expr]。规则里有两个 @racket[reset]。
+第二条是 @racket[shift] 的规约：把从 @racket[shift] 到 @racket[reset] 之间的上下文 @racket[E] 取出来，包成函数 @c{(λ (v) (reset E[v]))} 绑定给 @racket[k]，再在边界以内执行 @racket[expr]。规则里有两个 @racket[reset]，外面一层和 @racket[k] 里的一层，下面分别看。
 
-前面用 @racket[shift] 定义了 @racket[let/lc] 和 @racket[abort]；反过来，@racket[shift] 也能由这两个定义，下面的 @racket[let/lc] 就是这个方向的写法。和@xref["01:compare"]{「比较」}里的三种控制操作符一样，@racket[shift] 与 @racket[let/lc] 加 @racket[abort] 可以互相定义。@racket[shift] 是给@tech{局部延续}起了名字的 @tt{return}：用 @racket[let/lc] 给@tech{局部延续}起名，用 @racket[abort] 交出答案：
+前面用 @racket[shift] 定义了 @racket[let/lc] 和 @racket[abort]；反过来，@racket[shift] 也能由这两个定义，下面的 @racket[let/lc] 就是这个方向的写法，@racket[call/lc] 指直接风格里取@tech{局部延续}的操作，对应 @racket[cps:call/lc]。和@xref["01:compare"]{「比较」}里的三种控制操作符一样，@racket[shift] 与 @racket[let/lc] 加 @racket[abort] 可以互相定义。@racket[shift] 是给@tech{局部延续}起了名字的 @tt{return}：用 @racket[let/lc] 给@tech{局部延续}起名，用 @racket[abort] 交出答案：
 
 @racketblock[
 (define-syntax-rule (let/lc k body ...)
@@ -279,7 +240,7 @@
 
 先算 @racket[expr] 得到 @racket[v]，再 @racket[(abort v)] 返回。@racket[expr] 在返回之前照常计算，仍在原来的 @racket[reset] 里面，所以规约式最外面还留着一层 @racket[reset]。
 
-里面那层 @racket[reset] 藏在 @racket[k] 的定义里：@c{(λ (v) (reset E[v]))}。@tech{平凡表示}下，@tech{局部延续}就是普通的函数，调用 @racket[k] 就是一次普通的函数调用。@tech[#:key "延续传递风格"]{CPS} 把局部的工作搬进堆上的闭包，空出来的宿主栈用来定界，调用 @racket[k] 时分配的新栈帧，就是一次新的定界。
+里面那层 @racket[reset] 藏在 @racket[k] 的定义里：@c{(λ (v) (reset E[v]))}。@tech{平凡表示}下，@tech{局部延续}就是普通的函数，调用 @racket[k] 就是一次普通的函数调用，调用时分配的新栈帧，就是一次新的定界。
 
 @racket[k] 要是在某个 @racket[reset] 的尾位置调用，@racket[(reset (k v))] 展开是 @c{(reset (reset E[v]))}，两层边界紧挨在一起。两层等于一层：在这两条规则下，@racket[(reset (reset e))] 与 @racket[(reset e)] 行为一样。用这两条规则比较两边。@racket[e] 是值时，两边都规约成这个值。@racket[e] 执行 @racket[shift] 时，@racket[shift] 只取到最近的一层 @racket[reset]，两边取到的上下文 @racket[E] 相同：
 
@@ -291,6 +252,6 @@
 
 @racket[k] 绑定的是同一个函数，规约之后两边仍然只差最外面一层 @racket[reset]。每一步都是这样，直到里面算出值，多出的那层也随第一条规则消失。
 
-结构体表示下，同一层边界以另一种样子出现。@xref["03:nested"]{「边界中的边界」}里，@racket[cps:call/lc] 用 @racket[⊥ᵃ->a] 把捕获的@tech{局部延续}包了一层：调用时沿@tech{闭包链}做完局部的工作，在链底碰到 @racket[a->⊥ᵃ]，@racket[⊥ᵃ->a] 取出答案，和 @racket[anf:eval] 是同一个结构。@racket[⊥ᵃ->a] 出现在哪里，哪里就有一次定界。两种表示看到的是同一件事：把 @racket[v] 放回原来的上下文 @racket[E]，在一层新的边界里求值。
+结构体表示下也是这样：@xref["03:nested"]{「边界中的边界」}里，@racket[⊥ᵃ->a] 出现在哪里，哪里就有一次定界。两种表示看到的是同一件事：把 @racket[v] 放回原来的上下文 @racket[E]，在一层新的边界里求值。
 
 @racket[shift] 定义得出 @racket[let/lc] 和 @racket[abort]：一个只捕获，一个只跳转。@racket[cps:call/cc] 捕获的@tech{延续}会跳走，@racket[shift] 也定义得出 @racket[let/cc] 吗？

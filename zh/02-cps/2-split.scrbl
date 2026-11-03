@@ -85,7 +85,7 @@ neg  =  (∘ flip cps)]
 = ((neg mul1) ((neg mul2) ((neg mul3) k)))
 = ((∘ (neg mul1) (neg mul2) (neg mul3)) k)]
 
-@racket[(neg mul3)] 最先用，@racket[mul3] 紧挨着 @racket[k]；@racket[(neg mul1)] 最后用，@racket[mul1] 排在最前。几次 @racket[neg] 用 @racket[∘] 接起来，次序和里面的乘法正好相反。整条@tech{闭包链}从 @racket[k] 开始，一环环向内建起来。@racket[k] 是出口，也就是这段计算的@tech{终结延续}：@racket[(fact/k 3 k)] 若就是整个程序，它就是程序的出口，也就是 @racket[exit]；启动时交进去的若是@tech{终结延续} @racket[a->⊥]，它就是 @racket[a->⊥]。
+@racket[(neg mul3)] 最先用，@racket[mul3] 紧挨着 @racket[k]；@racket[(neg mul1)] 最后用，@racket[mul1] 却最先算。几次 @racket[neg] 用 @racket[∘] 接起来，次序和里面的乘法正好相反。整条@tech{闭包链}从 @racket[k] 开始，一环环向内建起来。@racket[k] 是出口，也就是这段计算的@tech{终结延续}：@racket[(fact/k 3 k)] 若就是整个程序，它就是程序的出口，也就是 @racket[exit]；启动时交进去的若是@tech{终结延续} @racket[a->⊥]，它就是 @racket[a->⊥]。
 
 以上是链的构造。运行时，值又怎样沿着它走？@xref["02:anf"]{「求值顺序与 ANF」}说过，@racket[let*] 就是复合。反过来，把这条@tech{闭包链}拆回 @racket[let*]，给中间结果起名，值从 @racket[v0] 出发：
 
@@ -153,7 +153,7 @@ k2  =  (∘ k3 mul3)  =  ((neg mul3) k3)]
 (define (cps:proc2 cps:k) (λ (k) ((cps:k 10) (λ (v) (k (add1 v))))))
 (⊥->a ((cps:call/cc cps:proc2) (λ (v) (a->⊥ (add1 v)))))]
 
-结果是 @racket[11]，不是 @racket[12]。@racket[cps:k] 是提升过的 @racket[kp]，一调用，计算就改走 @racket[kp]：外面那一步加 1，然后是@tech{终结延续}。@racket[cps:proc2] 里排在后面的那一步加 1，再也轮不到。这正是 @racket[call/cc] 的行为：调用交出去的@tech{延续}，就是丢下手头的工作，回到 @racket[call/cc] 之后。
+结果是 @racket[11]，不是 @racket[12]。@racket[cps:k] 是提升过的 @racket[kp]，@racket[(cps:k 10)] 收到手写的那个@tech{延续}以后，先算 @racket[(kp 10)]：外面那一步加 1，然后是@tech{终结延续}。@racket[kp] 不回来：在这里，它把结果交给 @racket[a->⊥]，由它 @racket[raise] 出去。等它结果的那个 @racket[λ]，连同 @racket[cps:proc2] 里排在后面的那一步加 1，再也轮不到。这正是 @racket[call/cc] 的行为：调用交出去的@tech{延续}，就是丢下手头的工作，回到 @racket[call/cc] 之后。
 
 @bold{练习}：用 @racket[neg:call/cc] 把这两个例子各跑一遍，结果仍是 @racket[7] 和 @racket[11]。提示：@racket[neg] 的写法先收@tech{延续}，再收输入；外面那一步加 1，用 @racket[(neg add1)] 接在@tech{终结延续}前面；@racket[(neg kp)] 先收的是一条 @math{¬⊥} 的@tech{延续}：@racket[kp] 不返回，这条@tech{延续}轮不到。
 

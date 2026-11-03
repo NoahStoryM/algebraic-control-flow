@@ -26,7 +26,7 @@
 
 遇到零，@racket[(goto ret)] 回到 @racket[ret] 那一处。这时 @racket[first?] 已经是 @racket[#f]，循环不再执行，函数直接交出 @racket[result]，剩下的迭代都跳过了。@tech{标签} @racket[ret] 标出的，是函数交出结果的地方，也就是函数计算的边界；@racket[goto] 越过的，是边界以内还没做完的工作。
 
-汇编里的函数调用，用的也是这两样东西：调用者存下一个返回地址，跳进函数体，算完再跳回来。大多数语言把它们藏在内建的 @tt{return} 后面。Racket 没有内建的 @tt{return}，这里假想有一个，用它改写 @racket[mul]：
+汇编里的函数调用，用的也是这两样东西：调用者存下一个返回地址，跳进函数体，算完再跳回来。大多数语言把它们藏在内建的 @tt{return} 后面。第一章的 @tt{return} 由 @racket[let/cc] 交到手里；这里先把它当作内建的，用它改写 @racket[mul]：
 
 @racketblock[
 (define (mul . r*)

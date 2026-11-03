@@ -58,7 +58,7 @@
 @racketblock[
 (let ([v e]) b)  =  ((λ (v) b) e)]
 
-每个 @racket[let] 绑定都配着两样东西：一个待求值的表达式 @racket[e]，和一个等待结果的函数 @racket[(λ (v) b)]。后者接收 @racket[e] 的值，然后执行剩余的计算。这个「等待结果并执行剩余计算的函数」，就是@tech{延续}。求值的每一步，都能这样拆成两半：眼下要归约的那一小段叫@defterm[#:en "reducible expression" #:abbr "redex"]{可归约式}，围着它、等它结果的其余部分就是@tech{延续}。@racket[e] 还没算完时，@tech{可归约式}就在 @racket[e] 里面。
+每个 @racket[let] 绑定都配着两样东西：一个待求值的表达式 @racket[e]，和一个等待结果的函数 @racket[(λ (v) b)]。后者接收 @racket[e] 的值，然后执行剩余的计算。这个「等待结果并执行剩余计算的函数」，就是@tech{延续}。求值的每一步，都能这样拆成两半：眼下要归约的那一小段叫@defterm[#:en "reducible expression" #:abbr "redex"]{可归约式}，围着它、等它结果的其余部分就是@tech{延续}。@racket[e] 若还要分几步算，@tech{可归约式}就在 @racket[e] 里面。
 
 @racket[let] 的先后次序，也来自这次脱糖。调用 @racket[((λ (v) b) e)] 时，先算出实参 @racket[e]，再把结果绑定到形参 @racket[v]，最后算函数体 @racket[b]。所以 @racket[(let ([v e]) b)] 总是先算 @racket[e]，再算 @racket[b]。
 

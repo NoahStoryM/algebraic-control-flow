@@ -106,13 +106,13 @@
 (anf:eval ((∘𝒦 cps:mul3 (∘𝒦 cps:mul2 cps:mul1)) 1))
 (anf:eval ((∘𝒦 (∘𝒦 cps:mul3 cps:mul2) cps:mul1) 1))]
 
-@margin-note{𝒰 取 U-turn，掉头转弯：@tech{逆否箭头}的方向倒了过来。}
-
 两种分组算得一样。一般也是这样吗？不必逐条展开，可以借已有的运算律：把它搬到一种已经认识的复合上，运算律就一起跟过来。路线分四步：给两种写法的箭头起名；用 @racket[flip] 把 @racket[∘𝒦] 搬到@tech{逆否箭头}那边；认出搬过去的就是 @racket[⨾]；再把 @racket[⨾] 的运算律搬回来。先给两种写法的箭头起名：照 @racket[cps] 写法的叫@defterm[#:en "CPS arrow"]{CPS 箭头}，记作@defsym["p →𝒦 q" "CPS 箭头：p → ¬¬q；𝒦 取延续变量惯用的字母 k"] @math{→@subscript{𝒦}}；照 @racket[neg] 写法的叫@defterm[#:en "contrapositive arrow"]{逆否箭头}，记作@defsym["p →𝒰 q" "逆否箭头：¬q → ¬p；𝒰 取掉头转弯（U-turn）"] @math{→@subscript{𝒰}}。前面名字以 @racket[cps:]、@racket[neg:] 开头的函数，就分别是这两种箭头，类型里的每一个箭头都是这一种：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define-type (→𝒦 p ... q) (→    p ... (¬¬ q)))
 (define-type (→𝒰 p ... q) (← (¬ p ...) (¬ q)))]
+
+@margin-note{𝒰 取 U-turn，掉头转弯：@tech{逆否箭头}的方向倒了过来。}
 
 @margin-note{@tt{p ...} 表示任意多个参数，和 @racket[→] 一样，最后一个是结果；没有参数时，@racket[(→𝒦 q)] 就是 @racket[(→ (¬¬ q))]。@racket[cps]、@racket[neg] 用 @tt{. p*} 把参数原样交给 @racket[f]，本来就不限个数。}
 
@@ -162,7 +162,7 @@
 
 @section[#:tag "02:propositions"]{读出命题}
 
-@racket[call/cc] 要靠宿主捕获@tech{延续}；@xref["02:k-in-hand"]{「手中的延续」}里的 @racket[cps:call/cc] 却只用了 @racket[λ] 和函数调用，什么也没有捕获。两者做的是同一件事：把当前@tech{延续}交给 @racket[proc]。它们究竟是同一个什么？@xref["01:call-cc-types"]{「call/cc 的几种类型」}把 @racket[call/cc] 的类型读成了命题，其中一种是 @tech{Clavius 律}。照这个办法，把这一章写下的类型也读成命题。
+@racket[call/cc] 要靠宿主捕获@tech{延续}；@xref["02:k-in-hand"]{「手中的延续」}里的 @racket[cps:call/cc] 却只用了 @racket[λ] 和函数调用，什么也没有捕获。两者做的是同一件事：把当前@tech{延续}交给 @racket[proc]。它们的类型读成命题，是不是同一条？@xref["01:call-cc-types"]{「call/cc 的几种类型」}把 @racket[call/cc] 的类型读成了命题，其中一种是 @tech{Clavius 律}。照这个办法，把这一章写下的类型也读成命题。
 
 先读最早的两个。@racket[neg] 和 @racket[cps] 的类型，按照 Curry-Howard 对应，是两条直觉主义定理：
 
@@ -223,7 +223,7 @@
 (define-type (¬𝒰 p ...) (→𝒰 p ... ⊥))
 (define-type Label𝒰 (¬𝒰 Label𝒰))]
 
-展开到宿主，@math{¬@subscript{𝒰} p} 是 @math{¬⊥ → ¬p}，@math{@ty{Label𝒰} = ¬⊥ → ¬@ty{Label𝒰}}。读成命题，它同样是说谎者。
+展开到宿主，@math{¬@subscript{𝒰} p} 是 @math{¬⊥ → ¬p}，@math{@ty{Label𝒰} = ¬⊥ → ¬@ty{Label𝒰}}。前提 @math{¬⊥} 有现成的元素 @racket[id]，恒为真，有它没它都一样，剩下的还是 @racket[Label𝒰] 与它的否定互推。读成命题，它同样是说谎者。
 
 @subsection[#:tag "02:clavius"]{Clavius 律}
 

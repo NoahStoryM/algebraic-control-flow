@@ -14,9 +14,9 @@
 
 @section[#:tag "03:a-translation"]{A-翻译}
 
-对任何一个普通结果的类型 @math{p}，这个变化都可以写成 @math{pᵃ = p ∨ a}：普通的结果，或者提前到来的答案。@math{⊥} 没有普通的元素，@math{⊥ᵃ = ⊥ ∨ a} 就只剩答案那一支，打上@tech{标记}以后就是 @racket[(Ans a)]。整个类型就这样翻译：@math{⊥} 换成 @math{a}，每个普通结果的类型 @math{p} 换成 @math{p ∨ a}，箭头的输入和输出各自照这样翻译。这种以答案类型 @math{a} 为参数的翻译，叫作@defterm[#:en "A-translation"]{A-翻译}。
+把一个普通结果的类型 @math{p} 当作一个整体，不拆开，这个变化可以写成 @math{pᵃ = p ∨ a}：普通的结果，或者提前到来的答案。@math{⊥} 没有普通的元素，@math{⊥ᵃ = ⊥ ∨ a} 就只剩答案那一支，打上@tech{标记}以后就是 @racket[(Ans a)]。整个类型照三条规则翻译：当作整体的普通类型 @math{p} 译作 @math{p ∨ a}；@math{⊥} 译作 @math{⊥ᵃ}，也就是只剩答案那一支；箭头按结构译，@math{(p → q)ᵃ = pᵃ → qᵃ}。比如 @math{@ty{Real} → @ty{Bool}} 译成 @math{(@ty{Real} ∨ a) → (@ty{Bool} ∨ a)}。这种以答案类型 @math{a} 为参数的翻译，叫作@defterm[#:en "A-translation"]{A-翻译}。
 
-@xref["02:cps"]{「延续与 CPS」}以后，一段结果类型为 @math{p} 的计算，编码成双重否定 @math{(p → ⊥) → ⊥}，@tech{否定翻译}用的也是它。对它做 @tech{A-翻译}，@math{p} 变成 @math{pᵃ}，@math{⊥} 变成 @math{⊥ᵃ}：
+@xref["02:cps"]{「延续与 CPS」}以后，一段结果类型为 @math{p} 的计算，编码成双重否定 @math{(p → ⊥) → ⊥}，@tech{否定翻译}给类型裹上的也是这两层否定。对它做 @tech{A-翻译}，@math{p} 变成 @math{pᵃ}，@math{⊥} 变成 @math{⊥ᵃ}，两支箭头照结构译：
 
 @mm{(p → ⊥) → ⊥ @hspace[2] ⟼ @hspace[2] (pᵃ → ⊥ᵃ) → ⊥ᵃ}
 
@@ -62,10 +62,6 @@
 
 @racket[loop] 正是这样做的：收到 @racket[ans] 就原样交出，否则接着算。
 
-普通结果的类型也是 @math{a} 时，两条@tech{延续}的类型相同，都是 @math{a → a}。上面的 @racket[(loop/ki r* a->⊥ᵃ a->⊥ᵃ)] 交进去的就是同一个。
-
-@math{a → a} 有一个现成的元素：恒等函数。它就能充当@tech{局部终结延续}，@xref["03:eval-boundary"]{「求值与边界」}里 @racket[anf:eval] 交进去的正是它。原来启动计算时借用 @racket[raise] 的位置，现在由普通的函数填上，解释器也落在 𝒞 里。
-
-这里运行的，是答案类型已经换过的局部编码，而且求值的地方，普通结果的类型和答案类型恰好对得上。两种翻译加上对答案那一支的处理，把原来的编码接到了这个可以直接求值的类型上。
+普通结果的类型也是 @math{a} 时，两条@tech{延续}的类型相同，都是 @math{a → a}，上面的 @racket[(loop/ki r* a->⊥ᵃ a->⊥ᵃ)] 交进去的就是同一个，也就是@xref["03:eval-boundary"]{「求值与边界」}里 @racket[anf:eval] 交进去的 @racket[id]。两种翻译加上对答案那一支的处理，就把原来的编码接到了这个可以直接求值的类型上。
 
 这一章的边界，靠的是 @racket[anf:reset] 那次非尾调用：宿主栈上留着一帧，替我们记住外面等着的工作。手里只有不定界的 @racket[call/cc]，没有这样一次调用替我们记住外面，造得出 @racket[reset] 和 @racket[shift] 吗？

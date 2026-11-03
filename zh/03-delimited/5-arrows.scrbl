@@ -36,15 +36,13 @@
 
 @tech{局部延续}不一样。@tech{平凡表示}下，@tech{局部空} @math{⊥ᵃ} 就是普通的类型 @math{a}，@tech{局部否定} @math{¬ₐp} 也就是普通的函数类型 @math{p → a}。@tech{局部延续}是普通的函数，调用完会正常返回；交给 @racket[neg] 以后，接在它后面的工作也真的会运行。
 
-把 @racket[f] 换成一条@tech{局部延续} @math{kₐp : p → ⊥ᵃ}，@racket[(neg kₐp)] 收下一条等着 @math{⊥ᵃ} 的@tech{延续}，交出一条等着 @math{p} 的@tech{延续}。这两条@tech{延续}最后落在哪里，@math{kₐp} 管不着，可以是任何一个@tech{基}。@math{a} 已经是 @math{kₐp} 自己的答案类型，另起一个名字才分得开，记作 @math{x}。展开就是：
+把 @racket[f] 换成一条@tech{局部延续} @math{kₐp : p → ⊥ᵃ}，@racket[(neg kₐp)] 收下一条等着 @math{⊥ᵃ} 的@tech{延续}，交出一条等着 @math{p} 的@tech{延续}。这两条@tech{延续}最后落在哪里，@math{kₐp} 管不着，可以是任何一个@tech{基}。@tech{基}说的是组成这支箭头的那些@tech{延续}共同的终点，和@xref["03:local-k"]{「局部延续」}里一样；@math{kₐp} 自己落在 @math{⊥ᵃ} 上，@racket[(neg kₐp)] 收到的@tech{延续}落在哪里，却由用到它的地方定。@math{a} 已经是 @math{kₐp} 自己的答案类型，另起一个名字才分得开，记作 @math{x}。展开就是：
 
 @mm{(⊥ᵃ → x) → (p → x)}
 
 它是一支以 @math{x} 为@tech{基}、从 @math{p} 指向 @math{⊥ᵃ} 的@tech{逆否箭头}，@math{p →@subscript{𝒰ₓ} ⊥ᵃ}。
 
-@margin-note{两个下标各管一件事：@math{¬} 的下标是落点，箭头的下标是@tech{基}。@math{¬ₐ} 本身也这样读，落在 @math{⊥ᵃ} 上的@tech{宿主箭头}。@math{¬} 后面没有下标，就落在全局的 @math{⊥} 上；@xref["02:liar"]{「说谎者」}的 @math{¬@subscript{𝒦}}、@math{¬@subscript{𝒰}}，是@tech{基}和落点都为 @math{⊥} 的情形。}
-
-到 @math{⊥} 的箭头，@xref["02:liar"]{「说谎者」}记作 @math{¬@subscript{𝒦}}、@math{¬@subscript{𝒰}}。这里落点不一定是 @math{⊥}，就把落点和@tech{基}都标出来：
+到 @math{⊥} 的箭头，@xref["02:liar"]{「说谎者」}记作 @math{¬@subscript{𝒦}}、@math{¬@subscript{𝒰}}。这里落点不一定是 @math{⊥}，就把落点也标出来。记法只有一条规则：@math{¬} 的下标是落点，箭头的下标是@tech{基}，哪个位置不写，那里就是 @math{⊥}。@math{¬ₐ} 本身就这样读：落在 @math{⊥ᵃ} 上的@tech{宿主箭头}。比如 @math{¬ₐ@subscript{𝒰ₓ}p} 以 @math{x} 为@tech{基}、落在 @math{⊥ᵃ}；@math{¬@subscript{𝒰ₓ}p} 仍以 @math{x} 为@tech{基}，落在 @math{⊥}，两者只差一个位置。「说谎者」的 @math{¬@subscript{𝒦}}、@math{¬@subscript{𝒰}}，是两个位置都不写、都为 @math{⊥} 的情形。下面用到的四个：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define-type (¬ₐ𝒰ₓ p ...) (→𝒰ₓ p ... ⊥ᵃ))
@@ -58,7 +56,7 @@
 (: neg (∀ (p q a x) (case→ (→ (→𝒟 p q) (→𝒰ₓ  p q))
                            (→ (¬ₐ  p)  (¬ₐ𝒰ₓ p)))))]
 
-第一行是@xref["02:via-contrapositive"]{「借道逆否复合」}的读法，只是@tech{基}可以任选；第二行是把它用在@tech{局部延续}上。@math{kₐp} 的终点 @math{⊥ᵃ} 由它自己定下，箭头的@tech{基} @math{x} 由用到它的地方定下，两者不必相同。
+第一行是@xref["02:via-contrapositive"]{「借道逆否复合」}的读法，只是@tech{基}可以任选；第二行是把它用在@tech{局部延续}上。第二章从 𝒰 读到 𝒞 的那种读法，这一节用不上，不再列出。@math{kₐp} 的终点 @math{⊥ᵃ} 由它自己定下，箭头的@tech{基} @math{x} 由用到它的地方定下，两者不必相同。
 
 @section[#:tag "03:two-call-cc"]{两个 call/cc}
 
@@ -86,7 +84,7 @@
 
 两个控制运算符保存的是同一份局部工作 @math{kₐp}。@racket[neg:call/lc] 交出的@tech{延续}，调用时把这份工作接在当前@tech{延续}前面，做完正常返回；@racket[neg:call/cc] 交出的@tech{延续}，调用时丢掉当前@tech{延续}，只留下这份工作。
 
-两个类型只差 @math{¬} 的一个下标，也就是最里面那支箭头的终点：@racket[neg:call/lc] 的是 @math{⊥ᵃ}，@racket[neg:call/cc] 的是 @math{⊥}。把 @math{→@subscript{𝒰ₐ}} 读作蕴含，终点记作 @math{q}，得到 @math{((p → q) → p) → p}，正是 @tech{Peirce 律}的外形；@math{q = ⊥} 时，它就是 @tech{Clavius 律}的外形。用@tech{局部否定}来记，@racket[neg:call/lc] 也有 @tech{Clavius 律}的外形；把落点 @math{⊥ᵃ} 展开成 @math{a}，就是 @math{q = a} 的 @tech{Peirce 律}外形。@xref["01:call-cc-types"]{「call/cc 的几种类型」}里，借助 @racket[absurd]，两条定律在操作上分不出来。在这里，两个实现分开了：@racket[neg:call/lc] 把保存的工作接在当前@tech{延续}之前，做完回到调用处；@racket[neg:call/cc] 丢掉当前的@tech{局部延续}。
+两个类型只差 @math{¬} 的一个下标，也就是最里面那支箭头的终点：@racket[neg:call/lc] 的是 @math{⊥ᵃ}，@racket[neg:call/cc] 的是 @math{⊥}。把 @math{→@subscript{𝒰ₐ}} 读作蕴含，终点记作 @math{q}，得到 @math{((p → q) → p) → p}，正是 @tech{Peirce 律}的外形；@math{q = ⊥} 时，它就是 @tech{Clavius 律}的外形。用@tech{局部否定}来记，@racket[neg:call/lc] 也有 @tech{Clavius 律}的外形；把落点 @math{⊥ᵃ} 展开成 @math{a}，就是 @math{q = a} 的 @tech{Peirce 律}外形。这里比的只是外形：箭头换了，展开到宿主就不是同一个命题。@xref["01:call-cc-types"]{「call/cc 的几种类型」}里，借助 @racket[absurd]，两条定律在操作上分不出来。在这里，两个实现分开了：@racket[neg:call/lc] 把保存的工作接在当前@tech{延续}之前，做完回到调用处；@racket[neg:call/cc] 丢掉当前的@tech{局部延续}。
 
 这些构造搬得到 @tech{CPS 箭头}上。@racket[flip] 对任何两层柯里化的函数都成立，@tech{基}换成 @math{a} 也不例外，仍然在两种写法之间来回；只要两层参数之间不做别的事，来回一趟行为不变，@xref["02:split-k"]{「延续独占一层」}说过：
 

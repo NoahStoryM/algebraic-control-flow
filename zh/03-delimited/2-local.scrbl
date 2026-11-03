@@ -34,7 +34,7 @@
 
 @section[#:tag "03:local-k"]{局部延续}
 
-@xref["02:first-class-control"]{「一等控制」}里 @tech[#:key "延续传递风格"]{CPS} 版的 @racket[mul] 也会提前返回，代码里却没有一处检查。它用到的只有四样东西：@math{⊥}、@math{¬p = p → ⊥}、@racket[a->⊥]、@racket[⊥->a]。把这四样全换成局部的版本，@racket[⊥ᵃ?] 大概也就用不着了。@math{⊥ᵃ}、@racket[a->⊥ᵃ]、@racket[⊥ᵃ->a] 已经有了，再补上否定：
+@xref["02:first-class-control"]{「一等控制」}里 @tech[#:key "延续传递风格"]{CPS} 版的 @racket[mul] 也会提前返回，代码里却没有一处检查。它用到的只有四样东西：@math{⊥}、@math{¬p = p → ⊥}、@racket[a->⊥]、@racket[⊥->a]。把这四样全换成局部的版本，@racket[⊥ᵃ?] 大概也就用不着了。@racket[real*] 交出的 @racket[Realᵃ] 里答案那一支，先不管它。@math{⊥ᵃ}、@racket[a->⊥ᵃ]、@racket[⊥ᵃ->a] 已经有了，再补上否定：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define-type (¬ₐ p ...) (→ p ... ⊥ᵃ))]
@@ -173,7 +173,7 @@
 
 链上只剩那一串乘法。
 
-回到刚才报错的 @racket[(kₐq (kₐp . p*))]：@racket[(kₐp . p*)] 现在交出 @math{⊥ᵃ}，在这里就是 @racket[Real]；调用 @racket[(cps kₐp)] 的地方，等的正是一个 @math{⊥ᵃ}（例子里它在乘法的位置上，等一个实数），类型对得上，被 @racket[cps*] 丢掉的 @racket[kₐq] 不必再丢。于是原来那个 @racket[cps:call/cc] 的定义本来就有意义，只是捕获的不再是会跳走的@tech{延续}，而是一个普通函数，@tech{局部延续}：
+回到刚才报错的 @racket[(kₐq (kₐp . p*))]：@racket[(kₐp . p*)] 现在交出 @math{⊥ᵃ}，在这里就是 @racket[Real]；调用 @racket[(cps kₐp)] 的地方，等的正是一个 @math{⊥ᵃ}（例子里它在乘法的位置上，等一个实数），类型对得上：不丢掉 @racket[kₐq]，也不再报错。可控制的行为变了：调用捕获的函数，做完以后会回到调用处，接着做 @racket[kₐq] 的工作。于是原来那个 @racket[cps:call/cc] 的定义本来就有意义，只是捕获的不再是会跳走的@tech{延续}，而是一个普通函数，@tech{局部延续}：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define ((cps:call/lc cps:proc) kₐp) ((cps:proc (cps kₐp)) kₐp))]
@@ -212,7 +212,7 @@
 @racketblock[
 (define (anf:eval kₐkₐa) (⊥ᵃ->a (kₐkₐa a->⊥ᵃ)))]
 
-@racket[a->⊥ᵃ] 和 @racket[⊥ᵃ->a] 划出的那条边界，出现在了 @racket[cps:call/lc] 的内部。里面有自己的 @racket[a->⊥ᵃ]、自己的 @racket[⊥ᵃ->a]、自己的@tech{界桩}；外面只看到一个正常返回的值。局部计算里，有了局部计算。
+@racket[a->⊥ᵃ] 和 @racket[⊥ᵃ->a] 划出的那条边界，出现在了 @racket[cps:call/lc] 的内部。里面有自己的 @racket[⊥ᵃ->a]，划出自己的@tech{界桩}；外面只看到一个正常返回的值。局部计算里，有了局部计算。
 
 这个结构在 @racket[cps:call/lc] 的内部自然地出现了。程序员要是也能显式地做同样的事，在局部计算里划出新的边界，用新的 @racket[a->⊥ᵃ] 开始一段子计算，@racket[cps:call/lc] 捕获的@tech{闭包链}就到那个新的起点为止：边界限定了捕获的范围。
 
