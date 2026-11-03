@@ -144,11 +144,13 @@
 
 前两步照定义展开。第三步用的是@xref["01:call-cc-types"]{「call/cc 的几种类型」}里的道理：@racket[p] 算出一个值，显式跳到 @racket[k] 和正常返回，去的是同一个出口。第四步，@racket[k] 已经用不到，捕获也就可以省去。取回的 @racket[p] 再交给 @racket[kp]，就是 @racket[(kp 5)]，和第一种一样。
 
-一般的 @racket[kkp] 不一定这样展得开。把它写成 @racket[(λ (k) body)]，第三种就是下面第一行，第一种就是第二行，差别只在 @racket[body] 拿到的是哪一条@tech{延续}：
+一般的 @racket[kkp] 不一定这样展得开。把它写成 @racket[(λ (k) body)]，第三种去掉中间的名字 @racket[p]，和第一种并排：
 
 @racketblock[
-(kp (let/cc k body))   (code:comment "body 拿到这里捕获的 k")
-((λ (k) body) kp)      (code:comment "body 直接拿到外面的 kp")]
+(kp (call/cc kkp))  =  (kp (let/cc k body))
+(kkp kp)            =  ((λ (k) body) kp)]
+
+差别只在 @racket[body] 拿到的是哪一条@tech{延续}：第一行拿到这里捕获的 @racket[k]，第二行直接拿到外面的 @racket[kp]。
 
 看这两个出口接下来做什么。假设 @racket[body] 在某处调用 @racket[(k 5)]。第一行先丢下 @racket[body] 剩下的工作，把 @racket[5] 送回 @racket[let/cc] 的位置，接下来做的正是 @racket[(kp 5)]。第二行就在调用处做 @racket[(kp 5)]；@racket[kp] 不回来，@racket[body] 剩下的工作同样走不到。即使 @racket[body] 是 @racket[(+ 10 (k 5))]，两边的加十也都走不到。所以这里不要求 @racket[body] 在尾位置调用 @racket[k]。
 
