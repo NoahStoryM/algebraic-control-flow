@@ -80,7 +80,7 @@
 
 固定底类型，只用 @tech[#:key "双重否定引入"]{DNI}、@tech[#:key "双重否定消除"]{DNE} 和调用，层数带出一个规律。@tech[#:key "双重否定引入"]{DNI}、@tech[#:key "双重否定消除"]{DNE} 一次加减两层，不改变奇偶；@tech{矛盾律}却要一奇一偶。@racket[q] 在第 0 层，@racket[kkkq] 在第 3 层，奇偶不同，@racket[triple-negation] 把低的那个升两层，两者就相邻了。奇偶不同的两个，总能这样把低的那个一次次升两层，直到相邻再调用；奇偶相同的两个，只靠 @tech[#:key "双重否定引入"]{DNI}、@tech[#:key "双重否定消除"]{DNE} 凑不成相邻。
 
-回到@xref["01:watershed"]{「分水岭」}最后的问题。代入 @racket[Byte]，不捕获的话，那条@tech{延续}得由外面交来；代入 @math{¬q}，什么也不用交来。区别在要交出的东西是不是函数。@math{¬q} 是函数，以 @racket[q] 为底，它在第 1 层，可以先交出去，等第 0 层的值来了再算；@racket[Byte] 不是函数，它就是第 0 层，当场就得有一个值。
+回到@xref["01:watershed"]{「分水岭」}最后的问题。代入 @racket[Byte]，不捕获的话，那条@tech{延续}得由外面交来；代入 @math{¬q}，不用再由外面交进一条@tech{延续}。这两个例子里，交出 @math{¬q} 可以先交一个等着 @racket[q] 的函数：以 @racket[q] 为底，它在第 1 层，等第 0 层的值来了，再把它包成 @racket[kkq]，交给手里的 @racket[kkkq]；交出 @racket[Byte]，它就是第 0 层，当场就得给出一个字节。
 
 @subsection[#:tag "01:two-logics"]{两种逻辑}
 
@@ -147,8 +147,8 @@
 (kp (call/cc kkp))  =  (kp (let/cc k body))
 (kkp kp)            =  ((λ (k) body) kp)]
 
-两边跑的是同一个 @racket[body]，只是 @racket[k] 不同。直接配对时，@racket[k] 就是 @racket[kp]。绕道第 0 层时，@racket[k] 是 @racket[let/cc] 在这里捕获的@tech{延续}，它剩下的工作正是 @racket[(kp □)]：把收到的值交给 @racket[kp]。@racket[kp] 的类型是 @math{¬p}，一调用就不再回来，在哪里调用它都一样；所以调用捕获的 @racket[k]，丢下当时剩下的工作去做 @racket[(kp v)]，和当场调用 @racket[(kp v)]，去的是同一个地方，后面的工作也都走不到。@racket[body] 只拿 @racket[k] 来调用的话，不管是在尾位置调用，还是在 @racket[(+ 10 (k 5))] 这样的地方调用，还是先存起来、过一会儿再调，两边都一样。
+两边跑的是同一个 @racket[body]，只是 @racket[k] 不同。直接配对时，@racket[k] 就是 @racket[kp]。绕道第 0 层时，@racket[k] 是 @racket[let/cc] 在这里捕获的@tech{延续}，它剩下的工作正是 @racket[(kp □)]：把收到的值交给 @racket[kp]。@racket[kp] 的类型是 @math{¬p}，一调用就不再回来，所以两条路上，调用之后的工作都走不到：调用捕获的 @racket[k]，丢下当时剩下的工作去做 @racket[(kp v)]；当场调用 @racket[(kp v)]，剩下的工作也轮不到。不管是在尾位置调用，还是在 @racket[(+ 10 (k 5))] 这样的地方调用，还是先存起来、过一会儿再调，都是这样。
 
 @racket[body] 也可能根本不调用 @racket[k]，自己算完，正常返回一个值，比如 @racket[7]。这时两边就不一样了。绕道第 0 层时，@racket[7] 回到 @racket[let/cc] 的位置，接着还会做 @racket[(kp 7)]。直接配对时，@racket[7] 交回调用 @racket[kkp] 的地方，@racket[kp] 根本没有用上。@racket[kkp] 的类型是 @math{¬¬p}，结果也是 @math{⊥}，排除的正是这种情形。@racket[body] 可以调用 @racket[k]，可以从别的出口离开，也可以一直算下去，只是不能正常返回。
 
-所以，@racket[body] 只拿 @racket[k] 来调用、自己又不正常返回时，绕到第 0 层再调用 @racket[kp]，和直接把 @racket[kp] 交给 @racket[kkp]，行为相同：绕到第 0 层，什么也没有多出来。手里已经有 @racket[kp]，要做的只是把结果交给它，直接写 @racket[(kkp kp)] 就行，不必落到第 0 层。手里没有 @racket[kp] 的时候，等着 @math{p} 的就是没写出来的当前@tech{延续}；@racket[call/cc] 做的，正是把它捕获下来，交给 @racket[kkp]。
+在这里比较的程序里，延续可以先存后调，但拿到它的代码都只拿它来调用；程序也不分辨是在捕获处还是在调用处执行 @racket[kp]。这样的程序里，绕到第 0 层再调用 @racket[kp]，和直接把 @racket[kp] 交给 @racket[kkp]，行为相同：绕到第 0 层，什么也没有多出来。手里已经有 @racket[kp]，要做的只是把结果交给它，直接写 @racket[(kkp kp)] 就行，不必落到第 0 层。手里没有 @racket[kp] 的时候，等着 @math{p} 的就是没写出来的当前@tech{延续}；@racket[call/cc] 做的，正是把它捕获下来，交给 @racket[kkp]。

@@ -497,7 +497,8 @@
   (require (prefix-in pair: (submod ".." pairing)))
   (check-equal? (+ 100 (let/cc kp (+ 10 (pair:kkp kp)))) 105)
   (check-equal? (+ 100 (let/cc kp (+ 10 (let ([p (call/cc pair:kkp)]) (kp p))))) 105)
-  ;; 第二种：把 kp 升到第 3 层再相遇，照定义就是第一种。
+  (check-equal? (+ 100 (let/cc kp (+ 10 (kp (call/cc pair:kkp))))) 105)
+  ;; 把 kp 升到第 3 层再相遇，照定义就是 (kkp kp)。
   (check-equal? (+ 100 (let/cc kp
                          (define (kkkp kkp) (kkp kp))
                          (+ 10 (kkkp pair:kkp))))
@@ -514,4 +515,13 @@
                   (define (kkp k) (k 1) (out 9))
                   (define (kp v) v)
                   (let ([p (call/cc kkp)]) (kp p)))
-                1))
+                1)
+  ;; 不回来还不够：kp 在捕获处还是调用处执行，动态参数分得出（Astra，#129）。
+  (define n (make-parameter 0))
+  (define (run direct?)
+    (let/cc out
+      (define (kp v) (out (n)))
+      (define (kkp k) (parameterize ([n 1]) (k 5)))
+      (if direct? (kkp kp) (kp (call/cc kkp)))))
+  (check-equal? (run #t) 1)
+  (check-equal? (run #f) 0))
