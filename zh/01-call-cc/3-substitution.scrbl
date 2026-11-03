@@ -153,10 +153,14 @@
 
 差别只在 @racket[body] 拿到的是哪一条@tech{延续}：第一行拿到这里捕获的 @racket[k]，第二行直接拿到外面的 @racket[kp]。
 
-看这两个出口接下来做什么。假设 @racket[body] 在某处调用 @racket[(k 5)]。第一行先丢下 @racket[body] 剩下的工作，把 @racket[5] 送回 @racket[let/cc] 的位置，接下来做的正是 @racket[(kp 5)]。第二行就在调用处做 @racket[(kp 5)]；@racket[kp] 不回来，@racket[body] 剩下的工作同样走不到。即使 @racket[body] 是 @racket[(+ 10 (k 5))]，两边的加十也都走不到。所以这里不要求 @racket[body] 在尾位置调用 @racket[k]。
+看这两个出口接下来做什么。假设 @racket[body] 在某处调用 @racket[(k 5)]。第一行先丢下 @racket[body] 剩下的工作，把 @racket[5] 送回 @racket[let/cc] 的位置，接下来做的正是 @racket[(kp 5)]。第二行就在调用处做 @racket[(kp 5)]。两边做的都是 @racket[(kp 5)]。
 
-两个不返回，各管一处。@racket[kp] 是 @math{¬p}，调用以后不回来，第二行里 @racket[body] 剩下的工作才走不到。@racket[kkp] 是 @math{¬¬p}，也不向调用处返回：要是 @racket[body] 正常返回 @racket[7]，第一行还会接着做 @racket[(kp 7)]，第二行却直接交回 @racket[7]，两条路就分开了。@racket[kkp] 不必真的调用参数，从别的出口离开，或者一直算下去，也都守这个约定。会正常返回的函数，类型不是否定，不在这座塔上。
+这番推演用到了两件事，都写在类型里。
 
-@margin-note{第一行先回到捕获的地方，才调用 @racket[kp]；第二行就在调用处调用 @racket[kp]。程序若用 @racket[continuation?] 分辨收到的是不是原生的@tech{延续}，或者借异常处理器这类动态环境分辨这两个位置，也能把它们分开。}
+一件是 @racket[kp] 不回来。第二行在 @racket[body] 里直接做 @racket[(kp 5)]；@racket[kp] 的类型是 @math{¬p}，结果是 @math{⊥}，一调用就不再回来，@racket[body] 在它之后的工作也就走不到，和第一行一样。所以 @racket[body] 即使是 @racket[(+ 10 (k 5))]，两边的加十也都走不到，并不要求 @racket[body] 在尾位置调用 @racket[k]。
 
-在只通过调用使用@tech{延续}、也不借动态环境分辨这两个位置的程序里，第三种和前两种行为相同：绕到第 0 层，什么也没有多出来。手里已经有 @racket[kp]，要做的只是把结果交给它，直接写 @racket[(kkp kp)] 就行，不必落到第 0 层。要对任意 @math{p}、任意一段 @racket[kkp]，只凭 @racket[kkp] 统一交出一个 @math{p}，这才是 @tech[#:key "双重否定消除"]{DNE}。
+另一件是 @racket[body] 不正常返回。@racket[body] 也可能根本不调用 @racket[k]，自己算完，正常返回一个值，比如 @racket[7]。那样第一行会把 @racket[7] 交给 @racket[kp]，接着做 @racket[(kp 7)]；第二行却把 @racket[7] 直接交回调用处，两边就不一样了。@racket[kkp] 的类型是 @math{¬¬p}，结果也是 @math{⊥}，排除的正是这种情形：@racket[body] 可以调用 @racket[k]，可以从别的出口离开，也可以一直算下去，只是不能正常返回。
+
+@margin-note{这里比较时，@tech{延续}只拿来调用，也不借动态环境分辨两个位置：第一行先回到捕获的地方，才调用 @racket[kp]；第二行就在调用处调用 @racket[kp]。程序若用 @racket[continuation?] 分辨收到的是不是原生的@tech{延续}，或者借异常处理器这类动态环境分辨这两个位置，也能把它们分开。}
+
+两件都成立，第三种就和前两种行为相同：绕到第 0 层，什么也没有多出来。手里已经有 @racket[kp]，要做的只是把结果交给它，直接写 @racket[(kkp kp)] 就行，不必落到第 0 层。要对任意 @math{p}、任意一段 @racket[kkp]，只凭 @racket[kkp] 统一交出一个 @math{p}，这才是 @tech[#:key "双重否定消除"]{DNE}。
