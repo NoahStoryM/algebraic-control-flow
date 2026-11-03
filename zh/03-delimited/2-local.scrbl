@@ -125,7 +125,7 @@
 @racketblock[
 (((cps kₐp) . p*) kₐq)  =  (kₐq (kₐp . p*))]
 
-@racket[(cps kₐp)] 收下参数，调用 @racket[kₐp]，再把结果交给当前@tech{延续} @racket[kₐq]。@racket[(kₐp . p*)] 不在尾位置：外面还有 @racket[kₐq] 等着它返回。可在原来以 @math{⊥} 为终点的版本里，等着的 @racket[kq] 从来没有被调用过。@xref["02:k-in-hand"]{「手中的延续」}里，@racket[cps:proc2] 后面那一步加 1「再也轮不到」：@racket[kp] 一路走到@tech{终结延续} @racket[a->⊥]，一调用就 @racket[raise] 走了，不再回来，等着它的 @racket[kq] 也就永远轮不到。宿主的跳转一直在替我们丢掉 @racket[kq]，只是我们没有注意到。
+@racket[(cps kₐp)] 收下参数，调用 @racket[kₐp]，再把结果交给当前@tech{延续} @racket[kₐq]。@racket[(kₐp . p*)] 不在尾位置：外面还有 @racket[kₐq] 等着它返回。可在原来以 @math{⊥} 为终点的版本里，等着的 @racket[kq] 从来没有被调用过。@xref["02:k-in-hand"]{「手中的延续」}里，@racket[cps:proc2] 后面那一步加 1「再也轮不到」：@racket[kp] 一路走到@tech{终结延续} @racket[a->⊥]，一调用就 @racket[raise] 走了，不再回来，等着它的 @racket[kq] 也就永远轮不到。@xref["01:pairing"]{「三种配对」}要 @racket[kp] 不回来，为的也是这一点：直接调用它以后，后面剩下的工作走不到。宿主的跳转一直在替我们丢掉 @racket[kq]，只是我们没有注意到。
 
 @tech{局部延续}不会跳走。@racket[(kₐp . p*)] 交出一个 @racket[ans]，正常返回，@racket[(kₐq …)] 第一次真的运行了。报错说的就是这件事：@racket[kₐq] 把答案当作中间结果交给了乘法，乘法不认识它。
 

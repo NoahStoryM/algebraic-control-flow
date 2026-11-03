@@ -491,7 +491,7 @@
 (module pairing racket
   (provide (all-defined-out))
   (define p 5)
-  (define (kkp kp) (kp p)))
+  (define (kkp k) (k p)))
 
 (module+ test
   (require (prefix-in pair: (submod ".." pairing)))
