@@ -29,7 +29,10 @@
 
 @defsym["cps" "把宿主函数提升成 CPS 箭头：延续在后"]@defsym["neg" "把宿主函数提升成逆否箭头：延续在前"]@racket[zero?/k] 的两个参数是两种东西：@racket[x] 交给 @racket[zero?] 去算，@racket[k] 只等着接住结果。通用的包装要把这两种参数分开处理，前一种原样交给 @racket[f]，后一种接住 @racket[f] 的结果。挤在同一层参数表里，它们就得一次交齐。柯里化让@tech{延续}独占一层，和其余参数分开，两层就能分开交：先交其余参数，得到一段还没开始的计算；先交@tech{延续}，得到一个把@tech{延续}换成另一条@tech{延续}的函数。两种次序各有用处，都写出来。@tech{延续}独立在内层还是外层，操作上没有区别，函数体都一样：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:hidden
+(define (((cps f) . p*) kq) (kq (apply f p*)))
+(define (((neg f) kq) . p*) (kq (apply f p*)))]
+@racketblock[
 (define (((cps f) . p*) kq) (kq (apply f p*)))  (code:comment "延续在后")
 (define (((neg f) kq) . p*) (kq (apply f p*)))  (code:comment "延续在前")]
 

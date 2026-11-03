@@ -225,7 +225,7 @@
 
 @racketblock[
 #,(hspace 2)(fact/k 3 k)
-= (loop/k 3 (*      ) k)
+= (loop/k 3 (* #,(hspace 5)) k)
 = (loop/k 2 (*     3) k)
 = (loop/k 1 (*   2 3) k)
 = (loop/k 0 (* 1 2 3) k)

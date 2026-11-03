@@ -19,7 +19,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 
 @margin-note{类型标注用 Typed Racket 的写法，当伪代码读：@racket[(: f T)] 声明 @racket[f] 的类型是 @racket[T]，@racket[(→ a b)] 是函数类型，@racket[(∪ a ...)] 是并集，@racket[∀] 引入类型参数。}
 
-@examples[#:eval ev #:label #f #:no-prompt
+@racketblock[
 (define-type ⊥ (∪))  (code:comment "空类型：没有构造子，没有元素")
 (: goto  (→ Label ⊥))
 (: label (→ Label))]
