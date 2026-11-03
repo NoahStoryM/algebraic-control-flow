@@ -118,10 +118,11 @@
 
 照定义展开一步，@racket[(kkkp kkp)] 就是 @racket[(kkp kp)]，和第一种是同一个计算。这两种只用到交到手里的东西，是构造性的。
 
-第三种往下走，只有经典逻辑做得到：用 @tech[#:key "双重否定消除"]{DNE} 把第 2 层的 @racket[kkp] 落到第 0 层，取出 @math{p}，再和第 1 层的 @racket[kp] 相遇，@racket[(kp p)]。@tech[#:key "双重否定消除"]{DNE} 用 @racket[call/cc] 写：
+第三种往下走，只有经典逻辑做得到：用 @tech[#:key "双重否定消除"]{DNE} 把第 2 层的 @racket[kkp] 落到第 0 层，取出 @math{p}，再和第 1 层的 @racket[kp] 相遇，@racket[(kp p)]。@tech[#:key "双重否定消除"]{DNE} 用 @racket[call/cc] 写，名字 @racket[p] 只用一次，也可以不起：
 
 @racketblock[
-(let ([p (call/cc kkp)]) (kp p))]
+#,(hspace 2)(let ([p (call/cc kkp)]) (kp p))
+= (kp (call/cc kkp))]
 
 绕到第 0 层的这一种，和前两种有没有区别？拿一个具体的 @racket[kkp] 试，@racket[kp] 用 @racket[let/cc] 捕获。外面的 @racket[(+ 10 …)]、@racket[(+ 100 …)] 让跳没跳走看得见：
 
@@ -144,7 +145,7 @@
 
 前两步照定义展开。第三步用的是@xref["01:call-cc-types"]{「call/cc 的几种类型」}里的道理：@racket[p] 算出一个值，显式跳到 @racket[k] 和正常返回，去的是同一个出口。第四步，@racket[k] 已经用不到，捕获也就可以省去。取回的 @racket[p] 再交给 @racket[kp]，就是 @racket[(kp 5)]，和第一种一样。
 
-一般的 @racket[kkp] 不一定这样展得开。把它写成 @racket[(λ (k) body)]，第三种去掉中间的名字 @racket[p]，和第一种并排：
+上面的 @racket[kkp] 是 @racket[(λ (k) (k p))]，函数体就是 @racket[(k p)]。一般的 @racket[kkp] 写成 @racket[(λ (k) body)]，@racket[body] 不一定是 @racket[(k p)]，也就不一定这样展得开。这时把第三种和第一种并排：
 
 @racketblock[
 (kp (call/cc kkp))  =  (kp (let/cc k body))
