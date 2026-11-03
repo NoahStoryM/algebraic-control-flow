@@ -497,6 +497,11 @@
   (require (prefix-in pair: (submod ".." pairing)))
   (check-equal? (+ 100 (let/cc kp (+ 10 (pair:kkp kp)))) 105)
   (check-equal? (+ 100 (let/cc kp (+ 10 (let ([p (call/cc pair:kkp)]) (kp p))))) 105)
+  ;; 第二种：把 kp 升到第 3 层再相遇，照定义就是第一种。
+  (check-equal? (+ 100 (let/cc kp
+                         (define (kkkp kkp) (kkp kp))
+                         (+ 10 (kkkp pair:kkp))))
+                105)
   (check-equal? (+ 100 (let/cc kp (+ 10 (pair:bad kp)))) 117)
   (check-equal? (+ 100 (let/cc kp (+ 10 (let ([p (call/cc pair:bad)]) (kp p))))) 107)
   (check-equal? (let/cc out
