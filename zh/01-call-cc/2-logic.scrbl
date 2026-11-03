@@ -20,7 +20,7 @@
 
 上一节里，@racket[goto] 和@tech{延续}交出的类型都是 @racket[⊥]。交出 @racket[⊥]，说的是这段计算不会有结果交回来：一调用，控制流就切换到了别处。
 
-这样的调用可以出现在任何位置。最后那版 @racket[mul] 里，@racket[(return r)] 和 @racket[(* res r)] 是 @racket[if] 的两个分支，一个交出 @racket[⊥]，一个交出实数，不考虑子类型的话，类型对不上；@racket[for/fold] 要的是实数，@racket[(return r)] 交不出实数，程序却照样运行。这是为什么？
+这样的调用可以出现在任何位置。最后那版 @racket[mul] 里，@racket[(return r)] 和 @racket[(* res r)] 是 @racket[if] 的两个分支，一个交出 @racket[⊥]，一个交出实数，不考虑子类型的话，类型对不上；@racket[for/fold] 要的是实数，@racket[(return r)] 交不出实数，程序却照样运行。@racket[(call/cc goto)] 也是这样：@racket[call/cc] 要 @racket[proc] 返回一个 @math{p}，@racket[goto] 返回的却是 @racket[⊥]。这是为什么？
 
 @section[#:tag "01:call-cc-types"]{call/cc 的几种类型}
 
@@ -53,13 +53,13 @@
 
 交给它一个只等@tech{延续}的计算，它从中把结果取出来。
 
-这样收紧，其实没有少掉什么。原来的类型允许 @racket[proc] 正常返回一个 @math{p}，最后那版 @racket[mul] 里的 @racket[λ] 就是这样，没遇到零，乘积是正常返回的。可调用 @racket[proc] 是 @racket[call/cc] 做的最后一件事，@racket[proc] 正常返回，返回值直接交到调用 @racket[call/cc] 的地方；交给 @racket[proc] 的@tech{延续} @racket[k]，通向的也正是那里。所以 @racket[proc] 正常返回 @racket[v]，和调用 @racket[(k v)] 原地跳一次，到的是同一个地方，交出的是同一个值。@xref["01:label-from-call-cc"]{「从 call/cc 定义标签」}里已经见过一次：@racket[(let/cc k (k k))] 和 @racket[(let/cc k k)] 没有分别。@racket[proc] 若正常返回，交出的是一个值；在这个前提下，换成任何 @racket[proc] 都一样，下面两个表达式行为相同：
+这样收紧，其实没有少掉什么。原来的类型允许 @racket[proc] 正常返回一个 @math{p}，最后那版 @racket[mul] 里的 @racket[λ] 没遇到零时就是这样。可 @racket[proc] 的返回值直接交到调用 @racket[call/cc] 的地方，@racket[k] 通向的也正是那里：正常返回 @racket[v] 和调用 @racket[(k v)]，到的是同一个地方，交出的是同一个值。@xref["01:label-from-call-cc"]{「从 call/cc 定义标签」}里的 @racket[(let/cc k (k k))] 和 @racket[(let/cc k k)] 没有分别，就是一例。所以 @racket[proc] 正常返回时交出一个值的话，把这个值再经 @racket[k] 交出，行为不变：
 
 @racketblock[
 (call/cc proc)
 (call/cc (λ (k) (k (proc k))))]
 
-第二行交给 @racket[call/cc] 的那整个 @racket[λ]，@racket[proc] 若正常返回，就再经 @racket[k] 交出结果，所以它从不正常返回，正是上面那种只等@tech{延续}的函数。@racket[proc] 取 @racket[(λ (k) k)]，这个 @racket[λ] 就是 @racket[(λ (k) (k k))]，也就是 @racket[goto]。
+第二行交给 @racket[call/cc] 的 @racket[λ] 从不正常返回，正是上面那种只等@tech{延续}的函数。@racket[proc] 取 @racket[(λ (k) k)]，这个 @racket[λ] 就是 @racket[(λ (k) (k k))]，也就是 @racket[goto]。
 
 同一个 @racket[call/cc] 有了三种类型。把它们写进一个 @racket[case→]：
 
@@ -103,7 +103,7 @@
 
 检验起来并不费事。这些类型都由 @math{→} 和 @math{⊥} 搭起来，只要这两样最基本的对上了，搭出来的整体也就对上了。
 
-@margin-note{这里先只看会终止的程序；会一直算下去的程序，留到@xref["01:where-fails"]{「对应关系在哪里失效」}再看。}
+@margin-note{这里先只看会终止的程序。}
 
 先看 @math{⊥}。它像假，凭什么？@math{⊥} 这个假命题没有证明；@tech{空类型} @math{⊥} 没有元素，给不出一个这样的值。@racket[(return r)] 的类型是 @racket[⊥]，那是借着手里现成的 @racket[return] 才写得出来；不依赖额外的假设，@racket[⊥] 类型的表达式一个也写不出来。两边说的是同一件事：没有证明，就是写不出表达式。反过来读，不依赖额外的假设写出一个类型的表达式，就像给出了对应命题的证明；写得出，命题就为真。拿这个读法验证一下：假的否定 @math{¬⊥} 该是真的，确实写得出 @math{⊥ → ⊥} 类型的表达式，恒等函数就是。@racket[absurd] 说的从假推出任何东西，在逻辑里也成立。@math{⊥} 对上了假。
 
@@ -119,8 +119,7 @@
 
 @section[#:tag "01:types-to-logic"]{析取与合取}
 
-@margin-note{这里把 @racket[cc] 当作现成的操作，按它的类型来用；它内部怎样用 @racket[label] 实现，不算在内，留到@xref["01:where-fails"]{「对应关系在哪里失效」}再说。}
-
+@margin-note{这里把 @racket[cc] 当作现成的操作，按它的类型来用；它内部怎样用 @racket[label] 实现，不算在内。}
 
 等实数的@tech{延续}对应假，可 @racket[(cc)] 是一个合法的表达式，写得出来，它的类型就该是真的。倒回一步，看看 @racket[cc] 的类型。有了 @math{¬}，它可以写成：
 
@@ -148,17 +147,17 @@
 
 拿 @racket[k] 去「反驳」@racket[5]，并没有得到 @racket[⊥]：程序回到 @racket[(cc)]，改交出 @racket[5]。@racket[call/cc] 把这个分支挪进了操作符内部，它的类型里也就没有 @math{∐}，只用 @math{→} 和 @math{⊥} 就写得下。
 
-前面说的都是 @racket[(cc)] 的类型为真。@racket[cc] 本身是一个不收参数的函数，也写得出来，它的类型当然也为真。逻辑里，从真
-@defsym["⊤" "真，恰好有一个元素的类型"]@math{⊤} 推出 @math{p}，和 @math{p} 本身可以互推。程序里，表达式 @racket[e] 可以包成 @racket[thunk] @racket[(λ () e)]；调用这个 @racket[thunk]，才执行 @racket[e]，交出结果。所以 @racket[cc] 和 @racket[(cc)] 的类型在逻辑上等价，读出的都是@tech{排中律}。
+@racket[cc] 本身是一个不收参数的函数。逻辑里，从真
+@defsym["⊤" "真，恰好有一个元素的类型"]@math{⊤} 推出 @math{p}，和 @math{p} 本身可以互推；程序里，表达式 @racket[e] 可以包成 @racket[thunk] @racket[(λ () e)]，调用它才交出结果。所以 @racket[cc] 和 @racket[(cc)] 读出的都是@tech{排中律}。
 
 @margin-note{这里的「零」说的是一次交出几个值，不是类型有几个元素。}
 
-那 @math{⊤} 对应什么？@racket[thunk] 不收参数，调用时交给它的是零个实参。把一次交出的值整体看成一组，零个值就是空的一组，只有这一种可能。@racket[(values)] 交出的正是零个值，结果类型写作 @racket[(Values)]。照这样整体来读，它对应恰好有一个元素的 @math{⊤}，@racket[thunk] 也就对应 @math{⊤ → p}。不收参数有了着落，那收多个参数、交多个值，又对应什么？@math{⊤} 正是@defterm[#:en "conjunction"]{合取}
+@math{⊤} 对应什么？调用 @racket[thunk] 时，交给它零个实参。把一次交出的值整体看成一组，零个值的一组只有一种，@racket[(values)] 交出的就是它，结果类型写作 @racket[(Values)]，对应恰好有一个元素的 @math{⊤}。@math{⊤} 又是@defterm[#:en "conjunction"]{合取}
 @defsym["p ∧ q" "合取；多个值 p × q"]@math{∧} 的单位元：
 
 @mm{p ⇔ p ∧ ⊤ ⇔ ⊤ ∧ p}
 
-空的一组并到别的值上，也没有多出任何值，正像这个单位元。这提示我们，@racket[(Values p q)] 该对应 @math{p ∧ q}，也就是笛卡尔积 @math{p × q}。检验一下。证明「@math{p} 且 @math{q}」，两个证明都要给出；@racket[(values a b)] 正是把 @racket[a] 和 @racket[b] 一起交出。使用「@math{p} 且 @math{q}」，两样都能拿来用；收下 @racket[(values a b)] 的地方，@racket[a] 和 @racket[b] 都在手里。@racket[Values] 对上了合取。函数的两个参数，也可以这样合起来，看成一个 @math{p × q}，读作 @math{p ∧ q}。
+空的一组并到别的值上，什么也没多出来。这提示 @racket[(Values p q)] 对应 @math{p ∧ q}，也就是笛卡尔积 @math{p × q}。证明「@math{p} 且 @math{q}」，两个证明都要给出，@racket[(values a b)] 正是把 @racket[a] 和 @racket[b] 一起交出；使用它时，@racket[a] 和 @racket[b] 都在手里。@racket[Values] 对上了合取。函数的两个参数，也可以这样合起来，看成一个 @math{p × q}。
 
 @section[#:tag "01:watershed"]{分水岭}
 

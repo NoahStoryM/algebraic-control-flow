@@ -13,7 +13,7 @@
 
 @section[#:tag "01:program-type"]{代入 Byte}
 
-先代入最朴素的一个：退出码的类型 @racket[Byte]，得到 @math{¬¬@ty{Byte} → @ty{Byte}}。选它，是因为程序最后交出的就是退出码；顺着它会看到，@tech{延续}不一定靠捕获，也可以由运行环境交来。这一回既看类型能不能填上，也看能不能留住交进来的计算的行为。光看类型，@racket[(λ (kk) 0)] 就填上了，什么也不捕获。逻辑上也不奇怪：@racket[Byte] 类型有元素，是真命题，从任何前提推出它都成立，丢掉前提、直接拿出一个 @racket[Byte] 就是证明。
+先代入最朴素的一个：退出码的类型 @racket[Byte]，得到 @math{¬¬@ty{Byte} → @ty{Byte}}。选它，是因为程序最后交出的就是退出码。这一回既看类型能不能填上，也看能不能留住交进来的计算的行为。光看类型，@racket[(λ (kk) 0)] 就填上了，什么也不捕获。逻辑上也不奇怪：@racket[Byte] 类型有元素，是真命题，从任何前提推出它都成立，丢掉前提、直接拿出一个 @racket[Byte] 就是证明。
 
 可逻辑只问命题真不真，不问拿出的是哪一个 @racket[Byte]；@racket[0] 和程序算出来的退出码，在它眼里没有分别。我们却在乎。
 
@@ -30,7 +30,9 @@
 
 把等着出口的计算记作 @racket[program]，上面的做法就是 @racket[(λ (program) (call/cc program))]：它把当前@tech{延续}作为 @racket[exit] 交给 @racket[program]，并在这里接到退出码。
 
-所以程序是一个 @math{¬¬@ty{Byte}}：它等着计算终结处的那条@tech{延续}。真实的操作系统也是这样运行程序的：启动一个程序时，退出通道已经在那里了，就是 @racket[exit]，背后是 OS 提供的退出调用。程序交回退出码有两种方式：显式地调用 @racket[exit]，或者从 @racket[main] 返回；C 语言规定后者等于拿返回值调用 @racket[exit]，正是上面外层那个 @racket[(exit …)]。对程序内部，调用 @racket[exit] 不再返回；对外部，OS 接到了退出码。OS 承担的是外部运行环境的角色：提供出口，接收结果。@racket[exit] 在程序体里是交来的假设，在 @racket[(λ (exit) …)] 里则被绑定。把计算运行起来、在出口接收结果的整个过程，对应@xref["01:watershed"]{「分水岭」}里的 @tech[#:key "双重否定消除"]{DNE}；这个过程不是语言里的某个函数，是运行环境本身。和 @racket[call/cc] 的区别，在谁来提供这条@tech{延续}：多数语言本身只提供 @racket[exit]，由 OS 从外面交来，语言里什么也不用捕获；有了 @racket[call/cc]，没有 @racket[exit] 也能像上面那样自己捕获出来。
+所以程序是一个 @math{¬¬@ty{Byte}}：它等着计算终结处的那条@tech{延续}。真实的操作系统也是这样运行程序的：启动一个程序时，出口已经在那里了，就是 @racket[exit]，背后是 OS 提供的退出调用。C 程序交回退出码，可以显式调用 @racket[exit]，也可以从 @racket[main] 返回；C 语言规定后者等于拿返回值调用 @racket[exit]，正是上面外层那个 @racket[(exit …)]。
+
+把计算运行起来、在出口接收结果，这个过程对应 @tech[#:key "双重否定消除"]{DNE}，可它不是语言里的某个函数，是运行环境本身：OS 提供出口，接收结果。程序体只用到交来的 @racket[exit]，什么也不用捕获。和 @racket[call/cc] 的区别，在谁来提供这条@tech{延续}：多数语言里由 OS 从外面交来；有了 @racket[call/cc]，没有 @racket[exit] 也能像上面那样自己捕获出来。
 
 @section[#:tag "01:neg-q"]{代入 ¬q}
 
@@ -70,19 +72,15 @@
 
 @racket[triple-negation] 里的几个名字，@racket[q]、@racket[kq]、@racket[kkq]、@racket[kkkq]，差的只是外面叠了几个否定。数一数，刚才的做法能说得更清楚。
 
-以 @racket[q] 为底，把 @racket[q] 算作第 0 层。@racket[kq] 等一个 @racket[q]，是第 1 层；@racket[kkq] 等一个 @racket[kq]，是第 2 层；@racket[kkkq] 等一个 @racket[kkq]，是第 3 层。多一层的类型，正是「接收少一层的值、结果为 @math{⊥}」的函数类型；名字替我们数着，有几个 @racket[k]，就比底多几层。
+以 @racket[q] 为底，把 @racket[q] 算作第 0 层。@racket[kq] 等一个 @racket[q]，是第 1 层；@racket[kkq] 等一个 @racket[kq]，是第 2 层；@racket[kkkq] 等一个 @racket[kkq]，是第 3 层。多一层的类型，正是「接收少一层的值、结果为 @math{⊥}」的函数类型；名字替我们数着，有几个 @racket[k]，就比底多几层。一般地，固定一个类型 @math{A}，@math{A} 本身是第 0 层，@math{¬A} 是第 1 层，@math{¬¬A} 是第 2 层，依此类推；谈论同一座否定塔时，只数 @math{A} 外面包了几层，不拆它的内部。
 
 @racket[triple-negation] 收下第 3 层的 @racket[kkkq]，交出第 1 层的 @racket[kq]。@racket[kq] 拿到第 0 层的 @racket[q] 以后做了两件事：先把 @racket[q] 包成 @racket[kkq]，从第 0 层升到第 2 层；再把 @racket[kkq] 交给 @racket[kkkq]，第 3 层与第 2 层相遇，得到 @math{⊥}。
 
 这两步，正是@xref["01:watershed"]{「分水岭」}里的两条构造性定律：@tech[#:key "双重否定引入"]{DNI} 加两层，从第 @math{n} 层升到第 @math{n+2} 层；@tech{矛盾律}让第 @math{n+1} 层与第 @math{n} 层相遇，得到 @math{⊥}。另外两条经典定律，也有层数的说法：@tech[#:key "双重否定消除"]{DNE} 减两层，从第 @math{n+2} 层落到第 @math{n} 层；@tech{排中律}交出相邻两层之一，第 @math{n} 层或第 @math{n+1} 层。
 
-一般地，固定一个类型 @math{A}，把 @math{A} 本身算作第 0 层，@math{¬A} 算作第 1 层，@math{¬¬A} 算作第 2 层，依此类推。谈论同一座否定塔的时候，@math{A} 要固定下来，只数它外面包了几层，不去拆它的内部。
-
 层数带出一个规律。@tech[#:key "双重否定引入"]{DNI}、@tech[#:key "双重否定消除"]{DNE} 一次加减两层，不改变奇偶；@tech{矛盾律}却要一奇一偶。@racket[q] 在第 0 层，@racket[kkkq] 在第 3 层，奇偶不同，@racket[triple-negation] 把低的那个升两层，两者就相邻了。奇偶不同的两个，总能这样把低的那个一次次升两层，直到相邻再调用；奇偶相同的两个，只靠 @tech[#:key "双重否定引入"]{DNI}、@tech[#:key "双重否定消除"]{DNE} 凑不成相邻。
 
-回到@xref["01:watershed"]{「分水岭」}留下的问题：从 @math{¬¬p} 取出 @math{p}，非得凭空拿到一个@tech{延续}不可吗？不一定。@xref["01:program-type"]{「代入 Byte」}里，那条@tech{延续}由 OS 交来；@racket[triple-negation] 更省事，它交出的 @math{¬q}，用交进来的 @racket[kkkq] 就做成了，不需要另外交来一条。
-
-用层数说，区别在要交出的东西落在哪一层。@racket[triple-negation] 交出的落在第 1 层，是一个函数，可以先交出去，等第 0 层的值来了再算。落到第 0 层，就得当场交出一个值，这时就没有对任何类型都适用的纯 @racket[λ] 写法了；要把计算真的跑起来，又不捕获，就得像运行程序那样，由外面交来一条@tech{延续}。
+前两次代入的分别，用层数也说得清：看要交出的东西落在哪一层。@racket[triple-negation] 交出的落在第 1 层，是一个函数，可以先交出去，等第 0 层的值来了再算，用交进来的 @racket[kkkq] 就做成了。落到第 0 层，就得当场交出一个值，这时就没有对任何类型都适用的纯 @racket[λ] 写法了；要把计算真的跑起来，又不捕获，就得像运行程序那样，由外面交来一条@tech{延续}。
 
 @subsection[#:tag "01:two-logics"]{两种逻辑}
 
@@ -157,4 +155,4 @@
 
 @racket[body] 也可能根本不调用 @racket[k]，自己算完，正常返回一个值，比如 @racket[7]。这时两边就不一样了。绕道第 0 层时，@racket[7] 回到 @racket[let/cc] 的位置，接着还会做 @racket[(kp 7)]。直接配对时，@racket[7] 交回调用 @racket[kkp] 的地方，@racket[kp] 根本没有用上。@racket[kkp] 的类型是 @math{¬¬p}，结果也是 @math{⊥}，排除的正是这种情形。@racket[body] 可以调用 @racket[k]，可以从别的出口离开，也可以一直算下去，只是不能正常返回。
 
-所以，在上面追过的这两种走法里，绕到第 0 层再调用 @racket[kp]，和直接把 @racket[kp] 交给 @racket[kkp]，行为相同：绕到第 0 层，什么也没有多出来。手里已经有 @racket[kp]，要做的只是把结果交给它，直接写 @racket[(kkp kp)] 就行，不必落到第 0 层。要对任意 @math{p}、任意一段 @racket[kkp]，只凭 @racket[kkp] 统一交出一个 @math{p}，这才是 @tech[#:key "双重否定消除"]{DNE}。
+所以，在上面追过的这两种走法里，绕到第 0 层再调用 @racket[kp]，和直接把 @racket[kp] 交给 @racket[kkp]，行为相同：绕到第 0 层，什么也没有多出来。手里已经有 @racket[kp]，要做的只是把结果交给它，直接写 @racket[(kkp kp)] 就行，不必落到第 0 层。手里没有 @racket[kp] 的时候，等着 @math{p} 的就是没写出来的当前@tech{延续}；@racket[call/cc] 做的，正是把它捕获下来，交给 @racket[kkp]。

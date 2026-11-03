@@ -23,7 +23,7 @@
           [(thread-dead? t) (display s)]
           [else (sleep 0.01) (loop)])))]
 
-从 @racket[call/cc] 倒回 @racket[cc]，再倒回一步，就回到了起点：@racket[Label]。这个类型我们早就认识，却一直没拿来代入。@math{@ty{Label} = @ty{Label} → ⊥} 用 @math{¬} 改写，就是 @math{@ty{Label} = ¬@ty{Label}}：它的否定就是它自己，是@defterm[#:en "fixed point of negation"]{否定的不动点}。连 @racket[goto] 也是一个@tech{标签}：
+代入 @racket[Byte]、@math{¬q} 时，否定塔的各层分得清清楚楚。还有一个类型我们早就认识，却一直没拿来代入：从 @racket[call/cc] 倒回 @racket[cc]，再倒回一步，就回到了起点 @racket[Label]。@math{@ty{Label} = @ty{Label} → ⊥} 用 @math{¬} 改写，就是 @math{@ty{Label} = ¬@ty{Label}}：它的否定就是它自己，是@defterm[#:en "fixed point of negation"]{否定的不动点}。连 @racket[goto] 也是一个@tech{标签}：
 
 @mm{@ty{Label} → ⊥ = ¬@ty{Label} = @ty{Label}}
 
