@@ -126,7 +126,7 @@
 (define p 5)
 (define (kkp k) (k p))
 (+ 100 (let/cc kp (+ 10 (kkp kp))))
-(+ 100 (let/cc kp (+ 10 (let ([p (call/cc kkp)]) (kp p)))))]
+(+ 100 (let/cc kp (+ 10 (kp (call/cc kkp)))))]
 
 两行都是 @racket[105]：@racket[5] 交给 @racket[kp]，跳回 @racket[let/cc] 返回的地方，加十那一步跳过了。
 
