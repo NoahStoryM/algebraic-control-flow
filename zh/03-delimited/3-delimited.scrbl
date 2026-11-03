@@ -240,7 +240,7 @@
 
 先算 @racket[expr] 得到 @racket[v]，再 @racket[(abort v)] 返回。@racket[expr] 在返回之前照常计算，仍在原来的 @racket[reset] 里面，所以规约式最外面还留着一层 @racket[reset]。
 
-里面那层 @racket[reset] 藏在 @racket[k] 的定义里：@c{(λ (v) (reset E[v]))}。@tech{平凡表示}下，@tech{局部延续}就是普通的函数，调用 @racket[k] 就是一次普通的函数调用。这次调用不在尾位置，宿主替它记着调用处剩下的工作，和 @racket[anf:reset] 那次非尾调用一样，划出一层新的边界。
+里面那层 @racket[reset] 藏在 @racket[k] 的定义里：@c{(λ (v) (reset E[v]))}。@tech{平凡表示}下，@tech{局部延续}就是普通的函数，调用 @racket[k] 就是一次普通的函数调用。每次调用 @racket[k]，都把 @racket[v] 放回 @racket[E]，并在 @racket[k] 函数体里的 @racket[reset] 下计算 @c{E[v]}。如果调用处还有剩下的工作，它就在这层边界外等着，等 @c{E[v]} 交出结果再继续。
 
 @racket[k] 要是在某个 @racket[reset] 的尾位置调用，@racket[(reset (k v))] 展开是 @c{(reset (reset E[v]))}，两层边界紧挨在一起。两层等于一层：在这两条规则下，@racket[(reset (reset e))] 与 @racket[(reset e)] 行为一样。用这两条规则比较两边。@racket[e] 是值时，两边都规约成这个值。@racket[e] 执行 @racket[shift] 时，@racket[shift] 只取到最近的一层 @racket[reset]，两边取到的上下文 @racket[E] 相同：
 
