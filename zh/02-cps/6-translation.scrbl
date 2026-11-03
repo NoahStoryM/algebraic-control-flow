@@ -60,7 +60,7 @@
 
 @margin-note{𝒞 取 constructive，构造性。}
 
-@defsym["inj" "把纯函数原样放进 𝒟（injection，注入）"]@xref["02:back-to-host"]{「回到宿主」}的 @racket[uncps] 把 @tech{CPS 箭头}变成宿主函数，里面用的是 @racket[call/cc]。这一章说的@tech{宿主箭头} 𝒟，指的是这里讨论的计算：普通的函数，加上 @racket[call/cc] 这样的控制，按@xref["02:three-forms"]{「三种写法」}约定的行为相同来比较；打印、状态这类别的作用不算在内。其中纯的那一部分，记作 𝒞@defsym["p →𝒞 q" "纯的宿主函数 p → q；𝒞 取 constructive"]：由 @racket[λ]、函数应用和纯原语写成，自己不引入控制，递归只限于能终止的情形；作为参数交进来的函数，也要是纯的。这样的构造填入纯参数时仍是纯的。运行时交进去的@tech{终结延续}由外部提供，调用它以后的退出，不算纯程序内部的构造。这里比较的@tech{CPS 箭头}和@tech{逆否箭头}，取的是这些控制计算的纯表示。𝒟 和 𝒞 的类型都是普通的函数类型，区别只在函数怎么写，类型检查不出来。纯函数也是宿主函数，@racket[inj]（injection，注入）把它原样放进 𝒟：
+@defsym["inj" "把纯函数原样放进 𝒟（injection，注入）"]@xref["02:back-to-host"]{「回到宿主」}的 @racket[uncps] 把 @tech{CPS 箭头}变成宿主函数，里面用的是 @racket[call/cc]。这一章说的@tech{宿主箭头} 𝒟，指的是这里讨论的计算：普通的函数，加上 @racket[call/cc] 这样的控制，按@xref["02:three-forms"]{「三种写法」}约定的行为相同来比较；打印、状态这类别的作用不算在内。其中纯的那一部分，记作 𝒞@defsym["p →𝒞 q" "纯的宿主函数 p → q；𝒞 取 constructive"]：由 @racket[λ]、函数应用和纯原语写成，自己不引入控制，递归只限于能终止的情形；作为参数交进来的函数，也要是纯的。这样的构造填入纯参数时仍是纯的。运行时交进去的@tech{终结延续}由外部提供，调用它以后的退出，不算纯程序内部的构造。这里讨论的是有纯 @tech[#:key "延续传递风格"]{CPS} 表示的控制计算：对一支这样的宿主箭头 @racket[f]，有纯的 @racket[cps:f]，把它用 @racket[uncps] 放回宿主，就与 @racket[f] 行为相同。@xref["02:early-return"]{「提前返回」}里的 @racket[mul]，是按程序结构写出这支表示的一个例子。𝒟 和 𝒞 的类型都是普通的函数类型，区别只在函数怎么写，类型检查不出来。纯函数也是宿主函数，@racket[inj]（injection，注入）把它原样放进 𝒟：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define-type (→𝒞 p ... q) (→ p ... q))
@@ -86,7 +86,7 @@
 
 从宿主出发，沿 @racket[neg] 走两次，类型上走的正是这条路：一支 @math{p →@subscript{𝒟} q} 的控制计算，对应一支纯的 @math{¬¬p →@subscript{𝒞} ¬¬q}，每个类型裹上一层 @math{¬¬}。这个对应记作 @racket[neg²]。
 
-这支纯箭头怎样得到？这一章讨论的每支 𝒟 箭头 @racket[f]，都有一个纯的 @tech[#:key "延续传递风格"]{CPS} 表示 @racket[cps:f]：用 @racket[uncps] 把它放回宿主，和 @racket[f] 行为相同。取这个 @racket[cps:f]，先 @racket[flip]、再 @racket[neg]：@racket[(flip cps:f)] 是 @math{¬q → ¬p}，再取一次逆否，正好是 @math{¬¬p → ¬¬q}。@racket[cps:f] 是纯的，@racket[(neg (flip cps:f))] 也只用 @racket[λ] 和函数调用，落在 𝒞 里。
+这支纯箭头怎样得到？取 @racket[f] 的纯表示 @racket[cps:f]，先 @racket[flip]、再 @racket[neg]：@racket[(flip cps:f)] 是 @math{¬q → ¬p}，再取一次逆否，正好是 @math{¬¬p → ¬¬q}。@racket[cps:f] 是纯的，@racket[(neg (flip cps:f))] 也只用 @racket[λ] 和函数调用，落在 𝒞 里。
 
 代码上，@racket[neg²] 就是两次 @racket[neg] 连起来。它只把 @racket[f] 包上两层，并不改写 @racket[f] 的内部，有两种读法：
 
@@ -123,7 +123,7 @@
 = (neg (flip (cps (uncps cps:f))))
 ≈ (neg (flip cps:f))]
 
-第一步是这样选取的，第二步照 @racket[neg²] 的定义，第三步用的是 @c{neg = (∘ flip cps)}，最后一步是@xref["02:three-forms"]{「三种写法」}里的 @c{(cps (uncps cps:f)) ≈ cps:f}，放进 @racket[neg]、@racket[flip] 里仍然成立，那里的旁注说过。右边只用 @racket[λ] 和函数调用，@racket[cps:f] 是纯的，它也落在 𝒞 里。
+第一步是这样选取的，第二步照 @racket[neg²] 的定义，第三步用的是 @c{neg = (∘ flip cps)}，最后一步是@xref["02:three-forms"]{「三种写法」}里的 @c{(cps (uncps cps:f)) ≈ cps:f}，放进 @racket[neg]、@racket[flip] 里仍然成立，那里的约定说过。右边只用 @racket[λ] 和函数调用，@racket[cps:f] 是纯的，它也落在 𝒞 里。
 
 @racket[call/cc] 自己就是这样一支 @racket[f]：@xref["02:same-arrow"]{「同一支箭头」}说过，@racket[(uncps neg²:id)] 就是 @racket[call/cc]，而 @racket[neg²:id] 只用 @racket[λ] 写成。@racket[cps:f] 取 @racket[neg²:id]，先 @racket[flip]：
 
@@ -180,8 +180,6 @@
 @section[#:tag "02:mul"]{从 mul 到 cps:mul}
 
 @racket[call/cc] 的例子展示了一个经典操作怎样取得纯表示。@xref["02:early-return"]{「提前返回」}则已经把整段程序按结构改写成了纯的 @tech[#:key "延续传递风格"]{CPS} 程序：替换是我们亲手做的，宏把替换后的各步接起来。
-
-接口也跟着变了。@racket[mul] 收到乘数，交出乘积；@racket[cps:mul] 收到同样的乘数，交出一段等待@tech{延续}的计算：一个是 @math{p → q}，一个是 @math{p → ¬¬q}。控制的做法也换了。@racket[mul] 遇零时，调用的是 @racket[let/cc] 从宿主那里捕获的@tech{延续}；@racket[cps:mul] 的 @racket[cps:return] 却是 @racket[cps:call/cc] 交到程序手里的参数，而 @racket[cps:call/cc] 的定义只用了 @racket[λ] 和函数调用。
 
 编译出的函数构造都在 𝒞 里。@racket[neg]、@racket[flip]、@racket[cps]、@racket[∘𝒦]、@racket[cps:call/cc] 都由 @racket[λ]、函数应用、复合，以及有限参数表上的 @racket[apply] 写成，自己不跳转，也不输出：交给它们的函数在 𝒞 里，得到的也在 𝒞 里。@racket[cps:mul] 用到的原语都是纯函数，@racket[car]、@racket[cdr] 只在 @racket[null?] 判过非空以后调用；@racket[cps:loop] 是递归的，但每次处理更短的有限列表。所以 @racket[cps:mul] 编译出的函数构造落在 𝒞 里：遇零照样跳出，宿主的 @racket[call/cc] 一次也没有出现。
 

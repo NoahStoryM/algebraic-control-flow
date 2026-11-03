@@ -34,7 +34,7 @@
 
 @section[#:tag "03:local-k"]{局部延续}
 
-@xref["02:first-class-control"]{「一等控制」}里 @tech[#:key "延续传递风格"]{CPS} 版的 @racket[mul] 也会提前返回，代码里却没有一处检查。它用到的只有四样东西：@math{⊥}、@math{¬p = p → ⊥}、@racket[a->⊥]、@racket[⊥->a]。把这四样全换成局部的版本，@racket[⊥ᵃ?] 大概也就用不着了。@racket[real*] 交出的 @racket[Realᵃ] 里答案那一支，先不管它。@math{⊥ᵃ}、@racket[a->⊥ᵃ]、@racket[⊥ᵃ->a] 已经有了，再补上否定：
+@xref["02:first-class-control"]{「一等控制」}里 @tech[#:key "延续传递风格"]{CPS} 版的 @racket[mul] 也会提前返回，代码里却没有一处检查。它用到的只有四样东西：@math{⊥}、@math{¬p = p → ⊥}、@racket[a->⊥]、@racket[⊥->a]。把这四样全换成局部的版本，@racket[⊥ᵃ?] 大概也就用不着了。@math{⊥ᵃ}、@racket[a->⊥ᵃ]、@racket[⊥ᵃ->a] 已经有了，再补上否定：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define-type (¬ₐ p ...) (→ p ... ⊥ᵃ))]
@@ -67,7 +67,7 @@
 
 原来写在 @racket[∘] 最左边、最后才调用的，是@tech{终结延续} @racket[a->⊥]；@racket[a->⊥ᵃ] 在这里是同一个角色：@tech{闭包链}的底，一个空栈。不同的是，@racket[a->⊥ᵃ] 只是一个普通的构造函数，不借用语言的跳转，所以整条@tech{闭包链}也都是普通的函数，算的是这段局部计算的答案。它们是局部计算里还没做完的工作，叫@tech{局部延续}，名副其实。
 
-前一版的 @racket[loop] 每一步都要检查 @racket[(⊥ᵃ? result)]，在这里，这个检查消失了。@tech[#:key "延续传递风格"]{CPS} 把栈上的帧搬进了堆上的闭包，所有调用都在尾位置，栈上只有一层，根本没有需要检查的中间层。@racket[(mul 1 2 0 3 4)] 遇到零时，手里的@tech{局部延续}是 @racket[(∘ a->⊥ᵃ mul1 mul2)]。程序没有调用它，而是越过 @racket[mul1]、@racket[mul2]，直接调用写在最左边的 @racket[a->⊥ᵃ]：@racket[(a->⊥ᵃ r)] 交出答案，原路返回就是了。
+前一版的 @racket[loop] 每一步都要检查 @racket[(⊥ᵃ? result)]，因为累加器 @racket[result] 里可能装着提前拿到的答案。在这里，这个检查消失了：遇零就把零交给@tech{局部终结延续}，等着做乘法的@tech{延续}没有被调用，答案根本不经过后面的步骤。@tech[#:key "延续传递风格"]{CPS} 把局部的工作搬进了堆上的闭包，所有调用都在尾位置，宿主的栈不必替它们留帧。@racket[(mul 1 2 0 3 4)] 遇到零时，手里的@tech{局部延续}是 @racket[(∘ a->⊥ᵃ mul1 mul2)]。程序没有调用它，而是越过 @racket[mul1]、@racket[mul2]，直接调用写在最左边的 @racket[a->⊥ᵃ]：@racket[(a->⊥ᵃ r)] 交出答案，原路返回就是了。
 
 回头看这次替换。四样东西里，@math{⊥} 是另外三样共同的落点：@math{¬p} 指向它，@racket[a->⊥] 把值送进它，@racket[⊥->a] 从它那里取回答案。把这个落点从 @math{⊥} 换成 @math{⊥ᵃ}，另外三样跟着换成局部的版本，代码的结构一点没变，@tech{闭包链}也只换了最左边的那一个。所有@tech{延续}都落在同一个终点上，这个终点可以叫作它们的@defterm[#:en "base"]{基}；这次替换，就是一次@defterm[#:en "change of base"]{换基}。
 

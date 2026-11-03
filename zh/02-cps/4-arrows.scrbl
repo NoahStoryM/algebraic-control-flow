@@ -87,7 +87,7 @@
 
 @margin-note{这些等式说的是行为相同，用的是@xref["02:split-k"]{「延续独占一层」}里的那个前提：两层参数之间不做别的事。比如 @racket[cps:f] 一收到参数就打印，@racket[(∘𝒦 cps:id cps:f)] 就会把打印推迟到收到@tech{延续}之后。}
 
-@racket[let] 是 @racket[∘] 的另一种写法，@racket[anf:let] 是 @racket[∘𝒦] 的另一种写法，多出来的是中间结果的名字。嵌在 @racket[b] 里，写成复合是 @racket[(∘𝒦 (∘𝒦 cps:h cps:g) cps:f)]；嵌进 @racket[e] 里，是 @racket[(∘𝒦 cps:h (∘𝒦 cps:g cps:f))]；两种换名，是在 @racket[cps:f] 的两头接上 @racket[cps:id]。想让这几种写法行为一样，@racket[∘𝒦] 就得像 @racket[∘] 一样，满足@tech{结合律}与@tech{单位律}：
+直接串起各步、每步只取上一步结果时，@racket[let] 是 @racket[∘] 的另一种写法，@racket[anf:let] 是 @racket[∘𝒦] 的另一种写法，多出来的是中间结果的名字；闭包里仍可用到更早绑定的名字，比如 @racket[cps:mul] 最后一步的 @racket[r]。嵌在 @racket[b] 里，写成复合是 @racket[(∘𝒦 (∘𝒦 cps:h cps:g) cps:f)]；嵌进 @racket[e] 里，是 @racket[(∘𝒦 cps:h (∘𝒦 cps:g cps:f))]；两种换名，是在 @racket[cps:f] 的两头接上 @racket[cps:id]。想让这几种写法行为一样，@racket[∘𝒦] 就得像 @racket[∘] 一样，满足@tech{结合律}与@tech{单位律}：
 
 @racketblock[
 (∘𝒦 cps:h (∘𝒦 cps:g cps:f))  =  (∘𝒦 (∘𝒦 cps:h cps:g) cps:f)
@@ -223,7 +223,7 @@
 (define-type (¬𝒰 p ...) (→𝒰 p ... ⊥))
 (define-type Label𝒰 (¬𝒰 Label𝒰))]
 
-展开到宿主，@math{¬@subscript{𝒰} p} 是 @math{¬⊥ → ¬p}，@math{@ty{Label𝒰} = ¬⊥ → ¬@ty{Label𝒰}}。前提 @math{¬⊥} 有现成的元素 @racket[id]，恒为真：读成命题，有这个前提与没有它可以互推，剩下的还是 @racket[Label𝒰] 与它的否定互推。读成命题，它同样是说谎者。
+展开到宿主，@math{¬@subscript{𝒰} p} 是 @math{¬⊥ → ¬p}，@math{@ty{Label𝒰} = ¬⊥ → ¬@ty{Label𝒰}}。前提 @math{¬⊥} 有现成的元素 @racket[id]：把 @racket[id] 交进去，就从 @racket[Label𝒰] 得到 @math{¬@ty{Label𝒰}}；反过来，忽略这个参数即可。剩下的还是 @racket[Label𝒰] 与它的否定互推。读成命题，它同样是说谎者。
 
 @subsection[#:tag "02:clavius"]{Clavius 律}
 
@@ -237,7 +237,7 @@
 (: cps:call/cc (∀ (p) (→𝒦 (→𝒦 (¬𝒦 p) p) p)))
 (: neg:call/cc (∀ (p) (→𝒰 (→𝒰 (¬𝒰 p) p) p)))]
 
-@bold{练习}：照推出 @racket[cps:call/cc] 类型的办法，推出 @racket[neg:call/cc] 的类型：@racket[kp] 仍是 @racket[(¬ p)]，留意 @racket[neg:proc] 先收的是哪一个。展开时，@racket[(→𝒰 (¬𝒰 p) p)] 是 @racket[(→ (¬ p) (¬ (¬𝒰 p)))]。@racket[(neg kp)] 的类型是 @math{¬⊥ → ¬p}，也就是 @racket[(¬𝒰 p)]。
+@bold{练习}：照推出 @racket[cps:call/cc] 类型的办法，推出 @racket[neg:call/cc] 的类型：@racket[kp] 仍是 @racket[(¬ p)]，留意 @racket[neg:proc] 先收的是哪一个。展开时，@racket[(→𝒰 (¬𝒰 p) p)] 是 @racket[(→ (¬ p) (¬ (¬𝒰 p)))]，也就是 @racket[(→ (¬ p) (→ (¬𝒰 p) ⊥))]：先收 @math{¬p}，再收 @math{¬@subscript{𝒰} p}。@racket[(neg kp)] 的类型是 @math{¬⊥ → ¬p}，也就是 @racket[(¬𝒰 p)]。
 
 把宿主 𝒟 里的否定记作 @racket[¬𝒟]，@racket[call/cc] 的类型是：
 

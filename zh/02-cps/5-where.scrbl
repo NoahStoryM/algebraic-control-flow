@@ -101,7 +101,7 @@
 = (kp (call/cc kkp))
 ≈ (kkp kp)]
 
-这里的 @racket[kp]、@racket[kkp] 仍是否定塔上不正常返回的函数。@racket[≈] 比 @racket[=] 弱，还要用到这个约定。交给提升回来的箭头输入 @racket[p] 和@tech{延续} @racket[kq]，展开：
+@racket[≈] 比 @racket[=] 弱，还要用到约定。约定回答的是两个问题，后文用到它，都回到这里。两种配对为什么到同一个出口？沿用第一章：@racket[kp]、@racket[kkp] 都是否定塔上不正常返回的函数；@tech{延续}只拿来调用，程序也不分辨是在捕获处还是调用处执行 @racket[kp]。换序，或者放进更大的程序，还能这样比吗？涉及两层参数的换写，沿用@xref["02:split-k"]{「延续独占一层」}的约定，第一层只造函数；各层参数和外围环境也守同样的约定，所以可以在本章的调用、绑定和复合里作这样的替换。交给提升回来的箭头输入 @racket[p] 和@tech{延续} @racket[kq]，展开：
 
 @racketblock[
 #,(hspace 2)(((cps (uncps cps:f)) p) kq)
@@ -110,8 +110,6 @@
 ≈ ((cps:f p) kq)]
 
 这里前两步的 @racket[=] 是照定义展开，最后一步就是上面那条。
-
-@margin-note{涉及两层参数的换写，仍沿用@xref["02:split-k"]{「延续独占一层」}的约定，「两层参数之间不做别的事」：两层参数之间只造函数，第一层若打印、跳出或不终止，推迟到第二层才做就看得出来。各层参数与外围调用环境都沿用 @racket[≈] 的约定，所以下文也可以在本章的调用、绑定和复合中作这样的替换。}
 
 两个方向都回到原处：@tech{宿主箭头}经 @racket[cps] 变成 @tech{CPS 箭头}，@tech{CPS 箭头}经 @racket[uncps] 变回@tech{宿主箭头}，来回一趟，行为不变。@tech{逆否箭头}和 @tech{CPS 箭头}之间，@racket[flip] 来回一趟，照定义就回到原样。把这几种转换画在一起，箭头的种类记在顶点上（𝒟、𝒰、𝒦 分别指@tech{宿主箭头}、@tech{逆否箭头}、@tech{CPS 箭头}），转换标在边上，就是一张@defterm[#:en "diagram"]{图表}：
 
@@ -195,6 +193,8 @@ neg          uncps
    (list @racket[neg:id] @racket[(neg id)] @elem{@math{p →@subscript{𝒰} p}} @elem{@math{¬p → ¬p}} @elem{1 → 1})
    (list @racket[cps:id] @racket[(cps id)] @elem{@math{p →@subscript{𝒦} p}} @elem{@math{p → ¬¬p}} @elem{0 → 2})
    (list @racket[neg²:id] @racket[(neg neg:id)] @elem{@math{¬¬p →@subscript{𝒦} p}} @elem{@math{¬¬p → ¬¬p}} @elem{2 → 2}))]
+
+表里 @racket[neg:id] 写作 @racket[(neg id)]：@racket[(neg id)] 交给 @racket[k] 得到 @racket[(∘ k id)]，与 @racket[k] 行为相同，所以代码直接用 @racket[id]。
 
 再看@tech{逆否箭头}：
 
