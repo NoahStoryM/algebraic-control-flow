@@ -131,29 +131,23 @@
 (+ 100 (let/cc kp (+ 10 (kkp kp))))
 (+ 100 (let/cc kp (+ 10 (let ([p (call/cc kkp)]) (kp p)))))]
 
-这个 @racket[kkp] 是用 @tech[#:key "双重否定引入"]{DNI} 把 @racket[5] 升到第 2 层得来的，第三种办法再把它取回来，绑定给 @racket[p]。两行都是 @racket[105]：@racket[5] 交给 @racket[kp]，跳回 @racket[let/cc] 返回的地方，加十那一步跳过了。第二行里，@racket[call/cc] 捕获的是「拿到 @math{p}，交给 @racket[kp]」这件事；@racket[kp] 是一条真正的@tech{延续}，交出去就不再回来，所以捕获到的这一条，和 @racket[kp] 去的是同一个地方。交给 @racket[kkp] 的是它还是 @racket[kp]，@racket[kkp] 分不出来。@xref["01:call-cc-types"]{「call/cc 的几种类型」}解释 @racket[proc] 正常返回为什么等于原地调用 @racket[k]，用的也是这个道理。
+两行都是 @racket[105]：@racket[5] 交给 @racket[kp]，跳回 @racket[let/cc] 返回的地方，加十那一步跳过了。
 
-这要两边都守 @math{⊥} 的约定，调用以后不向调用处正常返回。@racket[kkp] 的类型是 @math{¬¬p}，换一个正常返回的，第一种和第三种就分开了：
+这个 @racket[kkp] 是用 @tech[#:key "双重否定引入"]{DNI} 把 @racket[5] 升到第 2 层得来的，第三种办法把它取了回来。一步步改写，看得更清楚：
 
-@examples[#:eval ev #:label #f
-(define (bad kp) 7)
-(+ 100 (let/cc kp (+ 10 (bad kp))))
-(+ 100 (let/cc kp (+ 10 (let ([p (call/cc bad)]) (kp p)))))]
+@racketblock[
+#,(hspace 2)(call/cc kkp)
+= (call/cc (λ (kp) (kp p)))
+= (let/cc kp (kp p))
+= (let/cc kp p)
+= p]
 
-第一行里，@racket[bad] 返回的 @racket[7] 回到调用处，接着加十；第二行里，这个 @racket[7] 落在 @racket[call/cc] 那里，成了 @math{p}，交给 @racket[kp]，跳走了。@racket[kp] 也一样，它的类型是 @math{¬p}；换成会返回的普通函数，两者也会分开：
+前两步照定义展开。第三步用的是@xref["01:call-cc-types"]{「call/cc 的几种类型」}里的道理：在尾位置调用捕获的@tech{延续}，和正常返回去的是同一个地方。第四步，@racket[kp] 已经没有用到，捕获也就可以省去。取回的 @racket[p] 再交给 @racket[kp]，就是 @racket[(kp 5)]，和第一种一样。
 
-@examples[#:eval ev #:label #f
-(let/cc out
-  (define (kkp k) (k 1) (out 9))
-  (define (kp v) v)
-  (kkp kp))
-(let/cc out
-  (define (kkp k) (k 1) (out 9))
-  (define (kp v) v)
-  (let ([p (call/cc kkp)]) (kp p)))]
+一般的 @racket[kkp] 不一定这样展得开，它也许把收到的@tech{延续}存起来，以后再调用。道理却是同一个：@racket[call/cc] 捕获的，是「拿到 @math{p}，交给 @racket[kp]」这件事；@racket[kp] 是一条@tech{延续}，交出去就不再回来，所以捕获到的这一条，和 @racket[kp] 去的是同一个地方，@racket[kkp] 分不出收到的是哪一条。
 
-这个 @racket[kkp] 两边都不正常返回。直接把 @racket[kp] 交给它，@racket[(kp 1)] 返回了，@racket[kkp] 接着走到 @racket[(out 9)]；交给它捕获的那一条，@racket[(k 1)] 就离开了 @racket[kkp]，剩下的 @racket[(kp 1)] 交出 @racket[1]。
+这里用到的，只是类型说的事：@racket[kkp] 是 @math{¬¬p}，@racket[kp] 是 @math{¬p}，调用以后都落到 @math{⊥}，不向调用处返回。会正常返回的函数，类型不是否定，不在这座塔上。
 
-@margin-note{比较时，函数和@tech{延续}都只拿来调用。程序若用 @racket[continuation?] 分辨收到的是不是原生的@tech{延续}，或者借异常处理器这类动态环境区分两种调用，也能把两者分开。}
+@margin-note{比较时，函数和@tech{延续}都只拿来调用。程序若用 @racket[continuation?] 分辨收到的是不是原生的@tech{延续}，或者借异常处理器这类动态环境区分两种调用，也能把它们分开。}
 
-两边都守约，第三种就和前两种行为相同：绕到第 0 层，什么也没有多出来。手里已经有 @racket[kp]，要做的只是把结果交给它，直接写 @racket[(kkp kp)] 就行，不必落到第 0 层。要对任意 @math{p}、任意一段 @racket[kkp]，只凭 @racket[kkp] 统一交出一个 @math{p}，这才是 @tech[#:key "双重否定消除"]{DNE}。
+所以第三种和前两种行为相同：绕到第 0 层，什么也没有多出来。手里已经有 @racket[kp]，要做的只是把结果交给它，直接写 @racket[(kkp kp)] 就行，不必落到第 0 层。要对任意 @math{p}、任意一段 @racket[kkp]，只凭 @racket[kkp] 统一交出一个 @math{p}，这才是 @tech[#:key "双重否定消除"]{DNE}。
