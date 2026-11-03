@@ -126,16 +126,17 @@
 绕到第 0 层的这一种，和前两种有没有区别？拿一个具体的 @racket[kkp] 试，@racket[kp] 用 @racket[let/cc] 捕获。外面的 @racket[(+ 10 …)]、@racket[(+ 100 …)] 让跳没跳走看得见：
 
 @examples[#:eval ev #:label #f
-(define (kkp k) (k 5))
+(define p 5)
+(define (kkp kp) (kp p))
 (+ 100 (let/cc kp (+ 10 (kkp kp))))
 (+ 100 (let/cc kp (+ 10 (let ([p (call/cc kkp)]) (kp p)))))]
 
-两行都是 @racket[105]：@racket[5] 交给 @racket[kp]，跳回 @racket[let/cc] 返回的地方，加十那一步跳过了。第二行里，@racket[call/cc] 捕获的是「拿到 @math{p}，交给 @racket[kp]」这件事；@racket[kp] 是一条真正的@tech{延续}，交出去就不再回来，所以捕获到的这一条，和 @racket[kp] 去的是同一个地方。交给 @racket[kkp] 的是它还是 @racket[kp]，@racket[kkp] 分不出来。@xref["01:call-cc-types"]{「call/cc 的几种类型」}解释 @racket[proc] 正常返回为什么等于原地调用 @racket[k]，用的也是这个道理。
+这个 @racket[kkp] 是用 @tech[#:key "双重否定引入"]{DNI} 把 @racket[5] 升到第 2 层得来的，第三种办法再把它取回来，绑定给 @racket[p]。两行都是 @racket[105]：@racket[5] 交给 @racket[kp]，跳回 @racket[let/cc] 返回的地方，加十那一步跳过了。第二行里，@racket[call/cc] 捕获的是「拿到 @math{p}，交给 @racket[kp]」这件事；@racket[kp] 是一条真正的@tech{延续}，交出去就不再回来，所以捕获到的这一条，和 @racket[kp] 去的是同一个地方。交给 @racket[kkp] 的是它还是 @racket[kp]，@racket[kkp] 分不出来。@xref["01:call-cc-types"]{「call/cc 的几种类型」}解释 @racket[proc] 正常返回为什么等于原地调用 @racket[k]，用的也是这个道理。
 
 这要两边都守 @math{⊥} 的约定，调用以后不向调用处正常返回。@racket[kkp] 的类型是 @math{¬¬p}，换一个正常返回的，第一种和第三种就分开了：
 
 @examples[#:eval ev #:label #f
-(define (bad k) 7)
+(define (bad kp) 7)
 (+ 100 (let/cc kp (+ 10 (bad kp))))
 (+ 100 (let/cc kp (+ 10 (let ([p (call/cc bad)]) (kp p)))))]
 

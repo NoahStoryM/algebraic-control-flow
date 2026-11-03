@@ -490,8 +490,9 @@
 ;; 「否定塔」：两种配对。守约时行为相同，kkp 或 kp 正常返回时就分开。
 (module pairing racket
   (provide (all-defined-out))
-  (define (kkp k) (k 5))
-  (define (bad k) 7))
+  (define p 5)
+  (define (kkp kp) (kp p))
+  (define (bad kp) 7))
 
 (module+ test
   (require (prefix-in pair: (submod ".." pairing)))
