@@ -14,13 +14,13 @@
 
 @section[#:tag "03:a-translation"]{A-翻译}
 
-把一个普通结果的类型 @math{p} 当作一个整体，不拆开，这个变化可以写成 @math{pᵃ = p ∨ a}：普通的结果，或者提前到来的答案。@math{⊥} 没有普通的元素，@math{⊥ᵃ = ⊥ ∨ a} 就只剩答案那一支，打上@tech{标记}以后就是 @racket[(Ans a)]。整个类型照三条规则翻译：当作整体的普通类型 @math{p} 译作 @math{p ∨ a}；@math{⊥} 译作 @math{⊥ᵃ}，也就是只剩答案那一支；箭头按结构译，@math{(p → q)ᵃ = pᵃ → qᵃ}。比如 @math{@ty{Real} → @ty{Bool}} 译成 @math{(@ty{Real} ∨ a) → (@ty{Bool} ∨ a)}。这种以答案类型 @math{a} 为参数的翻译，叫作@defterm[#:en "A-translation"]{A-翻译}。
+对本段作为原子的普通类型 @math{p}（如 @ty{Real}、@ty{Bool}），这个变化可以写成 @math{pᵃ = p ∨ a}：普通的结果，或者提前到来的答案。@math{⊥} 没有普通的元素，@math{⊥ᵃ = ⊥ ∨ a} 就只剩答案那一支，打上@tech{标记}以后就是 @racket[(Ans a)]。整个类型照三条规则翻译：作为原子的普通类型 @math{p} 译作 @math{p ∨ a}；@math{⊥} 译作 @math{⊥ᵃ}，也就是只剩答案那一支；箭头按结构译，@math{(p → q)ᵃ = pᵃ → qᵃ}。比如 @math{@ty{Real} → @ty{Bool}} 译成 @math{(@ty{Real} ∨ a) → (@ty{Bool} ∨ a)}。这种以答案类型 @math{a} 为参数的翻译，叫作@defterm[#:en "A-translation"]{A-翻译}。
 
 @xref["02:cps"]{「延续与 CPS」}以后，一段结果类型为 @math{p} 的计算，编码成双重否定 @math{(p → ⊥) → ⊥}，@tech{否定翻译}给类型裹上的也是这两层否定。对它做 @tech{A-翻译}，@math{p} 变成 @math{pᵃ}，@math{⊥} 变成 @math{⊥ᵃ}，两支箭头照结构译：
 
 @mm{(p → ⊥) → ⊥ @hspace[2] ⟼ @hspace[2] (pᵃ → ⊥ᵃ) → ⊥ᵃ}
 
-翻译以后的计算，等着一个 @math{pᵃ → ⊥ᵃ} 的函数。@math{pᵃ} 是 @math{p ∨ a}，交给这个函数的，可能是普通的值，也可能是提前到来的答案，两种情形都得有去处。处理一个「或」，就是两种情形各给一个函数，两种写法可以来回构造：
+翻译以后的计算，等着一个 @math{pᵃ → ⊥ᵃ} 的函数。这里 @math{p} 是这样的原子结果类型，所以 @math{pᵃ} 是 @math{p ∨ a}，交给这个函数的，可能是普通的值，也可能是提前到来的答案，两种情形都得有去处。处理一个「或」，就是两种情形各给一个函数，两种写法可以来回构造：
 
 @mm{(p ∨ a) → ⊥ᵃ @hspace[2] ⇔ @hspace[2] (p → ⊥ᵃ) ∧ (a → ⊥ᵃ)}
 

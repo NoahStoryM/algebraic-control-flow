@@ -42,7 +42,7 @@
 
 它是一支以 @math{x} 为@tech{基}、从 @math{p} 指向 @math{⊥ᵃ} 的@tech{逆否箭头}，@math{p →@subscript{𝒰ₓ} ⊥ᵃ}。
 
-到 @math{⊥} 的箭头，@xref["02:liar"]{「说谎者」}记作 @math{¬@subscript{𝒦}}、@math{¬@subscript{𝒰}}。这里落点不一定是 @math{⊥}，就把落点也标出来。记法只有一条规则：@math{¬} 的下标是落点，箭头的下标是@tech{基}，哪个位置不写，那里就是 @math{⊥}。@math{¬ₐ} 本身就这样读：落在 @math{⊥ᵃ} 上的@tech{宿主箭头}。比如 @math{¬ₐ@subscript{𝒰ₓ}p} 以 @math{x} 为@tech{基}、落在 @math{⊥ᵃ}；@math{¬@subscript{𝒰ₓ}p} 仍以 @math{x} 为@tech{基}，落在 @math{⊥}，两者只差一个位置。「说谎者」的 @math{¬@subscript{𝒦}}、@math{¬@subscript{𝒰}}，是两个位置都不写、都为 @math{⊥} 的情形。下面用到的四个：
+到 @math{⊥} 的箭头，@xref["02:liar"]{「说谎者」}记作 @math{¬@subscript{𝒦}}、@math{¬@subscript{𝒰}}。这里落点不一定是 @math{⊥}，就把落点也标出来。记法只有一条规则：@math{¬} 的下标是落点，箭头的下标是@tech{基}；在 𝒦、𝒰 的这些记号里，哪个位置不写，那里就是 @math{⊥}。@math{¬ₐ} 本身就这样读：落在 @math{⊥ᵃ} 上的@tech{宿主箭头}。比如 @math{¬ₐ@subscript{𝒰ₓ}p} 以 @math{x} 为@tech{基}、落在 @math{⊥ᵃ}；@math{¬@subscript{𝒰ₓ}p} 仍以 @math{x} 为@tech{基}，落在 @math{⊥}，两者只差一个位置。「说谎者」的 @math{¬@subscript{𝒦}}、@math{¬@subscript{𝒰}}，是两个位置都不写、都为 @math{⊥} 的情形。下面用到的四个：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define-type (¬ₐ𝒰ₓ p ...) (→𝒰ₓ p ... ⊥ᵃ))

@@ -86,7 +86,7 @@
 
 从宿主出发，沿 @racket[neg] 走两次，类型上走的正是这条路：一支 @math{p →@subscript{𝒟} q} 的控制计算，对应一支纯的 @math{¬¬p →@subscript{𝒞} ¬¬q}，每个类型裹上一层 @math{¬¬}。这个对应记作 @racket[neg²]。
 
-这支纯箭头怎样得到？取这支控制计算的纯 @tech[#:key "延续传递风格"]{CPS} 表示 @racket[cps:f]，也就是 @racket[f] 是 @racket[(uncps cps:f)]，先 @racket[flip]、再 @racket[neg]：@racket[(flip cps:f)] 是 @math{¬q → ¬p}，再取一次逆否，正好是 @math{¬¬p → ¬¬q}。@racket[cps:f] 是纯的，@racket[(neg (flip cps:f))] 也只用 @racket[λ] 和函数调用，落在 𝒞 里。这一章的控制计算，都是这样从纯的 @tech{CPS 箭头}经 @racket[uncps] 得来的。
+这支纯箭头怎样得到？这一章讨论的每支 𝒟 箭头 @racket[f]，都有一个纯的 @tech[#:key "延续传递风格"]{CPS} 表示 @racket[cps:f]：用 @racket[uncps] 把它放回宿主，和 @racket[f] 行为相同。取这个 @racket[cps:f]，先 @racket[flip]、再 @racket[neg]：@racket[(flip cps:f)] 是 @math{¬q → ¬p}，再取一次逆否，正好是 @math{¬¬p → ¬¬q}。@racket[cps:f] 是纯的，@racket[(neg (flip cps:f))] 也只用 @racket[λ] 和函数调用，落在 𝒞 里。
 
 代码上，@racket[neg²] 就是两次 @racket[neg] 连起来。它只把 @racket[f] 包上两层，并不改写 @racket[f] 的内部，有两种读法：
 
@@ -97,7 +97,7 @@
              (→ (→𝒟 p q) (→𝒟 (¬¬ p) (¬¬ q))))))
 (define neg² (∘ neg neg))]
 
-纯的进来，包出来的就是那支纯箭头。@tech{宿主箭头}进来，包出来的仍是@tech{宿主箭头}：@racket[f] 用了 @racket[call/cc]，包装运行时照样依赖它；它和上面那支纯箭头行为相同，下一节验证。两条路走的是同一个对应：先把纯箭头放进 𝒟 再包装，得到的仍是纯的；先取纯表示再放回 𝒟，和直接包装行为相同。
+纯的进来，包出来的就是那支纯箭头。@tech{宿主箭头}进来，包出来的仍是@tech{宿主箭头}：@racket[f] 用了 @racket[call/cc]，包装运行时照样依赖它；它和上面那支纯箭头行为相同，下一节验证。从纯箭头出发，先放进 𝒟，再取上面的纯表示，这支箭头可以直接用包装写出。从 𝒟 出发，先取纯表示，再放回 𝒟，所得箭头与直接包装行为相同。
 
 @racket[neg²:id] 就是 @racket[(neg² id)]。它标在 𝒦 上，是 @math{¬¬p →@subscript{𝒦} p}；作为纯的@tech{宿主箭头}，它也是 @math{¬¬p →@subscript{𝒞} ¬¬p}，𝒞 里 @math{¬¬p} 上的恒等箭头。两种读法展开到宿主，都是 @math{¬¬p → ¬¬p}。
 
@@ -114,7 +114,7 @@
 
 @section[#:tag "02:translate-call-cc"]{翻译 call/cc}
 
-上一节说，@racket[f] 是 @racket[(uncps cps:f)] 时，@racket[(neg² f)] 的包装和纯的 @racket[(neg (flip cps:f))] 行为相同。展开看看：
+上一节说，@racket[(neg² f)] 的包装和纯的 @racket[(neg (flip cps:f))] 行为相同。取 @racket[f] 为 @racket[(uncps cps:f)]，展开看看：
 
 @racketblock[
 #,(hspace 2)(neg² f)
@@ -123,7 +123,7 @@
 = (neg (flip (cps (uncps cps:f))))
 ≈ (neg (flip cps:f))]
 
-第二步照 @racket[neg²] 的定义，第三步用的是 @c{neg = (∘ flip cps)}，最后一步是@xref["02:three-forms"]{「三种写法」}里的 @c{(cps (uncps cps:f)) ≈ cps:f}，放进 @racket[neg]、@racket[flip] 里仍然成立，那里的旁注说过。右边只用 @racket[λ] 和函数调用，@racket[cps:f] 是纯的，它也落在 𝒞 里。
+第一步是这样选取的，第二步照 @racket[neg²] 的定义，第三步用的是 @c{neg = (∘ flip cps)}，最后一步是@xref["02:three-forms"]{「三种写法」}里的 @c{(cps (uncps cps:f)) ≈ cps:f}，放进 @racket[neg]、@racket[flip] 里仍然成立，那里的旁注说过。右边只用 @racket[λ] 和函数调用，@racket[cps:f] 是纯的，它也落在 𝒞 里。
 
 @racket[call/cc] 自己就是这样一支 @racket[f]：@xref["02:same-arrow"]{「同一支箭头」}说过，@racket[(uncps neg²:id)] 就是 @racket[call/cc]，而 @racket[neg²:id] 只用 @racket[λ] 写成。@racket[cps:f] 取 @racket[neg²:id]，先 @racket[flip]：
 
@@ -133,7 +133,7 @@
 = (kkp kp)
 = ((cps:id kp) kkp)]
 
-@racket[(flip neg²:id)] 就是用在 @math{¬p} 上的 @racket[cps:id]，也就是那里认出的 @racket[(neg call/cc)]。再用一次 @racket[neg]，交齐参数，看它做了什么：
+@racket[(flip neg²:id)] 就是用在 @math{¬p} 上的 @racket[cps:id]；按@xref["02:same-arrow"]{「同一支箭头」}的配对规律，它与 @racket[(neg call/cc)] 行为相同。再用一次 @racket[neg]，交齐参数，看它做了什么：
 
 @racketblock[
 #,(hspace 2)(((neg cps:id) kkkkp) kp)

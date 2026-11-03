@@ -223,7 +223,7 @@
 (define-type (¬𝒰 p ...) (→𝒰 p ... ⊥))
 (define-type Label𝒰 (¬𝒰 Label𝒰))]
 
-展开到宿主，@math{¬@subscript{𝒰} p} 是 @math{¬⊥ → ¬p}，@math{@ty{Label𝒰} = ¬⊥ → ¬@ty{Label𝒰}}。前提 @math{¬⊥} 有现成的元素 @racket[id]，恒为真，有它没它都一样，剩下的还是 @racket[Label𝒰] 与它的否定互推。读成命题，它同样是说谎者。
+展开到宿主，@math{¬@subscript{𝒰} p} 是 @math{¬⊥ → ¬p}，@math{@ty{Label𝒰} = ¬⊥ → ¬@ty{Label𝒰}}。前提 @math{¬⊥} 有现成的元素 @racket[id]，恒为真：读成命题，有这个前提与没有它可以互推，剩下的还是 @racket[Label𝒰] 与它的否定互推。读成命题，它同样是说谎者。
 
 @subsection[#:tag "02:clavius"]{Clavius 律}
 

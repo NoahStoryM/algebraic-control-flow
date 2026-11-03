@@ -101,7 +101,7 @@
 = (kp (call/cc kkp))
 ≈ (kkp kp)]
 
-这里的 @racket[kp]、@racket[kkp] 仍是否定塔上不正常返回的函数。@racket[≈] 比 @racket[=] 弱：@racket[=] 照定义展开就能得到，@racket[≈] 还要用到这个约定。交给提升回来的箭头输入 @racket[p] 和@tech{延续} @racket[kq]，展开：
+这里的 @racket[kp]、@racket[kkp] 仍是否定塔上不正常返回的函数。@racket[≈] 比 @racket[=] 弱，还要用到这个约定。交给提升回来的箭头输入 @racket[p] 和@tech{延续} @racket[kq]，展开：
 
 @racketblock[
 #,(hspace 2)(((cps (uncps cps:f)) p) kq)
@@ -109,9 +109,9 @@
 = (kq (call/cc (cps:f p)))
 ≈ ((cps:f p) kq)]
 
-前两步照定义展开，最后一步就是上面那条。
+这里前两步的 @racket[=] 是照定义展开，最后一步就是上面那条。
 
-@margin-note{@racket[=] 用到的前提只有@xref["02:split-k"]{「延续独占一层」}里的「两层参数之间不做别的事」：两层参数之间只造函数，第一层若打印、跳出或不终止，推迟到第二层才做就看得出来。各层参数与外围调用环境都沿用 @racket[≈] 的约定，所以下文也可以在本章的调用、绑定和复合中作这样的替换。}
+@margin-note{涉及两层参数的换写，仍沿用@xref["02:split-k"]{「延续独占一层」}的约定，「两层参数之间不做别的事」：两层参数之间只造函数，第一层若打印、跳出或不终止，推迟到第二层才做就看得出来。各层参数与外围调用环境都沿用 @racket[≈] 的约定，所以下文也可以在本章的调用、绑定和复合中作这样的替换。}
 
 两个方向都回到原处：@tech{宿主箭头}经 @racket[cps] 变成 @tech{CPS 箭头}，@tech{CPS 箭头}经 @racket[uncps] 变回@tech{宿主箭头}，来回一趟，行为不变。@tech{逆否箭头}和 @tech{CPS 箭头}之间，@racket[flip] 来回一趟，照定义就回到原样。把这几种转换画在一起，箭头的种类记在顶点上（𝒟、𝒰、𝒦 分别指@tech{宿主箭头}、@tech{逆否箭头}、@tech{CPS 箭头}），转换标在边上，就是一张@defterm[#:en "diagram"]{图表}：
 
