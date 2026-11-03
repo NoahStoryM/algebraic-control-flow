@@ -105,7 +105,7 @@
 
 怎样才算对上？照逻辑的样子读程序：一个类型的表达式，不依赖额外的假设就写得出来，就像给出了对应命题的证明，命题为真；用到的形参、交进来的东西，在证明里算假设。
 
-@margin-note{这里先只看会终止的程序。}
+@margin-note{这里先只看会正常算完的程序。}
 
 先看 @math{⊥}。它像假，凭什么？@math{⊥} 这个假命题没有证明；@tech{空类型} @math{⊥} 没有元素，给不出一个这样的值。@racket[(return r)] 的类型是 @racket[⊥]，那是借着手里现成的 @racket[return] 才写得出来；不依赖额外的假设，@racket[⊥] 类型的表达式一个也写不出来。两边说的是同一件事：没有证明，就是写不出表达式。再验证一下：假的否定 @math{¬⊥} 该是真的，确实写得出 @math{⊥ → ⊥} 类型的表达式，恒等函数就是。@racket[absurd] 说的从假推出任何东西，在逻辑里也成立。@math{⊥} 对上了假。
 
@@ -163,7 +163,7 @@
 
 @section[#:tag "01:watershed"]{分水岭}
 
-@racket[cc] 对上的@tech{排中律}，@racket[call/cc] 对上的 @tech[#:key "双重否定消除"]{DNE}，逻辑课本说都只在@defterm[#:en "classical logic"]{经典逻辑}中成立。不承认它们，只承认构造出来的证明，就是@defterm[#:en "intuitionistic logic"]{直觉主义逻辑}。在引入 @racket[cc] 和 @racket[call/cc] 之前，我们用到的函数、积、联合、@math{⊤}、@math{⊥}，都没有越出它的范围。
+@racket[cc] 对上的@tech{排中律}，@racket[call/cc] 对上的 @tech[#:key "双重否定消除"]{DNE}，逻辑课本说都只在@defterm[#:en "classical logic"]{经典逻辑}中成立。不承认它们，只承认构造出来的证明，就是@defterm[#:en "intuitionistic logic"]{直觉主义逻辑}。除了 @racket[cc] 和 @racket[call/cc]，我们用到的函数、积、联合、@math{⊤}、@math{⊥}，都没有越出它的范围。
 
 这两条经典定律，各有一条与之相对的定律，在直觉主义逻辑里照样成立。@tech{排中律}说 @math{p} 与 @math{¬p} 至少有一个成立；说两者不能同时成立，就是@defterm[#:en "law of non-contradiction"]{矛盾律} @math{¬(¬p ∧ p)}。@tech[#:key "双重否定消除"]{DNE} 从 @math{¬¬p} 推出 @math{p}；箭头反过来，从 @math{p} 推出 @math{¬¬p}，就是@defterm[#:en "Double Negation Introduction" #:abbr "DNI"]{双重否定引入}。
 
@@ -179,7 +179,7 @@
 
 再看 @tech[#:key "双重否定引入"]{DNI}。给一个值 @racket[v]，要交出一个 @math{¬¬p}，也就是一个收下 @math{¬p}、结果为 @math{⊥} 的函数。理由和刚才一样，只能写成 @racket[(λ (kv) (kv v))]。做的还是调用，只是值先到，@tech{延续}后到。从 @racket[v] 得到这个函数，就是 @racket[(curryr apply-cont)]：先给定 @racket[apply-cont] 的第二个参数。
 
-两个程序用到的@tech{延续}都是交进来的。这不是巧合：@xref["01:from-bottom"]{「读成命题」}里试过，只用 @racket[λ] 凭空写不出 @math{@ty{Real} → ⊥} 这样的否定，前面见到的@tech{延续}，都是控制操作符在运行时捕获出来的。结论里的每样东西都由交到手里的东西做成，这样的程序是@defterm[#:en "constructive"]{构造性}的。
+两个程序用到的@tech{延续}都是交进来的。这不是巧合：@xref["01:from-bottom"]{「读成命题」}里试过，只用 @racket[λ] 凭空写不出 @math{@ty{Real} → ⊥} 这样的否定，前面见到的@tech{延续}，都是控制操作符在运行时捕获出来的。结论里的每样东西都由交到手里的东西做成，这样的程序是@defterm[#:en "constructive"]{构造性}的；直觉主义逻辑承认的，正是这样的证明。
 
 @margin-note{这里只看直接的办法为什么走不通。对任意类型都写不出这两条，是逻辑里证明过的结论，这里不证。}
 

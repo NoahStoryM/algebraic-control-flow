@@ -85,7 +85,7 @@ control-context 库（@racketmodname[control/context]）里的 @racket[cc] 就�
 (define (label) (cc))
 (define (goto l) (l l))]
 
-和正文相比，@racket[cc] 不用给两支配@tech{标记}，写回@tech{标签}时也不用 @racket[untag]：两支直接并在一起，正是 @xref["01:label-sub"]{「代入 Label」}里的坍缩，@math{@ty{Label} ∪ @ty{Label} = @ty{Label}}。
+和正文相比，@racket[cc] 不用给两支配@tech{标记}，写回@tech{标签}时也不用 @racket[untag]：两支直接并在一起。
 
 @section[#:tag "01:disjoint-tag"]{打标记}
 

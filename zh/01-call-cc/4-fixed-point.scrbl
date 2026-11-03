@@ -81,7 +81,7 @@
 
 这就是 David Madore 的阴阳谜题。两次 @racket[(label)] 交出的都是@tech{标签}。@racket[(yin yang)] 就是一次函数调用：同一个类型，@racket[yin] 当作@tech{延续}，@racket[yang] 当作交给它的值。
 
-这一次调用和以往都不一样。@xref["01:reverse-loop"]{「反过来绕一圈」}里能丢掉@tech{标记}，是因为@tech{标签}跳回来靠的是 @racket[goto]，带回来的是它自己，@racket[(cc)] 的两支装着同一个@tech{标签}。@racket[(yin yang)] 却把 @racket[yang] 交给了 @racket[yin]：@racket[yin] 那次 @racket[(label)] 再返回时，交出的是 @racket[yang]，不一定是 @racket[yin] 自己。
+这一次调用和以往都不一样。@xref["01:first-class"]{「一等标签」}说，@racket[(label)] 再返回时交出的仍是原来那个@tech{标签}，那是 @racket[goto] 的约定：它总把@tech{标签}交给@tech{标签}自己，@xref["01:reverse-loop"]{「反过来绕一圈」}里能丢掉@tech{标记}，靠的也是这一点。@racket[(yin yang)] 不经 @racket[goto]，直接把 @racket[yin] 当@tech{延续}调用，交进去的是 @racket[yang]：@racket[yin] 那次 @racket[(label)] 再返回时，交出的是 @racket[yang]，不一定是 @racket[yin] 自己。
 
 程序里没有循环，没有计数器，也没有 @racket[set!]：只有两次 @racket[(label)]、两次打印和一次调用。输出却是一道无限增长的阶梯，每一轮都比上一轮多打印一个 @racket[*]。多出来的那个 @racket[*]，记在了哪里？
 
