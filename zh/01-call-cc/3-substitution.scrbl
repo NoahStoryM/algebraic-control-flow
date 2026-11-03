@@ -86,15 +86,35 @@
 
 用层数说，区别在要交出的东西落在哪一层。@racket[triple-negation] 交出的落在第 1 层，是一个函数，可以先交出去，等第 0 层的值来了再算。落到第 0 层，就得当场交出一个值，这时就没有对任何类型都适用的纯 @racket[λ] 写法了；要把计算真的跑起来，又不捕获，就得像运行程序那样，由外面交来一条@tech{延续}。
 
+@subsection[#:tag "01:two-logics"]{两种逻辑}
+
+层数也照出了两种逻辑的分别。把能互相推出的层归为一类；这里按对任意底类型 @math{A} 都成立的互推来归类，不利用 @math{A} 的额外性质。
+
+经典逻辑里，@tech[#:key "双重否定引入"]{DNI} 加两层，@tech[#:key "双重否定消除"]{DNE} 减两层，相差两层的都能互推，一座塔只剩两类：偶数层，奇数层。直觉主义逻辑里，@tech[#:key "双重否定消除"]{DNE} 一般不成立，往下落要靠@tech{三重否定律}：它从第 3 层回到第 1 层；把其中的 @math{q} 换成 @math{¬A}，就从第 4 层回到第 2 层，依此类推。只有第 0 层一般回不去，那要用 @tech[#:key "双重否定消除"]{DNE}，@xref["01:watershed"]{「分水岭」}里试过，对任意类型写不出来。塔于是分成三类：第 0 层，奇数层，第 2 层起的偶数层。最低的五层排出来：
+
+@tabular[#:style 'boxed #:row-properties '(bottom-border ())
+  (list
+   (list @elem{层} @elem{经典逻辑} @elem{直觉主义逻辑})
+   (list @elem{0} @elem{偶数层：与 2、4 层经 @tech[#:key "双重否定引入"]{DNI}、@tech[#:key "双重否定消除"]{DNE} 互推}
+         @elem{单独一类：@tech[#:key "双重否定引入"]{DNI} 升到第 2 层，一般不能落回})
+   (list @elem{1} @elem{奇数层} @elem{奇数层：@tech[#:key "双重否定引入"]{DNI} 升到第 3 层，@tech{三重否定律}落回})
+   (list @elem{2} @elem{偶数层} @elem{第 2 层起的偶数层：与第 4 层互推})
+   (list @elem{3} @elem{奇数层} @elem{奇数层})
+   (list @elem{4} @elem{偶数层} @elem{第 2 层起的偶数层：@tech{三重否定律}落回第 2 层}))]
+
+在这座否定塔上，两种逻辑的区别，就在第 0 层是否与其余的偶数层合并：从上面落回第 0 层，只有经典逻辑做得到。
+
+可落到第 0 层的那个值，常常只是要交给下一步，和第 1 层的一条@tech{延续}配对。这样绕道第 0 层，和直接配对比，多出了什么？
+
 @subsection[#:tag "01:pairing"]{两种配对}
 
-落到第 0 层的那个值，常常只是要交给下一步。手里有一段等着@tech{延续}的计算 @racket[kkp]，在第 2 层；又有一条等着 @math{p} 的@tech{延续} @racket[kp]，在第 1 层。让它们相遇，有两条路：一条直接用@tech{矛盾律}，把 @racket[kp] 交给 @racket[kkp]；另一条先用 @tech[#:key "双重否定消除"]{DNE} 落到第 0 层，取出 @math{p}，再交给 @racket[kp]。@tech[#:key "双重否定消除"]{DNE} 用 @racket[call/cc] 写：
+手里有一段等着@tech{延续}的计算 @racket[kkp]，在第 2 层；又有一条等着 @math{p} 的@tech{延续} @racket[kp]，在第 1 层。两者奇偶不同，正好相邻，用@tech{矛盾律}直接配对，把 @racket[kp] 交给 @racket[kkp]，只用到交到手里的东西。经典逻辑还多一条路：先用 @tech[#:key "双重否定消除"]{DNE} 落到第 0 层，取出 @math{p}，再与第 1 层的 @racket[kp] 配对。@tech[#:key "双重否定消除"]{DNE} 用 @racket[call/cc] 写：
 
 @racketblock[
 (kkp kp)
 (let ([p (call/cc kkp)]) (kp p))]
 
-两条路走到同一个地方吗？拿一个具体的 @racket[kkp] 试，@racket[kp] 用 @racket[let/cc] 捕获。外面的 @racket[(+ 10 …)]、@racket[(+ 100 …)] 让跳没跳走看得见：
+经过第 0 层的这一条，和只用@tech{矛盾律}的那一条，有没有区别？拿一个具体的 @racket[kkp] 试，@racket[kp] 用 @racket[let/cc] 捕获。外面的 @racket[(+ 10 …)]、@racket[(+ 100 …)] 让跳没跳走看得见：
 
 @examples[#:eval ev #:label #f
 (define (kkp k) (k 5))
@@ -126,22 +146,4 @@
 
 @margin-note{比较时，函数和@tech{延续}都只拿来调用。程序若用 @racket[continuation?] 分辨收到的是不是原生的@tech{延续}，或者借异常处理器这类动态环境区分两种调用，也能把两条路分开。}
 
-两边都守约，两条路就行为相同。所以，手里已经有 @racket[kp]，要做的只是把结果交给它，直接写 @racket[(kkp kp)] 就行，不必落到第 0 层。要对任意 @math{p}、任意一段 @racket[kkp]，只凭 @racket[kkp] 统一交出一个 @math{p}，这才是 @tech[#:key "双重否定消除"]{DNE}。
-
-@subsection[#:tag "01:two-logics"]{两种逻辑}
-
-层数也照出了两种逻辑的分别。把能互相推出的层归为一类；这里按对任意底类型 @math{A} 都成立的互推来归类，不利用 @math{A} 的额外性质。
-
-经典逻辑里，@tech[#:key "双重否定引入"]{DNI} 加两层，@tech[#:key "双重否定消除"]{DNE} 减两层，相差两层的都能互推，一座塔只剩两类：偶数层，奇数层。直觉主义逻辑里，@tech[#:key "双重否定消除"]{DNE} 一般不成立，往下落要靠@tech{三重否定律}：它从第 3 层回到第 1 层；把其中的 @math{q} 换成 @math{¬A}，就从第 4 层回到第 2 层，依此类推。只有第 0 层一般回不去，那要用 @tech[#:key "双重否定消除"]{DNE}，@xref["01:watershed"]{「分水岭」}里试过，对任意类型写不出来。塔于是分成三类：第 0 层，奇数层，第 2 层起的偶数层。最低的五层排出来：
-
-@tabular[#:style 'boxed #:row-properties '(bottom-border ())
-  (list
-   (list @elem{层} @elem{经典逻辑} @elem{直觉主义逻辑})
-   (list @elem{0} @elem{偶数层：与 2、4 层经 @tech[#:key "双重否定引入"]{DNI}、@tech[#:key "双重否定消除"]{DNE} 互推}
-         @elem{单独一类：@tech[#:key "双重否定引入"]{DNI} 升到第 2 层，一般不能落回})
-   (list @elem{1} @elem{奇数层} @elem{奇数层：@tech[#:key "双重否定引入"]{DNI} 升到第 3 层，@tech{三重否定律}落回})
-   (list @elem{2} @elem{偶数层} @elem{第 2 层起的偶数层：与第 4 层互推})
-   (list @elem{3} @elem{奇数层} @elem{奇数层})
-   (list @elem{4} @elem{偶数层} @elem{第 2 层起的偶数层：@tech{三重否定律}落回第 2 层}))]
-
-在这座否定塔上，两种逻辑的区别，就在第 0 层是否与其余的偶数层合并。
+两边都守约，两条路就行为相同：绕道第 0 层，什么也没有多出来。手里已经有 @racket[kp]，要做的只是把结果交给它，直接写 @racket[(kkp kp)] 就行，不必落到第 0 层。要对任意 @math{p}、任意一段 @racket[kkp]，只凭 @racket[kkp] 统一交出一个 @math{p}，这才是 @tech[#:key "双重否定消除"]{DNE}。
