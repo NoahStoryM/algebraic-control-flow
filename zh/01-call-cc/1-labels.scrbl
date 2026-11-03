@@ -53,7 +53,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
       (when (zero? r)
         (set! result r)
         (goto ret))
-            (set! result (* result r))))
+      (set! result (* result r))))
   result)]
 
 @examples[#:eval ev #:label #f
@@ -111,7 +111,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
     [(cons return 1)
      (for/fold ([res (*)] #:result (return res))
                ([r (in-list r*)])
-              (if (zero? r)
+       (if (zero? r)
            (return r)
            (* res r)))]))]
 
@@ -190,6 +190,8 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 (let/cc k (k k))  =  (let/cc k k)]
 
 左边原地跳一次，带着 @racket[k] 回到这里；右边直接交出 @racket[k]。结果都是 @racket[k]。
+
+@section[#:tag "01:reverse-loop"]{反过来绕一圈}
 
 圈也可以反过来绕。以@tech{标签}为原语，先写出 @racket[call/cc]，再由它写出 @racket[cc]，最后把 @racket[cc] 当作原语，写回@tech{标签}：
 

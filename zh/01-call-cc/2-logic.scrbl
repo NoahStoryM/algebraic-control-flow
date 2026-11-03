@@ -199,6 +199,6 @@
          @elem{@bold{@tech[#:key "双重否定引入"]{DNI}}：@racket[(curryr apply-cont)]}
          @elem{@bold{@tech[#:key "双重否定消除"]{DNE}}：@racket[call/cc]}))]
 
-左边一列只差参数次序，@tech{矛盾律}和 @tech[#:key "双重否定引入"]{DNI} 互相推得出。右边一列都是提供当前@tech{延续}：@racket[cc] 可以由 @racket[call/cc] 写出，见@xref["01:label-from-call-cc"]{「从 call/cc 定义标签」}；反过来，@xref["01:call-cc"]{用 @racket[cc] 写出的 @racket[call/cc]} 先调用 @racket[(cc)]，拿到配着 @racket[0] 的值就交出，拿到配着 @racket[1] 的@tech{延续}就交给 @racket[proc]，这正是由@tech{排中律}推出 @tech[#:key "双重否定消除"]{DNE}。作为对任意类型都成立的原则，两者互相推得出。
+左边一列只差参数次序，@tech{矛盾律}和 @tech[#:key "双重否定引入"]{DNI} 互相推得出。右边一列都是提供当前@tech{延续}：@racket[cc] 可以由 @racket[call/cc] 写出，见@xref["01:reverse-loop"]{「反过来绕一圈」}；反过来，@xref["01:call-cc"]{用 @racket[cc] 写出的 @racket[call/cc]} 先调用 @racket[(cc)]，拿到配着 @racket[0] 的值就交出，拿到配着 @racket[1] 的@tech{延续}就交给 @racket[proc]，这正是由@tech{排中律}推出 @tech[#:key "双重否定消除"]{DNE}。作为对任意类型都成立的原则，两者互相推得出。
 
 可是，@math{p} 要是某个具体的类型，从 @math{¬¬p} 取出 @math{p}，还非得凭空拿到一个@tech{延续}不可吗？
