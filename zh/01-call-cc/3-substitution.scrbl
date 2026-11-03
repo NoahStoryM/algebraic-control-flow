@@ -9,7 +9,7 @@
 
 @xref["01:watershed"]{「分水岭」}从定律出发找程序。这一节接着从定律出发，换一个办法：代入。
 
-逻辑里，一条定律对任何命题都成立；把一个具体的命题代进去，就得到它的一个实例。在程序里，就是给类型参数 @math{p} 填上一个具体的类型。直觉主义定律的实例，本来就能用 @racket[λ] 写出。经典定律不同：@racket[call/cc] 要对每一个 @math{p} 都管用，只好去捕获当前@tech{延续}。可要是 @math{p} 只是某一个具体的类型，手里也许就有别的办法。把几个具体的类型代进 DNE @math{¬¬p → p}，看看哪些要捕获，哪些不用。
+逻辑里，一条定律对任何命题都成立；把一个具体的命题代进去，就得到它的一个实例。在程序里，就是给类型参数 @math{p} 填上一个具体的类型。直觉主义定律的实例，本来就能用 @racket[λ] 写出。经典定律不同：@racket[call/cc] 要对每一个 @math{p} 都管用，只好去捕获当前@tech{延续}。可要是 @math{p} 只是某一个具体的类型，手里也许就有别的办法。把几个具体的类型代进 @tech[#:key "双重否定消除"]{DNE} @math{¬¬p → p}，看看哪些要捕获，哪些不用。
 
 @section[#:tag "01:program-type"]{代入 Byte}
 
@@ -30,7 +30,7 @@
 
 把等着出口的计算记作 @racket[program]，上面的做法就是 @racket[(λ (program) (call/cc program))]：它把当前@tech{延续}作为 @racket[exit] 交给 @racket[program]，并在这里接到退出码。
 
-所以程序是一个 @math{¬¬@ty{Byte}}：它等着计算终结处的那条@tech{延续}。真实的操作系统也是这样运行程序的：启动一个程序时，退出通道已经在那里了，就是 @racket[exit]，背后是 OS 提供的退出调用。程序交回退出码有两种方式：显式地调用 @racket[exit]，或者从 @racket[main] 返回；C 语言规定后者等于拿返回值调用 @racket[exit]，正是上面外层那个 @racket[(exit …)]。对程序内部，调用 @racket[exit] 不再返回；对外部，OS 接到了退出码。OS 承担的是外部运行环境的角色：提供出口，接收结果。@racket[exit] 在程序体里是交来的假设，在 @racket[(λ (exit) …)] 里则被绑定。把计算运行起来、在出口接收结果的整个过程，对应@xref["01:watershed"]{「分水岭」}里的 DNE；这个过程不是语言里的某个函数，是运行环境本身。和 @racket[call/cc] 的区别，在谁来提供这条@tech{延续}：多数语言本身只提供 @racket[exit]，由 OS 从外面交来，语言里什么也不用捕获；有了 @racket[call/cc]，没有 @racket[exit] 也能像上面那样自己捕获出来。
+所以程序是一个 @math{¬¬@ty{Byte}}：它等着计算终结处的那条@tech{延续}。真实的操作系统也是这样运行程序的：启动一个程序时，退出通道已经在那里了，就是 @racket[exit]，背后是 OS 提供的退出调用。程序交回退出码有两种方式：显式地调用 @racket[exit]，或者从 @racket[main] 返回；C 语言规定后者等于拿返回值调用 @racket[exit]，正是上面外层那个 @racket[(exit …)]。对程序内部，调用 @racket[exit] 不再返回；对外部，OS 接到了退出码。OS 承担的是外部运行环境的角色：提供出口，接收结果。@racket[exit] 在程序体里是交来的假设，在 @racket[(λ (exit) …)] 里则被绑定。把计算运行起来、在出口接收结果的整个过程，对应@xref["01:watershed"]{「分水岭」}里的 @tech[#:key "双重否定消除"]{DNE}；这个过程不是语言里的某个函数，是运行环境本身。和 @racket[call/cc] 的区别，在谁来提供这条@tech{延续}：多数语言本身只提供 @racket[exit]，由 OS 从外面交来，语言里什么也不用捕获；有了 @racket[call/cc]，没有 @racket[exit] 也能像上面那样自己捕获出来。
 
 @section[#:tag "01:neg-q"]{代入 ¬q}
 
@@ -51,9 +51,9 @@
     (kkkq kkq))
   kq)]
 
-交出去的 @racket[kq] 等一个 @racket[q]。等 @racket[q] 交来，手里就有了 @racket[q] 和 @racket[kkkq]。@racket[kkkq] 等的是一个 @math{¬¬q}，@racket[q] 还差两个否定；用一次 DNI，加上两层否定：@racket[kkq] 等一条否定 @math{q} 的@tech{延续} @racket[k]，正是 @math{¬¬q}，交给 @racket[kkkq]。只有 @racket[λ] 和函数调用，什么也没有捕获。
+交出去的 @racket[kq] 等一个 @racket[q]。等 @racket[q] 交来，手里就有了 @racket[q] 和 @racket[kkkq]。@racket[kkkq] 等的是一个 @math{¬¬q}，@racket[q] 还差两个否定；用一次 @tech[#:key "双重否定引入"]{DNI}，加上两层否定：@racket[kkq] 等一条否定 @math{q} 的@tech{延续} @racket[k]，正是 @math{¬¬q}，交给 @racket[kkkq]。只有 @racket[λ] 和函数调用，什么也没有捕获。
 
-试一试。用 @racket[let/cc] 拿到一条真正的@tech{延续} @racket[k]，照 DNI 的写法包成一个 @racket[kkkq]，交给 @racket[triple-negation] 取回一个 @math{¬q}，再把 @racket[q] 交给它：
+试一试。用 @racket[let/cc] 拿到一条真正的@tech{延续} @racket[k]，照 @tech[#:key "双重否定引入"]{DNI} 的写法包成一个 @racket[kkkq]，交给 @racket[triple-negation] 取回一个 @math{¬q}，再把 @racket[q] 交给它：
 
 @examples[#:eval ev #:label #f
 (define q 'hello)
@@ -62,7 +62,7 @@
   (let ([kq (triple-negation kkkq)])
     (kq q)))]
 
-@racket[q] 经取回的 @racket[kq] 交到了 @racket[let/cc] 返回的地方，一路是 @racket[(kq q)]、@racket[(kkkq kkq)]、@racket[(kkq k)]、@racket[(k q)]。取回的 @racket[kq] 和 @racket[k] 不是同一个值，行为却一样：先用 DNI 包一层，再用三重否定律取回，回到了原样。定义里 @racket[kkq] 的形参 @racket[k]，这次收到的也正是这个 @racket[k]。
+@racket[q] 经取回的 @racket[kq] 交到了 @racket[let/cc] 返回的地方，一路是 @racket[(kq q)]、@racket[(kkkq kkq)]、@racket[(kkq k)]、@racket[(k q)]。取回的 @racket[kq] 和 @racket[k] 不是同一个值，行为却一样：先用 @tech[#:key "双重否定引入"]{DNI} 包一层，再用三重否定律取回，回到了原样。定义里 @racket[kkq] 的形参 @racket[k]，这次收到的也正是这个 @racket[k]。
 
 @math{¬¬¬q → ¬q} 这条定律叫@defterm[#:en "law of triple negation"]{三重否定律}，是一条直觉主义定理。
 
@@ -76,18 +76,18 @@
 
 @itemlist[
   @item{@tech{矛盾律}：第 @math{n+1} 层与第 @math{n} 层相遇，得到 @math{⊥}。}
-  @item{DNI：加两层，从第 @math{n} 层升到第 @math{n+2} 层。}
-  @item{DNE：减两层，从第 @math{n+2} 层落到第 @math{n} 层。}
+  @item{@tech[#:key "双重否定引入"]{DNI}：加两层，从第 @math{n} 层升到第 @math{n+2} 层。}
+  @item{@tech[#:key "双重否定消除"]{DNE}：减两层，从第 @math{n+2} 层落到第 @math{n} 层。}
   @item{@tech{排中律}：交出相邻两层之一，第 @math{n} 层或第 @math{n+1} 层。}]
-以 @math{q} 为底，@racket[triple-negation] 从第 3 层减到第 1 层：第 0 层的 @racket[q] 用 DNI 升到第 2 层，正好与第 3 层的 @racket[kkkq] 相邻。
+以 @math{q} 为底，@racket[triple-negation] 从第 3 层减到第 1 层：第 0 层的 @racket[q] 用 @tech[#:key "双重否定引入"]{DNI} 升到第 2 层，正好与第 3 层的 @racket[kkkq] 相邻。
 
-接下来要比较的是，哪些层能互相推出，哪些不能。层数先带出一个规律。DNI、DNE 一次加减两层，不改变奇偶，@tech{矛盾律}却要一奇一偶。奇偶不同的两个值，把低的那个反复做 DNI，总能升到与另一个相邻，再调用，@racket[triple-negation] 就是这样做的。例如第 0 层与第 5 层：第 0 层用 DNI 升到第 2 层，再升到第 4 层，就与第 5 层相邻，交给它，得到 @math{⊥}。奇偶相同的两个，只靠 DNI、DNE 凑不成相邻。
+接下来要比较的是，哪些层能互相推出，哪些不能。层数先带出一个规律。@tech[#:key "双重否定引入"]{DNI}、@tech[#:key "双重否定消除"]{DNE} 一次加减两层，不改变奇偶，@tech{矛盾律}却要一奇一偶。奇偶不同的两个值，把低的那个反复做 @tech[#:key "双重否定引入"]{DNI}，总能升到与另一个相邻，再调用，@racket[triple-negation] 就是这样做的。例如第 0 层与第 5 层：第 0 层用 @tech[#:key "双重否定引入"]{DNI} 升到第 2 层，再升到第 4 层，就与第 5 层相邻，交给它，得到 @math{⊥}。奇偶相同的两个，只靠 @tech[#:key "双重否定引入"]{DNI}、@tech[#:key "双重否定消除"]{DNE} 凑不成相邻。
 
 回到@xref["01:watershed"]{「分水岭」}留下的问题：从 @math{¬¬p} 取出 @math{p}，非得凭空拿到一个@tech{延续}不可吗？不一定。@xref["01:program-type"]{「代入 Byte」}里，那条@tech{延续}由 OS 交来；@racket[triple-negation] 更省事，不需要另外交来一条 @math{¬q}，它交出的 @math{¬q}，用交进来的 @racket[kkkq] 就做成了。
 
 用层数说，区别在要交出的东西落在哪一层。落在第 1 层或更高，要交出的是一个函数，可以先交出去，等下一层的值来了再算。落到第 0 层，就得当场交出一个值，这时就没有对任何类型都适用的纯 @racket[λ] 写法了；要把计算真的跑起来，又不捕获，就得像运行程序那样，由外面交来一条@tech{延续}。
 
-落到第 0 层的那个值，常常只是要交给下一步。手里有一段等着@tech{延续}的计算 @racket[kkp]，在第 2 层；又有一条等着 @math{p} 的@tech{延续} @racket[kp]，在第 1 层。让它们相遇，有两条路：一条直接用@tech{矛盾律}，把 @racket[kp] 交给 @racket[kkp]；另一条先用 DNE 落到第 0 层，取出 @math{p}，再交给 @racket[kp]。DNE 用 @racket[call/cc] 写：
+落到第 0 层的那个值，常常只是要交给下一步。手里有一段等着@tech{延续}的计算 @racket[kkp]，在第 2 层；又有一条等着 @math{p} 的@tech{延续} @racket[kp]，在第 1 层。让它们相遇，有两条路：一条直接用@tech{矛盾律}，把 @racket[kp] 交给 @racket[kkp]；另一条先用 @tech[#:key "双重否定消除"]{DNE} 落到第 0 层，取出 @math{p}，再交给 @racket[kp]。@tech[#:key "双重否定消除"]{DNE} 用 @racket[call/cc] 写：
 
 @racketblock[
 (kkp kp)
@@ -125,21 +125,21 @@
 
 @margin-note{比较时，函数和@tech{延续}都只拿来调用。程序若用 @racket[continuation?] 分辨收到的是不是原生的@tech{延续}，或者借异常处理器这类动态环境区分两种调用，也能把两条路分开。}
 
-两边都守约，两条路就行为相同。所以，手里已经有 @racket[kp]，要做的只是把结果交给它，直接写 @racket[(kkp kp)] 就行，不必落到第 0 层。要对任意 @math{p}、任意一段 @racket[kkp]，只凭 @racket[kkp] 统一交出一个 @math{p}，这才是 DNE。
+两边都守约，两条路就行为相同。所以，手里已经有 @racket[kp]，要做的只是把结果交给它，直接写 @racket[(kkp kp)] 就行，不必落到第 0 层。要对任意 @math{p}、任意一段 @racket[kkp]，只凭 @racket[kkp] 统一交出一个 @math{p}，这才是 @tech[#:key "双重否定消除"]{DNE}。
 
 层数也照出了两种逻辑的分别。把能互相推出的层归为一类；这里按对任意底类型 @math{A} 都成立的互推来归类，不利用 @math{A} 的额外性质：
 
 @itemlist[
-  @item{经典逻辑里，DNI 加两层，DNE 减两层，相差两层的都能互推，一座塔只剩两类：偶数层，奇数层。}
-  @item{直觉主义逻辑里，DNE 一般不成立，但三重否定律能从第 3 层回到第 1 层；把其中的 @math{q} 换成 @math{¬A}，就从第 4 层回到第 2 层；依此类推。只有第 0 层一般回不去：那要用 DNE，@xref["01:watershed"]{「分水岭」}里试过，对任意类型写不出来。塔分成三类：第 0 层，奇数层，第 2 层起的偶数层。}]
+  @item{经典逻辑里，@tech[#:key "双重否定引入"]{DNI} 加两层，@tech[#:key "双重否定消除"]{DNE} 减两层，相差两层的都能互推，一座塔只剩两类：偶数层，奇数层。}
+  @item{直觉主义逻辑里，@tech[#:key "双重否定消除"]{DNE} 一般不成立，但三重否定律能从第 3 层回到第 1 层；把其中的 @math{q} 换成 @math{¬A}，就从第 4 层回到第 2 层；依此类推。只有第 0 层一般回不去：那要用 @tech[#:key "双重否定消除"]{DNE}，@xref["01:watershed"]{「分水岭」}里试过，对任意类型写不出来。塔分成三类：第 0 层，奇数层，第 2 层起的偶数层。}]
 最低的五层排出来：
 
 @tabular[#:style 'boxed #:row-properties '(bottom-border ())
   (list
    (list @elem{层} @elem{经典逻辑} @elem{直觉主义逻辑})
-   (list @elem{0} @elem{偶数层：与 2、4 层经 DNI、DNE 互推}
-         @elem{单独一类：DNI 升到第 2 层，一般不能落回})
-   (list @elem{1} @elem{奇数层} @elem{奇数层：DNI 升到第 3 层，三重否定律落回})
+   (list @elem{0} @elem{偶数层：与 2、4 层经 @tech[#:key "双重否定引入"]{DNI}、@tech[#:key "双重否定消除"]{DNE} 互推}
+         @elem{单独一类：@tech[#:key "双重否定引入"]{DNI} 升到第 2 层，一般不能落回})
+   (list @elem{1} @elem{奇数层} @elem{奇数层：@tech[#:key "双重否定引入"]{DNI} 升到第 3 层，三重否定律落回})
    (list @elem{2} @elem{偶数层} @elem{第 2 层起的偶数层：与第 4 层互推})
    (list @elem{3} @elem{奇数层} @elem{奇数层})
    (list @elem{4} @elem{偶数层} @elem{第 2 层起的偶数层：三重否定律落回第 2 层}))]

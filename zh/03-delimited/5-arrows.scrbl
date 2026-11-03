@@ -126,9 +126,9 @@
 (: anf:eval (∀ (a) (→ (¬ₐ¬ₐ a) a)))
 (define (anf:eval kₐkₐa) (kₐkₐa a->⊥ᵃ))]
 
-@racket[anf:eval] 的类型，外形还是 DNE。原来的 @racket[anf:eval] 也是这个外形，那里终点是 @math{⊥}，要交进去的@tech{终结延续} @math{¬a} 写不出来，只好借 @racket[raise] 和 handler。这里普通结果的类型和答案的类型都是 @math{a}，@tech{局部终结延续} @math{¬ₐa = a → a} 有现成的元素，就是 @racket[id]，不必借助宿主的跳转。
+@racket[anf:eval] 的类型，外形还是 @tech[#:key "双重否定消除"]{DNE}。原来的 @racket[anf:eval] 也是这个外形，那里终点是 @math{⊥}，要交进去的@tech{终结延续} @math{¬a} 写不出来，只好借 @racket[raise] 和 handler。这里普通结果的类型和答案的类型都是 @math{a}，@tech{局部终结延续} @math{¬ₐa = a → a} 有现成的元素，就是 @racket[id]，不必借助宿主的跳转。
 
-再看这个类型的结果 @math{a}。@tech{平凡表示}下，@math{a} 就是 @math{⊥ᵃ}，这段局部计算的空。值域是 @math{⊥ᵃ} 的箭头写成 @math{¬ₐ}，@racket[anf:eval] 也就是一条@tech{局部延续}，类型是 @math{¬ₐ(¬ₐ¬ₐa)}，三重@tech{局部否定}。@racket[a->⊥ᵃ] 是一条 @math{¬ₐa}，@racket[cps] 把 @racket[id] 提升成 DNI，@racket[cps:id]，把它用在 @racket[a->⊥ᵃ] 上，正好是这样一个元素：
+再看这个类型的结果 @math{a}。@tech{平凡表示}下，@math{a} 就是 @math{⊥ᵃ}，这段局部计算的空。值域是 @math{⊥ᵃ} 的箭头写成 @math{¬ₐ}，@racket[anf:eval] 也就是一条@tech{局部延续}，类型是 @math{¬ₐ(¬ₐ¬ₐa)}，三重@tech{局部否定}。@racket[a->⊥ᵃ] 是一条 @math{¬ₐa}，@racket[cps] 把 @racket[id] 提升成 @tech[#:key "双重否定引入"]{DNI}，@racket[cps:id]，把它用在 @racket[a->⊥ᵃ] 上，正好是这样一个元素：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define-type (¬ₐ¬ₐ¬ₐ p) (¬ₐ (¬ₐ¬ₐ p)))
@@ -139,7 +139,7 @@
 (: anf:eval (∀ (a) (¬ₐ¬ₐ¬ₐ a)))
 (define anf:eval (cps:id a->⊥ᵃ))]
 
-DNE 的外形，终点换成了答案，就成了三重否定，有一个只用 DNI 写成的元素。
+@tech[#:key "双重否定消除"]{DNE} 的外形，终点换成了答案，就成了三重否定，有一个只用 @tech[#:key "双重否定引入"]{DNI} 写成的元素。
 
 @racket[anf:eval] 本身是一条以 @math{a} 为@tech{基}的@tech{局部延续}，照 @racket[cps] 的第二种读法，提升出来的 @racket[anf:reset] 是 @math{¬ₐ@subscript{𝒦ₓ}(¬ₐ¬ₐa)}，@tech{基} @math{x} 任选。展开成普通的类型：
 

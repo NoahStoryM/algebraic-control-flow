@@ -172,9 +172,9 @@
    (list @elem{@math{(p → q) → (¬q → ¬p)}}
          @elem{@defterm[#:en "law of contraposition"]{逆否律}})
    (list @elem{@math{(p → q) → (p → ¬¬q)}}
-         @elem{DNI 的推广形式}))]
+         @elem{@tech[#:key "双重否定引入"]{DNI} 的推广形式}))]
 
-用在 @racket[id] 上，@racket[cps:id] 的类型就是 @math{p → ¬¬p}，也就是 DNI。@racket[flip] 的两行读法 @math{(¬q → ¬p) → (p → ¬¬q)} 和 @math{(p → ¬¬q) → (¬q → ¬p)}，也都是直觉主义定理。
+用在 @racket[id] 上，@racket[cps:id] 的类型就是 @math{p → ¬¬p}，也就是 @tech[#:key "双重否定引入"]{DNI}。@racket[flip] 的两行读法 @math{(¬q → ¬p) → (p → ¬¬q)} 和 @math{(p → ¬¬q) → (¬q → ¬p)}，也都是直觉主义定理。
 
 @margin-note{𝒟 取 direct style，直接风格：普通的函数本来就这样写。}
 

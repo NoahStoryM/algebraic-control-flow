@@ -162,9 +162,9 @@
 
 @section[#:tag "01:watershed"]{分水岭}
 
-@racket[cc] 对上的@tech{排中律}，@racket[call/cc] 对上的 DNE，逻辑课本说都只在@defterm[#:en "classical logic"]{经典逻辑}中成立。不承认它们，只承认构造出来的证明，就是@defterm[#:en "intuitionistic logic"]{直觉主义逻辑}。在引入 @racket[cc] 和 @racket[call/cc] 之前，我们用到的函数、积、联合、@math{⊤}、@math{⊥}，都没有越出它的范围。
+@racket[cc] 对上的@tech{排中律}，@racket[call/cc] 对上的 @tech[#:key "双重否定消除"]{DNE}，逻辑课本说都只在@defterm[#:en "classical logic"]{经典逻辑}中成立。不承认它们，只承认构造出来的证明，就是@defterm[#:en "intuitionistic logic"]{直觉主义逻辑}。在引入 @racket[cc] 和 @racket[call/cc] 之前，我们用到的函数、积、联合、@math{⊤}、@math{⊥}，都没有越出它的范围。
 
-这两条经典定律，各有一条与之相对的定律，在直觉主义逻辑里照样成立。@tech{排中律}说 @math{p} 与 @math{¬p} 至少有一个成立；说两者不能同时成立，就是@defterm[#:en "law of non-contradiction"]{矛盾律} @math{¬(¬p ∧ p)}。DNE 从 @math{¬¬p} 推出 @math{p}；箭头反过来，从 @math{p} 推出 @math{¬¬p}，就是@defterm[#:en "Double Negation Introduction" #:abbr "DNI"]{双重否定引入}。
+这两条经典定律，各有一条与之相对的定律，在直觉主义逻辑里照样成立。@tech{排中律}说 @math{p} 与 @math{¬p} 至少有一个成立；说两者不能同时成立，就是@defterm[#:en "law of non-contradiction"]{矛盾律} @math{¬(¬p ∧ p)}。@tech[#:key "双重否定消除"]{DNE} 从 @math{¬¬p} 推出 @math{p}；箭头反过来，从 @math{p} 推出 @math{¬¬p}，就是@defterm[#:en "Double Negation Introduction" #:abbr "DNI"]{双重否定引入}。
 
 成立的命题，照 @tech{Curry-Howard 对应}应该写得出程序。前面是从程序读出命题，这回反过来，从命题出发找程序。
 
@@ -176,13 +176,13 @@
 
 类型写成 @racket[(¬ (¬ p) p)]，正好照着 @math{¬(¬p ∧ p)} 读。这就是调用@tech{延续}。最后那版 @racket[mul] 里的 @racket[(return r)]，就是一次 @racket[apply-cont]。
 
-再看 DNI。给一个值 @racket[v]，要交出一个 @math{¬¬p}，也就是一个收下 @math{¬p}、结果为 @math{⊥} 的函数。理由和刚才一样，只能写成 @racket[(λ (kv) (kv v))]。做的还是调用，只是值先到，@tech{延续}后到。从 @racket[v] 得到这个函数，就是 @racket[(curryr apply-cont)]：先给定 @racket[apply-cont] 的第二个参数。
+再看 @tech[#:key "双重否定引入"]{DNI}。给一个值 @racket[v]，要交出一个 @math{¬¬p}，也就是一个收下 @math{¬p}、结果为 @math{⊥} 的函数。理由和刚才一样，只能写成 @racket[(λ (kv) (kv v))]。做的还是调用，只是值先到，@tech{延续}后到。从 @racket[v] 得到这个函数，就是 @racket[(curryr apply-cont)]：先给定 @racket[apply-cont] 的第二个参数。
 
 两个程序用到的@tech{延续}都是交进来的。这不是巧合：@xref["01:from-bottom"]{「读成命题」}里试过，只用 @racket[λ] 凭空写不出 @math{@ty{Real} → ⊥} 这样的否定，前面见到的@tech{延续}，都是控制操作符在运行时捕获出来的。结论里的每样东西都由交到手里的东西做成，这样的程序是@defterm[#:en "constructive"]{构造性}的。
 
 
 
-用同样的办法试经典的两条。DNE 给一个等@tech{延续}的函数 @racket[kkp]，要交出一个 @math{p}。能对 @racket[kkp] 做的只有调用它，调用它却要一个 @math{¬p} 类型的 @racket[kp]：有了 @racket[kp]，调用 @racket[kkp] 得到 @math{⊥}，再交给 @racket[absurd] 就能当作 @math{p}。可是没有人交来 @racket[kp]，自己又构造不出，也就无法调用 @racket[kkp]。@tech{排中律}更彻底：什么也没给，要交出一个 @math{p} 或一个 @math{¬p}，两样都写不出。
+用同样的办法试经典的两条。@tech[#:key "双重否定消除"]{DNE} 给一个等@tech{延续}的函数 @racket[kkp]，要交出一个 @math{p}。能对 @racket[kkp] 做的只有调用它，调用它却要一个 @math{¬p} 类型的 @racket[kp]：有了 @racket[kp]，调用 @racket[kkp] 得到 @math{⊥}，再交给 @racket[absurd] 就能当作 @math{p}。可是没有人交来 @racket[kp]，自己又构造不出，也就无法调用 @racket[kkp]。@tech{排中律}更彻底：什么也没给，要交出一个 @math{p} 或一个 @math{¬p}，两样都写不出。
 
 @racket[call/cc] 和 @racket[cc] 补上的，正是这个缺口：它们凭空提供了一个@tech{延续}，就是当前@tech{延续}。@racket[call/cc] 把它交给等着的函数，从 @math{¬¬p} 得到 @math{p}。@racket[cc] 干脆把它交到我们手里；以后可能经由它跳回来，让 @racket[(cc)] 再返回一次，所以交出的东西得容得下两种情况：第一次是@tech{延续}，跳回来时是值，于是成了 @math{p ∨ ¬p}。凭空提供一个@tech{延续}，这是经典的。
 
@@ -195,9 +195,9 @@
          @elem{@bold{@tech{矛盾律}}：@racket[apply-cont]}
          @elem{@bold{@tech{排中律}}：@racket[cc]})
    (list @elem{@math{p} 与 @math{¬¬p}}
-         @elem{@bold{DNI}：@racket[(curryr apply-cont)]}
-         @elem{@bold{DNE}：@racket[call/cc]}))]
+         @elem{@bold{@tech[#:key "双重否定引入"]{DNI}}：@racket[(curryr apply-cont)]}
+         @elem{@bold{@tech[#:key "双重否定消除"]{DNE}}：@racket[call/cc]}))]
 
-左边一列只差参数次序，@tech{矛盾律}和 DNI 互相推得出。右边一列都是提供当前@tech{延续}：@racket[cc] 可以由 @racket[call/cc] 写出，见@xref["01:label-from-call-cc"]{「从 call/cc 定义标签」}；反过来，@xref["01:call-cc"]{用 @racket[cc] 写出的 @racket[call/cc]} 先调用 @racket[(cc)]，拿到配着 @racket[0] 的值就交出，拿到配着 @racket[1] 的@tech{延续}就交给 @racket[proc]，这正是由@tech{排中律}推出 DNE。作为对任意类型都成立的原则，两者互相推得出。
+左边一列只差参数次序，@tech{矛盾律}和 @tech[#:key "双重否定引入"]{DNI} 互相推得出。右边一列都是提供当前@tech{延续}：@racket[cc] 可以由 @racket[call/cc] 写出，见@xref["01:label-from-call-cc"]{「从 call/cc 定义标签」}；反过来，@xref["01:call-cc"]{用 @racket[cc] 写出的 @racket[call/cc]} 先调用 @racket[(cc)]，拿到配着 @racket[0] 的值就交出，拿到配着 @racket[1] 的@tech{延续}就交给 @racket[proc]，这正是由@tech{排中律}推出 @tech[#:key "双重否定消除"]{DNE}。作为对任意类型都成立的原则，两者互相推得出。
 
 可是，从 @math{¬¬p} 取出 @math{p}，非得凭空拿到一个@tech{延续}不可吗？
