@@ -486,3 +486,26 @@
   ;; 三重否定律：把 DNI 升两层的延续降回来，行为和原来的一样，什么也不捕获
   (check-equal? (let/cc k (define (kkkq kkq) (kkq k)) (let ([kq (tn:triple-negation kkkq)]) (kq 'hello))) 'hello)
   (check-equal? ((tn:triple-negation (λ (kkq) (kkq (λ (q) (list 'got q))))) 7) '(got 7)))
+
+;; 「否定塔」：两种配对。守约时行为相同，kkp 或 kp 正常返回时就分开。
+(module pairing racket
+  (provide (all-defined-out))
+  (define (kkp k) (k 5))
+  (define (bad k) 7))
+
+(module+ test
+  (require (prefix-in pair: (submod ".." pairing)))
+  (check-equal? (+ 100 (let/cc kp (+ 10 (pair:kkp kp)))) 105)
+  (check-equal? (+ 100 (let/cc kp (+ 10 (let ([p (call/cc pair:kkp)]) (kp p))))) 105)
+  (check-equal? (+ 100 (let/cc kp (+ 10 (pair:bad kp)))) 117)
+  (check-equal? (+ 100 (let/cc kp (+ 10 (let ([p (call/cc pair:bad)]) (kp p))))) 107)
+  (check-equal? (let/cc out
+                  (define (kkp k) (k 1) (out 9))
+                  (define (kp v) v)
+                  (kkp kp))
+                9)
+  (check-equal? (let/cc out
+                  (define (kkp k) (k 1) (out 9))
+                  (define (kp v) v)
+                  (let ([p (call/cc kkp)]) (kp p)))
+                1))

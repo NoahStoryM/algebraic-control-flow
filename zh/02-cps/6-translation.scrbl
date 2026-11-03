@@ -139,7 +139,7 @@
 = (kkkkp (cps:id kp))
 = (kkkkp (λ (kkp) (kkp kp)))]
 
-@racket[call/cc] 不见了，剩下的只用 @racket[λ] 和函数调用：外层的计算交来一段 @racket[kkp]，再把同一条 @racket[kp] 交给它。从第 4 层到第 2 层，消去两层而不落底，正是@xref["02:count-k"]{「数一数 k」}里的 @racket[(neg cps:id)]，@tech{三重否定律}用在 @math{¬p} 上。
+@racket[call/cc] 不见了，剩下的只用 @racket[λ] 和函数调用：外层的计算交来一段 @racket[kkp]，再把同一条 @racket[kp] 交给它。从第 4 层到第 2 层，消去两层而不落底，正是@xref["02:same-arrow"]{「同一支箭头」}里的 @racket[(neg cps:id)]，@tech{三重否定律}用在 @math{¬p} 上。
 
 @racket[neg:id] 就是 @racket[id]，所以 @racket[cps:id] 也就是 @racket[(cps (neg id))]，@racket[(neg cps:id)] 是从 @racket[id] 出发，依次用 @racket[neg]、@racket[cps]、@racket[neg] 得到的，一路都不碰 @racket[call/cc]。
 

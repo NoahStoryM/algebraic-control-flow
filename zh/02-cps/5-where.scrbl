@@ -101,16 +101,14 @@
 = (kq (call/cc (cps:f p)))
 ≈ ((cps:f p) kq)]
 
-前两步照定义展开。最后一步换成了@defsym["a ≈ b" "行为相同，前提比 = 多，见「三种写法」的旁注"] @racket[≈]：它说的是行为相同，比 @racket[=] 弱，只在旁注那几条约定下成立。用的是 @racket[call/cc] 的一条规律：
+前两步照定义展开。最后一步用的是@xref["01:layers"]{「否定塔」}里两种配对的规律：手里有 @racket[kkp] 和 @racket[kp]，先用 @racket[call/cc] 取出 @math{p} 再交给 @racket[kp]，和直接把 @racket[kp] 交给 @racket[kkp]，行为相同，只要两边都守 @math{⊥} 的约定，调用以后不正常返回。这种行为相同，记作@defsym["a ≈ b" "行为相同：沿用「否定塔」两种配对的约定，再加「三种写法」旁注里的两条"] @racket[≈]，比 @racket[=] 弱：
 
 @racketblock[
 #,(hspace 2)(let ([p (call/cc kkp)]) (kp p))
 = (kp (call/cc kkp))
 ≈ (kkp kp)]
 
-@margin-note{这两段推导里的 @racket[=] 是照定义展开，用到的前提只有「两层参数之间不做别的事」；@racket[≈] 说的是行为相同，还需要下面的控制约定。@racket[kp] 和 @racket[kkp] 都要遵守结果为 @math{⊥} 的约定，调用以后不向当前调用处正常返回：@racket[kp] 若正常返回，捕获的@tech{延续}还会接着做 @racket[(kp p)] 之后的事；@racket[kkp] 若正常交回一个值，左边会把它交给 @racket[kp]，右边却直接返回。@racket[kkp] 也不能借助异常处理器这类动态的控制环境，否则直接调用与经过捕获的@tech{延续}，所处的环境不同。函数和@tech{延续}只通过调用来使用。这些约定也适用于交进来的各层函数参数和比较时的调用环境。在这些约定下，行为相同也包括把它们放进本章的调用、绑定和复合中使用。}
-
-@racket[call/cc] 捕获的，是收到 @racket[p] 以后交给 @racket[kp] 这件剩下的工作。@racket[kp] 若是一条真正的@tech{延续}，交出去就不再回来，捕获到的@tech{延续}和 @racket[kp] 行为相同。把它交给 @racket[kkp]，和直接把 @racket[kp] 交给 @racket[kkp]，行为相同。
+@margin-note{@racket[=] 是照定义展开，用到的前提只有「两层参数之间不做别的事」。@racket[≈] 沿用「否定塔」的配对约定，这一章再加两条：各层函数参数和比较时的调用环境也都守约；两层参数之间只造函数，第一层若打印、跳出或不终止，推迟到第二层才做就看得出来。因此下文也可以在本章的调用、绑定和复合中作这样的替换。}
 
 
 两个方向都回到原处：@tech{宿主箭头}经 @racket[cps] 变成 @tech{CPS 箭头}，@tech{CPS 箭头}经 @racket[uncps] 变回@tech{宿主箭头}，来回一趟，行为不变。@tech{逆否箭头}和 @tech{CPS 箭头}之间，@racket[flip] 来回一趟，照定义就回到原样。把这几种转换画在一起，箭头的种类记在顶点上（𝒟、𝒰、𝒦 分别指@tech{宿主箭头}、@tech{逆否箭头}、@tech{CPS 箭头}），转换标在边上，就是一张@defterm[#:en "diagram"]{图表}：
@@ -143,37 +141,24 @@ neg          uncps
 
 在 @racket[≈] 的意义下，三种写法是@defterm[#:en "isomorphic"]{同构}的：同一组箭头的三种写法。到这里，嵌入语言写出的箭头放得回宿主，放回去行为不变；可放回去要靠宿主的 @racket[call/cc]。三种写法互相转换不丢行为，以后在哪种写法里推导都行，推完再搬回来。
 
-@section[#:tag "02:count-k"]{数一数 k}
-
-名字里的 @racket[k] 一直在数否定的层数，@xref["01:layers"]{「否定塔」}数过：@racket[kv] 等 @racket[v]，@racket[kkv] 等 @racket[kv]，多一层的正好接收少一层的。那里的几条规则，在这一章里都有了现成的写法。把前面这些箭头换回层数来看，哪一步越过了第 0 层，一数就知道。
-
-DNI 加两层，在这里就是 @racket[cps:id]：收下 @racket[p]，等一条 @racket[kp] 来，再把 @racket[p] 交给它。@xref["02:cps"]{「延续与 CPS」}开头那串等式，把 @racket[(k e)] 改写成 @racket[((λ (k) (k e)) (λ (v) b))]，做的就是这一步。交来的若正是 @racket[(cps:id p)]，把 @racket[kp] 交给它，照定义一步就回到原处：
-
-@racketblock[
-#,(hspace 2)(let ([kkp (cps:id p)]) (kkp kp))
-= (kp p)]
-
-手里的 @racket[kkp] 若是随便一段计算，就不能这样拆开。@xref["02:three-forms"]{「三种写法」}那条规律倒过来读，从 @racket[(kkp kp)] 走到 @racket[(kp p)]，中间要 @racket[call/cc]，也就是 DNE，减两层，落到第 0 层：
-
-@racketblock[
-#,(hspace 2)(kkp kp)
-≈ (kp (call/cc kkp))
-= (let ([p (call/cc kkp)]) (kp p))]
-
-这一步用的是那里的 @racket[≈]，前提也照样要。
-
-减两层而不落到第 0 层，用@tech{三重否定律}就够了，不必 @racket[call/cc]。它在这里也有现成的写法，就是 DNI 的逆否 @racket[(neg cps:id)]：
-
-@racketblock[
-(((neg cps:id) kkkp) p)  =  (kkkp (cps:id p))]
-
-收下第 3 层的 @racket[kkkp]，交出第 1 层：等 @racket[p] 来了，把它升两层交给 @racket[kkkp]，和@xref["01:neg-q"]{「代入 ¬q」}里的 @racket[triple-negation] 做的一样。第 0 层仍是例外：对任意类型，没有纯的写法落到那里。
-
 @section[#:tag "02:same-arrow"]{同一支箭头}
 
 @xref["02:clavius"]{「Clavius 律」}末尾问过：@racket[cps:call/cc] 还算不算原来的 @racket[call/cc]？@racket[cps:call/cc] 是整条定律的翻译；要和它比较，先得知道原来的 @racket[call/cc] 自己搬到 @tech{CPS 箭头}上是什么。@racket[cps:car] 就是 @racket[(cps car)]；@racket[cps:call/cc] 却不是 @racket[(cps call/cc)]：照名字的约定，它类型里的箭头全是 @math{→@subscript{𝒦}}，@racket[proc] 也换成了新的箭头，整条 @tech{Clavius 律}换写了一遍。那 @racket[(cps call/cc)] 和 @racket[(neg call/cc)] 又是什么？
 
 不换写定律，只把箭头搬过去。宿主的 @racket[call/cc] 照 DNE 来读，是一支@tech{宿主箭头} @math{¬¬p →@subscript{𝒟} p}：收下第 2 层的 @racket[kkp]，交出第 0 层的值。
+
+用@xref["01:layers"]{「否定塔」}的层数看，那里的几条规则，这一章都有了现成的写法。DNI 加两层，就是 @racket[cps:id]：收下 @racket[p]，等一条 @racket[kp] 来，再把 @racket[p] 交给它。交来的若正是 @racket[(cps:id p)]，把 @racket[kp] 交给它，照定义一步就回到原处：
+
+@racketblock[
+#,(hspace 2)(let ([kkp (cps:id p)]) (kkp kp))
+= (kp p)]
+
+@tech{三重否定律}从第 3 层减到第 1 层，不必 @racket[call/cc]，就是 DNI 的逆否 @racket[(neg cps:id)]，和@xref["01:neg-q"]{「代入 ¬q」}里的 @racket[triple-negation] 做的一样：
+
+@racketblock[
+(((neg cps:id) kkkp) p)  =  (kkkp (cps:id p))]
+
+DNE 从第 2 层落到第 0 层，要 @racket[call/cc]；可手里的 @racket[kkp] 若只是要交给一条 @racket[kp]，「否定塔」的两种配对说，不必落到第 0 层，直接配对就行。
 
 先看 @tech{CPS 箭头}。交给 @racket[(cps call/cc)] 一段 @racket[kkp] 和@tech{延续} @racket[kp]，用@xref["02:three-forms"]{「三种写法」}那条规律：
 

@@ -87,6 +87,46 @@
 
 用层数说，区别在要交出的东西落在哪一层。落在第 1 层或更高，要交出的是一个函数，可以先交出去，等下一层的值来了再算。落到第 0 层，就得当场交出一个值，这时就没有对任何类型都适用的纯 @racket[λ] 写法了；要把计算真的跑起来，又不捕获，就得像运行程序那样，由外面交来一条@tech{延续}。
 
+落到第 0 层的那个值，常常只是要交给下一步。手里有一段等着@tech{延续}的计算 @racket[kkp]，在第 2 层；又有一条等着 @math{p} 的@tech{延续} @racket[kp]，在第 1 层。让它们相遇，有两条路：一条直接用@tech{矛盾律}，把 @racket[kp] 交给 @racket[kkp]；另一条先用 DNE 落到第 0 层，取出 @math{p}，再交给 @racket[kp]。DNE 用 @racket[call/cc] 写：
+
+@racketblock[
+(kkp kp)
+(let ([p (call/cc kkp)]) (kp p))]
+
+两条路走到同一个地方吗？拿一个具体的 @racket[kkp] 试，@racket[kp] 用 @racket[let/cc] 捕获。外面的 @racket[(+ 10 …)]、@racket[(+ 100 …)] 让跳没跳走看得见：
+
+@examples[#:eval ev #:label #f
+(define (kkp k) (k 5))
+(+ 100 (let/cc kp (+ 10 (kkp kp))))
+(+ 100 (let/cc kp (+ 10 (let ([p (call/cc kkp)]) (kp p)))))]
+
+两行都是 @racket[105]：@racket[5] 交给 @racket[kp]，跳回 @racket[let/cc] 返回的地方，加十那一步跳过了。第二行里，@racket[call/cc] 捕获的是「拿到 @math{p}，交给 @racket[kp]」这件事；@racket[kp] 是一条真正的@tech{延续}，交出去就不再回来，所以捕获到的这一条，和 @racket[kp] 去的是同一个地方。交给 @racket[kkp] 的是它还是 @racket[kp]，@racket[kkp] 分不出来。@xref["01:call-cc-types"]{「call/cc 的几种类型」}解释 @racket[proc] 正常返回为什么等于原地调用 @racket[k]，用的也是这个道理。
+
+这要两边都守 @math{⊥} 的约定，调用以后不向调用处正常返回。@racket[kkp] 的类型是 @math{¬¬p}，换一个正常返回的，两条路就分开了：
+
+@examples[#:eval ev #:label #f
+(define (bad k) 7)
+(+ 100 (let/cc kp (+ 10 (bad kp))))
+(+ 100 (let/cc kp (+ 10 (let ([p (call/cc bad)]) (kp p)))))]
+
+第一行里，@racket[bad] 返回的 @racket[7] 回到调用处，接着加十；第二行里，这个 @racket[7] 落在 @racket[call/cc] 那里，成了 @math{p}，交给 @racket[kp]，跳走了。@racket[kp] 也一样，它的类型是 @math{¬p}；换成会返回的普通函数，两条路也会分开：
+
+@examples[#:eval ev #:label #f
+(let/cc out
+  (define (kkp k) (k 1) (out 9))
+  (define (kp v) v)
+  (kkp kp))
+(let/cc out
+  (define (kkp k) (k 1) (out 9))
+  (define (kp v) v)
+  (let ([p (call/cc kkp)]) (kp p)))]
+
+这个 @racket[kkp] 两边都不正常返回。直接把 @racket[kp] 交给它，@racket[(kp 1)] 返回了，@racket[kkp] 接着走到 @racket[(out 9)]；交给它捕获的那一条，@racket[(k 1)] 就离开了 @racket[kkp]，剩下的 @racket[(kp 1)] 交出 @racket[1]。
+
+@margin-note{比较时，函数和@tech{延续}都只拿来调用。程序若用 @racket[continuation?] 分辨收到的是不是原生的@tech{延续}，或者借异常处理器这类动态环境区分两种调用，也能把两条路分开。}
+
+两边都守约，两条路就行为相同。所以，手里已经有 @racket[kp]，要做的只是把结果交给它，直接写 @racket[(kkp kp)] 就行，不必落到第 0 层。要对任意 @math{p}、任意一段 @racket[kkp]，只凭 @racket[kkp] 统一交出一个 @math{p}，这才是 DNE。
+
 层数也照出了两种逻辑的分别。把能互相推出的层归为一类；这里按对任意底类型 @math{A} 都成立的互推来归类，不利用 @math{A} 的额外性质：
 
 @itemlist[
