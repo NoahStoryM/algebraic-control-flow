@@ -14,7 +14,7 @@
 
 @section[#:tag "03:a-translation"]{A-翻译}
 
-对本段作为原子的普通类型 @math{p}（如 @ty{Real}、@ty{Bool}），这个变化可以写成 @math{pᵃ = p ∨ a}：普通的结果，或者提前到来的答案。@math{⊥} 没有普通的元素，@math{⊥ᵃ = ⊥ ∨ a} 就只剩答案那一支，打上@tech{标记}以后就是 @racket[(Ans a)]。整个类型照三条规则翻译：作为原子的普通类型 @math{p} 译作 @math{p ∨ a}；@math{⊥} 译作 @math{⊥ᵃ}，也就是只剩答案那一支；箭头按结构译，@math{(p → q)ᵃ = pᵃ → qᵃ}。比如 @math{@ty{Real} → @ty{Bool}} 译成 @math{(@ty{Real} ∨ a) → (@ty{Bool} ∨ a)}。这种以答案类型 @math{a} 为参数的翻译，叫作@defterm[#:en "A-translation"]{A-翻译}。
+@defsym["pᵃ" "A-翻译：原子类型 p 之外，再留一支给答案 a：p ∨ a"]@xref["03:two-sides"]{「边界的两侧」}里的 @math{@ty{Real}ᵃ} 可以推广。对作为原子的普通类型 @math{p}（如 @ty{Real}、@ty{Bool}），这个变化写成 @math{pᵃ = p ∨ a}：普通的结果，或者提前到来的答案。@math{⊥} 没有普通的元素，@math{⊥ᵃ = ⊥ ∨ a} 就只剩答案那一支，打上@tech{标记}以后就是 @racket[(Ans a)]。整个类型照三条规则翻译：作为原子的普通类型 @math{p} 译作 @math{p ∨ a}；@math{⊥} 译作 @math{⊥ᵃ}，也就是只剩答案那一支；箭头按结构译，@math{(p → q)ᵃ = pᵃ → qᵃ}。比如 @math{@ty{Real} → @ty{Bool}} 译成 @math{(@ty{Real} ∨ a) → (@ty{Bool} ∨ a)}。这种以答案类型 @math{a} 为参数的翻译，叫作@defterm[#:en "A-translation"]{A-翻译}。
 
 @xref["02:cps"]{「延续与 CPS」}以后，一段结果类型为 @math{p} 的计算，编码成双重否定 @math{(p → ⊥) → ⊥}，@tech{否定翻译}给类型裹上的也是这两层否定。对它做 @tech{A-翻译}，@math{p} 变成 @math{pᵃ}，@math{⊥} 变成 @math{⊥ᵃ}，两支箭头照结构译：
 
@@ -51,7 +51,7 @@
 
 从不改变的参数，不必当参数传。去掉 @racket[iₐ]，把 @racket[(iₐ r)] 直接写成 @racket[(a->⊥ᵃ r)]，剩下的就是@xref["03:local-k"]{「局部延续」}里的 @racket[loop/kₐ]。翻译以后要两条@tech{延续}，这一章的代码却一直只传一条，原因就在这里：另一条是固定的。它在一段局部计算里不变；@racket[anf:reset] 开启新的一段局部计算，那一段就有它自己的这一条，值也是 @racket[id]，接住的却是新边界里的答案。
 
-这一步是把 @racket[iₐ] 固定成 @racket[a->⊥ᵃ]，不是把两种写法说成一样：要是交进来的 @racket[iₐ] 真会变，不同的计算在这里可能被看成同一个。这一章的局部计算里，交进来的始终是那一个，所以可以这样做。
+这一步是把 @racket[iₐ] 固定成 @racket[a->⊥ᵃ]，是一次特化，不是说两种写法一般都一样：一段计算要是会收到别的 @racket[iₐ]，比如把答案交给另一个处理函数，去掉这个参数就可能改变它的行为。这一章的局部计算里，交进来的始终是那一个，所以可以这样做。
 
 计算于是只等着 @math{kₐ : p → ⊥ᵃ}，类型成了 @math{(p → ⊥ᵃ) → ⊥ᵃ}。再取已经用过的@tech{平凡表示} @math{⊥ᵃ = a}，就得到 @math{(p → a) → a = ¬ₐ¬ₐp}，正是这一章用的局部编码。两条路分别落在 @racket[cps] 和 @racket[cps*] 上：@racket[cps] 把结果交给当前的@tech{延续}；@racket[cps*] 丢掉当前的@tech{延续}，改用手里存着的那一条。@racket[cps:abort] 就是 @racket[(cps* a->⊥ᵃ)]，把值交给被省掉的那条@tech{局部终结延续}。
 

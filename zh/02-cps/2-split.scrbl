@@ -73,7 +73,7 @@ neg  =  (∘ flip cps)]
 
 @racket[neg] 的类型只说它在@tech{延续}类型之间映射。@math{¬@ty{Natural}} 里装的是一条条具体的@tech{延续}；一步计算，怎样把其中两条联系起来？
 
-回头看@xref["02:cps"]{「延续与 CPS」}里 @racket[(fact/k 3 k)] 的展开。每递归一层，新的@tech{延续}都是在旧的前面复合一次乘法：@racket[k] 换成 @racket[(∘ k mul3)]，再换成 @racket[(∘ k mul3 mul2)]。收一条@tech{延续}，在它前面复合一个函数，交出另一条@tech{延续}，这正是 @racket[neg] 做的事：@racket[(neg f)] 收到等 @math{q} 的@tech{延续}，交出等 @math{p} 的@tech{延续}。照这个意思重写 @racket[neg]，得到的和前面的定义是同一个函数，只是可变参数交给 @racket[∘] 去处理：
+回头看@xref["02:cps"]{「延续与 CPS」}里 @racket[(fact/k 3 k)] 的展开，用的是会构造乘法闭包链的第一版。每递归一层，新的@tech{延续}都是在旧的前面复合一次乘法：@racket[k] 换成 @racket[(∘ k mul3)]，再换成 @racket[(∘ k mul3 mul2)]。收一条@tech{延续}，在它前面复合一个函数，交出另一条@tech{延续}，这正是 @racket[neg] 做的事：@racket[(neg f)] 收到等 @math{q} 的@tech{延续}，交出等 @math{p} 的@tech{延续}。照这个意思重写 @racket[neg]，得到的和前面的定义是同一个函数，只是可变参数交给 @racket[∘] 去处理：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define ((neg f) kq) (∘ kq f))]
@@ -131,7 +131,7 @@ k2  =  (∘ k3 mul3)  =  ((neg mul3) k3)]
 (define ((cps:call/cc cps:proc) kp) ...)
 (define ((neg:call/cc kp) neg:proc) ...)]
 
-@racket[kp] 就是当前@tech{延续}，要交给 @racket[proc]。可 @racket[proc] 照哪种写法写成，它里面的每一次函数调用就都守哪种写法的规矩，调用交给它的@tech{延续}也不例外。@racket[cps:proc] 里调用的函数都先收值、再收@tech{延续}，交给它的@tech{延续}也得这样调用，所以给它的是 @racket[(cps kp)]，记作 @racket[cps:kp]；@racket[neg:proc] 照 @racket[neg] 的写法，给它的是 @racket[(neg kp)]，记作 @racket[neg:kp]。@racket[neg:proc] 自己也照 @racket[neg] 的写法：先收结果的@tech{延续}，也就是原样的 @racket[kp]；再收输入，也就是提升过的 @racket[neg:kp]。两个定义写完整：
+@racket[kp] 就是当前@tech{延续}，要交给 @racket[proc]。可 @racket[proc] 照哪种写法写成，它里面的每一次函数调用就都守哪种写法的规矩，调用交给它的@tech{延续}也不例外。@racket[cps:proc] 里调用的函数都先收值、再收@tech{延续}，交给它的@tech{延续}也得这样调用，所以给它的是 @racket[(cps kp)]，记作 @racket[cps:kp]；@racket[neg:proc] 照 @racket[neg] 的写法，给它的是 @racket[(neg kp)]，记作 @racket[neg:kp]。@racket[kp] 自己落在 @math{⊥} 上，@racket[(cps kp)] 和 @racket[(neg kp)] 都会多收一条等着 @math{⊥} 的@tech{延续}：@racket[kp] 不回来，这条@tech{延续}轮不到。@racket[neg:proc] 自己也照 @racket[neg] 的写法：先收结果的@tech{延续}，也就是原样的 @racket[kp]；再收输入，也就是提升过的 @racket[neg:kp]。两个定义写完整：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define ((cps:call/cc cps:proc) kp) ((cps:proc (cps kp)) kp))
@@ -155,7 +155,7 @@ k2  =  (∘ k3 mul3)  =  ((neg mul3) k3)]
 
 结果是 @racket[11]，不是 @racket[12]。@racket[cps:k] 是提升过的 @racket[kp]，@racket[(cps:k 10)] 收到手写的那个@tech{延续}以后，先算 @racket[(kp 10)]：外面那一步加 1，然后是@tech{终结延续}。@racket[kp] 不回来：在这里，它把结果交给 @racket[a->⊥]，由它 @racket[raise] 出去。等它结果的那个 @racket[λ]，连同 @racket[cps:proc2] 里排在后面的那一步加 1，再也轮不到。这正是 @racket[call/cc] 的行为：调用交出去的@tech{延续}，就是丢下手头的工作，回到 @racket[call/cc] 之后。
 
-@bold{练习}：用 @racket[neg:call/cc] 把这两个例子各跑一遍，结果仍是 @racket[7] 和 @racket[11]。提示：@racket[neg] 的写法先收@tech{延续}，再收输入；外面那一步加 1，用 @racket[(neg add1)] 接在@tech{终结延续}前面；@racket[(neg kp)] 先收的是一条 @math{¬⊥} 的@tech{延续}：@racket[kp] 不返回，这条@tech{延续}轮不到。
+@bold{练习}：用 @racket[neg:call/cc] 把这两个例子各跑一遍，结果仍是 @racket[7] 和 @racket[11]。提示：@racket[neg] 的写法先收@tech{延续}，再收输入；外面那一步加 1，用 @racket[(neg add1)] 接在@tech{终结延续}前面。
 
 这么短的两个例子，@tech{延续}却得一个个手写：外面的加 1 一个，@racket[cps:proc2] 里又一个。@xref["02:first-class-control"]{「一等控制」}那句抱怨，到这里更重了：每个@tech{延续}都得亲手写。
 

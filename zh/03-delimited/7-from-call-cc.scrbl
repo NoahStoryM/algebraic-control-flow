@@ -2,13 +2,13 @@
 
 @title[#:tag "03:7-from-call-cc"]{用 call/cc 造定界延续}
 
-@xref["03:meta"]{「元延续」}把@tech{延续}拆成两段：@tech{元延续} ∘ @tech{局部延续}。编码里，@tech{局部延续}是显式的参数，@tech{元延续}藏在宿主的栈上。反过来，把@tech{元延续}从栈上请出来，放进一个变量。
+@xref["03:meta"]{「元延续」}把@tech{延续}拆成两段：@tech{元延续} ∘ @tech{局部延续}。编码里，@tech{局部延续}是显式的参数，@tech{元延续}藏在宿主的栈上。反过来，把@tech{元延续}从栈上请出来，放进一个变量。这一章剩下的部分，以宿主的 @racket[call/cc] 和 @racket[set!] 为原语，重新造出 @racket[reset]、@racket[abort]、@racket[call/lc] 和 @racket[shift]。
 
 @(define ev (make-acf-eval))
 
 @section[#:tag "03:meta-k"]{元延续成了变量}
 
-@racket[abort] 就是当前的@tech{元延续}。那就把@tech{元延续}存进一个变量，让 @racket[abort] 调用它：
+@racket[abort] 把值交给当前的@tech{元延续}。那就把@tech{元延续}存进一个变量，让 @racket[abort] 调用它：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define meta-k exit)

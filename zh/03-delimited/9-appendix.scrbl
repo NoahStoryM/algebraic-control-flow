@@ -38,44 +38,39 @@
 
 
 ;;; 以 a 为基的两种箭头
-;; ¬ 的下标是落点，箭头的下标是基；¬ 后面没有下标就落在全局的 ⊥ 上
+;; 箭头的下标是基；交给程序的箭头，落点直接写出：⊥ᵃ 或全局的 ⊥
 
 (define-type (→𝒰ₐ p ... q) (← (¬ₐ p ...) (¬ₐ q)))
 (define-type (→𝒦ₐ p ... q) (→ p ... (¬ₐ¬ₐ q)))
 
-(define-type (¬ₐ𝒰ₓ p ...) (→𝒰ₓ p ... ⊥ᵃ))
-(define-type (¬ₐ𝒦ₓ p ...) (→𝒦ₓ p ... ⊥ᵃ))
-(define-type (¬𝒰ₐ  p ...) (→𝒰ₐ p ... ⊥))
-(define-type (¬𝒦ₐ  p ...) (→𝒦ₐ p ... ⊥))
-
-(: neg (∀ (p q a x) (case→ (→ (→𝒟 p q) (→𝒰ₓ  p q))
-                           (→ (¬ₐ  p)  (¬ₐ𝒰ₓ p)))))
+(: neg (∀ (p q a x) (case→ (→ (→𝒟 p q) (→𝒰ₓ p q))
+                           (→ (¬ₐ p)    (→𝒰ₓ p ⊥ᵃ)))))
 (define ((neg f) kq) (∘ kq f))
 
-(: neg* (∀ (p a) (→ (¬ₐ p) (¬𝒰ₐ p))))
+(: neg* (∀ (p a) (→ (¬ₐ p) (→𝒰ₐ p ⊥))))
 (define ((neg* kₐp) k) kₐp)
 
 (: flip (∀ (p q a) (case→ (→ (→𝒰ₐ p q) (→𝒦ₐ p q))
                         (→ (→𝒦ₐ p q) (→𝒰ₐ p q)))))
 (define (((flip f) . y*) . x*) (apply (apply f x*) y*))
 
-(: cps  (∀ (p q a x) (case→ (→ (→𝒟 p q) (→𝒦ₓ  p q))
-                            (→ (¬ₐ  p)  (¬ₐ𝒦ₓ p)))))
-(: cps* (∀ (p a) (→ (¬ₐ p) (¬𝒦ₐ p))))
+(: cps  (∀ (p q a x) (case→ (→ (→𝒟 p q) (→𝒦ₓ p q))
+                            (→ (¬ₐ p)    (→𝒦ₓ p ⊥ᵃ)))))
+(: cps* (∀ (p a) (→ (¬ₐ p) (→𝒦ₐ p ⊥))))
 (define cps  (∘ flip neg))
 (define cps* (∘ flip neg*))
 
 
 ;;; 控制运算符
 
-(: neg:call/lc (∀ (p a) (→𝒰ₐ (→𝒰ₐ (¬ₐ𝒰ₐ p) p) p)))
+(: neg:call/lc (∀ (p a) (→𝒰ₐ (→𝒰ₐ (→𝒰ₐ p ⊥ᵃ) p) p)))
 (define ((neg:call/lc kₐp) neg:proc) ((neg:proc kₐp) (neg kₐp)))
 
-(: neg:call/cc (∀ (p a) (→𝒰ₐ (→𝒰ₐ (¬𝒰ₐ p) p) p)))
+(: neg:call/cc (∀ (p a) (→𝒰ₐ (→𝒰ₐ (→𝒰ₐ p ⊥) p) p)))
 (define ((neg:call/cc kₐp) neg:proc) ((neg:proc kₐp) (neg* kₐp)))
 
-(: cps:call/lc (∀ (p a) (→𝒦ₐ (→𝒦ₐ (¬ₐ𝒦ₐ p) p) p)))
-(: cps:call/cc (∀ (p a) (→𝒦ₐ (→𝒦ₐ (¬𝒦ₐ  p) p) p)))
+(: cps:call/lc (∀ (p a) (→𝒦ₐ (→𝒦ₐ (→𝒦ₐ p ⊥ᵃ) p) p)))
+(: cps:call/cc (∀ (p a) (→𝒦ₐ (→𝒦ₐ (→𝒦ₐ p ⊥) p) p)))
 
 (define ((cps:call/lc cps:proc) kₐp) ((cps:proc (cps  kₐp)) kₐp))
 (define ((cps:call/cc cps:proc) kₐp) ((cps:proc (cps* kₐp)) kₐp))

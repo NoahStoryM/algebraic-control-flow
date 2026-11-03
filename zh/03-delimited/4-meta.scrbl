@@ -54,7 +54,7 @@
             (+ x 2)))])
   (+ (reset (k 3)) 100))]
 
-第一个 @racket[reset] 里，@racket[let/cc] 捕获当前的@tech{延续}，@racket[(abort k)] 把它作为答案交出来，它带着的局部工作是加二。第二个 @racket[reset] 里调用 @racket[(k 3)]。照上面的定义，这条@tech{延续}先把 @racket[3] 交给捕获时的@tech{局部延续}，做完加二，得到 @racket[5]，再把 @racket[5] 交给 @racket[abort]；@racket[abort] 用的是调用时的@tech{元延续}，把 @racket[5] 送出当前的边界，也就是第二个 @racket[reset]。边界外的加一百照常执行，得到 @racket[105]。这个例子换用 Racket 自己的 @racket[call/cc]，结果也是 @racket[105]：它在这里同样只捕获到最近的那层边界。
+第一个 @racket[reset] 里，@racket[let/cc] 捕获当前的@tech{延续}，@racket[(abort k)] 把它作为答案交出来，它带着的局部工作是加二。第二个 @racket[reset] 里调用 @racket[(k 3)]。照上面的定义，这条@tech{延续}先把 @racket[3] 交给捕获时的@tech{局部延续}，做完加二，得到 @racket[5]，再把 @racket[5] 交给 @racket[abort]；@racket[abort] 用的是调用时的@tech{元延续}，把 @racket[5] 送出当前的边界，也就是第二个 @racket[reset]。边界外的加一百照常执行，得到 @racket[105]。这个例子换用 Racket 自己的 @racket[call/cc]，结果也是 @racket[105]。@racket[reset] 在宿主里装上一个@tech{界桩}，Racket 的 @racket[call/cc] 捕获的，只到最近的匹配@tech{界桩}为止，这里同样只捕获到最近的那层边界。
 
 当然，捕获和调用时最近的边界若是同一次 @racket[reset] 划出来的，边界外等着的就是同一份工作，调用时的@tech{元延续}也就是捕获时的那一条。
 
@@ -88,7 +88,7 @@
          (display #\*)
          (kn km)))))))]
 
-输出不变。@racket[kn] 和 @racket[km] 仍是会正常返回的@tech{局部延续}，并没有跳转的能力；只是每次调用它们时，@racket[abort] 本来要丢掉的局部工作都是空的。两层边界等于一层，说的是行为：@racket[let/lc] 每调用一次，原来那层边界还留着，@racket[let/cc] 的 @racket[abort] 却会先把它丢掉。
+输出不变。@racket[kn] 和 @racket[km] 仍是会正常返回的@tech{局部延续}，并没有跳转的能力；只是每次调用它们时，@racket[abort] 本来要丢掉的局部工作都是空的。两个版本行为相同，结构却不同：@racket[let/lc] 每调用一次，原来那层边界还留着，多出一层；@racket[let/cc] 的 @racket[abort] 先把它丢掉。两层边界等于一层，所以输出一样。
 
 @section[#:tag "03:stack-slice"]{栈的切片}
 
@@ -102,7 +102,7 @@
 
 右边一段 @racket[add2] 是边界以内的工作，@racket[shift] 在这里拿到的@tech{局部延续}就是它。左边一段 @racket[(∘ k add10)] 是边界外面等着答案的工作，也就是@tech{元延续}。
 
-一般的情形也这样切。把局部计算的答案类型记作 @math{a}，@racket[kq] 沿边界分成两段：@tech{局部延续} @math{kₐq : q → a} 做边界以内的工作，交出答案；@tech{元延续} @math{mk : a → ⊥} 接过答案，做边界外面的工作。@math{mk} 在 𝒞 里写不出来，它就是宿主调用栈记着的那段工作。@math{kq = mk ∘ kₐq}，落到栈上，就是两段首尾相接。
+一般的情形也这样切。把局部计算的答案类型记作 @math{a}，@racket[kq] 沿边界分成两段：@tech{局部延续} @math{kₐq : q → a} 做边界以内的工作，交出答案；@tech{元延续} @math{mk : a → ⊥} 接过答案，做边界外面的工作。这段由宿主决定的工作，局部编码在里面凭空拿不到，它就是宿主调用栈记着的那段工作。@math{kq = mk ∘ kₐq}，落到栈上，就是两段首尾相接。
 
 把这个分解代入 @c{kp = kq ∘ f}：
 

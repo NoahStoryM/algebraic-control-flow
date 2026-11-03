@@ -51,7 +51,7 @@
   (λ (cps:return)
     ...)))]
 
-那里 @racket[cps:call/cc] 紧跟在 @racket[anf:eval] 后面，前面还没有任何绑定，当前@tech{延续}就是@tech{局部终结延续} @racket[a->⊥ᵃ]。@racket[cps:call/cc] 交出 @racket[(cps* kₐp)]，也就是 @racket[(cps* a->⊥ᵃ)]，就是 @racket[cps:abort]。之前靠 @racket[cps:call/cc] 拿到的 @racket[cps:return]，现在不必捕获：它就是 @tt{return}。
+那里 @racket[cps:call/cc] 紧跟在 @racket[anf:eval] 后面，前面还没有任何绑定，当前@tech{延续}就是@tech{局部终结延续} @racket[a->⊥ᵃ]。@racket[cps:call/cc] 交出 @racket[(cps* kₐp)]，也就是 @racket[(cps* a->⊥ᵃ)]，就是 @racket[cps:abort]。之前靠 @racket[cps:call/cc] 拿到的 @racket[cps:return]，现在不必捕获：@racket[cps:abort] 就起着 @tt{return} 的作用。
 
 在一个函数里调用另一个函数，被调用的函数从自己的空栈开始执行。@racket[anf:reset] 做的是同一件事：@racket[anf:eval] 把 @racket[a->⊥ᵃ] 交给里面的计算 @racket[kₐkₐa]，一个空栈，没有待做的工作。里面的计算以它为底，由 @racket[anf:let*] 接出自己的@tech{闭包链}；外面的 @racket[kₐa] 没有接进来。展开 @racket[(cps anf:eval)]，外面的@tech{延续}在等它：
 
@@ -97,7 +97,7 @@
                   (cps:abort y)))])
    (cps:+ 10 v)))]
 
-@racket[(cps:abort y)] 把 @racket[5] 交给里面的@tech{局部终结延续}，结束这段计算。@racket[anf:reset] 取出答案，外面绑定 @racket[v] 为 @racket[5]，接着算 @racket[(+ 10 5)]，得到 @racket[15]。里面的返回没有丢掉外面的工作。
+@racket[(cps:abort y)] 把 @racket[5] 交给里面的@tech{局部终结延续}，结束这段计算。在尾位置写它，和直接交出 @racket[y] 一样；写出来，是为了看清这一处的 @tt{return}。@racket[anf:reset] 取出答案，外面绑定 @racket[v] 为 @racket[5]，接着算 @racket[(+ 10 5)]，得到 @racket[15]。里面的返回没有丢掉外面的工作。
 
 只改产生 @racket[x] 的那一处：用 @racket[anf:shift] 捕获@tech{局部延续}，但先不用它：
 
@@ -176,14 +176,14 @@
 
 这做得到，因为@tech{局部延续}是普通的函数。@racket[(k 3)] 加二以后正常返回 @racket[5]，等着它的 @racket[(k 5)] 接着得到 @racket[7]。调用者拿到结果以后要做的事，由宿主的调用帧记着；@xref["03:abort-shift"]{「从 return 到 shift」}说空出来的宿主栈正好用来定界，就是在这样的调用处。
 
-三份 @tech[#:key "延续传递风格"]{CPS} 外面都一样，区别只在主体怎样用@tech{局部延续}。从 @tech[#:key "延续传递风格"]{CPS} 看，三种情形是一步步放宽限制。照前面的 @tech{CPS 变换}，没有控制操作时，必须在@italic{尾位置}用@italic{当前的}@tech{局部延续}，把每一步的结果交给它，而且@italic{恰好用一次}：@racket[(shift k (k e))] 就是 @racket[(let/lc k e)]，@racket[(let/lc _ e)] 就是 @racket[e]。能跳转，意味着可以@italic{换掉}@tech{局部延续}，第二个例子就是不用 @racket[k]，改用@tech{局部终结延续} @racket[id]：@racket[(id e)] 就是 @racket[e]，@racket[(shift _ e)] 就是 @racket[(abort e)]。@tech{定界延续}则@italic{去掉了位置与次数的限制}：@tech{局部延续}和普通函数一样，在哪里用、用几次都行。@racket[reset] 与 @racket[shift] 让 @tech[#:key "A-范式"]{ANF} 的程序也能拿到这些@tech{局部延续}，随意使用。
+三份 @tech[#:key "延续传递风格"]{CPS} 外面都一样，区别只在主体怎样用@tech{局部延续}。从 @tech[#:key "延续传递风格"]{CPS} 看，三种情形是一步步放宽限制。照@xref["02:cps"]{「延续与 CPS」}的写法，没有控制操作时，必须在@italic{尾位置}用@italic{当前的}@tech{局部延续}，把每一步的结果交给它，而且@italic{恰好用一次}：@racket[(shift k (k e))] 就是 @racket[(let/lc k e)]，@racket[(let/lc _ e)] 就是 @racket[e]。能跳转，意味着可以@italic{换掉}@tech{局部延续}，第二个例子就是不用 @racket[k]，改用@tech{局部终结延续} @racket[id]：@racket[(id e)] 就是 @racket[e]，@racket[(shift _ e)] 就是 @racket[(abort e)]。@tech{定界延续}则@italic{去掉了位置与次数的限制}：@tech{局部延续}和普通函数一样，在哪里用、用几次都行。@racket[reset] 与 @racket[shift] 让 @tech[#:key "A-范式"]{ANF} 的程序也能拿到这些@tech{局部延续}，随意使用。
 
 上面的 @tech[#:key "延续传递风格"]{CPS} 反复做两件事：@racket[v] 绑定计算的结果，@racket[k] 命名等着结果的工作。@racket[let] 给计算的结果起名，脱糖就是 @racket[λ] 的调用：
 
 @tabular[#:style 'boxed #:row-properties '(bottom-border ())
   (list
    (list @elem{写法} @elem{代码})
-   (list @tech[#:key "延续传递风格"]{CPS} @racket[((λ (v) body) exp)])
+   (list @elem{@racket[λ] 调用} @racket[((λ (v) body) exp)])
    (list @tech[#:key "A-范式"]{ANF} @racket[(let ([v exp]) body)]))]
 
 被命名的也可以是等着结果的工作。普通的 @racket[let] 给这个函数起名，@racket[shift] 则在原来计算的位置拿到它。下面的 @racket[exp]、@racket[body] 指不再含别的控制操作的普通代码：
@@ -229,7 +229,7 @@
 
 第二条是 @racket[shift] 的规约：把从 @racket[shift] 到 @racket[reset] 之间的上下文 @racket[E] 取出来，包成函数 @c{(λ (v) (reset E[v]))} 绑定给 @racket[k]，再在边界以内执行 @racket[expr]。规则里有两个 @racket[reset]，外面一层和 @racket[k] 里的一层，下面分别看。
 
-前面用 @racket[shift] 定义了 @racket[let/lc] 和 @racket[abort]；反过来，@racket[shift] 也能由这两个定义，下面的 @racket[let/lc] 就是这个方向的写法，@racket[call/lc] 指直接风格里取@tech{局部延续}的操作，对应 @racket[cps:call/lc]。和@xref["01:compare"]{「比较」}里的三种控制操作符一样，@racket[shift] 与 @racket[let/lc] 加 @racket[abort] 可以互相定义。@racket[shift] 是给@tech{局部延续}起了名字的 @tt{return}：用 @racket[let/lc] 给@tech{局部延续}起名，用 @racket[abort] 交出答案：
+前面用 @racket[shift] 定义了 @racket[let/lc] 和 @racket[abort]；反过来，以 @racket[call/lc] 和 @racket[abort] 为原语，@racket[shift] 也能由这两个定义，下面的 @racket[let/lc] 就是这个方向的写法，@racket[call/lc] 指直接风格里取@tech{局部延续}的操作，对应 @racket[cps:call/lc]。和@xref["01:compare"]{「比较」}里的三种控制操作符一样，@racket[shift] 与 @racket[let/lc] 加 @racket[abort] 可以互相定义。@racket[shift] 是给@tech{局部延续}起了名字的 @tt{return}：用 @racket[let/lc] 给@tech{局部延续}起名，用 @racket[abort] 交出答案：
 
 @racketblock[
 (define-syntax-rule (let/lc k body ...)
@@ -240,7 +240,7 @@
 
 先算 @racket[expr] 得到 @racket[v]，再 @racket[(abort v)] 返回。@racket[expr] 在返回之前照常计算，仍在原来的 @racket[reset] 里面，所以规约式最外面还留着一层 @racket[reset]。
 
-里面那层 @racket[reset] 藏在 @racket[k] 的定义里：@c{(λ (v) (reset E[v]))}。@tech{平凡表示}下，@tech{局部延续}就是普通的函数，调用 @racket[k] 就是一次普通的函数调用，调用时分配的新栈帧，就是一次新的定界。
+里面那层 @racket[reset] 藏在 @racket[k] 的定义里：@c{(λ (v) (reset E[v]))}。@tech{平凡表示}下，@tech{局部延续}就是普通的函数，调用 @racket[k] 就是一次普通的函数调用。每次调用 @racket[k]，都把 @racket[v] 放回 @racket[E]，并在 @racket[k] 函数体里的 @racket[reset] 下计算 @c{E[v]}。如果调用处还有剩下的工作，它就在这层边界外等着，等 @c{E[v]} 交出结果再继续。
 
 @racket[k] 要是在某个 @racket[reset] 的尾位置调用，@racket[(reset (k v))] 展开是 @c{(reset (reset E[v]))}，两层边界紧挨在一起。两层等于一层：在这两条规则下，@racket[(reset (reset e))] 与 @racket[(reset e)] 行为一样。用这两条规则比较两边。@racket[e] 是值时，两边都规约成这个值。@racket[e] 执行 @racket[shift] 时，@racket[shift] 只取到最近的一层 @racket[reset]，两边取到的上下文 @racket[E] 相同：
 

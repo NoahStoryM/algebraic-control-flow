@@ -150,7 +150,7 @@
 (: ⨾ (∀ (p3 p2 p1) (→ (← p2 p1) (← p3 p2) (← p3 p1))))
 (define (⨾ . f*) (apply ∘ (reverse f*)))]
 
-读 @racket[⨾] 那一行：第一支 @racket[(← p2 p1)] 从 @racket[p1] 到 @racket[p2]，先算；第二支 @racket[(← p3 p2)] 从 @racket[p2] 到 @racket[p3]，后算；拼成从 @racket[p1] 到 @racket[p3]。@racket[∘] 那一行的参数从右往左读，@racket[⨾] 那一行从左往右读，读出的都是 @racket[p1]、@racket[p2]、@racket[p3]。@racket[⨾] 只是把参数顺序倒过来的 @racket[∘]：反的是书写的次序，算的次序不变。两条运算律原样继承下来，@racket[(⨾)] 也是 @racket[id]。
+读 @racket[⨾] 那一行：第一支 @racket[(← p2 p1)] 从 @racket[p1] 到 @racket[p2]，先算；第二支 @racket[(← p3 p2)] 从 @racket[p2] 到 @racket[p3]，后算；拼成从 @racket[p1] 到 @racket[p3]。@racket[∘] 那一行的参数从右往左看，@racket[⨾] 那一行从左往右看，先算的都是从 @racket[p1] 出发的那一支。@racket[⨾] 只是把参数顺序倒过来的 @racket[∘]：反的是书写的次序，算的次序不变。两条运算律原样继承下来，@racket[(⨾)] 也是 @racket[id]。
 
 
 @section[#:tag "02:cps"]{延续与 CPS}
@@ -247,7 +247,7 @@
 
 结果打印出来了，进程也随之终止。@racket[exit] 一调用，整段计算就到此为止。启动时交进去的这条@tech{延续}，就是前面那条@tech{闭包链}的终点：值走完整条链，最后抵达的是它，所以叫它@defterm[#:en "terminal continuation"]{终结延续}。可是用 @racket[exit] 做@tech{终结延续}，进程一结束，就没法拿着结果继续工作。
 
-@defsym["a->⊥" "终结延续：把答案包进 ans 抛出"]@defsym["⊥->a" "接住 a->⊥ 抛出的答案，交回调用处"]我们需要另一个类型为 @math{a → ⊥} 的函数：它不返回，也不杀死进程，而是把答案送到一个取得回来的地方。@racket[raise] 正合适：它不返回，handler 又能捕获它抛出的值。要的只有两件事：@racket[a->⊥] 把答案抛出去，@racket[⊥->a] 在外面接住。再用一个专门的 struct，把我们的答案和别的异常区分开：
+@defsym["a->⊥" "终结延续：把答案包进 ans 抛出"]@defsym["⊥->a" "接住 a->⊥ 抛出的答案，交回调用处"]我们需要另一个类型为 @math{a → ⊥} 的函数：它不返回，也不杀死进程，而是把答案送到一个取得回来的地方。@racket[raise] 正合适：它不返回，handler 又能捕获它抛出的值。要的只有两件事：@racket[a->⊥] 把答案抛出去，@racket[⊥->a] 在外面接住。和第一章由操作系统交来的 @racket[exit] 一样，这一对是在程序外面提供的终点和接收处，被运行的程序自己并不调用 @racket[raise]。再用一个专门的 struct，把我们的答案和别的异常区分开：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (struct (r) ans ([a* : (Listof r)]) #:type-name Ans)
