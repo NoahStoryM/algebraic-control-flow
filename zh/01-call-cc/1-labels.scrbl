@@ -17,6 +17,8 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 
 设想我们有一等的@tech{标签}：
 
+@margin-note{类型标注用 Typed Racket 的写法，当伪代码读：@racket[(: f T)] 声明 @racket[f] 的类型是 @racket[T]，@racket[(→ a b)] 是函数类型，@racket[(∪ a ...)] 是并集，@racket[∀] 引入类型参数。}
+
 @examples[#:eval ev #:label #f #:no-prompt
 (define-type ⊥ (∪))  (code:comment "空类型：没有构造子，没有元素")
 (: goto  (→ Label ⊥))
@@ -62,11 +64,11 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 
 @section[#:tag "01:cc"]{从标签到延续：cc 操作符}
 
-两个例子都依赖@bold{修改可变状态}（@racket[set!]）来在跳转之间传递信息。@racket[goto] 是一张单程票，@tech{标签}本身不携带任何数据，所以我们不得不通过副作用来进入正确的状态。第二个例子中的标志 @racket[first?] 与乘法无关：它存在的唯一目的就是区分「我们是第一次运行，还是刚刚跳回来？」
+两个例子都依赖@bold{修改可变状态}（@racket[set!]）来在跳转之间传递信息。@racket[goto] 只能空手跳回去，@tech{标签}本身不携带任何数据，所以我们不得不通过副作用来进入正确的状态。第二个例子中的标志 @racket[first?] 与乘法无关：它存在的唯一目的就是区分「我们是第一次运行，还是刚刚跳回来？」
 
-要避免修改状态，跳回去时得能捎上一个值。设想一个新的操作符，像 @racket[(label)] 那样捕获当前位置。它第一次被求值时，返回一个「回调」：一个以后可以调用的函数，带着一个值跳回去。调用这个回调时，它「再次返回」，这次交出的就是传入的那个值。这个回调，就叫@defterm[#:en "continuation"]{延续}。
+要避免修改状态，跳回去时得能捎上一个值。设想一个新的操作符，像 @racket[(label)] 那样捕获当前位置。它第一次被求值时，返回一个「回调」：一个以后可以调用的函数，带着一个值跳回去。调用这个回调时，当初那次调用「再次返回」，这次交出的就是传入的那个值。这个回调，就叫@defterm[#:en "continuation"]{延续}。
 
-于是这个操作符的返回值有两种可能：
+把跳回去时捎带的值的类型记作 @math{p}。于是这个操作符的返回值有两种可能：
 
 @itemlist[
   @item{类型为 @math{p → ⊥} 的@tech{延续}：接受类型为 @math{p} 的值且永不返回的函数（它跳回捕获点）。}
@@ -77,17 +79,9 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 @examples[#:eval ev #:label #f #:no-prompt
 (define-type (∐ p0 p1 ...) (∪ (Pair p0 0) (Pair p1 1) ...))]
 
-@margin-note{这一行是记法，意思照正文读：省略号表示后面还有几支，@tech{标记}依次是 0、1、2……Typed Racket 的省略号做不到逐支编号，也写不出零支的 @racket[(∐)]；这里的类型标注本来就当伪代码用。}
+@margin-note{这一行是记法，意思照正文读：省略号表示后面还有几支，@tech{标记}依次是 0、1、2……Typed Racket 的省略号做不到逐支编号，也写不出零支的 @racket[(∐)]。}
 
 第 @math{i} 支的值配上@tech{标记} @math{i}。一支也没有的 @racket[(∐)]，就是 @racket[(∪)]，也就是 @racket[⊥]。
-
-@margin-note{这一步回不去。同一个元素出现在几支里，配上不同的@tech{标记}，在 @racket[∐] 里就有几个，@racket[untag] 以后就成了一个，再也说不清它来自哪一支：@racket[∐] 比 @racket[∪] 多记着来源。}
-
-把@tech{标记}丢掉，就回到普通的并集：
-
-@examples[#:eval ev #:label #f #:no-prompt
-(: untag (∀ (p ...) (→ (∐ p ...) (∪ p ...))))
-(define untag car)]
 
 我们把这个操作符叫做 @racket[cc]（@racket[current-continuation] 的缩写）：
 
@@ -104,7 +98,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 
 @margin-note{@racket[cc] 的内部仍然使用了 @racket[label]、@racket[goto] 和 @racket[set!]，但它们被封装起来了，@racket[cc] 的使用者不必再碰可变状态。}
 
-@racket[first?] 和 @racket[u]，就是上面那版 @racket[mul] 里的 @racket[first?] 和 @racket[result]：@racket[first?] 分辨第一次进入还是跳回来，@racket[u] 存下跳回来时带的值。按时间顺序看。第一次调用 @racket[(cc)] 时，@racket[first?] 是 @racket[#t]，@racket[(label)] 捕获当前位置，@racket[cond] 走第一支，把 @racket[first?] 改成 @racket[#f]，交出一个配着 @racket[1] 的函数，这就是@tech{延续}。@racket[(cc)] 就此返回。
+@racket[first?] 和 @racket[u]，就是上面那版 @racket[mul] 里的 @racket[first?] 和 @racket[result]：@racket[first?] 分辨第一次进入还是跳回来，@racket[u] 存下跳回来时带的值，开头放的 @racket[undefined] 只是占位，不会被交出去。按时间顺序看。第一次调用 @racket[(cc)] 时，@racket[first?] 是 @racket[#t]，@racket[(label)] 捕获当前位置，@racket[cond] 走第一支，把 @racket[first?] 改成 @racket[#f]，交出一个配着 @racket[1] 的函数，这就是@tech{延续}。@racket[(cc)] 就此返回。
 
 后来某处调用这个@tech{延续}，它把参数存进 @racket[u]，再 @racket[(goto l)] 跳回 @racket[cc] 里面。此时 @racket[cc] 早已返回过，@tech{标签}仍然能跳回去，用的正是一等@tech{标签}的第二项能力。@racket[(label)] 再次返回，控制又来到 @racket[cond]。这一回 @racket[first?] 是 @racket[#f]，走 @racket[else]，@racket[(cc)] 第二次返回，交出配着 @racket[0] 的 @racket[u]。
 
@@ -167,12 +161,12 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 
 从@tech{标签}出发，我们写出了 @racket[cc]，又由 @racket[cc] 写出了 @racket[call/cc]。再走一步，能不能由 @racket[call/cc] 写回@tech{标签}，绕成一个圈？这一步要把 @racket[call/cc] 当作原语：手上只有它，没有@tech{标签}。Racket 自带的 @racket[call/cc] 就是这样一个原语。
 
-先看@tech{标签}是什么样的函数。@racket[(goto l)] 就是 @racket[(l l)]：@tech{标签}接受一个@tech{标签}，而且永不返回。它的类型
+先看手里有什么。@racket[call/cc] 交给 @racket[proc] 的@tech{延续}，类型是 @math{p → ⊥}：一个函数，收下一个值，跳回去。要拿它当@tech{标签}，跳回去以后，@racket[(label)] 得再交出这个@tech{标签}本身，所以交给它的值就该是它自己：@racket[(goto l)] 只能写成 @racket[(l l)]。@tech{标签}接受一个@tech{标签}，而且永不返回，它的类型
 @defsym[@ty{Label} "标签的类型：Label = Label → ⊥"]@ty{Label} 因此是一个递归类型：
 
 @mm{@ty{Label} = @ty{Label} → ⊥}
 
-再看 @racket[call/cc] 交给 @racket[proc] 的@tech{延续}，类型是 @math{p → ⊥}。令 @math{p = @ty{Label}}，两者就一样了：@racket[call/cc] 交出的@tech{延续}，恰好可以当作一个@tech{标签}。于是：
+这正是令 @math{p = @ty{Label}} 时@tech{延续}的类型。于是：
 
 @(define ev1 (make-acf-eval))
 @examples[#:eval ev1 #:label #f #:no-prompt
@@ -205,8 +199,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 (define primitive-call/cc call/cc)
 (define (goto l) (l l))
 (define (label) (primitive-call/cc goto))
-(define-syntax-rule (let/cc k body ...) (call/cc (λ (k) body ...)))
-(define untag car)]
+(define-syntax-rule (let/cc k body ...) (call/cc (λ (k) body ...)))]
 @examples[#:eval ev2 #:label #f #:no-prompt
 (define (call/cc proc)
   (define first? #t)
@@ -224,7 +217,15 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 
 这个 @racket[call/cc] 的写法和 @racket[cc] 一样，只是把@tech{延续}交给 @racket[proc]，而不是交给调用者。由它写 @racket[cc]，只要给交出的@tech{延续}配上 @racket[1]，再让它跳回来时配上 @racket[0]。
 
-最后以 @racket[cc] 为原语，写回@tech{标签}。@racket[(cc)] 第一次交出的，是配着 @racket[1] 的@tech{延续} @racket[k]。把它当作@tech{标签}，跳回来靠的是 @racket[(goto k)]，也就是 @racket[(k k)]：@racket[k] 带回来的正是它自己。于是 @racket[(cc)] 第二次交出的，是配着 @racket[0] 的 @racket[k]。两支装的是同一个@tech{标签}，@tech{标记}没有什么要分辨的，丢掉就是。@racket[untag] 接在 @racket[(cc)] 后面，也就在 @racket[(cc)] 捕获的@tech{延续}里，两次交出都要经过它：
+最后以 @racket[cc] 为原语，写回@tech{标签}。@racket[(cc)] 第一次交出的，是配着 @racket[1] 的@tech{延续} @racket[k]。把它当作@tech{标签}，跳回来靠的是 @racket[(goto k)]，也就是 @racket[(k k)]：@racket[k] 带回来的正是它自己。于是 @racket[(cc)] 第二次交出的，是配着 @racket[0] 的 @racket[k]。两支装的是同一个@tech{标签}，@tech{标记}没有什么要分辨的，丢掉就是。@racket[untag] 把@tech{标记}丢掉，回到普通的并集：
+
+@margin-note{从并集回不到带@tech{标记}的联合。同一个元素出现在几支里，配上不同的@tech{标记}，在 @racket[∐] 里就有几个，@racket[untag] 以后就成了一个，再也说不清它来自哪一支：@racket[∐] 比 @racket[∪] 多记着来源。}
+
+@examples[#:eval ev2 #:label #f #:no-prompt
+(: untag (∀ (p ...) (→ (∐ p ...) (∪ p ...))))
+(define untag car)]
+
+@racket[untag] 接在 @racket[(cc)] 后面，也就在 @racket[(cc)] 捕获的@tech{延续}里，两次交出都要经过它：
 
 @examples[#:eval ev2 #:label #f #:no-prompt
 (define label (compose untag cc))
@@ -248,7 +249,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
          @elem{否}
          @elem{否})
    (list @elem{@bold{要分辨返回值？}}
-         @elem{否：靠可变状态分辨第一次进入与跳回}
+         @elem{否：返回的总是@tech{标签}；第一次进入还是跳回，另靠可变状态分辨}
          @elem{是：必须区分 @math{p} 和 @math{p → ⊥}}
          @elem{否}))]
 

@@ -35,16 +35,16 @@
 
 @mm{@ty{Label} ∨ ¬@ty{Label} = @ty{Label} ∨ @ty{Label}}
 
-原本分别对应 @racket[Label] 和 @math{¬@ty{Label}} 的两支，在这里成了同一个类型。@racket[(cc)] 交出的 @math{@ty{Label} ∐ @ty{Label}} 里，两支还配着@tech{标记}：每个@tech{标签} @math{l} 有 @math{(l, 0)}、@math{(l, 1)} 两份，记着自己来自哪一支。可@xref["01:label-from-call-cc"]{「从 call/cc 定义标签」}里，@tech{标签}是这样从 @racket[cc] 写出来的：
+@racket[(cc)] 交出的 @math{@ty{Label} ∐ @ty{Label}} 里，两支还配着@tech{标记}：每个@tech{标签} @math{l} 有 @math{(l, 0)}、@math{(l, 1)} 两份，记着自己来自哪一支。类型相同，两支并不会自己合成一支；把它们并起来的，是@xref["01:label-from-call-cc"]{「从 call/cc 定义标签」}里的 @racket[untag]：
 
 @racketblock[
 (define label (compose untag cc))]
 
-@racket[untag] 丢掉了@tech{标记}，两份并成一个 @math{l}，就像普通的并集不记来源。两支就坍缩成了一支：
+@racket[untag] 丢掉@tech{标记}，两份并成一个 @math{l}：
 
 @mm{@ty{Label} ∪ @ty{Label} = @ty{Label}}
 
-既然只剩一支，也就不必再分。@racket[mul] 当初要用 @racket[match] 分辨 @racket[(cc)] 交出的是值还是@tech{延续}；在 @racket[Label] 上，不管交出哪一支，拿到的都是一个@tech{标签}，既能当值存着，也能当@tech{延续}去调用。@racket[(label)] 就是这样一个不分支的 @racket[cc]。
+丢得掉，是因为那里跳回来靠的是 @racket[goto]，带回来的就是@tech{标签}自己，两支装的本来就是同一个@tech{标签}。@racket[(label)] 就是这样一个不分支的 @racket[cc]：不管交出哪一支，拿到的都是一个@tech{标签}，既能当值存着，也能当@tech{延续}去调用。
 
 @section[#:tag "01:yin-yang"]{把标签交给标签}
 
@@ -105,9 +105,9 @@
     (define ln (cons kn n))
     (apply-cont ln ln)))]
 
-@margin-note{换回函数表示，@racket[apply-cont] 的类型就是@tech{矛盾律} @racket[(¬ (¬ p) p)] 取 @math{p = @ty{Label}}。这一节的 @racket[¬] 是对，@racket[apply-cont] 本身却仍是函数，所以它的类型照旧用 @racket[→] 写。}
+@margin-note{@racket[apply-cont] 本身仍是函数，类型照旧用 @racket[→] 写；把这一节的 @racket[¬] 换回函数，它就是@tech{矛盾律} @racket[(¬ (¬ p) p)] 取 @math{p = @ty{Label}}。}
 
-交出去的 @racket[ln] 装着第 @racket[n] 条@tech{延续} @racket[kn] 和它的编号 @racket[n]，不再是能直接调用的函数，调用它的办法得我们自己规定。@racket[apply-cont] 做的还是向一个@tech{否定}交一个值，不管@tech{否定}怎样表示，都是这个操作；这里 @math{p} 取 @racket[Label]。插桩版要印出两边的编号，所以用 @racket[match-define] 拆开两个对，印出谁跳向谁，再调用里面的函数：
+交出去的 @racket[ln] 装着第 @racket[n] 条@tech{延续} @racket[kn] 和它的编号 @racket[n]，不再是能直接调用的函数，调用它的办法得我们自己规定。@racket[apply-cont] 做的还是向一个@tech{否定}交一个值，不管@tech{否定}怎样表示，都是这个操作。插桩版要印出两边的编号，所以用 @racket[match-define] 拆开两个对，印出谁跳向谁，再调用里面的函数：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: apply-cont (→ (¬ Label) Label ⊥))
