@@ -74,7 +74,7 @@
 (: uncps (∀ (p q) (→ (→𝒦 p q) (→𝒟 p q))))
 (define (uncps cps:f) (∘ call/cc cps:f))]
 
-@racket[((uncps cps:f) x)] 先算出 @racket[(cps:f x)]，一段等待@tech{延续}的计算，再交给 @racket[call/cc]，@racket[call/cc] 把当前@tech{延续}交给它。@racket[uncps] 收 @tech{CPS 箭头}，交出@tech{宿主箭头}，也就是一个普通的宿主函数，可以放进同一个 @racket[(+ 1 _)]：
+@racket[((uncps cps:f) p)] 先算出 @racket[(cps:f p)]，一段等待@tech{延续}的计算，再交给 @racket[call/cc]，@racket[call/cc] 把当前@tech{延续}交给它。@racket[uncps] 收 @tech{CPS 箭头}，交出@tech{宿主箭头}，也就是一个普通的宿主函数，可以放进同一个 @racket[(+ 1 _)]：
 
 @examples[#:eval ev #:label #f
 (+ 1 ((uncps cps:mul) 1 2 3 4))
@@ -93,13 +93,13 @@
 
 @section[#:tag "02:three-forms"]{三种写法}
 
-反过来呢？一支 @tech{CPS 箭头}先经 @racket[uncps] 运行回宿主，再经 @racket[cps] 提升，还是原来那支吗？交给它输入 @racket[x] 和@tech{延续} @racket[kq]，展开：
+反过来呢？一支 @tech{CPS 箭头}先经 @racket[uncps] 运行回宿主，再经 @racket[cps] 提升，还是原来那支吗？交给它输入 @racket[p] 和@tech{延续} @racket[kq]，展开：
 
 @racketblock[
-#,(hspace 2)(((cps (uncps cps:f)) x) kq)
-= (kq ((uncps cps:f) x))
-= (kq (call/cc (cps:f x)))
-≈ ((cps:f x) kq)]
+#,(hspace 2)(((cps (uncps cps:f)) p) kq)
+= (kq ((uncps cps:f) p))
+= (kq (call/cc (cps:f p)))
+≈ ((cps:f p) kq)]
 
 前两步照定义展开。最后一步换成了@defsym["a ≈ b" "行为相同，前提比 = 多，见「三种写法」的旁注"] @racket[≈]：它说的是行为相同，比 @racket[=] 弱，只在旁注那几条约定下成立。用的是 @racket[call/cc] 的一条规律：
 
@@ -125,11 +125,11 @@ neg          uncps
 从 𝒟 出发，经 @racket[neg]、@racket[flip] 到 𝒦，就是 @c{cps = (∘ flip neg)}；再经 @racket[uncps] 回到 𝒟，得到的还是原来的箭头。从 𝒦 出发，经 @racket[uncps] 回到 𝒟，再经 @racket[neg] 走到 𝒰，得到的是什么？展开只用到上面那条规律：
 
 @racketblock[
-#,(hspace 2)(((neg (uncps cps:f)) kq) x)
-= (kq ((uncps cps:f) x))
-= (kq (call/cc (cps:f x)))
-≈ ((cps:f x) kq)
-= (((flip cps:f) kq) x)]
+#,(hspace 2)(((neg (uncps cps:f)) kq) p)
+= (kq ((uncps cps:f) p))
+= (kq (call/cc (cps:f p)))
+≈ ((cps:f p) kq)
+= (((flip cps:f) kq) p)]
 
 @racket[(neg (uncps cps:f))] 与 @racket[(flip cps:f)] 行为相同：@racket[flip] 从 𝒦 到 𝒰 的那个方向，就是 @racket[(∘ neg uncps)]，和 @c{cps = (∘ flip neg)} 正好对称。三条边绕成一个圈，从哪一处出发绕一圈，都回到原来的箭头；因此从一处走到另一处，多绕几圈也不改变结果。图表有这种性质，就说它是@defterm[#:en "commutative"]{交换}的，叫作@defterm[#:en "commutative diagram"]{交换图表}。
 
