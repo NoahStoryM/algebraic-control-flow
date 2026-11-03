@@ -101,14 +101,14 @@
 = (kq (call/cc (cps:f p)))
 ≈ ((cps:f p) kq)]
 
-前两步照定义展开。最后一步用的是@xref["01:layers"]{「否定塔」}里两种配对的规律：手里有 @racket[kkp] 和 @racket[kp]，先用 @racket[call/cc] 取出 @math{p} 再交给 @racket[kp]，和直接把 @racket[kp] 交给 @racket[kkp]，行为相同，只要两边都守 @math{⊥} 的约定，调用以后不正常返回。这种行为相同，记作@defsym["a ≈ b" "行为相同：沿用「否定塔」两种配对的约定，再加「三种写法」旁注里的两条"] @racket[≈]，比 @racket[=] 弱：
+前两步照定义展开。最后一步用的是@xref["01:pairing"]{「两种配对」}的规律：手里有 @racket[kkp] 和 @racket[kp]，先用 @racket[call/cc] 取出 @math{p} 再交给 @racket[kp]，和直接把 @racket[kp] 交给 @racket[kkp]，行为相同，只要两边都守 @math{⊥} 的约定，调用以后不正常返回。这种行为相同，记作@defsym["a ≈ b" "行为相同：沿用「两种配对」的约定，再加「三种写法」旁注里的两条"] @racket[≈]，比 @racket[=] 弱：
 
 @racketblock[
 #,(hspace 2)(let ([p (call/cc kkp)]) (kp p))
 = (kp (call/cc kkp))
 ≈ (kkp kp)]
 
-@margin-note{@racket[=] 是照定义展开，用到的前提只有「两层参数之间不做别的事」。@racket[≈] 沿用「否定塔」的配对约定，这一章再加两条：各层函数参数和比较时的调用环境也都守约；两层参数之间只造函数，第一层若打印、跳出或不终止，推迟到第二层才做就看得出来。因此下文也可以在本章的调用、绑定和复合中作这样的替换。}
+@margin-note{@racket[=] 是照定义展开，用到的前提只有「两层参数之间不做别的事」。@racket[≈] 沿用@xref["01:pairing"]{「两种配对」}的约定，这一章再加两条：各层函数参数和比较时的调用环境也都守约；两层参数之间只造函数，第一层若打印、跳出或不终止，推迟到第二层才做就看得出来。因此下文也可以在本章的调用、绑定和复合中作这样的替换。}
 
 
 两个方向都回到原处：@tech{宿主箭头}经 @racket[cps] 变成 @tech{CPS 箭头}，@tech{CPS 箭头}经 @racket[uncps] 变回@tech{宿主箭头}，来回一趟，行为不变。@tech{逆否箭头}和 @tech{CPS 箭头}之间，@racket[flip] 来回一趟，照定义就回到原样。把这几种转换画在一起，箭头的种类记在顶点上（𝒟、𝒰、𝒦 分别指@tech{宿主箭头}、@tech{逆否箭头}、@tech{CPS 箭头}），转换标在边上，就是一张@defterm[#:en "diagram"]{图表}：
@@ -158,7 +158,7 @@ neg          uncps
 @racketblock[
 (((neg cps:id) kkkp) p)  =  (kkkp (cps:id p))]
 
-@tech[#:key "双重否定消除"]{DNE} 从第 2 层落到第 0 层，要 @racket[call/cc]；可手里的 @racket[kkp] 若只是要交给一条 @racket[kp]，「否定塔」的两种配对说，不必落到第 0 层，直接配对就行。
+@tech[#:key "双重否定消除"]{DNE} 从第 2 层落到第 0 层，要 @racket[call/cc]；可手里的 @racket[kkp] 若只是要交给一条 @racket[kp]，@xref["01:pairing"]{「两种配对」}说，不必落到第 0 层，直接配对就行。
 
 先看 @tech{CPS 箭头}。交给 @racket[(cps call/cc)] 一段 @racket[kkp] 和@tech{延续} @racket[kp]，用@xref["02:three-forms"]{「三种写法」}那条规律：
 

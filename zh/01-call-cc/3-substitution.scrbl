@@ -70,22 +70,23 @@
 
 @racket[triple-negation] 里的几个名字，@racket[q]、@racket[kq]、@racket[kkq]、@racket[kkkq]，差的只是外面叠了几个否定。数一数，刚才的做法能说得更清楚。
 
-固定一个类型 @math{A}，把 @math{A} 本身算作第 0 层，@math{¬A} 算作第 1 层，@math{¬¬A} 算作第 2 层，依此类推：多一层的类型，正是「接收少一层的值、结果为 @math{⊥}」的函数类型。谈论同一座否定塔的时候，@math{A} 要固定下来，只数它外面包了几层，不去拆它的内部。名字也替我们数：一个值叫 @racket[v]，等它的@tech{延续}就叫 @racket[kv]，等 @racket[kv] 的就叫 @racket[kkv]，名字里有几个 @racket[k]，就比 @racket[v] 多几层。
+@subsection[#:tag "01:count-layers"]{数层数}
 
-@xref["01:watershed"]{「分水岭」}里的四条定律，用层数说就是：
+以 @racket[q] 为底，把 @racket[q] 算作第 0 层。@racket[kq] 等一个 @racket[q]，是第 1 层；@racket[kkq] 等一个 @racket[kq]，是第 2 层；@racket[kkkq] 等一个 @racket[kkq]，是第 3 层。多一层的类型，正是「接收少一层的值、结果为 @math{⊥}」的函数类型；名字替我们数着，有几个 @racket[k]，就比底多几层。
 
-@itemlist[
-  @item{@tech{矛盾律}：第 @math{n+1} 层与第 @math{n} 层相遇，得到 @math{⊥}。}
-  @item{@tech[#:key "双重否定引入"]{DNI}：加两层，从第 @math{n} 层升到第 @math{n+2} 层。}
-  @item{@tech[#:key "双重否定消除"]{DNE}：减两层，从第 @math{n+2} 层落到第 @math{n} 层。}
-  @item{@tech{排中律}：交出相邻两层之一，第 @math{n} 层或第 @math{n+1} 层。}]
-以 @math{q} 为底，@racket[triple-negation] 从第 3 层减到第 1 层：第 0 层的 @racket[q] 用 @tech[#:key "双重否定引入"]{DNI} 升到第 2 层，正好与第 3 层的 @racket[kkkq] 相邻。
+@racket[triple-negation] 收下第 3 层的 @racket[kkkq]，交出第 1 层的 @racket[kq]。@racket[kq] 拿到第 0 层的 @racket[q] 以后做了两件事：先把 @racket[q] 包成 @racket[kkq]，从第 0 层升到第 2 层；再把 @racket[kkq] 交给 @racket[kkkq]，第 3 层与第 2 层相遇，得到 @math{⊥}。
 
-接下来要比较的是，哪些层能互相推出，哪些不能。层数先带出一个规律。@tech[#:key "双重否定引入"]{DNI}、@tech[#:key "双重否定消除"]{DNE} 一次加减两层，不改变奇偶，@tech{矛盾律}却要一奇一偶。奇偶不同的两个值，把低的那个反复做 @tech[#:key "双重否定引入"]{DNI}，总能升到与另一个相邻，再调用，@racket[triple-negation] 就是这样做的。例如第 0 层与第 5 层：第 0 层用 @tech[#:key "双重否定引入"]{DNI} 升到第 2 层，再升到第 4 层，就与第 5 层相邻，交给它，得到 @math{⊥}。奇偶相同的两个，只靠 @tech[#:key "双重否定引入"]{DNI}、@tech[#:key "双重否定消除"]{DNE} 凑不成相邻。
+这两步，正是@xref["01:watershed"]{「分水岭」}里的两条构造性定律：@tech[#:key "双重否定引入"]{DNI} 加两层，从第 @math{n} 层升到第 @math{n+2} 层；@tech{矛盾律}让第 @math{n+1} 层与第 @math{n} 层相遇，得到 @math{⊥}。另外两条经典定律，也有层数的说法：@tech[#:key "双重否定消除"]{DNE} 减两层，从第 @math{n+2} 层落到第 @math{n} 层；@tech{排中律}交出相邻两层之一，第 @math{n} 层或第 @math{n+1} 层。
 
-回到@xref["01:watershed"]{「分水岭」}留下的问题：从 @math{¬¬p} 取出 @math{p}，非得凭空拿到一个@tech{延续}不可吗？不一定。@xref["01:program-type"]{「代入 Byte」}里，那条@tech{延续}由 OS 交来；@racket[triple-negation] 更省事，不需要另外交来一条 @math{¬q}，它交出的 @math{¬q}，用交进来的 @racket[kkkq] 就做成了。
+一般地，固定一个类型 @math{A}，把 @math{A} 本身算作第 0 层，@math{¬A} 算作第 1 层，@math{¬¬A} 算作第 2 层，依此类推。谈论同一座否定塔的时候，@math{A} 要固定下来，只数它外面包了几层，不去拆它的内部。
 
-用层数说，区别在要交出的东西落在哪一层。落在第 1 层或更高，要交出的是一个函数，可以先交出去，等下一层的值来了再算。落到第 0 层，就得当场交出一个值，这时就没有对任何类型都适用的纯 @racket[λ] 写法了；要把计算真的跑起来，又不捕获，就得像运行程序那样，由外面交来一条@tech{延续}。
+层数带出一个规律。@tech[#:key "双重否定引入"]{DNI}、@tech[#:key "双重否定消除"]{DNE} 一次加减两层，不改变奇偶；@tech{矛盾律}却要一奇一偶。@racket[q] 在第 0 层，@racket[kkkq] 在第 3 层，奇偶不同，@racket[triple-negation] 把低的那个升两层，两者就相邻了。奇偶不同的两个，总能这样把低的那个一次次升两层，直到相邻再调用；奇偶相同的两个，只靠 @tech[#:key "双重否定引入"]{DNI}、@tech[#:key "双重否定消除"]{DNE} 凑不成相邻。
+
+回到@xref["01:watershed"]{「分水岭」}留下的问题：从 @math{¬¬p} 取出 @math{p}，非得凭空拿到一个@tech{延续}不可吗？不一定。@xref["01:program-type"]{「代入 Byte」}里，那条@tech{延续}由 OS 交来；@racket[triple-negation] 更省事，它交出的 @math{¬q}，用交进来的 @racket[kkkq] 就做成了，不需要另外交来一条。
+
+用层数说，区别在要交出的东西落在哪一层。@racket[triple-negation] 交出的落在第 1 层，是一个函数，可以先交出去，等第 0 层的值来了再算。落到第 0 层，就得当场交出一个值，这时就没有对任何类型都适用的纯 @racket[λ] 写法了；要把计算真的跑起来，又不捕获，就得像运行程序那样，由外面交来一条@tech{延续}。
+
+@subsection[#:tag "01:pairing"]{两种配对}
 
 落到第 0 层的那个值，常常只是要交给下一步。手里有一段等着@tech{延续}的计算 @racket[kkp]，在第 2 层；又有一条等着 @math{p} 的@tech{延续} @racket[kp]，在第 1 层。让它们相遇，有两条路：一条直接用@tech{矛盾律}，把 @racket[kp] 交给 @racket[kkp]；另一条先用 @tech[#:key "双重否定消除"]{DNE} 落到第 0 层，取出 @math{p}，再交给 @racket[kp]。@tech[#:key "双重否定消除"]{DNE} 用 @racket[call/cc] 写：
 
@@ -127,22 +128,20 @@
 
 两边都守约，两条路就行为相同。所以，手里已经有 @racket[kp]，要做的只是把结果交给它，直接写 @racket[(kkp kp)] 就行，不必落到第 0 层。要对任意 @math{p}、任意一段 @racket[kkp]，只凭 @racket[kkp] 统一交出一个 @math{p}，这才是 @tech[#:key "双重否定消除"]{DNE}。
 
-层数也照出了两种逻辑的分别。把能互相推出的层归为一类；这里按对任意底类型 @math{A} 都成立的互推来归类，不利用 @math{A} 的额外性质：
+@subsection[#:tag "01:two-logics"]{两种逻辑}
 
-@itemlist[
-  @item{经典逻辑里，@tech[#:key "双重否定引入"]{DNI} 加两层，@tech[#:key "双重否定消除"]{DNE} 减两层，相差两层的都能互推，一座塔只剩两类：偶数层，奇数层。}
-  @item{直觉主义逻辑里，@tech[#:key "双重否定消除"]{DNE} 一般不成立，但三重否定律能从第 3 层回到第 1 层；把其中的 @math{q} 换成 @math{¬A}，就从第 4 层回到第 2 层；依此类推。只有第 0 层一般回不去：那要用 @tech[#:key "双重否定消除"]{DNE}，@xref["01:watershed"]{「分水岭」}里试过，对任意类型写不出来。塔分成三类：第 0 层，奇数层，第 2 层起的偶数层。}]
-最低的五层排出来：
+层数也照出了两种逻辑的分别。把能互相推出的层归为一类；这里按对任意底类型 @math{A} 都成立的互推来归类，不利用 @math{A} 的额外性质。
+
+经典逻辑里，@tech[#:key "双重否定引入"]{DNI} 加两层，@tech[#:key "双重否定消除"]{DNE} 减两层，相差两层的都能互推，一座塔只剩两类：偶数层，奇数层。直觉主义逻辑里，@tech[#:key "双重否定消除"]{DNE} 一般不成立，往下落要靠@tech{三重否定律}：它从第 3 层回到第 1 层；把其中的 @math{q} 换成 @math{¬A}，就从第 4 层回到第 2 层，依此类推。只有第 0 层一般回不去，那要用 @tech[#:key "双重否定消除"]{DNE}，@xref["01:watershed"]{「分水岭」}里试过，对任意类型写不出来。塔于是分成三类：第 0 层，奇数层，第 2 层起的偶数层。最低的五层排出来：
 
 @tabular[#:style 'boxed #:row-properties '(bottom-border ())
   (list
    (list @elem{层} @elem{经典逻辑} @elem{直觉主义逻辑})
    (list @elem{0} @elem{偶数层：与 2、4 层经 @tech[#:key "双重否定引入"]{DNI}、@tech[#:key "双重否定消除"]{DNE} 互推}
          @elem{单独一类：@tech[#:key "双重否定引入"]{DNI} 升到第 2 层，一般不能落回})
-   (list @elem{1} @elem{奇数层} @elem{奇数层：@tech[#:key "双重否定引入"]{DNI} 升到第 3 层，三重否定律落回})
+   (list @elem{1} @elem{奇数层} @elem{奇数层：@tech[#:key "双重否定引入"]{DNI} 升到第 3 层，@tech{三重否定律}落回})
    (list @elem{2} @elem{偶数层} @elem{第 2 层起的偶数层：与第 4 层互推})
    (list @elem{3} @elem{奇数层} @elem{奇数层})
-   (list @elem{4} @elem{偶数层} @elem{第 2 层起的偶数层：三重否定律落回第 2 层}))]
+   (list @elem{4} @elem{偶数层} @elem{第 2 层起的偶数层：@tech{三重否定律}落回第 2 层}))]
 
 在这座否定塔上，两种逻辑的区别，就在第 0 层是否与其余的偶数层合并。
-
