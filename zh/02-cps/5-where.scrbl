@@ -74,7 +74,7 @@
 (: uncps (∀ (p q) (→ (→𝒦 p q) (→𝒟 p q))))
 (define (uncps cps:f) (∘ call/cc cps:f))]
 
-@racket[((uncps cps:f) x)] 先算出 @racket[(cps:f x)]，一段等待@tech{延续}的计算，再交给 @racket[call/cc]，@racket[call/cc] 把当前@tech{延续}交给它。@racket[uncps] 收 @tech{CPS 箭头}，交出@tech{宿主箭头}，也就是一个普通的宿主函数，可以放进同一个 @racket[(+ 1 _)]：
+@racket[((uncps cps:f) p)] 先算出 @racket[(cps:f p)]，一段等待@tech{延续}的计算，再交给 @racket[call/cc]，@racket[call/cc] 把当前@tech{延续}交给它。@racket[uncps] 收 @tech{CPS 箭头}，交出@tech{宿主箭头}，也就是一个普通的宿主函数，可以放进同一个 @racket[(+ 1 _)]：
 
 @examples[#:eval ev #:label #f
 (+ 1 ((uncps cps:mul) 1 2 3 4))
@@ -85,33 +85,33 @@
 宿主函数经 @racket[cps] 提升，再经 @racket[uncps] 放回，还是原来那个吗？对@tech{宿主箭头} @racket[f]，展开看：
 
 @racketblock[
-((uncps (cps f)) . p*)  =  (call/cc ((cps f) . p*))
-                        =  (call/cc (λ (kq) (kq (f . p*))))
-                        =  (f . p*)]
+#,(hspace 2)((uncps (cps f)) . p*)
+= (call/cc ((cps f) . p*))
+= (call/cc (λ (kq) (kq (f . p*))))
+= (f . p*)]
 
 第三步用的是@xref["01:call-cc-types"]{「call/cc 的几种类型」}里的道理：@racket[proc] 正常返回，走的也正是交给它的那条@tech{延续}，只是没有写出来。这里反过来，@racket[(kq …)] 处在尾位置，@racket[kq] 就是调用 @racket[call/cc] 这一处的当前@tech{延续}，显式调用它和直接返回 @racket[(f . p*)] 汇入同一个出口。提起来再放回去，还是原来的函数。
 
 @section[#:tag "02:three-forms"]{三种写法}
 
-反过来呢？一支 @tech{CPS 箭头}先经 @racket[uncps] 运行回宿主，再经 @racket[cps] 提升，还是原来那支吗？交给它输入 @racket[x] 和@tech{延续} @racket[kq]，展开：
-
-@racketblock[
-#,(hspace 2)(((cps (uncps cps:f)) x) kq)
-= (kq ((uncps cps:f) x))
-= (kq (call/cc (cps:f x)))
-≈ ((cps:f x) kq)]
-
-前两步照定义展开。最后一步换成了@defsym["a ≈ b" "行为相同，前提比 = 多，见「三种写法」的旁注"] @racket[≈]：它说的是行为相同，比 @racket[=] 弱，只在旁注那几条约定下成立。用的是 @racket[call/cc] 的一条规律：
+反过来呢？一支 @tech{CPS 箭头}先经 @racket[uncps] 运行回宿主，再经 @racket[cps] 提升，还是原来那支吗？要回答它，得先说清怎样算「还是」。下面用@defsym["a ≈ b" "行为相同：延续只拿来调用，也不分辨在捕获处还是调用处执行它"] @racket[≈] 记@xref["01:pairing"]{「两种配对」}里约定的行为相同：@tech{延续}只拿来调用，程序也不分辨是在捕获处还是调用处执行它。在这个约定下，那一节的结论写成：
 
 @racketblock[
 #,(hspace 2)(let ([p (call/cc kkp)]) (kp p))
 = (kp (call/cc kkp))
 ≈ (kkp kp)]
 
-@margin-note{这两段推导里的 @racket[=] 是照定义展开，用到的前提只有「两层参数之间不做别的事」；@racket[≈] 说的是行为相同，还需要下面的控制约定。@racket[kp] 和 @racket[kkp] 都要遵守结果为 @math{⊥} 的约定，调用以后不向当前调用处正常返回：@racket[kp] 若正常返回，捕获的@tech{延续}还会接着做 @racket[(kp p)] 之后的事；@racket[kkp] 若正常交回一个值，左边会把它交给 @racket[kp]，右边却直接返回。@racket[kkp] 也不能借助异常处理器这类动态的控制环境，否则直接调用与经过捕获的@tech{延续}，所处的环境不同。函数和@tech{延续}只通过调用来使用。这些约定也适用于交进来的各层函数参数和比较时的调用环境。在这些约定下，行为相同也包括把它们放进本章的调用、绑定和复合中使用。}
+这里的 @racket[kp]、@racket[kkp] 仍是否定塔上不正常返回的函数。@racket[≈] 比 @racket[=] 弱，还要用到这个约定。交给提升回来的箭头输入 @racket[p] 和@tech{延续} @racket[kq]，展开：
 
-@racket[call/cc] 捕获的，是收到 @racket[p] 以后交给 @racket[kp] 这件剩下的工作。@racket[kp] 若是一条真正的@tech{延续}，交出去就不再回来，捕获到的@tech{延续}和 @racket[kp] 行为相同。把它交给 @racket[kkp]，和直接把 @racket[kp] 交给 @racket[kkp]，行为相同。
+@racketblock[
+#,(hspace 2)(((cps (uncps cps:f)) p) kq)
+= (kq ((uncps cps:f) p))
+= (kq (call/cc (cps:f p)))
+≈ ((cps:f p) kq)]
 
+这里前两步的 @racket[=] 是照定义展开，最后一步就是上面那条。
+
+@margin-note{涉及两层参数的换写，仍沿用@xref["02:split-k"]{「延续独占一层」}的约定，「两层参数之间不做别的事」：两层参数之间只造函数，第一层若打印、跳出或不终止，推迟到第二层才做就看得出来。各层参数与外围调用环境都沿用 @racket[≈] 的约定，所以下文也可以在本章的调用、绑定和复合中作这样的替换。}
 
 两个方向都回到原处：@tech{宿主箭头}经 @racket[cps] 变成 @tech{CPS 箭头}，@tech{CPS 箭头}经 @racket[uncps] 变回@tech{宿主箭头}，来回一趟，行为不变。@tech{逆否箭头}和 @tech{CPS 箭头}之间，@racket[flip] 来回一趟，照定义就回到原样。把这几种转换画在一起，箭头的种类记在顶点上（𝒟、𝒰、𝒦 分别指@tech{宿主箭头}、@tech{逆否箭头}、@tech{CPS 箭头}），转换标在边上，就是一张@defterm[#:en "diagram"]{图表}：
 
@@ -125,11 +125,11 @@ neg          uncps
 从 𝒟 出发，经 @racket[neg]、@racket[flip] 到 𝒦，就是 @c{cps = (∘ flip neg)}；再经 @racket[uncps] 回到 𝒟，得到的还是原来的箭头。从 𝒦 出发，经 @racket[uncps] 回到 𝒟，再经 @racket[neg] 走到 𝒰，得到的是什么？展开只用到上面那条规律：
 
 @racketblock[
-#,(hspace 2)(((neg (uncps cps:f)) kq) x)
-= (kq ((uncps cps:f) x))
-= (kq (call/cc (cps:f x)))
-≈ ((cps:f x) kq)
-= (((flip cps:f) kq) x)]
+#,(hspace 2)(((neg (uncps cps:f)) kq) p)
+= (kq ((uncps cps:f) p))
+= (kq (call/cc (cps:f p)))
+≈ ((cps:f p) kq)
+= (((flip cps:f) kq) p)]
 
 @racket[(neg (uncps cps:f))] 与 @racket[(flip cps:f)] 行为相同：@racket[flip] 从 𝒦 到 𝒰 的那个方向，就是 @racket[(∘ neg uncps)]，和 @c{cps = (∘ flip neg)} 正好对称。三条边绕成一个圈，从哪一处出发绕一圈，都回到原来的箭头；因此从一处走到另一处，多绕几圈也不改变结果。图表有这种性质，就说它是@defterm[#:en "commutative"]{交换}的，叫作@defterm[#:en "commutative diagram"]{交换图表}。
 
@@ -143,37 +143,22 @@ neg          uncps
 
 在 @racket[≈] 的意义下，三种写法是@defterm[#:en "isomorphic"]{同构}的：同一组箭头的三种写法。到这里，嵌入语言写出的箭头放得回宿主，放回去行为不变；可放回去要靠宿主的 @racket[call/cc]。三种写法互相转换不丢行为，以后在哪种写法里推导都行，推完再搬回来。
 
-@section[#:tag "02:count-k"]{数一数 k}
+@section[#:tag "02:same-arrow"]{同一支箭头}
 
-名字里的 @racket[k] 一直在数否定的层数，@xref["01:layers"]{「否定塔」}数过：@racket[kv] 等 @racket[v]，@racket[kkv] 等 @racket[kv]，多一层的正好接收少一层的。那里的几条规则，在这一章里都有了现成的写法。把前面这些箭头换回层数来看，哪一步越过了第 0 层，一数就知道。
+@xref["02:clavius"]{「Clavius 律」}末尾问过：@racket[cps:call/cc] 还算不算原来的 @racket[call/cc]？先分清两件事。@racket[cps:call/cc] 是把整条 @tech{Clavius 律}换写一遍：类型里的箭头全是 @math{→@subscript{𝒦}}，@racket[proc] 也换成了新的箭头。另一件是不换写定律，只把宿主的 @racket[call/cc] 照 @tech[#:key "双重否定消除"]{DNE} 读成一支@tech{宿主箭头} @math{¬¬p →@subscript{𝒟} p}，收下第 2 层的 @racket[kkp]，交出第 0 层的值，再把这一支搬到 @tech{CPS 箭头}或@tech{逆否箭头}上：这就是 @racket[(cps call/cc)] 和 @racket[(neg call/cc)]。@racket[cps:car] 就是 @racket[(cps car)]，@racket[cps:call/cc] 却不是 @racket[(cps call/cc)]，两者连 @racket[proc] 的接口都不同。至于还算不算：把过程参数和逃逸用的@tech{延续}也按新接口改写以后，@racket[cps:call/cc] 实现的仍是同一个操作，把当前@tech{延续}交给 @racket[proc]。下面看后一件事。
 
-DNI 加两层，在这里就是 @racket[cps:id]：收下 @racket[p]，等一条 @racket[kp] 来，再把 @racket[p] 交给它。@xref["02:cps"]{「延续与 CPS」}开头那串等式，把 @racket[(k e)] 改写成 @racket[((λ (k) (k e)) (λ (v) b))]，做的就是这一步。交来的若正是 @racket[(cps:id p)]，把 @racket[kp] 交给它，照定义一步就回到原处：
+用@xref["01:layers"]{「否定塔」}的层数看，那里的几条规则，这一章都有了现成的写法。@tech[#:key "双重否定引入"]{DNI} 加两层，就是 @racket[cps:id]：收下 @racket[p]，等一条 @racket[kp] 来，再把 @racket[p] 交给它。交来的若正是 @racket[(cps:id p)]，把 @racket[kp] 交给它，照定义一步就回到原处：
 
 @racketblock[
 #,(hspace 2)(let ([kkp (cps:id p)]) (kkp kp))
 = (kp p)]
 
-手里的 @racket[kkp] 若是随便一段计算，就不能这样拆开。@xref["02:three-forms"]{「三种写法」}那条规律倒过来读，从 @racket[(kkp kp)] 走到 @racket[(kp p)]，中间要 @racket[call/cc]，也就是 DNE，减两层，落到第 0 层：
-
-@racketblock[
-#,(hspace 2)(kkp kp)
-≈ (kp (call/cc kkp))
-= (let ([p (call/cc kkp)]) (kp p))]
-
-这一步用的是那里的 @racket[≈]，前提也照样要。
-
-减两层而不落到第 0 层，用@tech{三重否定律}就够了，不必 @racket[call/cc]。它在这里也有现成的写法，就是 DNI 的逆否 @racket[(neg cps:id)]：
+@tech{三重否定律}从第 3 层减到第 1 层，不必 @racket[call/cc]，就是 @tech[#:key "双重否定引入"]{DNI} 的逆否 @racket[(neg cps:id)]，和@xref["01:neg-q"]{「代入 ¬q」}里的 @racket[triple-negation] 做的一样：
 
 @racketblock[
 (((neg cps:id) kkkp) p)  =  (kkkp (cps:id p))]
 
-收下第 3 层的 @racket[kkkp]，交出第 1 层：等 @racket[p] 来了，把它升两层交给 @racket[kkkp]，和@xref["01:neg-q"]{「代入 ¬q」}里的 @racket[triple-negation] 做的一样。第 0 层仍是例外：对任意类型，没有纯的写法落到那里。
-
-@section[#:tag "02:same-arrow"]{同一支箭头}
-
-@xref["02:clavius"]{「Clavius 律」}末尾问过：@racket[cps:call/cc] 还算不算原来的 @racket[call/cc]？@racket[cps:call/cc] 是整条定律的翻译；要和它比较，先得知道原来的 @racket[call/cc] 自己搬到 @tech{CPS 箭头}上是什么。@racket[cps:car] 就是 @racket[(cps car)]；@racket[cps:call/cc] 却不是 @racket[(cps call/cc)]：照名字的约定，它类型里的箭头全是 @math{→@subscript{𝒦}}，@racket[proc] 也换成了新的箭头，整条 @tech{Clavius 律}换写了一遍。那 @racket[(cps call/cc)] 和 @racket[(neg call/cc)] 又是什么？
-
-不换写定律，只把箭头搬过去。宿主的 @racket[call/cc] 照 DNE 来读，是一支@tech{宿主箭头} @math{¬¬p →@subscript{𝒟} p}：收下第 2 层的 @racket[kkp]，交出第 0 层的值。
+@tech[#:key "双重否定消除"]{DNE} 从第 2 层落到第 0 层，要 @racket[call/cc]；可手里的 @racket[kkp] 若只是要交给一条 @racket[kp]，@xref["01:pairing"]{「两种配对」}说，不必落到第 0 层，直接配对就行。
 
 先看 @tech{CPS 箭头}。交给 @racket[(cps call/cc)] 一段 @racket[kkp] 和@tech{延续} @racket[kp]，用@xref["02:three-forms"]{「三种写法」}那条规律：
 
@@ -194,7 +179,7 @@ DNI 加两层，在这里就是 @racket[cps:id]：收下 @racket[p]，等一条 
 @racketblock[
 (cps call/cc)  ≈  neg²:id]
 
-@math{¬¬p →@subscript{𝒦} p} 看上去也像 DNE；展开到宿主，它只是 @math{¬¬p → ¬¬p}，从第 2 层到第 2 层。名字的由来：@racket[neg²] 指连用两次 @racket[neg]，@racket[neg²:id] 就是 @racket[(neg (neg id))]，也就是 @racket[(neg neg:id)]。验证一下：@racket[(neg neg:id)] 收下 @racket[kkp]，交出 @racket[(∘ kkp id)]，行为和 @racket[kkp] 一样。反过来，把它交给 @racket[uncps]，沿图表回到宿主，得到的正是 @racket[call/cc]：
+@math{¬¬p →@subscript{𝒦} p} 看上去也像 @tech[#:key "双重否定消除"]{DNE}；展开到宿主，它只是 @math{¬¬p → ¬¬p}，从第 2 层到第 2 层。名字的由来：@racket[neg²] 指连用两次 @racket[neg]，@racket[neg²:id] 就是 @racket[(neg (neg id))]，也就是 @racket[(neg neg:id)]。验证一下：@racket[(neg neg:id)] 收下 @racket[kkp]，交出 @racket[(∘ kkp id)]，行为和 @racket[kkp] 一样。反过来，把它交给 @racket[uncps]，沿图表回到宿主，得到的正是 @racket[call/cc]：
 
 @racketblock[
 (uncps neg²:id)  ≈  (uncps (cps call/cc))  =  call/cc]
@@ -220,6 +205,6 @@ DNI 加两层，在这里就是 @racket[cps:id]：收下 @racket[p]，等一条 
 ≈ (kkp kp)
 = ((cps:id kp) kkp)]
 
-@racket[(neg call/cc)] 收下第 1 层的 @racket[kp]，交出第 3 层，多了两层。展开的最后一行说，@racket[(neg call/cc)] 的行为和用在 @math{¬p} 上的 @racket[cps:id] 相同。@racket[neg:id] 就是 @racket[id]，所以 @racket[cps:id] 也就是 @racket[(cps neg:id)]。宿主里 2 → 0 的这一步，换成 @tech{CPS 箭头}是 2 → 2，换成@tech{逆否箭头}是 1 → 3，接口一变，都不再落到第 0 层。@racket[(cps call/cc)] 和 @racket[(neg call/cc)] 搬的是 DNE 这一支箭头，和换写整条 @tech{Clavius 律}得到的 @racket[cps:call/cc]、@racket[neg:call/cc] 是两回事。
+@racket[(neg call/cc)] 收下第 1 层的 @racket[kp]，交出第 3 层，多了两层。最后两步，正是@xref["01:pairing"]{「两种配对」}里的两种走法：先落到第 0 层再交给 @racket[kp]，和把 @racket[kp] 升到第 3 层再与 @racket[kkp] 相遇，行为相同。展开的最后一行说，@racket[(neg call/cc)] 的行为和用在 @math{¬p} 上的 @racket[cps:id] 相同。@racket[neg:id] 就是 @racket[id]，所以 @racket[cps:id] 也就是 @racket[(cps neg:id)]。宿主里 2 → 0 的这一步，换成 @tech{CPS 箭头}是 2 → 2，换成@tech{逆否箭头}是 1 → 3，接口一变，都不再落到第 0 层。
 
 @racket[uncps] 回到宿主，靠的是 @racket[call/cc]。不用它，这些箭头能不能落到纯的宿主函数？

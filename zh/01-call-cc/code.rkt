@@ -486,3 +486,42 @@
   ;; 三重否定律：把 DNI 升两层的延续降回来，行为和原来的一样，什么也不捕获
   (check-equal? (let/cc k (define (kkkq kkq) (kkq k)) (let ([kq (tn:triple-negation kkkq)]) (kq 'hello))) 'hello)
   (check-equal? ((tn:triple-negation (λ (kkq) (kkq (λ (q) (list 'got q))))) 7) '(got 7)))
+
+;; 「否定塔」：三种配对。守约时行为相同；kkp 或 kp 正常返回（不在否定塔上）时就分开。
+(module pairing racket
+  (provide (all-defined-out))
+  (define p 5)
+  (define (kkp k) (k p)))
+
+(module+ test
+  (require (prefix-in pair: (submod ".." pairing)))
+  (check-equal? (+ 100 (let/cc kp (+ 10 (pair:kkp kp)))) 105)
+  (check-equal? (+ 100 (let/cc kp (+ 10 (let ([p (call/cc pair:kkp)]) (kp p))))) 105)
+  (check-equal? (+ 100 (let/cc kp (+ 10 (kp (call/cc pair:kkp))))) 105)
+  ;; 把 kp 升到第 3 层再相遇，照定义就是 (kkp kp)。
+  (check-equal? (+ 100 (let/cc kp
+                         (define (kkkp kkp) (kkp kp))
+                         (+ 10 (kkkp pair:kkp))))
+                105)
+  (define (bad kp) 7)  ; 类型不是 ¬¬p 的函数：两种写法分开
+  (check-equal? (+ 100 (let/cc kp (+ 10 (bad kp)))) 117)
+  (check-equal? (+ 100 (let/cc kp (+ 10 (let ([p (call/cc bad)]) (kp p))))) 107)
+  (check-equal? (let/cc out
+                  (define (kkp k) (k 1) (out 9))
+                  (define (kp v) v)
+                  (kkp kp))
+                9)
+  (check-equal? (let/cc out
+                  (define (kkp k) (k 1) (out 9))
+                  (define (kp v) v)
+                  (let ([p (call/cc kkp)]) (kp p)))
+                1)
+  ;; 不回来还不够：kp 在捕获处还是调用处执行，动态参数分得出（Astra，#129）。
+  (define n (make-parameter 0))
+  (define (run direct?)
+    (let/cc out
+      (define (kp v) (out (n)))
+      (define (kkp k) (parameterize ([n 1]) (k 5)))
+      (if direct? (kkp kp) (kp (call/cc kkp)))))
+  (check-equal? (run #t) 1)
+  (check-equal? (run #f) 0))

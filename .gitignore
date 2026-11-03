@@ -4,3 +4,4 @@ compiled/
 build/
 __pycache__/
 doc/
+out/

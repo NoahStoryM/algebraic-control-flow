@@ -28,7 +28,7 @@
       (apply values saved)
       (λ args (set! saved args) (goto l))))]
 
-control-context 库（@racketmodname[control/context]）里的 @racket[cc] 就是这样定义的，另外还做了一些这里用不到的处理。@racket[(cc)] 交出的不是值就是@tech{延续}，没有@tech{标记}。@racket[mul] 的结果是实数，@tech{延续}是函数，用 @racket[real?] 就分得开：
+control-context 库（@racketmodname[control/context]）里的 @racket[cc] 就是这样定义的，另外还做了一些这里用不到的处理；正文的 @racket[cc] 打上@tech{标记}，是为了把两支讲清楚。@racket[(cc)] 交出的不是值就是@tech{延续}，没有@tech{标记}。@racket[mul] 的结果是实数，@tech{延续}是函数，用 @racket[real?] 就分得开：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define (mul . r*)
@@ -45,7 +45,7 @@ control-context 库（@racketmodname[control/context]）里的 @racket[cc] 就�
 (mul 2 3 4)
 (mul 2 0 3)]
 
-代价是分不分得开要由使用者负责：@math{p} 换成函数类型，值和@tech{延续}就未必分得清了。@racket[call/cc] 正碰上这种情况，只好把传回来的结果一律收进一张列表，用的是 @xref["01:disjoint-struct"]{第四种办法}：
+代价是分不分得开要由使用者负责：@math{p} 换成函数类型，值和@tech{延续}就未必分得清了。@racket[call/cc] 正碰上这种情况，只好把传回来的结果一律收进一张列表，再用 @racket[list?] 分辨：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: call/cc (∀ (p) (→ (→ (¬ p) p) p)))
@@ -85,7 +85,7 @@ control-context 库（@racketmodname[control/context]）里的 @racket[cc] 就�
 (define (label) (cc))
 (define (goto l) (l l))]
 
-和正文相比，@racket[cc] 不用给两支配@tech{标记}，写回@tech{标签}时也不用 @racket[untag]：两支直接并在一起，正是 @xref["01:label-sub"]{「代入 Label」}里的坍缩，@math{@ty{Label} ∪ @ty{Label} = @ty{Label}}。
+和正文相比，@racket[cc] 不用给两支配@tech{标记}，写回@tech{标签}时也不用 @racket[untag]：两支直接并在一起。
 
 @section[#:tag "01:disjoint-tag"]{打标记}
 

@@ -58,7 +58,7 @@
 @racketblock[
 (let ([v e]) b)  =  ((λ (v) b) e)]
 
-每个 @racket[let] 绑定都配着两样东西：一个待求值的表达式 @racket[e]，和一个等待结果的函数 @racket[(λ (v) b)]。后者接收 @racket[e] 的值，然后执行剩余的计算。这个「等待结果并执行剩余计算的函数」，就是@tech{延续}。求值的每一步，都能这样拆成两半：眼下要归约的那一小段叫@defterm[#:en "reducible expression" #:abbr "redex"]{可归约式}，围着它、等它结果的其余部分就是@tech{延续}。@racket[e] 还没算完时，@tech{可归约式}就在 @racket[e] 里面。
+每个 @racket[let] 绑定都配着两样东西：一个待求值的表达式 @racket[e]，和一个等待结果的函数 @racket[(λ (v) b)]。后者接收 @racket[e] 的值，然后执行剩余的计算。这个「等待结果并执行剩余计算的函数」，就是@tech{延续}。求值的每一步，都能这样拆成两半：眼下要归约的那一小段叫@defterm[#:en "reducible expression" #:abbr "redex"]{可归约式}，围着它、等它结果的其余部分就是@tech{延续}。@racket[e] 若还要分几步算，@tech{可归约式}就在 @racket[e] 里面。
 
 @racket[let] 的先后次序，也来自这次脱糖。调用 @racket[((λ (v) b) e)] 时，先算出实参 @racket[e]，再把结果绑定到形参 @racket[v]，最后算函数体 @racket[b]。所以 @racket[(let ([v e]) b)] 总是先算 @racket[e]，再算 @racket[b]。
 
@@ -130,7 +130,7 @@
 
 @racket[id] 接在哪一头都不改变什么：@racket[(∘ id f)] 和 @racket[(∘ f id)] 都等于 @racket[(∘ f)]，也就是 @racket[f]。这条性质叫@defterm[#:en "identity law"]{单位律}，@racket[id] 是 @racket[∘] 的单位元。
 
-这就回答了前面的问题。@tech{结合律}说，@racket[let] 嵌在 @racket[b] 里还是 @racket[e] 里都一样；@tech{单位律}说，只换名的 @racket[let] 可有可无。写法尽可以不同，定下的是同一个计算顺序，行为也都一样。这两条是 @racket[∘] 的运算律。
+这就回答了前面的问题，至少对这里比较的这种一步只用上一步结果的复合：@tech{结合律}说，@racket[let] 嵌在 @racket[b] 里还是 @racket[e] 里都一样；@tech{单位律}说，只换名的 @racket[let] 可有可无。写法尽可以不同，定下的是同一个计算顺序，行为也都一样。这两条是 @racket[∘] 的运算律。
 
 @racket[∘] 写的顺序和算的顺序相反：@racket[(∘ h g f)] 里最右边的 @racket[f] 先算。@racket[let*] 却是照算的顺序，从上往下写。照算的顺序写的复合记作@defsym["f ⨾ g" "反向复合：先 f 后 g，与 let* 的次序一致"] @racket[⨾]，@racket[(⨾ f g h)] 先调用 @racket[f]，再调用 @racket[g]，最后调用 @racket[h]：
 

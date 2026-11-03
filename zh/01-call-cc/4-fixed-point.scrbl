@@ -23,7 +23,7 @@
           [(thread-dead? t) (display s)]
           [else (sleep 0.01) (loop)])))]
 
-从 @racket[call/cc] 倒回 @racket[cc]，再倒回一步，就回到了起点：@racket[Label]。这个类型我们早就认识，却一直没拿来代入。@math{@ty{Label} = @ty{Label} → ⊥} 用 @math{¬} 改写，就是 @math{@ty{Label} = ¬@ty{Label}}：它的否定就是它自己，是@defterm[#:en "fixed point of negation"]{否定的不动点}。连 @racket[goto] 也是一个@tech{标签}：
+代入 @racket[Byte]、@math{¬q} 时，否定塔的各层分得清清楚楚。还有一个类型我们早就认识，却一直没拿来代入：从 @racket[call/cc] 倒回 @racket[cc]，再倒回一步，就回到了起点 @racket[Label]。@math{@ty{Label} = @ty{Label} → ⊥} 用 @math{¬} 改写，就是 @math{@ty{Label} = ¬@ty{Label}}：它的否定就是它自己，是@defterm[#:en "fixed point of negation"]{否定的不动点}。连 @racket[goto] 也是一个@tech{标签}：
 
 @mm{@ty{Label} → ⊥ = ¬@ty{Label} = @ty{Label}}
 
@@ -31,20 +31,20 @@
 
 @section[#:tag "01:label-sub"]{代入 Label}
 
-把 @racket[Label] 代入@tech{排中律} @math{p ∨ ¬p}。按定义，@math{¬@ty{Label}} 就是 @racket[Label]，两个分支成了同一个类型：
+前面代入的都是 @tech[#:key "双重否定消除"]{DNE}，这回换成 @racket[cc] 对应的@tech{排中律}：把 @racket[Label] 代入 @math{p ∨ ¬p}。按定义，@math{¬@ty{Label}} 就是 @racket[Label]，两个分支成了同一个类型：
 
 @mm{@ty{Label} ∨ ¬@ty{Label} = @ty{Label} ∨ @ty{Label}}
 
-原本分别对应 @racket[Label] 和 @math{¬@ty{Label}} 的两支，在这里成了同一个类型。@racket[(cc)] 交出的 @math{@ty{Label} ∐ @ty{Label}} 里，两支还配着@tech{标记}：每个@tech{标签} @math{l} 有 @math{(l, 0)}、@math{(l, 1)} 两份，记着自己来自哪一支。可@xref["01:label-from-call-cc"]{「从 call/cc 定义标签」}里，@tech{标签}是这样从 @racket[cc] 写出来的：
+@racket[(cc)] 交出的 @math{@ty{Label} ∐ @ty{Label}} 里，两支还配着@tech{标记}：每个@tech{标签} @math{l} 有 @math{(l, 0)}、@math{(l, 1)} 两份，记着自己来自哪一支。类型相同，两支并不会自己合成一支；把它们并起来的，是@xref["01:reverse-loop"]{「反过来绕一圈」}里的 @racket[untag]：
 
 @racketblock[
 (define label (compose untag cc))]
 
-@racket[untag] 丢掉了@tech{标记}，两份并成一个 @math{l}，就像普通的并集不记来源。两支就坍缩成了一支：
+@racket[untag] 丢掉@tech{标记}，两份并成一个 @math{l}：
 
 @mm{@ty{Label} ∪ @ty{Label} = @ty{Label}}
 
-既然只剩一支，也就不必再分。@racket[mul] 当初要用 @racket[match] 分辨 @racket[(cc)] 交出的是值还是@tech{延续}；在 @racket[Label] 上，不管交出哪一支，拿到的都是一个@tech{标签}，既能当值存着，也能当@tech{延续}去调用。@racket[(label)] 就是这样一个不分支的 @racket[cc]。
+丢得掉，是因为那里跳回来靠的是 @racket[goto]，带回来的就是@tech{标签}自己，两支装的本来就是同一个@tech{标签}。@racket[(label)] 就是这样一个不分支的 @racket[cc]：不管交出哪一支，拿到的都是一个@tech{标签}，既能当值存着，也能当@tech{延续}去调用。
 
 @section[#:tag "01:yin-yang"]{把标签交给标签}
 
@@ -81,7 +81,7 @@
 
 这就是 David Madore 的阴阳谜题。两次 @racket[(label)] 交出的都是@tech{标签}。@racket[(yin yang)] 就是一次函数调用：同一个类型，@racket[yin] 当作@tech{延续}，@racket[yang] 当作交给它的值。
 
-这一次调用和以往都不一样。@xref["01:label-from-call-cc"]{「从 call/cc 定义标签」}里能丢掉@tech{标记}，是因为@tech{标签}跳回来靠的是 @racket[goto]，带回来的是它自己，@racket[(cc)] 的两支装着同一个@tech{标签}。@racket[(yin yang)] 却把 @racket[yang] 交给了 @racket[yin]：@racket[yin] 那次 @racket[(label)] 再返回时，交出的是 @racket[yang]，不一定是 @racket[yin] 自己。
+这一次调用和以往都不一样。@xref["01:first-class"]{「一等标签」}说，@racket[(label)] 再返回时交出的仍是原来那个@tech{标签}，那是 @racket[goto] 的约定：它总把@tech{标签}交给@tech{标签}自己，@xref["01:reverse-loop"]{「反过来绕一圈」}里能丢掉@tech{标记}，靠的也是这一点。@racket[(yin yang)] 不经 @racket[goto]，直接把 @racket[yin] 当@tech{延续}调用，交进去的是 @racket[yang]：@racket[yin] 那次 @racket[(label)] 再返回时，交出的是 @racket[yang]，不一定是 @racket[yin] 自己。
 
 程序里没有循环，没有计数器，也没有 @racket[set!]：只有两次 @racket[(label)]、两次打印和一次调用。输出却是一道无限增长的阶梯，每一轮都比上一轮多打印一个 @racket[*]。多出来的那个 @racket[*]，记在了哪里？
 
@@ -105,9 +105,9 @@
     (define ln (cons kn n))
     (apply-cont ln ln)))]
 
-@margin-note{换回函数表示，@racket[apply-cont] 的类型就是@tech{矛盾律} @racket[(¬ (¬ p) p)] 取 @math{p = @ty{Label}}。这一节的 @racket[¬] 是对，@racket[apply-cont] 本身却仍是函数，所以它的类型照旧用 @racket[→] 写。}
+@margin-note{@racket[apply-cont] 本身仍是函数，类型照旧用 @racket[→] 写；把这一节的 @racket[¬] 换回函数，它就是@tech{矛盾律} @racket[(¬ (¬ p) p)] 取 @math{p = @ty{Label}}。}
 
-交出去的 @racket[ln] 装着第 @racket[n] 条@tech{延续} @racket[kn] 和它的编号 @racket[n]，不再是能直接调用的函数，调用它的办法得我们自己规定。@racket[apply-cont] 做的还是向一个@tech{否定}交一个值，不管@tech{否定}怎样表示，都是这个操作；这里 @math{p} 取 @racket[Label]。插桩版要印出两边的编号，所以用 @racket[match-define] 拆开两个对，印出谁跳向谁，再调用里面的函数：
+交出去的 @racket[ln] 装着第 @racket[n] 条@tech{延续} @racket[kn] 和它的编号 @racket[n]，不再是能直接调用的函数，调用它的办法得我们自己规定。@racket[apply-cont] 做的还是向一个@tech{否定}交一个值，不管@tech{否定}怎样表示，都是这个操作。插桩版要印出两边的编号，所以用 @racket[match-define] 拆开两个对，印出谁跳向谁，再调用里面的函数：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (: apply-cont (→ (¬ Label) Label ⊥))
@@ -188,6 +188,4 @@
 
 第三种就是 @racket[Label]。@math{@ty{Label} = ¬@ty{Label}} 读作命题，就是一句「这句话是假的」。推一推：如果 @racket[Label] 为真（非空），@math{¬@ty{Label}} 也就非空，@racket[Label] 的@tech{否定}为真，@racket[Label] 为假。如果 @racket[Label] 为假（空），@math{¬@ty{Label}} 反倒有元素：空类型出发的函数总写得出来，就像 @racket[absurd] 填充了 @math{⊥ → p}；可 @math{¬@ty{Label} = @ty{Label}}，于是 @racket[Label] 又有了元素，变成了真。这就是@defterm[#:en "liar paradox"]{说谎者悖论}，它无法被一致地赋予真假值。阴阳谜题就像让它运行了起来：同一个@tech{标签}一会儿被调用，一会儿被交出去，永远落不了地。更简单的是把 @racket[goto] 交给它自己：@racket[(goto goto)] 的类型是 @racket[⊥]，却永远算不完。Agda 和 Coq 这样的一致类型论禁止这类定义；Racket 没有这个限制。
 
-每种情况下，严格的 Curry-Howard 解读都失效了：本应为空的@tech{否定}类型有了元素，本应非法的自指类型变得合法。不能把任意 Racket 表达式都当作证明。前面读出逻辑定律时，无限循环、内置的 @racket[exit]、抛出异常和自指类型，都不在这个读法之内；@racket[cc] 和 @racket[call/cc] 当作现成的操作，按它们的类型来用；它们内部怎样用 @racket[label]、@racket[set!] 实现，不算在证明里。
-
-前面真正用到的是两条规则：按给定的类型使用控制操作符，程序里交进来的东西，在证明里算假设。在这个范围内，程序的类型推导对应逻辑证明；除了交进来的东西，不再依赖别的时候，得到的才是相应命题的无条件证明。加入控制操作，就多了@tech{排中律}、DNE 这样的推理规则。
+每种情况下，严格的 Curry-Howard 解读都失效了：本应为空的@tech{否定}类型有了元素，本应非法的自指类型变得合法。不能把任意 Racket 表达式都当作证明。前面读出逻辑定律时，用的是一个更窄的范围：无限循环、内置的 @racket[exit]、抛出异常和自指类型都不算；@racket[cc] 和 @racket[call/cc] 当作现成的操作，按给定的类型来用，内部怎样用 @racket[label]、@racket[set!] 实现，不算在证明里；程序里交进来的东西，在证明里算假设。在这个范围内，程序的类型推导对应逻辑证明；一个假设也不用的，才是相应命题的无条件证明。加入控制操作，就多了@tech{排中律}、@tech[#:key "双重否定消除"]{DNE} 这样的推理规则。
