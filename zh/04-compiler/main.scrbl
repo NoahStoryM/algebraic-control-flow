@@ -16,3 +16,4 @@
 @include-section["3-erase.scrbl"]
 @include-section["4-named.scrbl"]
 @include-section["5-broken.scrbl"]
+@include-section["6-caller.scrbl"]
