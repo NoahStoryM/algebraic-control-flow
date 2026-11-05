@@ -52,7 +52,7 @@
 
 循环版本和 @tech[#:key "延续传递风格"]{CPS} 版本是同一个程序。一个把栈表示为带@tech{标记}的数据列表，另一个把栈表示为@tech{闭包链}。从闭包到数据@tech{标记}的变换有个名字：@defterm[#:en "defunctionalization"]{去函数化}。反向变换，从数据@tech{标记}到闭包，叫做@defterm[#:en "refunctionalization"]{再函数化}。任何一个把递归函数改写为 while 循环加显式栈的程序员，都在手工执行去函数化。
 
-帧列表仍然是@tech{延续}。@racket['()] 是空栈，走到它时 @racket[apply-cont] 把 @racket[v] 原样返回。换成闭包版本，就相当于以恒等函数为@tech{终结延续}，也就是@tech{局部终结延续} @racket[a->⊥ᵃ]。整条帧列表是一条@tech{局部延续} @math{¬ₐ@ty{Natural}}，答案类型 @math{a} 就是 @racket[Natural]。@racket[apply-cont] 把@tech{延续}应用于值，仍是@tech{矛盾律}，只是得到的不再是 @math{⊥}，而是@tech{局部答案}。表示变了，从闭包变成了数据；类型和定律没有变。
+帧列表仍然是@tech{延续}。@racket['()] 是空栈，走到它时 @racket[apply-cont] 把 @racket[v] 原样返回。换成闭包版本，就相当于以恒等函数为@tech{终结延续}，也就是@tech{局部终结延续} @racket[a->⊥ᵃ]。整条帧列表是一条@tech{局部延续} @math{¬ₐ@ty{Natural}}，答案类型 @math{a} 就是 @racket[Natural]。@racket[apply-cont] 把@tech{延续}应用于值，仍是@tech{矛盾律}：由 @math{v : p} 和 @math{k : ¬ₐp} 得到 @math{k(v) : a}，只是得到的不再是 @math{⊥}，而是@tech{局部答案}。表示变了，从闭包变成了数据；类型和定律没有变。
 
 但帧列表有一个闭包没有的性质：它是可以检查、拆开和重组的数据。由闭包构成的@tech{延续}是一个黑盒：只能调用，看不见里面。由数据构成的@tech{延续}是透明的：可以对它做模式匹配，根据看到的内容决定如何处理，还可以重组它。
 

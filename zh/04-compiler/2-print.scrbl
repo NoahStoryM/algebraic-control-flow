@@ -28,13 +28,13 @@
 
 @racket[(ctx 'v.1)] 在编译时执行，只执行这一次，交出的是代码，不是值。这段代码要等到目标程序运行、@racket[(g a)] 算完之后才执行：把结果叫作 @racket[v.1]，交给 @racket[f]，再交出 @racket[f] 的结果。
 
-编译器在这一点的剩余工作，打印出来，就是目标程序在同一点的剩余工作。一边是编译时等着被调用的闭包，一边是它留在纸上的代码，镜子两侧映着同一份剩余工作。
+编译器在这一点的剩余工作，打印出来，就是目标程序在同一点的剩余工作。一边是编译时等着被调用的闭包，一边是它留在纸上的代码，镜子两侧映着同一份剩余工作。这个闭包就是编译器此刻的@tech{前沿}：它记着处理完 @racket[(g a)] 之后，语法树里还要做的那部分工作。
 
 输入 @racket[vn] 是一个 @racket[_var]，更一般地说 @racket[ctx] 始终接收一个 @racket[_val]（变量、字面量或 lambda），因为这些正是 @tech[#:key "A-范式"]{ANF} 代码传给@tech{延续}的值；它交出的是一段 @racket[_anf]。所以 @racket[ctx : _val → _anf]。按@xref["03:local-k"]{「局部延续」}的记法，这是一条@tech{局部延续} @math{¬ₐ⟨@ty{val}⟩}，答案类型 @math{a} 是 @racket[_anf]：编译器这段局部计算的答案，就是生成的代码。@racket[id] 是这里的@tech{局部终结延续} @racket[a->⊥ᵃ]。
 
 对比 @racket[fib/k] 的 @racket[k]，它是 @math{¬ₐ@ty{Natural}}。一个在运行时接收一个数字并计算下一步，另一个在编译时接收一段代码片段并构建目标程序的下一块。
 
-理解了 @racket[ctx] 的类型之后，其余每个分支的正确实现就被决定了：
+@racket[ctx] 的类型给出了接口，再加上源程序的语义，其余每个分支的写法就定下来了。比如 @racket[if]：无论测试选中哪一支，那一支算出的值都要交给原来等着整个 @racket[if] 的工作，所以两个分支都要用 @racket[ctx] 继续：
 
 @(define ev-anf (make-acf-eval))
 @examples[#:eval ev-anf #:hidden
