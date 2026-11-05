@@ -2,7 +2,7 @@
 
 @title[#:tag "02:2-split"]{把延续独立出来}
 
-@xref["01:rules"]{「读出规律」}把 @racket[let/cc] 换成 @racket[define]，阴阳谜题就成了一组只传参数、只做调用的函数，宿主的捕获一次也没有出现。那是一个特例，靠的是先读出规律。@racket[let] 的每个绑定，已经把等结果的那段工作写成了一个函数；把它取出来当参数传，任何程序都能照这个样子改写，不必先追踪。
+@xref["02:anf"]{「求值顺序与 ANF」}里，每个 @racket[let] 绑定都配着一个等结果的函数 @racket[(λ (v) b)]，只是语法替我们藏着，程序自己碰不到它。第一章改写阴阳谜题时，这样的函数是先追踪出跳转规律，才一个个写出来的。不追踪，直接把它取出来当参数传，普通的函数和递归会变成什么样？
 
 @(define ev0 (make-acf-eval))
 @examples[#:eval ev0 #:hidden
@@ -54,9 +54,9 @@
 拿 @racket[(fact/k 3 k)] 跑一遍，看手里的@tech{延续}怎么变。把 @racket[(λ (v) (* 3 v))] 记作 @racket[mul3]，其余类推：
 
 @racketblock[
-(fact/k 3 k)                                    =  (fact/k 3 (∘ k               ))
-= (fact/k 2 (λ (v) ((∘ k          ) (* 3 v))))  =  (fact/k 2 (∘ k mul3          ))
-= (fact/k 1 (λ (v) ((∘ k mul3     ) (* 2 v))))  =  (fact/k 1 (∘ k mul3 mul2     ))
+(fact/k 3 k)                                    =  (fact/k 3 (∘ k #,(hspace 14)))
+= (fact/k 2 (λ (v) ((∘ k #,(hspace 9)) (* 3 v))))  =  (fact/k 2 (∘ k mul3 #,(hspace 9)))
+= (fact/k 1 (λ (v) ((∘ k mul3 #,(hspace 4)) (* 2 v))))  =  (fact/k 1 (∘ k mul3 mul2 #,(hspace 4)))
 = (fact/k 0 (λ (v) ((∘ k mul3 mul2) (* 1 v))))  =  (fact/k 0 (∘ k mul3 mul2 mul1))
 = ((∘ k mul3 mul2 mul1) 1)]
 
@@ -108,7 +108,7 @@
 
 结果打印出来了，进程也随之终止。@racket[exit] 一调用，整段计算就到此为止。启动时交进去的这条@tech{延续}，就是前面那条@tech{闭包链}的终点：值走完整条链，最后抵达的是它，所以叫它@defterm[#:en "terminal continuation"]{终结延续}。可是用 @racket[exit] 做@tech{终结延续}，进程一结束，就没法拿着结果继续工作。
 
-@defsym["a->⊥" "终结延续：把答案包进 ans 抛出"]@defsym["⊥->a" "接住 a->⊥ 抛出的答案，交回调用处"]我们需要另一个类型为 @math{a → ⊥} 的函数：它不返回，也不杀死进程，而是把答案送到一个取得回来的地方。@racket[raise] 正合适：它不返回，handler 又能捕获它抛出的值。要的只有两件事：@racket[a->⊥] 把答案抛出去，@racket[⊥->a] 在外面接住。和第一章由操作系统交来的 @racket[exit] 一样，这一对是在程序外面提供的终点和接收处，被运行的程序自己并不调用 @racket[raise]。再用一个专门的 struct，把我们的答案和别的异常区分开：
+@defsym["a->⊥" "终结延续：把答案包进 ans 抛出"]@defsym["⊥->a" "接住 a->⊥ 抛出的答案，交回调用处"]我们需要另一个类型为 @math{a → ⊥} 的函数：它不返回，也不杀死进程，而是把答案送到一个取得回来的地方。@racket[raise] 正合适：它不返回，handler 又能捕获它抛出的值。要的只有两件事：@racket[a->⊥] 把答案抛出去，@racket[⊥->a] 在外面接住。和第一章由操作系统交来的 @racket[exit] 一样，这一对是在程序外面提供的终点和接收处：@racket[raise] 藏在 @racket[a->⊥] 里，程序调用的只是这条@tech{终结延续}。再用一个专门的 struct，把我们的答案和别的异常区分开：
 
 @examples[#:eval ev0 #:label #f #:no-prompt
 (struct (r) ans ([a* : (Listof r)]) #:type-name Ans)
@@ -256,9 +256,9 @@ neg  =  (∘ flip cps)]
 每个名字处都有一条@tech{延续}在等它：等 @racket[v3] 的是 @racket[k]，等 @racket[v2] 的是先乘 3 再交给 @racket[k]，依次类推。把等 @racket[vn] 的那一条记作 @racket[kn]：
 
 @racketblock[
-k3  =  (∘ k               )  (code:comment "等 v3")
-k2  =  (∘ k mul3          )  (code:comment "等 v2")
-k1  =  (∘ k mul3 mul2     )  (code:comment "等 v1")
+k3  =  (∘ k #,(hspace 14))  (code:comment "等 v3")
+k2  =  (∘ k mul3 #,(hspace 9))  (code:comment "等 v2")
+k1  =  (∘ k mul3 mul2 #,(hspace 4))  (code:comment "等 v1")
 k0  =  (∘ k mul3 mul2 mul1)  (code:comment "等 v0")]
 
 @racket[v0] 是递归到底交来的 @racket[1]，@racket[vn] 正是 @racket[(fact n)] 的值。这些@tech{延续}的类型都是 @math{¬@ty{Natural}}，每一条都是这个类型的一个具体的值，各自标出程序运行到的一个位置：等到 @racket[vn] 以后，还要乘上哪几个数，再交给 @racket[k]。@racket[(label)] 捕获的「当前位置」，就是这样一条@tech{延续}。@racket[let*] 的每个绑定处都有一条；直接风格的 @racket[fact] 里，它们一样在，只是藏在嵌套的 @racket[let] 里。

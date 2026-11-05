@@ -2,7 +2,7 @@
 
 @title[#:tag "02:3-embedded"]{再把延续藏起来}
 
-@tech{延续}成了手里的参数，这一章开头的问题就可以动手试了：不捕获，写出 @racket[call/cc]。写出来还不够，第一章的提前返回和阴阳谜题，都得在新写法里照样跑起来，而且写起来不比 @racket[let/cc] 麻烦。
+执行一个程序，就是沿着@tech{闭包链}从一个位置走到下一个位置；@racket[call/cc] 要捕获的当前位置，在这种写法里已经是手里的参数。不捕获，只用这个参数，写得出 @racket[call/cc] 吗？
 
 @(define ev (make-acf-eval))
 @examples[#:eval ev #:hidden
@@ -50,7 +50,7 @@
 (define ((cps:call/cc cps:proc) kp) ...)
 (define ((neg:call/cc kp) neg:proc) ...)]
 
-@racket[kp] 就是当前@tech{延续}，要交给 @racket[proc]。可 @racket[proc] 照哪种写法写成，它里面的每一次函数调用就都守哪种写法的规矩，调用交给它的@tech{延续}也不例外。@racket[cps:proc] 里调用的函数都先收值、再收@tech{延续}，交给它的@tech{延续}也得这样调用，所以给它的是 @racket[(cps kp)]，记作 @racket[cps:kp]；@racket[neg:proc] 照 @racket[neg] 的写法，给它的是 @racket[(neg kp)]，记作 @racket[neg:kp]。@racket[kp] 自己落在 @math{⊥} 上，@racket[(cps kp)] 和 @racket[(neg kp)] 都会多收一条等着 @math{⊥} 的@tech{延续}：@racket[kp] 不回来，这条@tech{延续}轮不到。@racket[neg:proc] 自己也照 @racket[neg] 的写法：先收结果的@tech{延续}，也就是原样的 @racket[kp]；再收输入，也就是提升过的 @racket[neg:kp]。两个定义写完整：
+@racket[kp] 就是当前@tech{延续}，要交给 @racket[proc]。可 @racket[proc] 照哪种写法写成，它里面的每一次函数调用就都守哪种写法的规矩，调用交给它的@tech{延续}也不例外。@racket[cps:proc] 里调用的函数都先收值、再收@tech{延续}，交给它的@tech{延续}也得这样调用，所以给它的是 @racket[(cps kp)]，记作 @racket[cps:kp]；@racket[neg:proc] 照 @racket[neg] 的写法，给它的是 @racket[(neg kp)]，记作 @racket[neg:kp]。@racket[kp] 自己落在 @math{⊥} 上，@racket[(cps kp)] 和 @racket[(neg kp)] 都会多收一条等着 @math{⊥} 的@tech{延续}：@racket[(cps kp)] 的形状是 @math{p → (⊥ → ⊥) → ⊥}。@racket[kp] 不回来，这条@tech{延续}轮不到。@racket[neg:proc] 自己也照 @racket[neg] 的写法：先收结果的@tech{延续}，也就是原样的 @racket[kp]；再收输入，也就是提升过的 @racket[neg:kp]。两个定义写完整：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define ((cps:call/cc cps:proc) kp) ((cps:proc (cps kp)) kp))
@@ -72,7 +72,7 @@
 (define (cps:proc2 cps:k) (λ (k) ((cps:k 10) (λ (v) (k (add1 v))))))
 (⊥->a ((cps:call/cc cps:proc2) (λ (v) (a->⊥ (add1 v)))))]
 
-结果是 @racket[11]，不是 @racket[12]。@racket[cps:k] 是提升过的 @racket[kp]，@racket[(cps:k 10)] 收到手写的那个@tech{延续}以后，先算 @racket[(kp 10)]：外面那一步加 1，然后是@tech{终结延续}。@racket[kp] 不回来：在这里，它把结果交给 @racket[a->⊥]，由它 @racket[raise] 出去。等它结果的那个 @racket[λ]，连同 @racket[cps:proc2] 里排在后面的那一步加 1，再也轮不到。这正是 @racket[call/cc] 的行为：调用交出去的@tech{延续}，就是丢下手头的工作，回到 @racket[call/cc] 之后。
+结果是 @racket[11]，不是 @racket[12]。@racket[cps:k] 是提升过的 @racket[kp]，@racket[(cps:k 10)] 收到手写的那个@tech{延续}以后，先算 @racket[(kp 10)]：外面那一步加 1，然后是@tech{终结延续}。@racket[kp] 不回来：在这里，它把结果交给 @racket[a->⊥]，由它 @racket[raise] 出去。等它结果的那个 @racket[λ]，也就是 @math{⊥ → ⊥} 那一层收到的@tech{延续}，连同 @racket[cps:proc2] 里排在后面的那一步加 1，再也轮不到。这正是 @racket[call/cc] 的行为：调用交出去的@tech{延续}，就是丢下手头的工作，回到 @racket[call/cc] 之后。
 
 @bold{练习}：用 @racket[neg:call/cc] 把这两个例子各跑一遍，结果仍是 @racket[7] 和 @racket[11]。提示：@racket[neg] 的写法先收@tech{延续}，再收输入；外面那一步加 1，用 @racket[(neg add1)] 接在@tech{终结延续}前面。
 
@@ -253,4 +253,3 @@
 
 @racket[cps:yin] 是提升过的@tech{延续}，所以能像 @racket[cps:mul] 这些函数一样直接调用。它包着的，就是@xref["02:position"]{「计算的位置」}里那样的一条@tech{延续}：@racket[(cps:label)] 把它所在的位置捕获下来，交给程序。这个位置也是从出口那条@tech{延续}一步步接出来的，出口那一条，是 @racket[anf:eval] 在计算开始时交进来的。
 
-@racket[anf:let] 照 @racket[let] 的样子写成。@racket[let] 有@tech{结合律}与@tech{单位律}，@racket[anf:let] 也有吗？

@@ -2,7 +2,7 @@
 
 @title[#:tag "02:4-arrows"]{两种箭头与命题}
 
-提前返回和阴阳谜题都在嵌入语言里跑起来了，@racket[cps:call/cc] 却只用 @racket[λ] 写成。@xref["01:watershed"]{「分水岭」}说，当前@tech{延续}只用 @racket[λ] 凭空拿不到，两边像是对不上。第一章是从类型里读出 @racket[call/cc] 的经典性的，这回也从类型读起。新写法的函数也是一支接一支地连起来，只是接法换了；先认清这种接法，再读它们的类型。
+提前返回和阴阳谜题跑起来，靠的是 @racket[anf:let] 把一步步计算接起来。普通的 @racket[let] 是复合的另一种写法：嵌在哪里都一样，只换名的绑定可有可无。@racket[anf:let] 接的是等待@tech{延续}的计算，这样接起来的，还算不算复合？
 
 @(define ev (make-acf-eval))
 @examples[#:eval ev #:hidden
@@ -262,6 +262,6 @@
 
 这和说谎者正好相反。同样换了箭头，说谎者的翻译仍是悖论，@tech{Clavius 律}的翻译却是定理。
 
-到这里，开头的第一个问题有了回答：走到原来调用 @racket[call/cc] 的地方，不必捕获，交进来的@tech{延续}参数就够用；两个新 @racket[call/cc] 也没有越过「分水岭」，它们只消耗交到手里的否定。
+到这里，这一章开头那个疑问有了回答：走到原来调用 @racket[call/cc] 的地方，不必捕获，交进来的@tech{延续}参数就够用；两个新 @racket[call/cc] 也没有越过「分水岭」，它们只消耗交到手里的否定。
 
-可这也带出了第二个问题。写出来的是 @tech{Clavius 律}的翻译，是另一条命题；宿主里那条经典的 @math{¬¬p → p} 并没有因此被证出来。那 @racket[cps:call/cc] 模拟的，还算不算原来的 @racket[call/cc]？经典性又到哪里去了？要回答，得把嵌入语言写出的 @tech{CPS 箭头}放回宿主，和原来的 @racket[call/cc] 比一比。三种箭头之间，@racket[cps] 和 @racket[neg] 都从宿主出发，@racket[flip] 在后两种之间来回，还缺的正是回到宿主的方向。
+可这也带出了开头的另一个问题。写出来的是 @tech{Clavius 律}的翻译，是另一条命题；宿主里那条经典的 @math{¬¬p → p} 并没有因此被证出来。那 @racket[cps:call/cc] 模拟的，还算不算原来的 @racket[call/cc]？经典性又到哪里去了？

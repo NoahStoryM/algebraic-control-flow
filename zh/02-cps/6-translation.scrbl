@@ -2,7 +2,7 @@
 
 @title[#:tag "02:6-translation"]{否定翻译}
 
-放回宿主，靠的是 @racket[call/cc]。可宿主的 @racket[call/cc] 本身，照 @tech[#:key "双重否定消除"]{DNE} 读也是一支箭头，从第 2 层落到第 0 层。把它也搬到新写法上，它还落不落到第 0 层？不靠宿主的捕获，又能落到哪里？
+@racket[uncps] 把编码放回宿主，用的是宿主的 @racket[call/cc]。照 @tech[#:key "双重否定消除"]{DNE} 读，这个 @racket[call/cc] 本身也是一支箭头，从第 2 层落到第 0 层。把这一支搬到新写法上，它还落不落到第 0 层？
 
 @(define ev (make-acf-eval))
 @examples[#:eval ev #:hidden
@@ -96,7 +96,7 @@
 @racketblock[
 (cps call/cc)  ≈  neg²:id]
 
-@math{¬¬p →@subscript{𝒦} p} 看上去也像 @tech[#:key "双重否定消除"]{DNE}；展开到宿主，它只是 @math{¬¬p → ¬¬p}，从第 2 层到第 2 层。名字的由来：@racket[neg²] 指连用两次 @racket[neg]，@racket[neg²:id] 就是 @racket[(neg (neg id))]，也就是 @racket[(neg neg:id)]。验证一下：@racket[(neg neg:id)] 收下 @racket[kkp]，交出 @racket[(∘ kkp id)]，行为和 @racket[kkp] 一样。反过来，把它交给 @racket[uncps]，沿图表回到宿主，得到的正是 @racket[call/cc]：
+@math{¬¬p →@subscript{𝒦} p} 看上去也像 @tech[#:key "双重否定消除"]{DNE}；展开到宿主，它只是 @math{¬¬p → ¬¬p}，从第 2 层到第 2 层。名字的由来：上标 ² 指连用两次 @racket[neg]，@racket[neg²:id] 就是 @racket[(neg (neg id))]，也就是 @racket[(neg neg:id)]。验证一下：@racket[(neg neg:id)] 收下 @racket[kkp]，交出 @racket[(∘ kkp id)]，行为和 @racket[kkp] 一样。反过来，把它交给 @racket[uncps]，沿图表回到宿主，得到的正是 @racket[call/cc]：
 
 @racketblock[
 (uncps neg²:id)  ≈  (uncps (cps call/cc))  =  call/cc]
@@ -212,7 +212,7 @@
 
 @racket[call/cc] 不见了，剩下的只用 @racket[λ] 和函数调用：外层的计算交来一段 @racket[kkp]，再把同一条 @racket[kp] 交给它。从第 4 层到第 2 层，消去两层而不落底，正是@xref["02:same-arrow"]{「同一支箭头」}里的 @racket[(neg cps:id)]，@tech{三重否定律}用在 @math{¬p} 上。
 
-@racket[neg:id] 就是 @racket[id]，所以 @racket[cps:id] 也就是 @racket[(cps neg:id)]，@racket[(neg cps:id)] 是从 @racket[id] 出发，依次用 @racket[neg]、@racket[cps]、@racket[neg] 得到的，一路都不碰 @racket[call/cc]。
+@racket[(neg cps:id)] 是从 @racket[id] 出发，依次用 @racket[neg]、@racket[cps]、@racket[neg] 得到的，一路都不碰 @racket[call/cc]。
 
 @defsym["join" "(∘ neg cps neg)：把外面的两层 ¬¬ 并成一层"]@defsym["join:id" "(join id)：¬¬¬¬p →𝒞 ¬¬p，call/cc 的纯翻译"]这一串把外面的两层 @math{¬¬} 并成一层，用在别的纯箭头上也行，记作 @racket[join]；用在 @racket[id] 上的那一支记作 @racket[join:id]：
 

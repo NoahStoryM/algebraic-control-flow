@@ -2,7 +2,7 @@
 
 @title[#:tag "02:5-where"]{箭头指向何方}
 
-@racket[cps:call/cc] 读出来是一条直觉主义定理，它和宿主那个经典的 @racket[call/cc] 还是一回事吗？要比较，得先把两边放到一处：嵌入语言写下的箭头，放回宿主，行为还和原来一样吗？
+@racket[cps] 和 @racket[neg] 把宿主箭头送进了新写法，@racket[flip] 在两种新写法之间来回，却还没有一条路回到宿主。嵌入语言写下的箭头交回宿主，行为会不会变？
 
 @(define ev (make-acf-eval))
 @examples[#:eval ev #:hidden
