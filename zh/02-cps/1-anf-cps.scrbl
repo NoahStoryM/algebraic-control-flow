@@ -10,7 +10,7 @@
 
 考虑两个常见的递归函数：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (: fact (→ Natural Natural))
 (define (fact n)
   (if (= n 0)
@@ -30,7 +30,7 @@
 
 把每个中间结果绑定到一个名字上，让 @racket[let*] 链条记录执行的步骤：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (: fact (→ Natural Natural))
 (define (fact n)
   (if (= n 0) 1
@@ -114,7 +114,7 @@
 
 @defsym["id" "恒等函数，(∘) 也就是 values"]换名的那一步什么也不做，收到什么就原样交出什么。这样的函数，@racket[∘] 自己就给得出来。@racket[(∘ g f)] 把两个函数接成一个；只给一个，@racket[(∘ f)] 就是 @racket[f] 本身；一个也不给，@racket[(∘)] 什么也没接上，收到什么就交出什么。把它记作 @racket[id]：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define ∘ compose)
 (define id (∘))]
 
@@ -139,7 +139,7 @@
 
 从类型看，复合是把首尾相接的箭头拼成一支：@racket[(∘ g f)] 里，@racket[f] 从 @racket[p1] 到 @racket[p2]，@racket[g] 从 @racket[p2] 到 @racket[p3]，拼起来就是从 @racket[p1] 到 @racket[p3]。@racket[⨾] 也是拼接，只是参数的次序反了过来，拼的是反着写的箭头。把箭头反着写，结果在左边，参数在右边，记作@defsym["q ← p" "反向箭头：从 p 到 q 的函数，结果写在左边"] @racket[←]：@racket[(← q p)] 就是 @racket[(→ p q)]。用 @racket[→] 写出 @racket[∘] 接两支时的类型，用 @racket[←] 写出 @racket[⨾] 接两支时的类型：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define-type (← q p) (→ p q))
 
 (: ∘ (∀ (p1 p2 p3) (→ (→ p2 p3) (→ p1 p2) (→ p1 p3))))

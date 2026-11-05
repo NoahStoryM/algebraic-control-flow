@@ -32,12 +32,12 @@
 
 给答案打上@tech{标记}就分得开。用一个带类型参数的结构体：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (struct (r) ans ([a : r]) #:type-name Ans)]
 
 @defsym["ans" "给一段计算的答案打上标记的结构体，类型是 (Ans r)"]@racket[(Ans r)] 包着一个 @racket[r] 类型的答案。@xref["02:exit"]{「终结延续」}里的 @racket[ans] 装的是一个列表，为的是顺带兼容多值；这里只要一个答案，字段换成单值。裸的 @racket[0] 是中间结果，还能接着乘；@racket[(ans 0)] 说的是「这段计算的答案是零」，后面只需要把它交出去。有了这个@tech{标记}，@racket[mul] 可以完全不跳转：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (: mul (→ Real * Real))
 (define (mul . r*)
   (: real* (→ Real Real (∪ Real (Ans Real))))
@@ -84,7 +84,7 @@
 
 @defsym["⊥ᵃ?" "判断一个值是不是局部答案，这里就是 ans?"]@defsym["a->⊥ᵃ" "把值送进局部空，成为局部答案"]@defsym["⊥ᵃ->a" "在边界外从局部空里取出答案"]给这段局部计算的答案和边界上的两个操作起名，照 @racket[a->⊥]、@racket[⊥->a] 的样子。答案类型 @math{a} 在这个例子里取 @racket[Real]：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define-type ⊥ᵃ (Ans Real))
 (define ⊥ᵃ?   ans?)
 (define a->⊥ᵃ ans)

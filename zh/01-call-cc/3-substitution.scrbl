@@ -42,7 +42,7 @@
 
 手里是一个 @math{¬¬¬q}，叫它 @racket[kkkq]，要交出一个 @math{¬q}。@math{¬q} 是一个函数，等一个 @racket[q]，那就先把这个函数交出去：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define-type (¬¬  q) (¬ (¬  q)))
 (define-type (¬¬¬ q) (¬ (¬¬ q)))
 

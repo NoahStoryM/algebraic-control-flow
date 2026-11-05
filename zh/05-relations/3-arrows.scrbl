@@ -28,7 +28,7 @@
 (define-syntax-rule (in-amb e) (reset (list e)))
 (define (between lo hi) (for/amb ([n (inclusive-range lo hi)]) n))
 (define (check ok?) (unless ok? (amb)))]
-@examples[#:eval ev-compose #:label #f #:no-prompt
+@examples[#:eval ev-compose #:no-result
 (define pick-a (match-λ [(list l   h) (list (between l h)   h)]))
 (define pick-b (match-λ [(list a   h) (list a (between a h) h)]))
 (define pick-c (match-λ [(list a b h) (list a b (between b h))]))
@@ -84,7 +84,7 @@
 (define (choose p*) (shift k (append-map k p*)))
 (define-syntax-rule (for/amb clauses body ...) ((choose (for/list clauses (λ () body ...)))))
 (define-syntax-rule (in-amb e) (reset (list e)))]
-@examples[#:eval ev-two-ways #:label #f #:no-prompt
+@examples[#:eval ev-two-ways #:no-result
 (define-type (→𝒞 p q) (→ p q))
 (define-type (→ℬ p q) (→ p q))
 
@@ -96,12 +96,12 @@
 
 要找的箭头不用另造，它早就有了，我们也不陌生：交出列表的函数。@racket[right-triangles] 是，@racket[inclusive-range] 也是，我们从一开始就是这样模拟关系的，只是列表多记了结果的先后和重复，表不记这些。一个输入对应的结果不分几次返回，而是装进一张列表，一次交出来；箭头的类型从 @math{p → q} 改成 @math{p → (@ty{Listof} q)}。这种箭头@defsym["p →ℒ q" "交出列表的函数：纯宿主里的二元关系"]记作 @math{→@subscript{ℒ}}，都是纯函数。
 
-@examples[#:eval ev-two-ways #:label #f #:no-prompt
+@examples[#:eval ev-two-ways #:no-result
 (define-type (→ℒ p q) (→ p (Listof q)))]
 
 ℬ 与 ℒ 的箭头模拟的是同一样东西，二元关系，两种箭头也可以来回搬。从 ℒ 到 ℬ，把交出的列表交给 @racket[amb]，散成几条时间线，叫 @racket[scatter]；从 ℬ 到 ℒ，用 @racket[in-amb] 把各条时间线的结果收成一张列表，叫 @racket[gather]：
 
-@examples[#:eval ev-two-ways #:label #f #:no-prompt
+@examples[#:eval ev-two-ways #:no-result
 (: list->amb (∀ (p) (→ (Listof p) p)))
 (define (list->amb v*) (for/amb ([v (in-list v*)]) v))
 
@@ -119,7 +119,7 @@ between  =  (scatter inclusive-range)]
 
 同构的两种箭头，复合也该对得上。可是 ℒ 的箭头不能用 @racket[∘] 接：前一个交出一张列表，后一个只收其中一项。ℬ 的箭头能接，那就借同构把 ℬ 的复合搬过来@defsym["g ∘ℒ f" "交出列表的函数的复合：借 ℬ 的复合定义，化简后是 append-map"]：先把 ℒ 的箭头搬到 ℬ，在那边接好，再搬回来。@xref["02:via-contrapositive"]{第二章借道逆否箭头}搬运 @racket[∘𝒦] 的运算律，用的也是这个办法。
 
-@examples[#:eval ev-two-ways #:label #f #:no-prompt
+@examples[#:eval ev-two-ways #:no-result
 (: ∘ℒ (∀ (p ...) (→ (→ℒ pn-1 pn) ... (→ℒ p1 p2) (→ℒ p1 pn))))
 (define (∘ℒ . f*) (gather (apply ∘ℬ (map scatter f*))))]
 

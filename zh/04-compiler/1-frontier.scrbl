@@ -5,7 +5,7 @@
 这是@xref["02:1-anf-cps"]{「求值顺序」}里的 @racket[fib]，斐波那契函数：
 
 @(define ev-fib (make-acf-eval))
-@examples[#:eval ev-fib #:label #f #:no-prompt
+@examples[#:eval ev-fib #:no-result
 (define (fib n)
   (if (< n 2)
       n
@@ -17,7 +17,7 @@
 标准技巧：自己管理栈。用一个显式的@defterm[#:en "frame"]{帧}列表替换隐式的调用栈，每个帧记录一件待执行的工作和它所需的数据。@racket[fib] 中出现两种待执行的工作：「第一次子调用返回了，现在算第二次」（需要 @racket[(- n 2)]）和「两次子调用都返回了，现在相加」（需要第一个结果）。给每种打上@tech{标记}，压入列表：
 
 @(define ev-loop (make-acf-eval))
-@examples[#:eval ev-loop #:label #f #:no-prompt
+@examples[#:eval ev-loop #:no-result
 (define (fib n) (fib/k n '()))
 
 (define (fib/k n k)
@@ -38,7 +38,7 @@
 @racket[fib/k] 的第二个参数是什么？@xref["02:cps"]{「延续与 CPS」}里，我们把 @racket[fib] 写成了 @tech[#:key "延续传递风格"]{CPS} 形式：
 
 @(define ev-cps (make-acf-eval))
-@examples[#:eval ev-cps #:label #f #:no-prompt
+@examples[#:eval ev-cps #:no-result
 (define (fib/k n k)
   (if (< n 2)
       (k n)
@@ -74,7 +74,7 @@
 @examples[#:eval ev-anf #:hidden
 (require racket/contract/base)]
 
-@examples[#:eval ev-anf #:label #f #:no-prompt
+@examples[#:eval ev-anf #:no-result
 (define ((make-genvar name [n 0]))
   (define var (string->symbol (format "~a.~a" name n)))
   (set! n (add1 n))
@@ -94,7 +94,7 @@
 
 在 @tech[#:key "A-范式"]{ANF} 中，函数调用的参数必须是一个@emph{值}（变量、字面量或 lambda），不能是复合表达式。如果参数本身是函数调用，就必须先用 @racket[let] 绑定到一个变量。这正是使求值顺序显式化的方式：@racket[let] 链条@emph{就是}求值轨迹。文法的各种情况告诉我们变换器需要哪些分支。
 
-@examples[#:eval ev-anf #:label #f #:no-prompt
+@examples[#:eval ev-anf #:no-result
 (define (anf exp)
   (define fv (make-genvar 'v))
   (define (id v) v)
@@ -131,7 +131,7 @@
 
 在每个分支中，@racket[ctx] 恰好被调用一次，在尾位置。它从不出现在发射的代码内部。正如 @racket[fib/k] 可以在 @tech[#:key "延续传递风格"]{CPS} 变换之前写成普通递归函数 @racket[fib]，@racket[anf1] 也可以写回一个没有@tech{延续}参数的普通递归函数。去掉 @racket[ctx]：
 
-@examples[#:eval ev-anf #:label #f #:no-prompt
+@examples[#:eval ev-anf #:no-result
 (define (anf0 exp)
   (match exp
     [(? (not/c pair?) x) x]

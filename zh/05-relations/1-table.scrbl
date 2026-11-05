@@ -11,7 +11,7 @@
 @(define ev-search (make-acf-eval))
 @examples[#:eval ev-search #:hidden
 (require acf/zh/05-relations/show)]
-@examples[#:eval ev-search #:label #f #:no-prompt
+@examples[#:eval ev-search #:no-result
 (define-type ℕ⁺ Positive-Integer)
 (define-type Triangle (List ℕ⁺ ℕ⁺ ℕ⁺))
 
@@ -35,7 +35,7 @@
 
 为了这六组边，循环试了 1540 组。用同样的边界再调用一次，这 1540 组还得从头试一遍，交出的却还是那六组：@racket[right-triangles] 是一个纯函数，输出只由输入决定。既然如此，算过的结果就可以记下来，下次遇到同样的边界直接取出。这就是缓存：
 
-@examples[#:eval ev-search #:label #f #:no-prompt
+@examples[#:eval ev-search #:no-result
 (define-type (Dict k v) (Listof (Pair k v)))
 (define-type Bounds (List ℕ⁺ ℕ⁺))
 
@@ -61,7 +61,7 @@
 
 眼下 @racket[cache] 只记着三组边界。设想把所有的边界都算过一遍，它会是一张巨大的@defterm{表}，每组边界都是其中的键。到那时循环就用不着了，@racket[right-triangles] 只剩下一次查找，可以写成：
 
-@examples[#:eval ev-search #:label #f #:no-prompt
+@examples[#:eval ev-search #:no-result
 (: dictionary->function (∀ (v k ...) (→ (Dict (List k ... k) v) (→ k ... k v))))
 (define ((dictionary->function dict) . key) (dict-ref dict key))
 
@@ -90,7 +90,7 @@
 (define cache
   (for/list ([l×h '((1 4) (1 5) (1 20))])
     (cons l×h (apply right-triangles l×h))))]
-@examples[#:eval ev-relation #:label #f #:no-prompt
+@examples[#:eval ev-relation #:no-result
 (: rows (Listof (Pair Bounds Triangle)))
 (define rows
   (for*/list ([(l×h t*) (in-dict cache)]
@@ -118,7 +118,7 @@
 
 不过几列是看怎么分组。积里的集合本身也可以是积：@math{R} 的左列是一对边界，右列是三条边。把 @racket[rows] 的每一行展平：
 
-@examples[#:eval ev-relation #:label #f #:no-prompt
+@examples[#:eval ev-relation #:no-result
 (: rows/5 (Listof (List ℕ⁺ ℕ⁺ ℕ⁺ ℕ⁺ ℕ⁺)))
 (define rows/5
   (for/list ([row rows])
@@ -161,7 +161,7 @@ rows/5]
   (for*/list ([l×h '((1 4) (1 5) (1 20))]
               [t (apply right-triangles l×h)])
     (cons l×h t)))]
-@examples[#:eval ev-table #:label #f #:no-prompt
+@examples[#:eval ev-table #:no-result
 (define (dict-ref  dict key) (for/first ([(k v) (in-dict dict)] #:when (equal? key k)) v))
 (define (dict-ref* dict key) (for/list  ([(k v) (in-dict dict)] #:when (equal? key k)) v))
 

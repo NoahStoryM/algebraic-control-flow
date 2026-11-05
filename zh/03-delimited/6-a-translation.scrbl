@@ -26,7 +26,7 @@
 
 所以翻译以后，计算等着的是两条@tech{局部延续}：一条 @math{¬ₐp} 接普通的值，一条 @math{¬ₐa} 接提前到来的答案。照这个样子写 @racket[mul]，前一条叫 @racket[kₐ]，后一条叫 @racket[iₐ]：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (: mul (→ Real * Real))
 (define (mul . r*)
   (: loop/ki (¬ₐ (Listof Real) (¬ₐ Real) (¬ₐ Real)))

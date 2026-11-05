@@ -19,7 +19,7 @@
 
 @xref["02:via-contrapositive"]{「借道逆否复合」}里，@tech{逆否箭头} @math{p →@subscript{𝒰} q} 是 @math{¬q → ¬p}，@tech{CPS 箭头} @math{p →@subscript{𝒦} q} 是 @math{p → ¬¬q}，用的都是落在 @math{⊥} 上的否定。@tech{基}换成 @math{a}，把 @math{¬} 换成 @math{¬ₐ}，同样的两种箭头记作 @math{→@subscript{𝒰ₐ}}、@math{→@subscript{𝒦ₐ}}：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define-type (→𝒰ₐ p ... q) (← (¬ₐ p ...) (¬ₐ q)))
 (define-type (→𝒦ₐ p ... q) (→ p ... (¬ₐ¬ₐ q)))]
 
@@ -27,7 +27,7 @@
 
 @racket[neg] 的定义没有变：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define ((neg f) kq) (∘ kq f))]
 
 它把 @racket[f] 接在收到的@tech{延续}前面，沿用那条@tech{延续}的终点，终点是什么，它并不在乎。所以 @racket[(neg f)] 对任何@tech{基}都是一支@tech{逆否箭头}：收到一条 @math{¬ₓq}，交出一条 @math{¬ₓp}。@racket[cps]、@racket[flip] 也一样，它们只管参数的次序，同样不在乎@tech{基}。
@@ -42,7 +42,7 @@
 
 它是一支以 @math{x} 为@tech{基}、从 @math{p} 指向 @math{⊥ᵃ} 的@tech{逆否箭头}，@math{p →@subscript{𝒰ₓ} ⊥ᵃ}。落点直接写在箭头里，@racket[neg] 的两种读法写进同一个 @racket[case→]：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (: neg (∀ (p q a x) (case→ (→ (→𝒟 p q) (→𝒰ₓ p q))
                            (→ (¬ₐ p)    (→𝒰ₓ p ⊥ᵃ)))))]
 
@@ -52,7 +52,7 @@
 
 控制运算符把当前的@tech{局部延续}提升以后交给程序。当前的@tech{局部延续}落在自己的@tech{局部空} @math{⊥ᵃ} 上，@math{⊥ᵃ} 又正是这段局部计算的答案 @math{a}。终点和@tech{基}重合，取 @math{x = a}，交给程序的就是一支 @math{p →@subscript{𝒰ₐ} ⊥ᵃ}，这就是 @racket[neg:call/lc]：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (: neg:call/lc (∀ (p a) (→𝒰ₐ (→𝒰ₐ (→𝒰ₐ p ⊥ᵃ) p) p)))
 (define ((neg:call/lc kₐp) neg:proc) ((neg:proc kₐp) (neg kₐp)))]
 
@@ -62,13 +62,13 @@
 
 @math{p →@subscript{𝒰ₐ} ⊥} 展开是 @racket[(← (¬ₐ p) (¬ₐ ⊥))]，一个从 @math{¬ₐ⊥ = ⊥ → a} 到 @math{¬ₐp} 的函数。它收到的参数是调用处的@tech{延续}，等着一个 @math{⊥} 类型的结果，就是前面说的那条 @math{¬⊥} 的@tech{延续}换了@tech{基}。这个参数和@xref["01:call-cc-types"]{「call/cc 的几种类型」}里的 @racket[absurd] 一样，是一个函数，却没有 @math{⊥} 类型的值可以交给它。@racket[neg*] 因此直接略过它，交出保存的@tech{局部延续} @math{kₐp}：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (: neg* (∀ (p a) (→ (¬ₐ p) (→𝒰ₐ p ⊥))))
 (define ((neg* kₐp) k) kₐp)]
 
 @defsym["neg*" "把局部延续提升成丢弃当前延续的逆否箭头"]用 @racket[neg*] 代替 @racket[neg]，就是 @racket[call/cc]：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (: neg:call/cc (∀ (p a) (→𝒰ₐ (→𝒰ₐ (→𝒰ₐ p ⊥) p) p)))
 (define ((neg:call/cc kₐp) neg:proc) ((neg:proc kₐp) (neg* kₐp)))]
 
@@ -78,14 +78,14 @@
 
 这些构造搬得到 @tech{CPS 箭头}上。@racket[flip] 对任何两层柯里化的函数都成立，@tech{基}换成 @math{a} 也不例外，仍然在两种写法之间来回；只要两层参数之间不做别的事，来回一趟行为不变，@xref["02:split-k"]{「延续独占一层」}说过：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (: flip (∀ (p q a) (case→ (→ (→𝒰ₐ p q) (→𝒦ₐ p q))
                         (→ (→𝒦ₐ p q) (→𝒰ₐ p q)))))
 (define (((flip f) . y*) . x*) (apply (apply f x*) y*))]
 
 @racket[neg]、@racket[neg*] 经 @racket[flip] 分别得到 @racket[cps]、@racket[cps*]，和@xref["03:escape-discard"]{「逃逸与丢弃」}里直接写出的定义行为一样，@tech{局部延续}的读法也一起带了过来：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (: cps  (∀ (p q a x) (case→ (→ (→𝒟 p q) (→𝒦ₓ p q))
                             (→ (¬ₐ p)    (→𝒦ₓ p ⊥ᵃ)))))
 (: cps* (∀ (p a) (→ (¬ₐ p) (→𝒦ₐ p ⊥))))
@@ -94,7 +94,7 @@
 
 把交给程序的@tech{延续}，和接收它的程序，都换成 @tech[#:key "延续传递风格"]{CPS} 的写法：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (: cps:call/lc (∀ (p a) (→𝒦ₐ (→𝒦ₐ (→𝒦ₐ p ⊥ᵃ) p) p)))
 (: cps:call/cc (∀ (p a) (→𝒦ₐ (→𝒦ₐ (→𝒦ₐ p ⊥) p) p)))
 
@@ -107,7 +107,7 @@
 
 这些控制运算符，用在 @racket[anf:] 宏编译出的计算里。编译出的计算有类型 @math{¬ₐ¬ₐp = (p → a) → a}，等着一条@tech{局部延续} @math{¬ₐp}。@racket[anf:eval] 给 @math{¬ₐ¬ₐa} 交进@tech{局部终结延续} @racket[a->⊥ᵃ]，类型是 @math{¬ₐa}，得到答案 @math{a}：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (: a->⊥ᵃ (∀ (a) (¬ₐ a)))
 (define a->⊥ᵃ id)
 
@@ -118,7 +118,7 @@
 
 再看这个类型的结果 @math{a}。@tech{平凡表示}下，@math{a} 就是 @math{⊥ᵃ}，这段局部计算的空。值域是 @math{⊥ᵃ} 的箭头写成 @math{¬ₐ}，@racket[anf:eval] 也就是一条@tech{局部延续}，类型是 @math{¬ₐ(¬ₐ¬ₐa)}，三重@tech{局部否定}。@racket[a->⊥ᵃ] 是一条 @math{¬ₐa}，@racket[cps] 把 @racket[id] 提升成 @tech[#:key "双重否定引入"]{DNI}，@racket[cps:id]，把它用在 @racket[a->⊥ᵃ] 上，正好是这样一个元素：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define-type (¬ₐ¬ₐ¬ₐ p) (¬ₐ (¬ₐ¬ₐ p)))
 
 (: cps:id (∀ (p a) (→𝒦ₐ p p)))
@@ -131,7 +131,7 @@
 
 @racket[anf:eval] 本身是一条以 @math{a} 为@tech{基}的@tech{局部延续}，照 @racket[cps] 的第二种读法，提升出来的 @racket[anf:reset] 是 @math{¬ₐ¬ₐa →@subscript{𝒦ₓ} ⊥ᵃ}，@tech{基} @math{x} 任选。展开成普通的类型：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (: anf:reset (∀ (a x) (→ (¬ₐ¬ₐ a) (¬ₓ¬ₓ a))))
 (define anf:reset (cps anf:eval))]
 

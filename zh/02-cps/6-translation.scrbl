@@ -87,7 +87,7 @@
 
 @defsym["neg²:id" "(neg (neg id))：¬¬p →𝒦 p，也是 ¬¬p →𝒞 ¬¬p；(cps call/cc) 的纯表示"]收下 @racket[kkp]，把@tech{延续} @racket[kp] 原样交给它：这支箭头什么也不运行，收下一段计算，原样交出。代码和 @racket[id] 一样，类型却是一支 @tech{CPS 箭头}：从 @math{¬¬p} 到 @math{p}。这和@xref["02:via-contrapositive"]{「借道逆否复合」}里的 @racket[neg:id] 是同一种情形：定义相同，箭头的种类不同。记作 @racket[neg²:id]：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (: neg²:id (∀ (p) (→𝒦 (¬¬ p) p)))
 (define (neg²:id kkp) kkp)]
 
@@ -134,7 +134,7 @@
 
 @defsym["inj" "把纯函数原样放进 𝒟（injection，注入）"]@xref["02:back-to-host"]{「回到宿主」}的 @racket[uncps] 把 @tech{CPS 箭头}变成宿主函数，里面用的是 @racket[call/cc]。这一章说的@tech{宿主箭头} 𝒟，指的是这里讨论的计算：普通的函数，加上 @racket[call/cc] 这样的控制，按@xref["02:three-forms"]{「三种写法」}约定的行为相同来比较；打印、状态这类别的作用不算在内。其中纯的那一部分，记作 𝒞@defsym["p →𝒞 q" "纯的宿主函数 p → q；𝒞 取 constructive"]：由 @racket[λ]、函数应用和纯原语写成，自己不引入控制，递归只限于能终止的情形；作为参数交进来的函数，也要是纯的。这样的构造填入纯参数时仍是纯的。运行时交进去的@tech{终结延续}由外部提供，调用它以后的退出，不算纯程序内部的构造。这里讨论的是有纯 @tech[#:key "延续传递风格"]{CPS} 表示的控制计算：对一支这样的宿主箭头 @racket[f]，有纯的 @racket[cps:f]，把它用 @racket[uncps] 放回宿主，就与 @racket[f] 行为相同。@xref["02:early-return"]{「提前返回」}里的 @racket[mul]，是按程序结构写出这支表示的一个例子。𝒟 和 𝒞 的类型都是普通的函数类型，区别只在函数怎么写，类型检查不出来。纯函数也是宿主函数，@racket[inj]（injection，注入）把它原样放进 𝒟：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define-type (→𝒞 p ... q) (→ p ... q))
 
 (: inj (∀ (p q) (→ (→𝒞 p q) (→𝒟 p q))))
@@ -148,7 +148,7 @@
 
 @racket[neg] 的两种读法，写进同一个 @racket[case→]，第二种读法落在 𝒞 里：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (: neg
    (∀ (p q)
       (case→ (→ (→𝒟 p q) (→𝒰     p      q))
@@ -160,7 +160,7 @@
 
 代码上，@racket[neg²] 就是两次 @racket[neg] 连起来。它只把 @racket[f] 包上两层，并不改写 @racket[f] 的内部，有两种读法：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (: neg²
    (∀ (p q)
       (case→ (→ (→𝒞 p q) (→𝒞 (¬¬ p) (¬¬ q)))
@@ -216,7 +216,7 @@
 
 @defsym["join" "(∘ neg cps neg)：把外面的两层 ¬¬ 并成一层"]@defsym["join:id" "(join id)：¬¬¬¬p →𝒞 ¬¬p，call/cc 的纯翻译"]这一串把外面的两层 @math{¬¬} 并成一层，用在别的纯箭头上也行，记作 @racket[join]；用在 @racket[id] 上的那一支记作 @racket[join:id]：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (: join (∀ (p q) (→ (→𝒞 p q) (→𝒞 (¬¬ (¬¬ p)) (¬¬ q)))))
 (define join (∘ neg cps neg))
 

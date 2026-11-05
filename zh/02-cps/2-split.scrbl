@@ -26,7 +26,7 @@
 
 让每个函数都额外接受这样一个参数 @racket[k]，代表「我算完之后该做什么」。函数不再把值返回给调用者，而是直接交给 @racket[k]。@racket[fact] 的 @tech[#:key "延续传递风格"]{CPS} 版本：
 
-@examples[#:eval ev0 #:label #f #:no-prompt
+@examples[#:eval ev0 #:no-result
 (: fact/k (¬ Natural (¬ Natural)))
 (define (fact/k n k)
   (if (= n 0)
@@ -53,7 +53,7 @@
 拿 @racket[(fact/k 3 k)] 跑一遍，看手里的@tech{延续}怎么变。把 @racket[(λ (v) (* 3 v))] 记作 @racket[mul3]，其余类推：
 
 @racketblock[
-(fact/k 3 k)                                    =  (fact/k 3 (∘ k #,(hspace 14)))
+#,(hspace 2)(fact/k 3 k)                                  =  (fact/k 3 (∘ k #,(hspace 14)))
 = (fact/k 2 (λ (v) ((∘ k #,(hspace 9)) (* 3 v))))  =  (fact/k 2 (∘ k mul3 #,(hspace 9)))
 = (fact/k 1 (λ (v) ((∘ k mul3 #,(hspace 4)) (* 2 v))))  =  (fact/k 1 (∘ k mul3 mul2 #,(hspace 4)))
 = (fact/k 0 (λ (v) ((∘ k mul3 mul2) (* 1 v))))  =  (fact/k 0 (∘ k mul3 mul2 mul1))
@@ -63,7 +63,7 @@
 
 直接风格里也有不增长栈的写法：尾递归版本的 @racket[fact] 用一个累积器。
 
-@examples[#:eval ev0 #:label #f #:no-prompt
+@examples[#:eval ev0 #:no-result
 (: fact (→ Natural Natural))
 (define (fact n)
   (let loop ([n n] [acc 1])
@@ -73,7 +73,7 @@
 
 把它也变换成 @tech[#:key "延续传递风格"]{CPS}，重新定义 @racket[fact/k]，换成累积器的版本：
 
-@examples[#:eval ev0 #:label #f #:no-prompt
+@examples[#:eval ev0 #:no-result
 (: fact/k (¬ Natural (¬ Natural)))
 (define (fact/k n k)
   (let loop/k ([n n] [acc 1] [k k])
@@ -109,7 +109,7 @@
 
 @defsym["a->⊥" "终结延续：把答案包进 ans 抛出"]@defsym["⊥->a" "接住 a->⊥ 抛出的答案，交回调用处"]我们需要另一个类型为 @math{a → ⊥} 的函数：它不返回，也不杀死进程，而是把答案送到一个取得回来的地方。@racket[raise] 正合适：它不返回，handler 又能捕获它抛出的值。要的只有两件事：@racket[a->⊥] 把答案抛出去，@racket[⊥->a] 在外面接住。和第一章由操作系统交来的 @racket[exit] 一样，这一对是在程序外面提供的终点和接收处：@racket[raise] 藏在 @racket[a->⊥] 里，程序调用的只是这条@tech{终结延续}。再用一个专门的 struct，把我们的答案和别的异常区分开：
 
-@examples[#:eval ev0 #:label #f #:no-prompt
+@examples[#:eval ev0 #:no-result
 (struct (r) ans ([a* : (Listof r)]) #:type-name Ans)
 (define (list->values v*) (apply values v*))
 
@@ -134,7 +134,7 @@
 
 @xref["01:cc"]{「从标签到延续：cc 操作符」}里用 @racket[cc] 写过 @racket[mul]：遇到零就短路。在 @tech[#:key "延续传递风格"]{CPS} 里，@tech{延续}就是普通的函数参数，同样的短路可以直接写出来：
 
-@examples[#:eval ev0 #:label #f #:no-prompt
+@examples[#:eval ev0 #:no-result
 (: mul (→ Real * Real))
 (define (mul . r*)
   (: loop/k (¬ (Listof Real) (¬ Real)))
@@ -175,7 +175,7 @@
 
 给一个具体的函数写 @tech[#:key "延续传递风格"]{CPS} 包装，并不难。@racket[zero?] 的 @tech[#:key "延续传递风格"]{CPS} 版本：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define (zero?/k x k) (k (zero? x)))]
 
 @racket[zero?/k] 在 @racket[zero?] 的结果外面套一层 @racket[k] 调用，就完成了包装。可这层包装，每个函数都得手写一遍。要自动化，就要一个通用的包装：交给它任意函数 @racket[f]，交回 @racket[f] 的 @tech[#:key "延续传递风格"]{CPS} 版本。
@@ -201,7 +201,7 @@
 
 操作上一样，类型却不同：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (: cps (∀ (p q) (→ (→ p q) (→    p (¬¬ q)))))
 (: neg (∀ (p q) (→ (→ p q) (← (¬ p) (¬ q)))))]
 
@@ -211,7 +211,7 @@
 
 @defsym["flip" "交换两层柯里化参数的次序；在逆否箭头与 CPS 箭头之间来回"]两者的差别只在柯里化的方向：@tech{延续}在前还是在后。既然是参数顺序的差别，交换顺序就能在两种写法之间来回：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (: flip (∀ (x y z) (→ (→ x (→ y z)) (→ y (→ x z)))))
 (define (((flip f) . y*) . x*) (apply (apply f x*) y*))]
 
@@ -231,7 +231,7 @@ neg  =  (∘ flip cps)]
 
 回头看@xref["02:cps"]{「延续与 CPS」}里 @racket[(fact/k 3 k)] 的展开，用的是会构造乘法闭包链的第一版。每递归一层，新的@tech{延续}都是在旧的前面复合一次乘法：@racket[k] 换成 @racket[(∘ k mul3)]，再换成 @racket[(∘ k mul3 mul2)]。收一条@tech{延续}，在它前面复合一个函数，交出另一条@tech{延续}，这正是 @racket[neg] 做的事：@racket[(neg f)] 收到等 @math{q} 的@tech{延续}，交出等 @math{p} 的@tech{延续}。照这个意思重写 @racket[neg]，得到的和前面的定义是同一个函数，只是可变参数交给 @racket[∘] 去处理：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define ((neg f) kq) (∘ kq f))]
 
 于是递归的每一层都是一次 @racket[neg]：第一层用 @racket[(neg mul3)]，第二层用 @racket[(neg mul2)]，第三层用 @racket[(neg mul1)]。递归到底时的那条链，就是三次 @racket[neg] 依次用在 @racket[k] 上：

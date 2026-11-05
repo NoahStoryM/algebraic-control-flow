@@ -117,7 +117,7 @@
 
 插入打印 @c|{@}| 和 @racket[*] 的 @racket[display] 调用，改写为 @racket[define] 形式：
 
-@examples[#:eval ev-run #:label #f #:no-prompt
+@examples[#:eval ev-run #:no-result
 (define (k0 kn)
   (displayln #\@)
   (define (kn+1 km)

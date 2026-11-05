@@ -44,7 +44,7 @@
   (set! n (add1 n))
   var)]
 
-@examples[#:eval ev-anf #:label #f #:no-prompt
+@examples[#:eval ev-anf #:no-result
 (define (anf exp)
   (define fv (make-genvar 'v))
   (define (id v) v)
