@@ -53,7 +53,7 @@
 拿 @racket[(fact/k 3 k)] 跑一遍，看手里的@tech{延续}怎么变。把 @racket[(λ (v) (* 3 v))] 记作 @racket[mul3]，其余类推：
 
 @racketblock[
-(fact/k 3 k)                                    =  (fact/k 3 (∘ k #,(hspace 14)))
+#,(hspace 2)(fact/k 3 k)                                  =  (fact/k 3 (∘ k #,(hspace 14)))
 = (fact/k 2 (λ (v) ((∘ k #,(hspace 9)) (* 3 v))))  =  (fact/k 2 (∘ k mul3 #,(hspace 9)))
 = (fact/k 1 (λ (v) ((∘ k mul3 #,(hspace 4)) (* 2 v))))  =  (fact/k 1 (∘ k mul3 mul2 #,(hspace 4)))
 = (fact/k 0 (λ (v) ((∘ k mul3 mul2) (* 1 v))))  =  (fact/k 0 (∘ k mul3 mul2 mul1))
