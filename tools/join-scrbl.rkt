@@ -20,7 +20,7 @@
 
 ;; 整块跳过的形式：从开头一行起，到方括号或 |{ }| 配平为止
 (define code-start
-  #px"^\\s*(#lang|@\\(|@(examples|racketblock|racketblock0|racketgrammar|racketgrammar\*|interaction|out-block|codeblock|tabular|title|section|subsection|subsubsection|include-section|table-of-contents|mm)\\b)")
+  #px"^\\s*(#lang|@\\(|@(examples|racketblock|racketblock0|racketgrammar|racketgrammar\\*|interaction|out-block|codeblock|tabular|title|section|subsection|subsubsection|include-section|table-of-contents|mm)\\b)")
 ;; 收尾一个块的行：之后的行不与它相连
 (define block-end #px"(\\}\\]|^\\s*\\])\\s*$")
 ;; 不与上一行相连的行：块级形式的开头，或单独的收尾括号
