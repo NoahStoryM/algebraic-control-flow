@@ -2,7 +2,7 @@
 
 @title[#:tag "02:2-split"]{把延续独立出来}
 
-第一章从 C 的@tech{标签}出发：@tech{标签}标出程序里的一个位置，却不是值，不能存，也不能传；把它做成一等值，一路走到了 @racket[call/cc]。@xref["02:anf"]{「求值顺序与 ANF」}里每个 @racket[let] 绑定配着的@tech{延续} @racket[(λ (v) b)]，也处在这样的位置：它由 @racket[let] 的语法藏着，程序碰不到。给它起个名字 @racket[k]，再把整段写回函数调用：
+第一章从 C 的@tech{标签}出发：@tech{标签}标出程序里的一个位置，却不是值，不能存，也不能传；把它做成一等值，一路走到了 @racket[call/cc]。@xref["02:1-anf-cps"]{「求值顺序」}里每个 @racket[let] 绑定配着的@tech{延续} @racket[(λ (v) b)]，也处在这样的位置：它由 @racket[let] 的语法藏着，程序碰不到。给它起个名字 @racket[k]，再把整段写回函数调用：
 
 @racketblock[
 #,(hspace 2)(let ([v e]) b)
@@ -243,7 +243,7 @@ neg  =  (∘ flip cps)]
 
 @racket[(neg mul3)] 最先用，@racket[mul3] 紧挨着 @racket[k]；@racket[(neg mul1)] 最后用，@racket[mul1] 却最先算。几次 @racket[neg] 用 @racket[∘] 接起来，次序和里面的乘法正好相反。整条@tech{闭包链}从 @racket[k] 开始，一环环向内建起来。@racket[k] 是出口，也就是这段计算的@tech{终结延续}：@racket[(fact/k 3 k)] 若就是整个程序，它就是程序的出口，也就是 @racket[exit]；启动时交进去的若是@tech{终结延续} @racket[a->⊥]，它就是 @racket[a->⊥]。
 
-以上是链的构造。运行时，值又怎样沿着它走？@xref["02:anf"]{「求值顺序与 ANF」}说过，@racket[let*] 就是复合。反过来，把这条@tech{闭包链}拆回 @racket[let*]，给中间结果起名，值从 @racket[v0] 出发：
+以上是链的构造。运行时，值又怎样沿着它走？@xref["02:1-anf-cps"]{「求值顺序」}说过，@racket[let*] 就是复合。反过来，把这条@tech{闭包链}拆回 @racket[let*]，给中间结果起名，值从 @racket[v0] 出发：
 
 @racketblock[
 #,(hspace 2)((∘ k mul3 mul2 mul1) v0)

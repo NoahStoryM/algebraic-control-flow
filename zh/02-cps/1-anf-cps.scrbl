@@ -8,8 +8,6 @@
 (define-type (¬ p ...) (→ p ... ⊥))
 (define-type (¬¬ p) (¬ (¬ p)))]
 
-@section[#:tag "02:anf"]{求值顺序与 ANF}
-
 考虑两个常见的递归函数：
 
 @examples[#:eval ev #:label #f #:no-prompt
@@ -90,7 +88,7 @@
 里层的 @racket[let] 算的是 @racket[((∘ h g) y)]，所以 @racket[y] 的@tech{延续}就是 @racket[(∘ h g)]：它包下了剩下的全部工作，先 @racket[g] 再 @racket[h]。外层再把它接在 @racket[f] 后面。每个绑定各藏着这样一个@tech{延续}。
 
 
-@subsection[#:tag "02:laws"]{结合律与单位律}
+@section[#:tag "02:laws"]{结合律与单位律}
 
 把计算写成 @racket[let]，写法并不唯一。@racket[fact]、@racket[fib] 把每个新的 @racket[let] 嵌在前一个 @racket[let] 的函数体 @racket[b] 里；可 @racket[let] 里还有一处能放表达式，就是被求值的 @racket[e]：同样几步，也可以先接成一段，嵌进 @racket[e]。中间还可以插一个只给值换名的 @racket[let]。@tech[#:key "A-范式"]{ANF} 本来是要把计算顺序写死的，写法一多，定下的还是同一个顺序吗？
 
