@@ -917,7 +917,7 @@
       (or (val? e ks)
           (match e
             [`(,r . ,args)
-             (and (name? r) (not (set-member? ks r))
+             (and (or (and (name? r) (not (set-member? ks r))) (proc? r ks))
                   (list? args) (andmap (λ (d) (val? d ks)) args))]
             [_ #f])))
     (define (anf? e ks)
@@ -992,7 +992,8 @@
 
 (module+ test
   (require (prefix-in grammar: (submod ".." grammar))
-           (prefix-in named: (submod ".." stage-named)))
+           (prefix-in named: (submod ".." stage-named))
+           (prefix-in s9: (submod ".." stage-9)))
   ;; (a) #51 临时脚本的 36 个输入原样保留；四个已展示的反例单列预期。
   (define grammar-programs
     '((if a b c) (add1 (if a b c)) (f (if a b c)) (λ (n) (f (g n)))
@@ -1123,6 +1124,9 @@
                        (if a (resume b) (resume c))))
   (check-true (grammar:named-anf? named-cont))
   (check-false (grammar:named-anf? '(f x))) ; 普通调用应在 atom/let 中。
+  ;; atom 的调用头可以是 proc：stage-9 编译调用头为 if 的程序时会生成它。
+  (check-true (grammar:named-anf? (s9:anf '((if #t (λ (x) x) (λ (y) y)) 1))))
+  (check-false (grammar:named-anf? '(let ([v.0 (0 x)]) v.0)))
   (check-false (grammar:named-anf? '(resume x))) ; 自由名字不会自动成为延续。
   (check-true (grammar:named-anf? '(resume x) (seteq 'resume)))
   (check-false (grammar:named-anf? '(let ([r (resume x)]) r) (seteq 'resume)))

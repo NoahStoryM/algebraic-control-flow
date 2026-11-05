@@ -71,7 +71,7 @@
 [if-form anf-if (let ([kvar proc]) anf-if)]
 [anf-if (if val anf anf)]
 [kvar var]
-[atom val (var val ...)]
+[atom val (var val ...) (proc val ...)]
 [val var literal proc]
 [proc (λ head anf)]
 [head var (var ...) (var ... . var)]]

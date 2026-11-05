@@ -85,10 +85,12 @@
 @racketgrammar*[
 #:literals (λ if let)
 [anf val (if val anf anf) (let ([var atom]) anf)]
-[atom val (var val ...)]
+[atom val (var val ...) (proc val ...)]
 [val var literal proc]
 [proc (λ head anf)]
 [head var (var ...) (var ... . var)]]
+
+一个 @racket[_atom] 要么是值，要么是一次调用：调用的函数和实参都已经是值，不需要先计算任何子表达式。@racket[(f x)] 是一个 @racket[_atom]，@racket[(f (g x))] 不是，要先给 @racket[(g x)] 的结果命名。
 
 在 @tech[#:key "A-范式"]{ANF} 中，函数调用的参数必须是一个@emph{值}（变量、字面量或 lambda），不能是复合表达式。如果参数本身是函数调用，就必须先用 @racket[let] 绑定到一个变量。这正是使求值顺序显式化的方式：@racket[let] 链条@emph{就是}求值轨迹。文法的各种情况告诉我们变换器需要哪些分支。
 
