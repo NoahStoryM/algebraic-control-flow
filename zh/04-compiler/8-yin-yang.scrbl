@@ -111,7 +111,7 @@
 
 把形如 @racket[((λ (_) …) (display …))] 的应用还原成先打印、再往下做，改写为 @racket[define] 形式：
 
-@examples[#:eval ev-yy #:label #f #:no-prompt
+@examples[#:eval ev-yy #:no-result
 (define (k0 kn)
   (displayln #\@)
   (define (kn+1 km)

@@ -52,7 +52,7 @@
 
 @racket[kp] 就是当前@tech{延续}，要交给 @racket[proc]。可 @racket[proc] 照哪种写法写成，它里面的每一次函数调用就都守哪种写法的规矩，调用交给它的@tech{延续}也不例外。@racket[cps:proc] 里调用的函数都先收值、再收@tech{延续}，交给它的@tech{延续}也得这样调用，所以给它的是 @racket[(cps kp)]，记作 @racket[cps:kp]；@racket[neg:proc] 照 @racket[neg] 的写法，给它的是 @racket[(neg kp)]，记作 @racket[neg:kp]。@racket[kp] 自己落在 @math{⊥} 上，@racket[(cps kp)] 和 @racket[(neg kp)] 都会多收一条等着 @math{⊥} 的@tech{延续}：@racket[(cps kp)] 的形状是 @math{p → (⊥ → ⊥) → ⊥}。@racket[kp] 不回来，这条@tech{延续}轮不到。@racket[neg:proc] 自己也照 @racket[neg] 的写法：先收结果的@tech{延续}，也就是原样的 @racket[kp]；再收输入，也就是提升过的 @racket[neg:kp]。两个定义写完整：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define ((cps:call/cc cps:proc) kp) ((cps:proc (cps kp)) kp))
 (define ((neg:call/cc kp) neg:proc) ((neg:proc kp) (neg kp)))]
 
@@ -97,13 +97,13 @@
 
 想要的是像 @racket[let] 一样写成 @racket[(anf:let ([v (cps:mul1 1)]) (cps:mul2 v))]，@racket[λ] 由语法替我们写。对照手写版，@racket[(cps:mul1 1)] 是 @racket[e]，@racket[(cps:mul2 v)] 是 @racket[b]，宏把它们放回原处：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define-syntax-rule (anf:let ([v e]) b)
   (λ (k) (e (λ (v) (b k)))))]
 
 @defsym["anf:eval" "运行一段计算：交进终结延续 a->⊥，由 ⊥->a 接住答案"]@racket[anf:let] 自己也交出一段计算，收到@tech{延续}后才开始运行。展开出来的，除了程序员写下的箭头，只有 @racket[λ] 和函数调用。@racket[cps:] 箭头加上绑定的语法，就成了一门嵌在宿主里的小语言（宿主，就是运行它的 Racket 本身）：宏充当编译器，把类似 @tech[#:key "A-范式"]{ANF} 的写法翻译成 @math{¬¬} 编码的 @tech[#:key "延续传递风格"]{CPS}。编译出来的程序还要有人运行，这门语言还缺一个解释器：交给程序@tech{终结延续} @racket[a->⊥]，再用 @racket[⊥->a] 接住答案：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define (anf:eval kka) (⊥->a (kka a->⊥)))]
 
 重跑例子：
@@ -115,7 +115,7 @@
 
 手写的 @tech[#:key "延续传递风格"]{CPS} 版 @racket[mul] 有两处要程序员亲自动手：正常路径上，每一步都要写出新的@tech{延续} @racket[(λ (v) (k (* v r)))]；遇到零时，要手动改调 @racket[a->⊥]。不写@tech{延续}，用宿主自己的 @racket[let/cc]、@racket[let*]、@racket[if] 和原语，@racket[mul] 可以这样写：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (: mul (→ Real * Real))
 (define (mul . r*)
   (let/cc return
@@ -139,7 +139,7 @@
 
 照这个样子，把它一行行改写进嵌入语言：正常路径的每一步交给绑定，遇零交给 @racket[cps:call/cc] 交来的@tech{延续}。先把用到的原语经 @racket[cps] 提升：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define cps:*         (cps *))
 (define cps:zero?     (cps zero?))
 (define cps:car       (cps car))
@@ -152,7 +152,7 @@
 
 几个绑定依次接起来，就是一层层嵌套的 @racket[anf:let]：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define-syntax anf:let*
   (syntax-rules ()
     [(_ () b) b]
@@ -161,19 +161,19 @@
 
 分支也一样：测试那一段算出的计算，收到一条等测试结果的@tech{延续}；它拿到测试的值，选一支分支，再把 @racket[k] 交给它：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define-syntax-rule (anf:if test conseq alt)
   (λ (k) (test (λ (b) ((if b conseq alt) k)))))]
 
 遇零跳出，要用 @racket[cps:call/cc] 交来的@tech{延续}。@racket[anf:let/cc] 给它起个名字：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define-syntax-rule (anf:let/cc cps:k b* ...)
   (cps:call/cc (λ (cps:k) b* ...)))]
 
 照上面的 @racket[mul] 一行行改写，它本身也收值、交出计算：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (: cps:mul (→ Real * (¬¬ Real)))
 (define (cps:mul . r*)
   (anf:let/cc cps:return
@@ -214,7 +214,7 @@
 
 @defsym["cps:id" "(cps id)：CPS 箭头的单位元，p → ¬¬p 即 DNI"]交给 @racket[cps:call/cc] 的这个函数，收下一个值 @racket[v]，交出 @racket[(λ (k) (k v))]：一段计算，收到@tech{延续}就把 @racket[v] 原样交给它。这正是 @racket[((cps id) v)]。所以这个函数就是 @racket[(cps id)]，记作 @racket[cps:id]，@racket[label] 写作：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define cps:id (cps id))
 (define (cps:label) (cps:call/cc cps:id))]
 
@@ -222,7 +222,7 @@
 
 谜题写进 @racket[anf:let*]。中间还有打印：打印也是一步计算，只是结果用不着。一串计算依次做下去、只留最后一个的结果，就是 @racket[anf:begin]：把前面的结果绑定到一个用不着的变量 @racket[_] 上，忽略掉。
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define-syntax anf:begin
   (syntax-rules ()
     [(_ b) b]

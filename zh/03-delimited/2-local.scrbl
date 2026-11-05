@@ -36,12 +36,12 @@
 
 @xref["02:first-class-control"]{「一等控制」}里 @tech[#:key "延续传递风格"]{CPS} 版的 @racket[mul] 也会提前返回，代码里却没有一处检查。它用到的只有四样东西：@math{⊥}、@math{¬p = p → ⊥}、@racket[a->⊥]、@racket[⊥->a]。把这四样全换成局部的版本，@racket[⊥ᵃ?] 大概也就用不着了。@math{⊥ᵃ}、@racket[a->⊥ᵃ]、@racket[⊥ᵃ->a] 已经有了，再补上否定：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define-type (¬ₐ p ...) (→ p ... ⊥ᵃ))]
 
 @defsym["¬ₐp" "局部否定：p → ⊥ᵃ，局部延续的类型"]@math{¬ₐp} 收下 @math{p}，交出局部答案 @math{⊥ᵃ}。这样的函数叫@defterm[#:en "local continuation"]{局部延续}。和 @racket[¬] 一样，它不限参数的个数，值域是 @math{⊥ᵃ} 的箭头从此都写成 @racket[¬ₐ]。代入 @tech[#:key "延续传递风格"]{CPS} 版的 @racket[mul]：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (: mul (→ Real * Real))
 (define (mul . r*)
   (: loop/kₐ (¬ₐ (Listof Real) (¬ₐ Real)))
@@ -75,7 +75,7 @@
 
 @tech[#:key "延续传递风格"]{CPS} 版的 @racket[mul] 换上@tech{局部延续}，照常工作。嵌入语言呢？把@xref["02:split-k"]{「延续独占一层」}的 @racket[cps]、@xref["02:k-in-hand"]{「手中的延续」}的 @racket[cps:call/cc] 和@xref["02:hide-again"]{「再次隐藏延续」}的 @racket[anf:eval] 也换成局部的版本：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define (((cps f) . p*) kₐq) (kₐq (apply f p*)))
 (define ((cps:call/cc cps:proc) kₐp) ((cps:proc (cps kₐp)) kₐp))
 (define (anf:eval kₐkₐa) (⊥ᵃ->a (kₐkₐa a->⊥ᵃ)))]
@@ -131,7 +131,7 @@
 
 @defsym["cps*" "把局部延续提升成丢弃当前延续的 CPS 箭头"]既然 @racket[(kₐp . p*)] 已经得到了答案，直接交出就行，不必理会 @racket[kₐq]：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define (((cps* kₐp) . p*) kₐq) (apply kₐp p*))
 (define ((cps:call/cc cps:proc) kₐp) ((cps:proc (cps* kₐp)) kₐp))]
 
@@ -159,7 +159,7 @@
 
 @tech[#:key "延续传递风格"]{CPS} 的代码里用不到 @racket[⊥ᵃ?]。那么在整段局部计算里，和 @math{⊥ᵃ} 打交道的只剩 @racket[a->⊥ᵃ] 和 @racket[⊥ᵃ->a] 这一对：值放进去，同一个值取出来。中间既然没有谁查看 @racket[Ans] 的内部，结构体这层包装就什么也没做，可以取@defterm[#:en "trivial representation"]{平凡表示}：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define-type ⊥ᵃ Real)
 (define a->⊥ᵃ id)
 (define ⊥ᵃ->a id)]
@@ -175,7 +175,7 @@
 
 回到刚才报错的 @racket[(kₐq (kₐp . p*))]：@racket[(kₐp . p*)] 现在交出 @math{⊥ᵃ}，在这里就是 @racket[Real]；调用 @racket[(cps kₐp)] 的地方，等的正是一个 @math{⊥ᵃ}（例子里它在乘法的位置上，等一个实数），类型对得上：不丢掉 @racket[kₐq]，也不再报错。可控制的行为变了：调用捕获的函数，做完以后会回到调用处，接着做 @racket[kₐq] 的工作。于是原来那个 @racket[cps:call/cc] 的定义本来就有意义，只是捕获的不再是会跳走的@tech{延续}，而是一个普通函数，@tech{局部延续}：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define ((cps:call/lc cps:proc) kₐp) ((cps:proc (cps kₐp)) kₐp))]
 
 @defsym["cps:call/lc" "以当前局部延续调用（call with local continuation），交给程序的是 (cps kₐp)"]@racket[cps:call/lc]（call with local continuation），和最初的 @racket[cps:call/cc] 逐字相同。可 @racket[(cps kₐp)] 的行为变了：@racket[kₐp] 这条@tech{闭包链}的底不再是 @racket[ans]，而是 @racket[id]，那个空栈什么也不做，调用它，做完局部的工作就正常返回，@racket[kₐq] 接着运行。调用被捕获的@tech{延续}不再是跳转，而是复合，一次普通的函数调用。
@@ -218,7 +218,7 @@
 
 怎样在一段局部计算里开启另一段？@racket[anf:eval] 已经能运行一段计算，只是它本身还是一个普通函数。用 @racket[cps] 把它提升成一支 @tech{CPS 箭头}：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define anf:reset (cps anf:eval))]
 
 @defsym["anf:reset" "(cps anf:eval)：在当前局部计算里开启一段新的局部计算"]@racket[anf:reset] 调用 @racket[anf:eval] 运行里面的计算。@racket[anf:eval] 交给它一条新的@defterm[#:en "local terminal continuation"]{局部终结延续}；里面得出答案以后，@racket[cps] 再把答案交给外面的@tech{延续}。于是里面有了自己的起点，外面只看到一个正常返回的值。每次 @racket[anf:reset] 都开启一段新的局部计算，在当前的边界里再划出一条边界。里面的世界尽头，从外面看，只是一次子计算返回了。

@@ -40,7 +40,7 @@
 
 @racket[cps:call/cc] 提升的是 @tech[#:key "延续传递风格"]{CPS} 参数 @racket[kₐp]，也就是当前的@tech{局部延续}，它随着计算一步步变化。计算运行时，还有一条@tech{局部延续}始终不变：@racket[anf:eval] 启动时交进去的@tech{局部终结延续} @racket[a->⊥ᵃ]。@racket[cps*] 能提升任何一条@tech{局部延续}，把它用在 @racket[a->⊥ᵃ] 上：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define cps:abort (cps* a->⊥ᵃ))]
 
 @defsym["cps:abort" "(cps* a->⊥ᵃ)：丢掉当前延续，把值交给局部终结延续"]照名字的约定，@racket[cps:abort] 是一支 @tech{CPS 箭头}；它不是用 @racket[cps] 提升出来的，而是 @racket[cps*] 用在 @racket[a->⊥ᵃ] 上。它丢掉当前@tech{延续}，把值交给@tech{局部终结延续}：从@tech{闭包链}上的任何一处跳到链底，值成为这段局部计算的答案。回看@xref["03:escape-discard"]{「逃逸与丢弃」}里用 @racket[cps:call/cc] 提前退出的例子：
@@ -64,7 +64,7 @@
 
 @xref["03:nested"]{「边界中的边界」}已经表明，被 @tt{return} 丢掉的那段工作是一个普通函数：调用它，就做完剩下的局部工作，正常返回结果。程序要是既能拿到这个函数，又能交出答案，就可以选择调用、保存，还是丢掉它。@racket[cps:call/lc] 拿到函数，@racket[cps:abort] 交出答案，两个接起来：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define-syntax-rule (anf:let/lc cps:k b* ...)
   (cps:call/lc (λ (cps:k) b* ...)))
 

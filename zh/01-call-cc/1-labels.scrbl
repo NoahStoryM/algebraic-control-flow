@@ -42,7 +42,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 
 再写一个提前返回的函数：把一串实数乘起来，遇到零就立即交出零。
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define (mul . r*)
   (define first? #t)
   (define result (*))       (code:comment "乘法单位元 = 1")
@@ -76,7 +76,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 用的人得分得清拿到的是哪一种。我们给每种可能打上一个@defterm[#:en "tag"]{标记}：值配上 @racket[0]，@tech{延续}配上 @racket[1]，用 @racket[cons] 配成一对。这样合起来的类型，叫@defterm[#:en "tagged union"]{带标记的联合}，写作
 @defsym["p ∐ q" "带标记的联合：每支配上标记再并起来"]@racket[∐]：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define-type (∐ p0 p1 ...) (∪ (Pair p0 0) (Pair p1 1) ...))]
 
 @margin-note{这一行是记法，意思照正文读：省略号表示后面还有几支，@tech{标记}依次是 0、1、2……Typed Racket 的省略号做不到逐支编号，也写不出零支的 @racket[(∐)]。}
@@ -85,7 +85,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 
 我们把这个操作符叫做 @racket[cc]（@racket[current-continuation] 的缩写）：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (: cc (∀ (p) (→ (∐ p (→ p ⊥)))))
 (define (cc)
   (define first? #t)
@@ -104,7 +104,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 
 有了 @racket[cc]，@racket[mul] 可以再写一次：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define (mul . r*)
   (match (cc)
     [(cons r 0) r]
@@ -129,7 +129,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 
 不再返回@tech{带标记的联合}让调用者去分支，而是让调用者传入一个函数 @racket[proc]，直接把@tech{延续}作为参数交给它。分支挪进操作符内部，对用户不可见：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (: call/cc (∀ (p) (→ (→ (→ p ⊥) p) p)))
 (define (call/cc proc)
   (match (cc)
@@ -142,7 +142,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 
 @margin-note{@racket[let/cc] 是 @racket[call/cc] 的语法糖：@racket[(let/cc k body ...)] 就是 @racket[(call/cc (λ (k) body ...))]，给当前@tech{延续}起个名字 @racket[k]。}
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define (mul . r*)
   (let/cc return
     (for/fold ([res (*)])
@@ -169,7 +169,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 这正是令 @math{p = @ty{Label}} 时@tech{延续}的类型。于是：
 
 @(define ev1 (make-acf-eval))
-@examples[#:eval ev1 #:label #f #:no-prompt
+@examples[#:eval ev1 #:no-result
 (define-type Label (→ Label ⊥))
 (define (goto l) (l l))
 (define (label) (call/cc goto))]
@@ -202,7 +202,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 (define (goto l) (l l))
 (define (label) (primitive-call/cc goto))
 (define-syntax-rule (let/cc k body ...) (call/cc (λ (k) body ...)))]
-@examples[#:eval ev2 #:label #f #:no-prompt
+@examples[#:eval ev2 #:no-result
 (define (call/cc proc)
   (define first? #t)
   (define u undefined)
@@ -212,7 +212,7 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
      (proc (λ (v) (set! u v) (goto l)))]
     [else u]))]
 
-@examples[#:eval ev2 #:label #f #:no-prompt
+@examples[#:eval ev2 #:no-result
 (define (cc)
   (let/cc k
     (cons (λ (v) (k (cons v 0))) 1)))]
@@ -223,13 +223,13 @@ C 的@tech{标签}钉死在代码里。要是能把它拔下来，拿在手里�
 
 @margin-note{从并集回不到带@tech{标记}的联合。同一个元素出现在几支里，配上不同的@tech{标记}，在 @racket[∐] 里就有几个，@racket[untag] 以后就成了一个，再也说不清它来自哪一支：@racket[∐] 比 @racket[∪] 多记着来源。}
 
-@examples[#:eval ev2 #:label #f #:no-prompt
+@examples[#:eval ev2 #:no-result
 (: untag (∀ (p ...) (→ (∐ p ...) (∪ p ...))))
 (define untag car)]
 
 @racket[untag] 接在 @racket[(cc)] 后面，也就在 @racket[(cc)] 捕获的@tech{延续}里，两次交出都要经过它：
 
-@examples[#:eval ev2 #:label #f #:no-prompt
+@examples[#:eval ev2 #:no-result
 (define label (compose untag cc))
 (define (goto l) (l l))]
 

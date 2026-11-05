@@ -39,7 +39,7 @@
 
 @racket[abort] 和 @racket[let/lc] 恰好各管一段。@racket[abort] 把值交给当前的@tech{元延续}，送到边界外面；@racket[let/lc] 拿到当前的@tech{局部延续} @racket[k]。把两段接起来，当前@tech{延续}就是 @racket[(∘ abort k)]：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define (call/cc proc)
   (let/lc k (proc (∘ abort k))))]
 

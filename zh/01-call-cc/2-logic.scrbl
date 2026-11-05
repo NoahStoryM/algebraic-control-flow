@@ -26,7 +26,7 @@
 
 答案在 @racket[⊥] 本身。先造一个奇怪的函数：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (: absurd (∀ (q) (→ ⊥ q)))
 (define absurd (case-λ))]
 
@@ -80,7 +80,7 @@
 @defsym["p → q" "蕴含；函数类型"]@math{→} 看上去像「如果……那么……」，也就是@defterm[#:en "implication"]{蕴含}。照这个样子，@math{p → ⊥} 说的是「如果 @math{p}，那么假」，也就是 @math{p} 不成立。这是@defterm[#:en "negation"]{否定}
 @defsym["¬p" "p 的否定：p → ⊥，延续的类型"]@math{¬p}。@tech{延续}的类型正是 @math{p → ⊥}，每个@tech{延续}都是一个@tech{否定}：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define-type (¬ p ...) (→ p ... ⊥))]
 
 @racket[¬] 和 @racket[→] 一样，参数可以不止一个：@racket[(¬ p q)] 就是 @racket[(→ p q ⊥)]。
@@ -171,7 +171,7 @@
 
 先看@tech{矛盾律}。@math{¬p ∧ p} 是一个 @math{¬p} 和一个 @math{p} 放在一起，对应函数的两个参数；整体取否定，结果是 @math{⊥}。所以要写的是这样一个函数：收下一个@tech{延续} @racket[kv] 和一个值 @racket[v]，得到 @math{⊥}。手里能产生 @math{⊥} 的只有 @racket[kv]，能交给它的只有 @racket[v]，写法几乎是被类型逼出来的：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (: apply-cont (∀ (p) (¬ (¬ p) p)))
 (define (apply-cont kv v) (kv v))]
 

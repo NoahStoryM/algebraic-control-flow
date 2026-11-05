@@ -70,7 +70,7 @@
 
 @defsym["uncps" "把 CPS 箭头放回宿主：用 call/cc 捕获当前延续，填进延续参数"]宿主若有 @racket[call/cc]，就能直接捕获当前@tech{延续}，填进编码的@tech{延续}参数：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (: uncps (∀ (p q) (→ (→𝒦 p q) (→𝒟 p q))))
 (define (uncps cps:f) (∘ call/cc cps:f))]
 
@@ -133,7 +133,7 @@ neg          uncps
 
 @defsym["unneg" "撤销 neg：(∘ uncps flip)，要靠 call/cc"]所以每条边都能由另外两条倒回去：@racket[uncps] 由 @racket[cps] 倒回，@racket[flip] 由 @racket[(∘ neg uncps)] 倒回。@racket[neg] 由 @racket[(∘ uncps flip)] 倒回，从 𝒰 回到 𝒟 本来没有直接的一条边，这一支撤销 @racket[neg]，记作 @racket[unneg]：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (: unneg (∀ (p q) (→ (→𝒰 p q) (→𝒟 p q))))
 (define unneg (∘ uncps flip))]
 

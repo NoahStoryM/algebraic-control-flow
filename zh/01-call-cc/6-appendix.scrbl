@@ -19,7 +19,7 @@
 
 @margin-note{为了好读，这里的类型只用了一个类型变量 @math{p}；这个 @racket[cc] 和下面的 @racket[call/cc] 实际上也能交多个值，即 @racket[Values]：@racket[args] 收下全部参数，@c{apply values} 全部交出。}
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (: cc (∀ (p) (→ (∪ p (¬ p)))))
 (define (cc)
   (define saved #f)
@@ -30,7 +30,7 @@
 
 control-context 库（@racketmodname[control/context]）里的 @racket[cc] 就是这样定义的，另外还做了一些这里用不到的处理；正文的 @racket[cc] 打上@tech{标记}，是为了把两支讲清楚。@racket[(cc)] 交出的不是值就是@tech{延续}，没有@tech{标记}。@racket[mul] 的结果是实数，@tech{延续}是函数，用 @racket[real?] 就分得开：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define (mul . r*)
   (define result (cc))
   (if (real? result)
@@ -47,7 +47,7 @@ control-context 库（@racketmodname[control/context]）里的 @racket[cc] 就�
 
 代价是分不分得开要由使用者负责：@math{p} 换成函数类型，值和@tech{延续}就未必分得清了。@racket[call/cc] 正碰上这种情况，只好把传回来的结果一律收进一张列表，再用 @racket[list?] 分辨：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (: call/cc (∀ (p) (→ (→ (¬ p) p) p)))
 (define (call/cc proc)
   (define x (cc))
@@ -68,7 +68,7 @@ control-context 库（@racketmodname[control/context]）里的 @racket[cc] 就�
 (define primitive-call/cc call/cc)
 (define (goto l) (l l))
 (define (label) (primitive-call/cc goto))]
-@examples[#:eval ev2 #:label #f #:no-prompt
+@examples[#:eval ev2 #:no-result
 (define (call/cc proc)
   (define saved #f)
   (define l (label))
@@ -76,12 +76,12 @@ control-context 库（@racketmodname[control/context]）里的 @racket[cc] 就�
       (apply values saved)
       (proc (λ args (set! saved args) (goto l)))))]
 
-@examples[#:eval ev2 #:label #f #:no-prompt
+@examples[#:eval ev2 #:no-result
 (define (cc) (call/cc values))]
 
 最后把 @racket[cc] 当作原语，写回@tech{标签}：
 
-@examples[#:eval ev2 #:label #f #:no-prompt
+@examples[#:eval ev2 #:no-result
 (define (label) (cc))
 (define (goto l) (l l))]
 
@@ -101,7 +101,7 @@ control-context 库（@racketmodname[control/context]）里的 @racket[cc] 就�
 
 不打@tech{标记}的 @racket[cc] 交出的两支都是函数时，就没有现成的谓词分得开了。下面的 @racket[wait/fc]（@racket[wait-for-future-continuation] 的缩写）用的就是那一节不打@tech{标记}的 @racket[cc]：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (: wait/fc (∀ (q) (→ (¬¬ q) (¬¬ q))))
 (define (wait/fc kk)
   (define first? #t)

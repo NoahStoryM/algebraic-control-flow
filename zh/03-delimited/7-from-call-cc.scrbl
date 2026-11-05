@@ -10,7 +10,7 @@
 
 @racket[abort] 把值交给当前的@tech{元延续}。那就把@tech{元延续}存进一个变量，让 @racket[abort] 调用它：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define meta-k exit)
 (define (abort . v*) (apply meta-k v*))]
 
@@ -18,7 +18,7 @@
 
 @racket[reset] 划出一条边界。它先存下当前的@tech{元延续}，再用 @racket[let/cc] 捕获自己返回的地方，然后换上一条新的@tech{元延续}：先把旧的那条换回来，再跳回返回的地方。最后运行主体，主体算完，结果交给 @racket[abort]：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define (call/prompt thk)
   (define k0 meta-k)
   (let/cc k1
@@ -38,7 +38,7 @@
 
 @racket[let/cc] 捕获的是完整的@tech{延续}，捕获时的@tech{元延续}也在里面。可@tech{局部延续}被调用时，要接上的是调用处的@tech{元延续}，不是捕获时的那一条。所以交给程序之前，给它包一层：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define (call/lc proc)
   (let/cc k
     (define (local-k . v*)
@@ -49,7 +49,7 @@
 
 @racket[shift] 和 @racket[anf:shift] 同形，@racket[call/lc] 加上 @racket[abort]：
 
-@examples[#:eval ev #:label #f #:no-prompt
+@examples[#:eval ev #:no-result
 (define-syntax-rule (shift k b b* ...)
   (call/lc (λ (k) (call-with-values (λ () b b* ...) abort))))]
 

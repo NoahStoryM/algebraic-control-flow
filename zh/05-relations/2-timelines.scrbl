@@ -44,13 +44,13 @@
 @(define ev-loop (make-acf-eval))
 @examples[#:eval ev-loop #:hidden
 (define (pyth? a b c) (= (+ (* a a) (* b b)) (* c c)))]
-@examples[#:eval ev-loop #:label #f #:no-prompt
+@examples[#:eval ev-loop #:no-result
 (: choose/k (∀ (p q) (→ (Listof p) (→ (→ p (Listof q)) (Listof q)))))
 (define ((choose/k p*) k) (append-map k p*))]
 
 用 @racket[choose/k] 把 @racket[right-triangles] 的三层循环摊开，每一层的剩余工作都成了一个写出来的 λ。每层交出的都得是列表，最内层也一样：直角成立，交出只装着一行的列表；不成立，交出空列表。
 
-@examples[#:eval ev-loop #:label #f #:no-prompt
+@examples[#:eval ev-loop #:no-result
 (define (right-triangles l h)
   ((choose/k (inclusive-range l h))
    (λ (a)
@@ -89,7 +89,7 @@
 @examples[#:eval ev-erase #:hidden
 (require racket/control)
 (define (pyth? a b c) (= (+ (* a a) (* b b)) (* c c)))]
-@examples[#:eval ev-erase #:label #f #:no-prompt
+@examples[#:eval ev-erase #:no-result
 (: choose (∀ (p) (→ (Listof p) p)))
 (define (choose p*) (shift k (append-map k p*)))
 
@@ -112,7 +112,7 @@
 
 @racket[a] 绑定好，@racket[let] 就不在了，@racket[k] 自带的那层 @racket[reset] 与源码里的第二层紧挨在一起，两层等于一层，@racket[(reset (reset e))] = @racket[(reset e)]。@xref["04:simplify"]{第四章化简编译器}时，内层的 @racket[reset] 也是这样去掉的。第三层同理。只留最外面一层，三个 @racket[let] 合成一个 @racket[let*]：
 
-@examples[#:eval ev-erase #:label #f #:no-prompt
+@examples[#:eval ev-erase #:no-result
 (define (right-triangles l h)
   (reset
    (let* ([a (choose (inclusive-range l h))]
@@ -165,7 +165,7 @@
 
 @racket[for/amb] 是 @racket[amb] 的循环写法，每一轮是一个备选。伪代码里缺的两个函数，用它们各写一行就有了；收集结果的那一层就是 @racket[in-amb]：
 
-@examples[#:eval ev-amb #:label #f #:no-prompt
+@examples[#:eval ev-amb #:no-result
 (: between (→ ℕ⁺ ℕ⁺ ℕ⁺))
 (define (between lo hi) (for/amb ([n (inclusive-range lo hi)]) n))
 
@@ -189,7 +189,7 @@
 
 最后把 @racket[amb] 做出来。@racket[choose] 从一张列表里选一个，@racket[shift] 取得的 @racket[k] 为每个备选各运行一遍，这已经是 @racket[amb] 的行为了。四个名字各用一行：
 
-@examples[#:eval ev-amb #:label #f #:no-prompt
+@examples[#:eval ev-amb #:no-result
 (define-syntax-rule (amb e ...) ((choose (list (λ () e) ...))))
 (define-syntax-rule (for/amb  clauses body ...) ((choose (for/list  clauses (λ () body ...)))))
 (define-syntax-rule (for*/amb clauses body ...) ((choose (for*/list clauses (λ () body ...)))))

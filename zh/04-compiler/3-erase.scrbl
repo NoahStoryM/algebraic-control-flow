@@ -74,7 +74,7 @@
   (set! n (add1 n))
   var)]
 
-@examples[#:eval ev-skel #:label #f #:no-prompt
+@examples[#:eval ev-skel #:no-result
 (define (anf exp)
   (define fv (make-genvar 'v))
   (define (anf0 exp) (shift ctx (anf1 exp ctx)))
@@ -207,7 +207,7 @@ application 分支有两个 @racket[reset]：
   (set! n (add1 n))
   var)]
 
-@examples[#:eval ev-shift #:label #f #:no-prompt
+@examples[#:eval ev-shift #:no-result
 (require racket/control)
 
 (define (anf exp)
