@@ -11,7 +11,7 @@
 @(define ev-search (make-acf-eval))
 @examples[#:eval ev-search #:hidden
 (require acf/zh/05-relations/show)]
-@examples[#:eval ev-search #:label #f #:no-prompt
+@examples[#:eval ev-search #:label #f #:no-prompt #:no-result
 (define-type ℕ⁺ Positive-Integer)
 (define-type Triangle (List ℕ⁺ ℕ⁺ ℕ⁺))
 code:blank
@@ -35,7 +35,7 @@ code:blank
 
 为了这六组边，循环试了 1540 组。用同样的边界再调用一次，这 1540 组还得从头试一遍，交出的却还是那六组：@racket[right-triangles] 是一个纯函数，输出只由输入决定。既然如此，算过的结果就可以记下来，下次遇到同样的边界直接取出。这就是缓存：
 
-@examples[#:eval ev-search #:label #f #:no-prompt
+@examples[#:eval ev-search #:label #f #:no-prompt #:no-result
 (define-type (Dict k v) (Listof (Pair k v)))
 (define-type Bounds (List ℕ⁺ ℕ⁺))
 code:blank
