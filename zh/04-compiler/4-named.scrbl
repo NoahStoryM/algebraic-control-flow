@@ -19,7 +19,7 @@
 @examples[#:eval ev-dup #:label #f
 (anf '(f (if a b c)))]
 
-对 @racket[f] 的调用出现在两个分支中。如果 @racket[if] 嵌套，每一层都把代码翻倍。指数膨胀。
+对 @racket[f] 的调用出现在两个分支中。如果一个调用里有多个 @racket[if]（例如 @racket[(f (if a b c) (if d e g) …)]），每多一个，代码就乘上一个常数倍，指数膨胀。
 
 但 @racket[if] 的两个分支都在尾位置：两个分支都不扩展@tech{延续}。@racket[if] 表达式的@tech{延续}@emph{就是}每个分支的@tech{延续}。如果我们把 @racket[ctx] 打印为一个 lambda，绑定到一个命名变量，让两个分支都应用那个名字，重复就消失了。
 

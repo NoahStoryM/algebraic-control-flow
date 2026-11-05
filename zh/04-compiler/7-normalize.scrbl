@@ -52,7 +52,7 @@
     [(? trivial?) (not (eq? k v))]
     [_ #f]))]
 
-@racket[β?] 问的是函数体 @racket[b] 是否归约为 @racket[v]；@racket[η?] 问的是 @racket[v] 是否在 @racket[k] 中自由出现。每个谓词中的守卫标出了归约不再可靠的边界。下面各举一例。
+@racket[β?] 问的是函数体 @racket[b] 是否归约为 @racket[v]；@racket[η?] 问的是 @racket[v] 是否没有在 @racket[k] 的函数体里再出现：出现了，去掉包装器就会改变含义。每个谓词中的守卫标出了归约不再可靠的边界。下面各举一例。
 
 @racket[β?] 中间子句的 @racket[(not (pair? e))] 阻止丢弃一个复合表达式 @racket[e]，那个表达式是目标程序本应执行的计算：
 
@@ -271,6 +271,6 @@ Lambda 链的尾调用直接传递 @racket[k.0]，@racket[999] 例子的调用�
                         (abort y)))])
         (+ 10 v)))]
 
-三份输出与第三章手工写出的 @tech[#:key "延续传递风格"]{CPS} 逐字相同，只是例二的参数第三章写作 @racket[_]。@racket[shift] 和 @racket[reset] 之间的剩余工作，也就是加二，被写成 @racket[(λ (x) (+ 2 x))] 交给主体；外层的加十是 @racket[(λ (v) (+ 10 v))]。三份输出只有主体不同，分别调用 @racket[k] 零次、一次、两次。@racket[k] 是平凡的，所以每次调用编译为普通调用。例四的主体 @racket[(let ([r (k 3)]) (k r))] 经 η-归约成为 @racket[(k (k 3))]。结果：@racket[13]、@racket[15]、@racket[17]。
+三份输出与第三章手工写出的 @tech[#:key "延续传递风格"]{CPS} 相同，只差变量的名字（例如例二的参数，第三章写作 @racket[_]）。@racket[shift] 和 @racket[reset] 之间的剩余工作，也就是加二，被写成 @racket[(λ (x) (+ 2 x))] 交给主体；外层的加十是 @racket[(λ (v) (+ 10 v))]。三份输出只有主体不同，分别调用 @racket[k] 零次、一次、两次。@racket[k] 是平凡的，所以每次调用编译为普通调用。例四的主体 @racket[(let ([r (k 3)]) (k r))] 经 η-归约成为 @racket[(k (k 3))]。结果：@racket[13]、@racket[15]、@racket[17]。
 
 每个源程序都有 @racket[reset]，目标程序里一个也没有；边界去了哪里？

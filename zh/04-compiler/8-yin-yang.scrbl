@@ -145,4 +145,4 @@
 
 输出同样是阶梯，也不需要包装：@racket[let/cc] 交出的 @racket[(λ (v.1) (λ (k.1) (k.0 v.1)))] 本来就是一个 @racket[_proc]。两份输出只差交给程序的@tech{延续}。@racket[let/lc] 版交出的是 @racket[(λ (v) (λ (k.0) (k.0 (k0 v))))]，即 @racket[(cps kₐp)]：@racket[(k0 v)] 不在尾位置，外面还留着 @racket[k.0] 等它返回。@racket[let/cc] 版交出的是 @racket[(λ (v.1) (λ (k.1) (k.0 v.1)))]，即 @racket[(cps* kₐp)]：忽略调用处的 @racket[k.1]，直接把 @racket[v.1] 交给捕获时的 @racket[k.0]，在尾位置。
 
-差别在内存里看得出来。在 Racket 9.3 里让两个版本各输出两千五百行，每五百行 GC 一次后量内存：@racket[let/cc] 版稳定在 90 MB 上下，@racket[let/lc] 版是 92、95、100、107、116 MB，一直往上涨。阶梯没有变，变的是等在后面的帧：@racket[let/lc] 版每一级都在宿主栈上多留一帧，@racket[let/cc] 版一帧也不留。@xref["02:yin-yang"]{「阴阳谜题」}里 @racket[cps:call/cc] 与 @racket[cps:call/lc] 的差别，在编译输出里就是这两种形状。
+差别在内存里看得出来。在 Racket 9.3 里让两个版本各输出两千五百行，每五百行 GC 一次后量内存：@racket[let/cc] 版稳定在 90 MB 上下，@racket[let/lc] 版是 92、95、100、107、116 MB，一直往上涨。阶梯没有变，变的是等在后面的帧：@racket[let/lc] 版每一级都在宿主栈上多留一帧，@racket[let/cc] 版一帧也不留。@xref["02:yin-yang"]{「阴阳谜题」}与@xref["03:nested"]{「边界中的边界」}里 @racket[cps:call/cc] 与 @racket[cps:call/lc] 的差别，在编译输出里就是这两种形状。

@@ -20,7 +20,7 @@
 
 @racketblock[
 (code:comment "编译器处理 (g a) 时手里的 ctx，是编译时的一个闭包：")
-(λ (d) `(let ([v.0 (f ,d)]) ,(id v.0)))
+(λ (d) `(let ([v.0 (f ,d)]) ,(id 'v.0)))
 (code:comment "编译器调用 (ctx 'v.1)，在编译时得到一段代码：")
 (let ([v.0 (f v.1)]) v.0)
 (code:comment "发射出的目标程序：")
