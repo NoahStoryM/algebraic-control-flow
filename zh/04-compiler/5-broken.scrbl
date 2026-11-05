@@ -20,27 +20,22 @@
 
 @racket[shift] 分支里有两个 @racket[shift]。源程序的 @racket[shift] 是被编译的对象；编译器自己的 @racket[shift] 取得此刻的 @racket[ctx]，而 @racket[ctx] 要打印的，正是源程序中从这个 @racket[shift] 到最近 @racket[reset] 的剩余工作。编译器把它打印成 lambda，绑定给 @racket[k]。主体用 @racket[id] 编译：按@xref["03:rules"]{「规约规则」}，@racket[shift] 的主体在边界处运行，@tech{局部延续}是空的。
 
-有了 @racket[reset]，@racket[let] 绑定的东西变了。此前每个 @racket[let] 绑定的都是一个 @racket[<atom>]：一个值，或者一次调用。@racket[reset] 分支发射的 @racket[let]，绑定位置上是 @racket[(anf1 body id)]，主体编译出来的一整段 @racket[<anf>]。文法必须演化来容纳这一点：
+有了 @racket[reset]，@racket[let] 绑定的东西变了。此前每个 @racket[let] 绑定的都是一个 @racket[_atom]：一个值，或者一次调用。@racket[reset] 分支发射的 @racket[let]，绑定位置上是 @racket[(anf1 body id)]，主体编译出来的一整段 @racket[_anf]。文法必须演化来容纳这一点：
 
-@out-block|{
-<anf> ::= <val> | <if> | (let ([<var> <anf>]) <anf>) | <apply-proc>
+@racketgrammar*[
+#:literals (λ if let)
+[anf val if-form (let ([var anf]) anf) apply-proc]
+[apply-proc (val val ...)]
+[if-form anf-if (let ([kvar proc]) anf-if)]
+[anf-if (if val anf anf)]
+[kvar var]
+[val var literal proc]
+[proc (λ head anf)]
+[head var (var ...) (var ... . var)]]
 
-<val> ::= <var> | <literal> | <proc>
+@racket[_atom] 消失了。有了定界之后，代码不再是单栈线性序列。@racket[let] 绑定现在可以绑定一个 @racket[_anf]，一个拥有自己栈的定界计算。
 
-<if>     ::= <anf-if> | (let ([<k> <proc>]) <anf-if>)
-<anf-if> ::= (if <val> <anf> <anf>)
-<k>      ::= <var>
-
-<apply-proc> ::= (<val> <val> ...)
-
-<proc> ::= (λ <head> <anf>)
-
-<head> ::= <var> | (<var> ...) | (<var> ... . <var>)
-}|
-
-@racket[<atom>] 消失了。有了定界之后，代码不再是单栈线性序列。@racket[let] 绑定现在可以绑定一个 @racket[<anf>]，一个拥有自己栈的定界计算。
-
-函数调用改叫 @racket[<apply-proc>]，直接列进了 @racket[<anf>]；它的参数仍然是 @racket[<val>]。
+函数调用改叫 @racket[_apply-proc]，直接列进了 @racket[_anf]；它的参数仍然是 @racket[_val]。
 
 先试两个简单的例子：
 
@@ -52,9 +47,9 @@
 (anf '(reset (+ 1 (shift k (k 42)))))
 (anf '(+ 10 (reset (+ 1 (shift k 42)))))]
 
-第二个输出里，外层 @racket[let] 把 @racket[v.1] 绑定到一整条 @racket[let] 链 @racket[(let ([k ...]) 42)]，加十排在它后面，用的是 @racket[v.1]。这就是 @racket[(let ([<var> <anf>]) <anf>)] 产生式的实例。
+第二个输出里，外层 @racket[let] 把 @racket[v.1] 绑定到一整条 @racket[let] 链 @racket[(let ([k ...]) 42)]，加十排在它后面，用的是 @racket[v.1]。这就是 @racket[(let ([_var _anf]) _anf)] 产生式的实例。
 
-定界之前，@racket[let] 绑定总是一个 @racket[<atom>]，一次单独的操作。现在一个绑定可以是整个 @racket[<anf>]，一个拥有自己栈的定界计算：
+定界之前，@racket[let] 绑定总是一个 @racket[_atom]，一次单独的操作。现在一个绑定可以是整个 @racket[_anf]，一个拥有自己栈的定界计算：
 
 @racketblock[
 (code:comment "定界之前：扁平的。每个 let 扩展同一个栈")
@@ -176,7 +171,7 @@
 
 两个特性分开时都能工作。没有 @racket[reset]/@racket[shift]，函数调用定界不会被察觉：每个 lambda 主体从 @racket[id] 开始，没有 @racket[shift] 需要看到调用处。没有函数，@racket[reset]/@racket[shift] 也能正确编译，内联的谜题就是证据。两者同时出现时，lambda 主体里的 @racket[shift] 要取得的@tech{局部延续}，应当越过函数调用，一直延伸到 @racket[reset]。函数调用和 @racket[reset] 在这里被要求表现不同：@racket[reset] 仍然定界，函数调用却不能再定界。
 
-文法也说明了这一点。@racket[<proc>] 产生式是 @racket[(λ <head> <anf>)]：lambda 的主体是一段完整的 @racket[<anf>]，文法中没有任何东西让调用处的剩余工作进入主体。
+文法也说明了这一点。@racket[_proc] 产生式是 @racket[(λ _head _anf)]：lambda 的主体是一段完整的 @racket[_anf]，文法中没有任何东西让调用处的剩余工作进入主体。
 
 再用一个更小的例子确认。一个函数，主体包含 @racket[shift]，在 @racket[reset] 内部、一个还有剩余工作的调用处被调用：
 

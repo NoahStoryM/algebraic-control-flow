@@ -184,7 +184,7 @@
 (cps '(add1 (if a b c)))
 (cps '(f (if a b c)))]
 
-在顶层，@tech{延续}是 @racket[values]，所以两个分支在 @racket[id] 下编译，@racket[if] 原样通过。在 @racket[add1] 下方，@tech{延续}是裸 symbol，足够廉价可以写入两个分支；不分配名字。在 @racket[f] 下方，一个用户定义的调用，@tech{延续}是一个复合 lambda，只有现在编译器才把它绑定到 @racket[k.0]，让两个分支引用这个名字。绑定形式就是文法中的 @racket[<apply-cont²>]：一个 @racket[let]，其绑定值恰好是一个@tech{延续}。
+在顶层，@tech{延续}是 @racket[values]，所以两个分支在 @racket[id] 下编译，@racket[if] 原样通过。在 @racket[add1] 下方，@tech{延续}是裸 symbol，足够廉价可以写入两个分支；不分配名字。在 @racket[f] 下方，一个用户定义的调用，@tech{延续}是一个复合 lambda，只有现在编译器才把它绑定到 @racket[k.0]，让两个分支引用这个名字。绑定形式就是文法中的 @racket[_apply-cont²]：一个 @racket[let]，其绑定值恰好是一个@tech{延续}。
 
 前面手工归约过的两个例子：
 

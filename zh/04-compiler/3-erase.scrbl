@@ -6,7 +6,7 @@
 
 第一次擦除之所以能成功，是因为 @racket[ctx] 只被尾调用：每个分支都以 @racket[(ctx ...)] 结尾，意味着 @racket[ctx] 不扮演任何结构角色。修正后的版本不同。在 application 分支中，@racket[ctx] 出现在生成的 @racket[let]@emph{内部}：@racket[(ctx vn)] 被嵌入了目标代码。在 @racket[if] 分支中，@racket[ctx] 被传入两个子编译。@tech{延续}不再是结果的被动接收者；它在塑造输出。简单地移除参数会丢失信息。
 
-但@xref["03:delimited-cps"]{「定界延续与 CPS」}的对应表恰好描述了这个变换。表中 @tech[#:key "延续传递风格"]{CPS} 那一行以显式参数传递@tech{延续}，@tech[#:key "A-范式"]{ANF} 加 @racket[reset]、@racket[shift] 那一行用 @racket[shift] 在原来的位置取得它，两行是同一个程序。而 @racket[anf1] 本身就是一个 @tech[#:key "延续传递风格"]{CPS} 程序：它接收一个源表达式和一条@tech{局部延续} @math{¬ₐ⟨@ty{val}⟩}，交出 @racket[<anf>]，正是@xref["03:any-base"]{「换了基的箭头」}里 @math{→@subscript{𝒦ₐ}} 箭头的形状。这张表应该也能用在编译器自己的源代码上。
+但@xref["03:delimited-cps"]{「定界延续与 CPS」}的对应表恰好描述了这个变换。表中 @tech[#:key "延续传递风格"]{CPS} 那一行以显式参数传递@tech{延续}，@tech[#:key "A-范式"]{ANF} 加 @racket[reset]、@racket[shift] 那一行用 @racket[shift] 在原来的位置取得它，两行是同一个程序。而 @racket[anf1] 本身就是一个 @tech[#:key "延续传递风格"]{CPS} 程序：它接收一个源表达式和一条@tech{局部延续} @math{¬ₐ⟨@ty{val}⟩}，交出 @racket[_anf]，正是@xref["03:any-base"]{「换了基的箭头」}里 @math{→@subscript{𝒦ₐ}} 箭头的形状。这张表应该也能用在编译器自己的源代码上。
 
 需要的是表的最后一组，@racket[v] 接收计算结果，@racket[k] 接收剩余工作：
 
@@ -248,6 +248,6 @@ application 分支有两个 @racket[reset]：
 
 @section[#:tag "04:grammar-type"]{文法类型}
 
-@racket[anf0] 的返回类型是什么？有些分支直接返回一个值，另一些调用 @racket[shift]，永远不返回给调用者。答案在 @racket[anf1] 的定义中：@racket[(reset (ctx (anf0 exp)))]。@racket[anf0] 的返回值被传给 @racket[ctx]，所以 @racket[anf0] 的返回类型就是 @racket[ctx] 的参数类型：@racket[<val>]。简单情况证实了这一点：字面量、变量、lambda，都是 @racket[<val>]。复合情况下，@racket[shift] 的主体越过 @racket[ctx]，把一段 @racket[<anf>] 直接交到 @racket[reset] 边界。这是这段局部计算的答案 @math{⊥ᵃ}，成为 @racket[anf1] 的返回值。
+@racket[anf0] 的返回类型是什么？有些分支直接返回一个值，另一些调用 @racket[shift]，永远不返回给调用者。答案在 @racket[anf1] 的定义中：@racket[(reset (ctx (anf0 exp)))]。@racket[anf0] 的返回值被传给 @racket[ctx]，所以 @racket[anf0] 的返回类型就是 @racket[ctx] 的参数类型：@racket[_val]。简单情况证实了这一点：字面量、变量、lambda，都是 @racket[_val]。复合情况下，@racket[shift] 的主体越过 @racket[ctx]，把一段 @racket[_anf] 直接交到 @racket[reset] 边界。这是这段局部计算的答案 @math{⊥ᵃ}，成为 @racket[anf1] 的返回值。
 
 @racket[if] 分支把同一个 @racket[ctx] 交给了两个子编译。这样生成的代码，会是什么样？

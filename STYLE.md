@@ -100,7 +100,7 @@
 
 **格式**
 
-- 数学与记号尽量用 Unicode，在 Emacs 等编辑器里直接可读。公式里的尖括号用 ⟨ ⟩；BNF 代码块和行内代码保留 ASCII 的 `<val>`。
+- 数学与记号尽量用 Unicode，在 Emacs 等编辑器里直接可读。公式里的尖括号用 ⟨ ⟩。BNF 照 Racket 文档：文法写 `@racketgrammar*`，非终结符不带尖括号，行内写 `@racket[_val]`（下划线前缀排成斜体变量）；名字避开 Racket 已有的绑定，如 `if-form`、`apply-form`。
 - .md 的章（第三至五章）：类型名在公式里用 `\text`，如 $\text{Natural}$。公式会吞掉花括号，含花括号的集合写成 Unicode 纯文本，不进公式，例如 {(a, b) ∈ A × B | b = f(a)}。
 - 不用破折号。
 

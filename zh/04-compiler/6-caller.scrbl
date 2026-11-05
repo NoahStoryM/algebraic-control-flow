@@ -133,30 +133,26 @@ Lambda 分支加上 @racket[(λ (k) ...)]：
 
 文法达到了最终形式：
 
-@out-block|{
-<cps> ::= <val> | <if> | <apply>
+@racketgrammar*[
+#:literals (λ if)
+[cps val if-form apply-form]
+[val var literal proc]
+[if-form (if val cps cps)]
+[apply-form apply-proc apply-cont apply-cont²]
+[apply-proc ((val val ...) cont)]
+[apply-cont (cont cps) (cont val ...)]
+[apply-cont² (cont² cont)]
+[proc (λ head cont²)]
+[cont (λ head cps) trivial]
+[cont² (λ (trivial) cps)]
+[head var (var ...) (var ... . var)]]
 
-<val>   ::= <var> | <literal> | <proc>
-<if>    ::= (if <val> <cps> <cps>)
-<apply> ::= <apply-proc> | <apply-cont> | <apply-cont²>
+从扁平的 @tech[#:key "A-范式"]{ANF} 到这里，文法变了三次：@racket[if] 的复制引入了@tech{命名延续}，@racket[reset] 让 @racket[let] 可以绑定一整段 @racket[_anf]，@racket[shift] 需要穿过函数边界，又让 lambda 接受了@tech{延续}参数。
 
-<apply-proc>  ::= ((<val> <val> ...) <cont>)
-<apply-cont>  ::= (<cont> <cps>) | (<cont> <val> ...)
-<apply-cont²> ::= (<cont²> <cont>)
+读 @racket[_cont] 产生式，它有两个选项：@racket[(λ _head _cps)] 或 @racket[_trivial]。@tech{延续}要么是编译器构造的 lambda，要么是平凡集合中的一个名字。平凡集合从内建原语开始；它增长到包含每个@tech{延续}变量。文法不区分它们，因为 η-归约已经表明它们是同一种东西。
 
-<proc>  ::= (λ <head> <cont²>)
-<cont>  ::= (λ <head> <cps>) | <trivial>
-<cont²> ::= (λ (<trivial>) <cps>)
+@racket[_apply-cont] 有两种写法。此前文法里的 @racket[(let ([_var _anf]) _anf)]，对应的正是 @racket[(_cont _cps)]：@racket[(let ([v e]) body)] 就是 @racket[((λ (v) body) e)]，一段计算的结果交给了@tech{延续}。另一种 @racket[(_cont _val ...)] 是参数都已经是值的调用。
 
-<head>  ::= <var> | (<var> ...) | (<var> ... . <var>)
-}|
-
-从扁平的 @tech[#:key "A-范式"]{ANF} 到这里，文法变了三次：@racket[if] 的复制引入了@tech{命名延续}，@racket[reset] 让 @racket[let] 可以绑定一整段 @racket[<anf>]，@racket[shift] 需要穿过函数边界，又让 lambda 接受了@tech{延续}参数。
-
-读 @racket[<cont>] 产生式，它有两个选项：@racket[(λ <head> <cps>)] 或 @racket[<trivial>]。@tech{延续}要么是编译器构造的 lambda，要么是平凡集合中的一个名字。平凡集合从内建原语开始；它增长到包含每个@tech{延续}变量。文法不区分它们，因为 η-归约已经表明它们是同一种东西。
-
-@racket[<apply-cont>] 有两种写法。此前文法里的 @racket[(let ([<var> <anf>]) <anf>)]，对应的正是 @racket[(<cont> <cps>)]：@racket[(let ([v e]) body)] 就是 @racket[((λ (v) body) e)]，一段计算的结果交给了@tech{延续}。另一种 @racket[(<cont> <val> ...)] 是参数都已经是值的调用。
-
-@racket[<cont²>] 产生式 @racket[(λ (<trivial>) <cps>)] 是一个@defterm[#:en "second-order continuation"]{二阶延续}：它以调用者的@tech{延续}为参数，使它成为@tech{延续}的@tech{延续}。它的类型是 @math{(p → a) → a = ¬ₐ¬ₐp}，@xref["03:any-base"]{「换了基的箭头」}的局部编码。@racket[<proc>] 的形状是 @racket[(λ <head> <cont²>)]，接受参数后交出一个 @math{¬ₐ¬ₐ}，正是 @racket[anf1] 那样的 @math{→𝒦ₐ} 箭头：编译器自己的写法，现在也成了目标程序的写法。而 @racket[<apply-cont²>] 不过是一个 @racket[let]，只是绑定的值碰巧是一个@tech{延续}：@racket[((λ (<trivial>) <cps>) <cont>)] = @racket[(let ([<trivial> <cont>]) <cps>)]。绑定本身没有什么特别的；特别的是参数。
+@racket[_cont²] 产生式 @racket[(λ (_trivial) _cps)] 是一个@defterm[#:en "second-order continuation"]{二阶延续}：它以调用者的@tech{延续}为参数，使它成为@tech{延续}的@tech{延续}。它的类型是 @math{(p → a) → a = ¬ₐ¬ₐp}，@xref["03:any-base"]{「换了基的箭头」}的局部编码。@racket[_proc] 的形状是 @racket[(λ _head _cont²)]，接受参数后交出一个 @math{¬ₐ¬ₐ}，正是 @racket[anf1] 那样的 @math{→𝒦ₐ} 箭头：编译器自己的写法，现在也成了目标程序的写法。而 @racket[_apply-cont²] 不过是一个 @racket[let]，只是绑定的值碰巧是一个@tech{延续}：@racket[((λ (_trivial) _cps) _cont)] = @racket[(let ([_trivial _cont]) _cps)]。绑定本身没有什么特别的；特别的是参数。
 
 β、η 都是我们手工做的；编译器能不能自己做？

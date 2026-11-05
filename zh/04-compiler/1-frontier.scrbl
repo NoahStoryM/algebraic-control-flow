@@ -82,16 +82,13 @@
 
 要处理哪些情况，由目标文法决定。这是用 BNF（Backus-Naur 范式）写的目标文法，@tech[#:key "A-范式"]{ANF} 的初始草图：
 
-@out-block|{
-<anf> ::= <val> | (if <val> <anf> <anf>) | (let ([<var> <atom>]) <anf>)
-
-<atom> ::= <val> | (<var> <val> ...)
-<val>  ::= <var> | <literal> | <proc>
-
-<proc> ::= (λ <head> <anf>)
-
-<head>  ::= <var> | (<var> ...) | (<var> ... . <var>)
-}|
+@racketgrammar*[
+#:literals (λ if let)
+[anf val (if val anf anf) (let ([var atom]) anf)]
+[atom val (var val ...)]
+[val var literal proc]
+[proc (λ head anf)]
+[head var (var ...) (var ... . var)]]
 
 在 @tech[#:key "A-范式"]{ANF} 中，函数调用的参数必须是一个@emph{值}（变量、字面量或 lambda），不能是复合表达式。如果参数本身是函数调用，就必须先用 @racket[let] 绑定到一个变量。这正是使求值顺序显式化的方式：@racket[let] 链条@emph{就是}求值轨迹。文法的各种情况告诉我们变换器需要哪些分支。
 

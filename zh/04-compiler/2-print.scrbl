@@ -30,7 +30,7 @@
 
 编译器在这一点的剩余工作，打印出来，就是目标程序在同一点的剩余工作。一边是编译时等着被调用的闭包，一边是它留在纸上的代码，镜子两侧映着同一份剩余工作。
 
-输入 @racket[vn] 是一个 @racket[<var>]，更一般地说 @racket[ctx] 始终接收一个 @racket[<val>]（变量、字面量或 lambda），因为这些正是 @tech[#:key "A-范式"]{ANF} 代码传给@tech{延续}的值；它交出的是一段 @racket[<anf>]。所以 @racket[ctx : <val> → <anf>]。按@xref["03:local-k"]{「局部延续」}的记法，这是一条@tech{局部延续} @math{¬ₐ⟨@ty{val}⟩}，答案类型 @math{a} 是 @racket[<anf>]：编译器这段局部计算的答案，就是生成的代码。@racket[id] 是这里的@tech{局部终结延续} @racket[a->⊥ᵃ]。
+输入 @racket[vn] 是一个 @racket[_var]，更一般地说 @racket[ctx] 始终接收一个 @racket[_val]（变量、字面量或 lambda），因为这些正是 @tech[#:key "A-范式"]{ANF} 代码传给@tech{延续}的值；它交出的是一段 @racket[_anf]。所以 @racket[ctx : _val → _anf]。按@xref["03:local-k"]{「局部延续」}的记法，这是一条@tech{局部延续} @math{¬ₐ⟨@ty{val}⟩}，答案类型 @math{a} 是 @racket[_anf]：编译器这段局部计算的答案，就是生成的代码。@racket[id] 是这里的@tech{局部终结延续} @racket[a->⊥ᵃ]。
 
 对比 @racket[fib/k] 的 @racket[k]，它是 @math{¬ₐ@ty{Natural}}。一个在运行时接收一个数字并计算下一步，另一个在编译时接收一段代码片段并构建目标程序的下一块。
 
@@ -70,7 +70,7 @@
                           ,(ctx vn))))))]))
   (anf1 exp id))]
 
-字面量、变量和 lambda 本身已经是 @racket[<val>]，所以直接传给 @racket[ctx]。Lambda 体用 @racket[id] 编译：每次函数调用分配一个全新的栈。@racket[if] 的测试条件必须是 @racket[<val>]，所以先编译它，然后发射 @racket[if]，两个分支都用 @racket[ctx] 继续。@racket[let]/lambda-application 分支做脱糖并发射 @racket[let]，体部用 @racket[ctx] 继续。
+字面量、变量和 lambda 本身已经是 @racket[_val]，所以直接传给 @racket[ctx]。Lambda 体用 @racket[id] 编译：每次函数调用分配一个全新的栈。@racket[if] 的测试条件必须是 @racket[_val]，所以先编译它，然后发射 @racket[if]，两个分支都用 @racket[ctx] 继续。@racket[let]/lambda-application 分支做脱糖并发射 @racket[let]，体部用 @racket[ctx] 继续。
 
 @examples[#:eval ev-anf #:label #f
 (anf '(h (f (g a))))]

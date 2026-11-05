@@ -4,23 +4,19 @@
 
 变换器输出的文法：
 
-@out-block|{
-<cps> ::= <val> | <if> | <apply>
-
-<val>   ::= <var> | <literal> | <proc>
-<if>    ::= (if <val> <cps> <cps>)
-<apply> ::= <apply-proc> | <apply-cont> | <apply-cont²>
-
-<apply-proc>  ::= ((<val> <val> ...) <cont>)
-<apply-cont>  ::= (<cont> <cps>) | (<cont> <val> ...)
-<apply-cont²> ::= (<cont²> <cont>)
-
-<proc>  ::= (λ <head> <cont²>)
-<cont>  ::= (λ <head> <cps>) | <trivial>
-<cont²> ::= (λ (<trivial>) <cps>)
-
-<head>  ::= <var> | (<var> ...) | (<var> ... . <var>)
-}|
+@racketgrammar*[
+#:literals (λ if)
+[cps val if-form apply-form]
+[val var literal proc]
+[if-form (if val cps cps)]
+[apply-form apply-proc apply-cont apply-cont²]
+[apply-proc ((val val ...) cont)]
+[apply-cont (cont cps) (cont val ...)]
+[apply-cont² (cont² cont)]
+[proc (λ head cont²)]
+[cont (λ head cps) trivial]
+[cont² (λ (trivial) cps)]
+[head var (var ...) (var ... . var)]]
 
 产出这种代码的变换器，基于王垠的 @hyperlink["https://github.com/yinwang0/historical/blob/master/cps.ss"]{@tt{cps.ss}}：
 

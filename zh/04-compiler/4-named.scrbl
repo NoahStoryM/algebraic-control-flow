@@ -63,23 +63,19 @@
 
 对 @racket[f] 的调用只出现一次，在绑定到 @racket[k.0] 的 lambda 内部。两个分支都调用 @racket[k.0]，而不是复制上下文。嵌套 @racket[if] 不再导致指数膨胀。
 
-文法演化了。@racket[<if>] 产生式获得了一个新选项，@racket[<anf>] 获得了一个@tech{延续}调用：
+文法演化了。@racket[_if-form] 产生式获得了一个新选项，@racket[_anf] 获得了一个@tech{延续}调用：
 
-@out-block|{
-<anf> ::= <val> | <if> | (let ([<var> <atom>]) <anf>) | (<k> <val> ...)
+@racketgrammar*[
+#:literals (λ if let)
+[anf val if-form (let ([var atom]) anf) (kvar val ...)]
+[if-form anf-if (let ([kvar proc]) anf-if)]
+[anf-if (if val anf anf)]
+[kvar var]
+[atom val (var val ...)]
+[val var literal proc]
+[proc (λ head anf)]
+[head var (var ...) (var ... . var)]]
 
-<atom> ::= <val> | (<var> <val> ...)
-<val>  ::= <var> | <literal> | <proc>
-
-<if>     ::= <anf-if> | (let ([<k> <proc>]) <anf-if>)
-<anf-if> ::= (if <val> <anf> <anf>)
-<k>      ::= <var>
-
-<proc> ::= (λ <head> <anf>)
-
-<head>  ::= <var> | (<var> ...) | (<var> ... . <var>)
-}|
-
-@racket[<if>] 产生式现在有两种形式：裸的，和包在一个 @racket[let] 中、绑定了一个@tech{延续}的。@racket[let] 形式就是@defterm[#:en "named continuation"]{命名延续}：把编译时的上下文具体化为运行时的 lambda，然后通过名字引用它。@racket[<k>] 就是这样绑定的@tech{延续}变量。
+@racket[_if-form] 产生式现在有两种形式：裸的，和包在一个 @racket[let] 中、绑定了一个@tech{延续}的。@racket[let] 形式就是@defterm[#:en "named continuation"]{命名延续}：把编译时的上下文具体化为运行时的 lambda，然后通过名字引用它。@racket[_kvar] 就是这样绑定的@tech{延续}变量。
 
 到目前为止，源程序里没有 @racket[reset]，也没有 @racket[shift]，它们只出现在编译器自己的代码里。要是源语言里也有它们，编译器还能照样把剩余工作打印出来吗？
