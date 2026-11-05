@@ -159,4 +159,4 @@ Lambda 分支加上 @racket[(λ (k) ...)]：
 
 @racket[<cont²>] 产生式 @racket[(λ (<trivial>) <cps>)] 是一个@defterm[#:en "second-order continuation"]{二阶延续}：它以调用者的@tech{延续}为参数，使它成为@tech{延续}的@tech{延续}。它的类型是 @math{(p → a) → a = ¬ₐ¬ₐp}，@xref["03:any-base"]{「换了基的箭头」}的局部编码。@racket[<proc>] 的形状是 @racket[(λ <head> <cont²>)]，接受参数后交出一个 @math{¬ₐ¬ₐ}，正是 @racket[anf1] 那样的 @math{→𝒦ₐ} 箭头：编译器自己的写法，现在也成了目标程序的写法。而 @racket[<apply-cont²>] 不过是一个 @racket[let]，只是绑定的值碰巧是一个@tech{延续}：@racket[((λ (<trivial>) <cps>) <cont>)] = @racket[(let ([<trivial> <cont>]) <cps>)]。绑定本身没有什么特别的；特别的是参数。
 
-函数调用的定界是拿掉了，可输出的样子也变了：每个函数都多出一层，调用点满是包装。这些包装是否都是必要的？
+β、η 都是我们手工做的；编译器能不能自己做？

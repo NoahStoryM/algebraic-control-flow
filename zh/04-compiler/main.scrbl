@@ -18,3 +18,4 @@
 @include-section["5-broken.scrbl"]
 @include-section["6-caller.scrbl"]
 @include-section["7-normalize.scrbl"]
+@include-section["8-yin-yang.scrbl"]
