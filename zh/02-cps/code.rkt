@@ -170,7 +170,7 @@
 
 (module+ test
   (require rackunit "../../tools/check-output-prefix.rkt")
-  ;; 「求值顺序与 ANF」：⨾ 照算的顺序写，和 let*、∘ 一致；(⨾) 也是 id。
+  ;; 「求值顺序」：⨾ 照算的顺序写，和 let*、∘ 一致；(⨾) 也是 id。
   (let ([f add1] [g (λ (y) (* y 2))] [h number->string])
     (check-equal? ((⨾ f g h) 3) ((∘ h g f) 3))
     (check-equal? (let* ([y (f 3)] [z (g y)]) (h z)) ((⨾ f g h) 3))
