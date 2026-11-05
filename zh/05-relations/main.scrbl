@@ -13,12 +13,7 @@
 
 @table-of-contents[]
 
-@include-section["1-search.scrbl"]
-@include-section["2-relation.scrbl"]
-@include-section["3-table.scrbl"]
-@include-section["4-hidden-k.scrbl"]
-@include-section["5-erase.scrbl"]
-@include-section["6-amb.scrbl"]
-@include-section["7-compose.scrbl"]
-@include-section["8-two-ways.scrbl"]
-@include-section["9-language.scrbl"]
+@include-section["1-table.scrbl"]
+@include-section["2-timelines.scrbl"]
+@include-section["3-arrows.scrbl"]
+@include-section["4-language.scrbl"]

@@ -1,6 +1,6 @@
 #lang acf/scribble
 
-@title[#:tag "05:9-language"]{描述关系的语言}
+@title[#:tag "05:4-language"]{描述关系的语言}
 
 到这里，关系都是用函数模拟的：交出列表的函数，或者带 @racket[amb] 的函数。可是在 @racket[amb] 版的搜索里，两个关系的用法并不一样：
 
