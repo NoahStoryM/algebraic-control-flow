@@ -2,7 +2,7 @@
 
 @title[#:tag "04:1-frontier"]{从递归到遍历}
 
-这是@xref["02:anf"]{「求值顺序与 ANF」}里的 @racket[fib]，斐波那契函数：
+这是@xref["02:1-anf-cps"]{「求值顺序」}里的 @racket[fib]，斐波那契函数：
 
 @(define ev-fib (make-acf-eval))
 @examples[#:eval ev-fib #:label #f #:no-prompt
