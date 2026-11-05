@@ -82,7 +82,7 @@ Lambda 分支加上 @racket[(λ (k) ...)]：
 @examples[#:eval ev-caller #:label #f
 (anf '(reset (let ([f (λ (x) (shift k 999))]) (add1 (f 42)))))]
 
-现在 @racket[f] 接受一个@tech{延续}参数 @racket[k.0]。在调用点，@racket[((f 42) (λ (v.3) ...))] 传递了@tech{局部延续}，其中包含 @racket[add1]。运行时，@racket[shift] 捕获调用点的@tech{延续}（包裹着 @racket[add1]），体返回 @racket[999] 给 @racket[reset] 边界，结果如期是 @racket[999]。
+现在 @racket[f] 接受一个@tech{延续}参数 @racket[k.0]。在调用点，@racket[((f 42) (λ (v.3) ...))] 传递了@tech{局部延续}，其中包含 @racket[add1]。运行时，@racket[shift] 捕获调用点的@tech{延续}（包裹着 @racket[add1]），体返回 @racket[999] 给 @racket[reset] 边界，结果如期是 @racket[999]。这里靠的是一条不变式：用户函数的调用总在当前局部计算的尾位置，调用者剩下的工作全装在传进去的@tech{延续}里；函数体不调用这条@tech{延续}、直接返回，就跳过了这些工作，回到最近的边界。边界外的工作照常进行：在整个 @racket[reset] 外面再包一层 @racket[(+ 10 …)]，结果是 @racket[1009]。
 
 @section[#:tag "04:hybrid"]{混合体}
 
@@ -131,7 +131,7 @@ Lambda 分支加上 @racket[(λ (k) ...)]：
 
 现在两种函数有了名字。一种接受@tech{延续}参数：这些是用户定义的函数，其主体可能包含 @racket[shift]。另一种@emph{本身就是}@tech{延续}：它接受一个值并传递出去。平凡调用 @racket[(let ([v (add1 x)]) (ctx v))] 就是 @racket[(ctx (add1 x))]，也就是@xref["03:delimited-cps"]{「定界延续与 CPS」}里 @racket[cps] 的展开 @racket[(((cps add1) x) ctx)]：编译器在调用处就地把平凡函数提升成 @tech[#:key "延续传递风格"]{CPS} 箭头。输出中的每次调用，要么是调用一个函数并交给它一个@tech{延续}，要么是把一个@tech{延续}应用到一个值上。这就是 @tech[#:key "延续传递风格"]{CPS}。
 
-文法达到了最终形式：
+目标文法达到了最终形式。编译器此刻的输出还带着 @racket[let] 和管理性的包装，要到下一节的归约之后才落进这套文法：
 
 @racketgrammar*[
 #:literals (λ if)
@@ -149,7 +149,7 @@ Lambda 分支加上 @racket[(λ (k) ...)]：
 
 从扁平的 @tech[#:key "A-范式"]{ANF} 到这里，文法变了三次：@racket[if] 的复制引入了@tech{命名延续}，@racket[reset] 让 @racket[let] 可以绑定一整段 @racket[_anf]，@racket[shift] 需要穿过函数边界，又让 lambda 接受了@tech{延续}参数。
 
-读 @racket[_cont] 产生式，它有两个选项：@racket[(λ _head _cps)] 或 @racket[_trivial]。@tech{延续}要么是编译器构造的 lambda，要么是平凡集合中的一个名字。平凡集合从内建原语开始；它增长到包含每个@tech{延续}变量。文法不区分它们，因为 η-归约已经表明它们是同一种东西。
+读 @racket[_cont] 产生式，它有两个选项：@racket[(λ _head _cps)] 或 @racket[_trivial]。@tech{延续}要么是编译器构造的 lambda，要么是平凡集合中的一个名字。平凡集合从内建原语开始；它增长到包含每个@tech{延续}变量。文法不区分它们，因为 η-归约已经表明它们是同一种东西。@racket[_var] 和 @racket[_trivial] 都是名字，但互不相交：@racket[_var] 只指不在平凡集合里的变量。
 
 @racket[_apply-cont] 有两种写法。此前文法里的 @racket[(let ([_var _anf]) _anf)]，对应的正是 @racket[(_cont _cps)]：@racket[(let ([v e]) body)] 就是 @racket[((λ (v) body) e)]，一段计算的结果交给了@tech{延续}。另一种 @racket[(_cont _val ...)] 是参数都已经是值的调用。
 

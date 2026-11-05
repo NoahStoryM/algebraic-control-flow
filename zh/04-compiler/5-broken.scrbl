@@ -130,7 +130,7 @@
 @examples[#:eval ev-run #:label #f
 (eval:alts (k0 k0) (show-lines 5 (λ () (k0 k0))))]
 
-@xref["01:4-fixed-point"]{第一章}的互递归，逐行对应。那里我们读着追踪输出写出了它；这里编译器从源代码推导出了它。
+@xref["01:4-fixed-point"]{第一章}的互递归，逐行对应。那里我们读着追踪输出写出了它；这里编译器产生了这两个@tech{延续}，传播别名、消除尾绑定之后，就是第一章的互递归。
 
 不过@xref["03:meta"]{「元延续」}的写法和第一章并不完全相同。第一章的 @racket[label] 是一个函数，谜题里的 @racket[(label)] 是对它的调用；那里把调用处直接换成了 @racket[(let/lc k k)]。把 @racket[let/lc] 放回函数里，写回第一章的样子：
 

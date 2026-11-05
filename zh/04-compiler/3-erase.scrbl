@@ -195,7 +195,7 @@ application 分支有两个 @racket[reset]：
 
 外层 @racket[reset] 被等式 2 吸收，和其他分支一样。内层 @racket[reset] 在语法上不直接与上方的定界符相邻，所以等式 2 不能直接使用。
 
-但考虑动态行为。@racket[(anf0 rator)] 运行时，它执行的每个 @racket[shift] 都会发射 @racket[let] 绑定，包裹剩余部分。等 @racket[r] 绑定好，剩下的工作是 @racket[(reset (let ([d ...]) ...))]，紧挨在它外面的就是来自 @racket[anf1] 的那层 @racket[reset]，两层定界符之间什么也没有了。@xref["03:rules"]{「规约规则」}由两条规约规则得出过 @racket[(reset (reset e))] = @racket[(reset e)]，两层等于一层，内层 @racket[reset] 于是坍缩。
+但考虑动态行为。把绑定 @racket[r] 之后的编译工作记作 @racket[_D]。@racket[(anf0 rator)] 执行 @racket[shift] 时，捕获的@tech{延续}是 @racket[(λ (w) (reset (let ([r w]) (reset _D))))]。不管 @racket[rator] 的编译怎样使用它，每次调用都是把一段生成好的代码 @racket[_R] 交进来，得到 @racket[(reset (let ([r _R]) (reset _D)))]；@racket[let] 只是把 @racket[_R] 绑定给 @racket[r]，自己没有剩余工作，这一步之后就是 @racket[(reset (reset _D))]，两层定界符之间什么也没有了。@racket[(anf0 rator)] 不执行 @racket[shift] 而直接返回 @racket[_R] 时，情形相同。关键在于 @racket[let] 绑定完就不再等待：如果内层 @racket[reset] 外面还有工作，比如 @racket[(+ 10 (reset …))]，两层就不能合并。@xref["03:rules"]{「规约规则」}由两条规约规则得出过 @racket[(reset (reset e))] = @racket[(reset e)]，两层等于一层，内层 @racket[reset] 于是坍缩。
 
 把嵌套的 @racket[let] 改写为内部 @racket[define]，并把 application 推广到任意数量参数（用 @racket[map]），整个变换器变成：
 
@@ -244,7 +244,7 @@ application 分支有两个 @racket[reset]：
 (anf '(λ (x) (f (g x))))
 (anf '(if (f x) (g a) (h b)))]
 
-与 @tech[#:key "延续传递风格"]{CPS} 版本的 @racket[anf1] 完全相同的逻辑、相同的分支、相同的输出。但没有 @racket[ctx] 参数，没有层层嵌套的 lambda 来传递它。@racket[shift] 恰好在需要的地方捕获@tech{延续}，其余的由宿主自己的栈处理。
+逻辑和分支与 @tech[#:key "延续传递风格"]{CPS} 版本的 @racket[anf1] 相同，只是 application 推广到了多个参数；后两例的输出也与它相同，第一例是推广后才能处理的多参数调用。但没有 @racket[ctx] 参数，没有层层嵌套的 lambda 来传递它。@racket[shift] 恰好在需要的地方捕获@tech{延续}，其余的由宿主自己的栈处理。
 
 @section[#:tag "04:grammar-type"]{文法类型}
 

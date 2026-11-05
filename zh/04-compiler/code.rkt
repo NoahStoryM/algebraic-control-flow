@@ -674,7 +674,7 @@
    (cps '(reset (let ([f abort]) (+ 1 (f 5)))))
    '((λ (f) ((f 5) (λ (v.2) (+ 1 v.2)))) (λ (v) (λ (k.0) v))))
   (check-equal?
-   (cps '(let ([k (reset (let ([x (let/cc k (abort k))]) (+ x 2)))]) (+ (reset (k 3)) 100)))
+   (cps '(let ([k (reset (let ([x (let/cc esc (abort esc))]) (+ x 2)))]) (+ (reset (k 3)) 100)))
    '((λ (k) ((λ (v.7) (+ v.7 100)) ((k 3) values)))
      ((λ (k.0) (λ (v.1) (λ (k.1) (k.0 v.1)))) (λ (x) (+ x 2)))))
   (check-equal?
@@ -797,7 +797,7 @@
   (check-equal? (run '((λ (v.2) v.2) (add1 999))) (run '(add1 999)))
   ;; 最终版文中提供了运行结果的有限例子。
   (for ([source '((reset (let ([f abort]) (+ 1 (f 5))))
-                  (let ([k (reset (let ([x (let/cc k (abort k))]) (+ x 2)))])
+                  (let ([k (reset (let ([x (let/cc esc (abort esc))]) (+ x 2)))])
                     (+ (reset (k 3)) 100))
                   (let ([v (reset (let* ([x 3] [y (+ 2 x)]) (abort y)))]) (+ 10 v))
                   (let ([v (reset (let* ([x (shift k 3)] [y (+ 2 x)]) (abort y)))]) (+ 10 v))
@@ -998,7 +998,7 @@
     '((if a b c) (add1 (if a b c)) (f (if a b c)) (λ (n) (f (g n)))
       (reset (let ([f (λ (x) (shift k 999))]) (add1 (f 42))))
       (reset (let ([f abort]) (+ 1 (f 5))))
-      (let ([k (reset (let ([x (let/cc k (abort k))]) (+ x 2)))]) (+ (reset (k 3)) 100))
+      (let ([k (reset (let ([x (let/cc esc (abort esc))]) (+ x 2)))]) (+ (reset (k 3)) 100))
       (let ([v (reset (let* ([x 3] [y (+ 2 x)]) (abort y)))]) (+ 10 v))
       (let ([v (reset (let* ([x (shift k 3)] [y (+ 2 x)]) (abort y)))]) (+ 10 v))
       (let ([v (reset (let* ([x (shift k (k 3))] [y (+ 2 x)]) (abort y)))]) (+ 10 v))

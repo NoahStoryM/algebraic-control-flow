@@ -10,7 +10,7 @@
 
 看例二的输出：@racket[((λ (v) (+ 10 v)) ((λ (k) 3) (λ (x) (+ 2 x))))]。@racket[reset] 的主体编译成了 @racket[((λ (k) 3) (λ (x) (+ 2 x)))]，它是外层@tech{延续} @racket[(λ (v) (+ 10 v))] 的参数。主体内部的调用都在尾位置，用户函数把@tech{延续}参数一路传下去，没有谁在等待；主体本身却处在参数位置，宿主要在自己的栈上留一帧，等它算完，再把结果交给加十。这一帧就是边界。
 
-@xref["03:abort-shift"]{「从 return 到 shift」}的 @racket[anf:reset] 是同一个结构：@racket[(kₓa (anf:eval kₐkₐa))] 中，@racket[anf:eval] 不在尾位置，宿主的等待帧保存了外层的 @racket[kₓa]。编译器把这一步写进了目标代码：@racket[reset] 的主体编译到非尾位置，定界由宿主自己的调用与返回提供。主体从 @racket[id] 开始编译，@tech{局部终结延续}是恒等函数，所以输出里连它也看不见，只在用户定义函数没有剩余工作的调用处，以 @racket[values] 的样子出现。这正是@xref["03:local-k"]{「局部延续」}里@tech{平凡表示}下的分工：@tech{局部延续}是一路传下去的@tech{延续}参数，住在堆上的闭包里；@tech{元延续}是宿主的栈。
+@xref["03:abort-shift"]{「从 return 到 shift」}的 @racket[anf:reset] 是同一个结构：@racket[(kₓa (anf:eval kₐkₐa))] 中，@racket[anf:eval] 不在尾位置，宿主的等待帧保存了外层的 @racket[kₓa]。编译器把这一步写进了目标代码：@racket[reset] 的主体编译到非尾位置，定界由宿主自己的调用与返回提供。这只在边界外还有工作时发生；外层@tech{延续}是恒等时，主体就在尾位置，这一帧也省去了，@racket[(reset (f x))] 与 @racket[(f x)] 编译出同样的 @racket[((f x) values)]。主体从 @racket[id] 开始编译，@tech{局部终结延续}是恒等函数，所以输出里连它也看不见，只在用户定义函数没有剩余工作的调用处，以 @racket[values] 的样子出现。这正是@xref["03:local-k"]{「局部延续」}里@tech{平凡表示}下的分工：@tech{局部延续}是一路传下去的@tech{延续}参数，住在堆上的闭包里；@tech{元延续}是宿主的栈。
 
 @section[#:tag "04:fixed"]{修复之后}
 

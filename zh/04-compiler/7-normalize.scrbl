@@ -21,7 +21,7 @@
 
 @racketblock[
 (match `(λ (,vn) ,(ctx vn))
-  [`(λ (,vn) ,b)       #:when (β? b vn) ...]   (code:comment "体归约为 vn：直接发射 b")
+  [`(λ (,vn) ,b)       #:when (β? b vn) ...]   (code:comment "体归约为 vn：省去恒等包装")
   [`(λ (,vn) (,k ,vn)) #:when (η? k vn) ...]   (code:comment "对 k 的包装器：坍缩为 k")
   [k                                    ...])  (code:comment "真正的工作：保留 lambda")]
 
@@ -52,7 +52,7 @@
     [(? trivial?) (not (eq? k v))]
     [_ #f]))]
 
-@racket[β?] 问的是函数体 @racket[b] 是否归约为 @racket[v]；@racket[η?] 问的是 @racket[v] 是否没有在 @racket[k] 的函数体里再出现：出现了，去掉包装器就会改变含义。每个谓词中的守卫标出了归约不再可靠的边界。下面各举一例。
+@racket[β?] 问的是函数体 @racket[b] 是否归约为 @racket[v]；@racket[η?] 问的是去掉包装器是否安全，即 @racket[v] 不在 @racket[k] 里被自由引用。它的检查是保守的：@racket[k] 的参数就是 @racket[v] 时一定安全；否则只要 @racket[v] 在函数体里出现就拒绝，不管那次出现是否被内层绑定遮住。每个谓词中的守卫标出了归约不再可靠的边界。下面各举一例。
 
 @racket[β?] 中间子句的 @racket[(not (pair? e))] 阻止丢弃一个复合表达式 @racket[e]，那个表达式是目标程序本应执行的计算：
 
@@ -149,7 +149,7 @@
      [`(λ (,vn) (,k ,vn)) #:when (η? k vn) (r k)]
      [k                                    (r k)]))]]
 
-@racket[(shift _ body)] 丢弃了捕获的@tech{延续}，编译器也随之丢弃自己的 @racket[ctx]：本来会打印程序剩余部分的那段代码根本不会被生成。未使用的@tech{延续}不只是在运行时被跳过，它们根本不存在。
+@racket[(shift _ body)] 丢弃了捕获的@tech{延续}，编译器也随之丢弃自己的 @racket[ctx]：本来会打印程序剩余部分的那段代码根本不会被生成。用 @racket[_] 标明不用的@tech{延续}不只是在运行时被跳过，它们根本不存在。编译器认的是字面上的 @racket[_]：写成 @racket[(shift k 3)] 而不用 @racket[k]，那段代码照样生成，只是运行时没人调用。
 
 第三组是 @bold{@racket[if]} 分支。@racket[match] 像之前一样检查 β/η。@racket[r] 内部的 @racket[cond] 决定@tech{延续}是否需要被命名以避免跨分支复制：如果它是 @racket[values]（恒等），两个分支用 @racket[id] 编译；如果它已经是一个 symbol，可以直接使用；否则 @racket[(fk)] 创建一个新名字。
 
@@ -171,7 +171,7 @@
      [`(λ (,vn) (,k ,vn)) #:when (η? k vn) (r k)]
      [k                                    (r k)]))]]
 
-@racket[cond] 的三个分支避免在@tech{延续}已经简单到可以直接复制时分配名字：@racket[values] 没有代价，裸 symbol 已经是名字。只有复合@tech{延续}才获得一个新的 @racket[kn]，绑定一次，在两个分支中引用。
+@racket[cond] 的三个分支决定目标程序里要不要为@tech{延续}绑定名字：@racket[values] 没有代价，两支直接用 @racket[id] 编译；裸 symbol 已经是名字，两支直接引用它。只有复合@tech{延续}才在目标程序里绑定到新的 @racket[kn]，绑定一次，在两个分支中引用。名字 @racket[kn] 总是先取好，用不上就不出现在输出里，所以输出里的编号可能跳号。
 
 每个分支一个输入：
 
@@ -227,10 +227,10 @@ Lambda 链的尾调用直接传递 @racket[k.0]，@racket[999] 例子的调用�
 
 运行结果是 @racket[5]，加一被跳过了。@racket[abort] 变成了 @racket[(λ (v) (λ (k.0) v))]：一个用户定义的函数，接受调用处的@tech{延续} @racket[k.0]，却不用它，直接交出 @racket[v]。这正是@xref["03:escape-discard"]{「逃逸与丢弃」}里的 @racket[(cps* a->⊥ᵃ)]：@racket[cps*] 丢弃当前@tech{延续}，把值交给@tech{局部终结延续}，而@tech{局部终结延续}是恒等函数。除了把名字换成定义，编译器没有为 @racket[abort] 写任何特殊处理，修复之后用户定义函数的一般规则就产生了这个形状。
 
-@racket[let/cc] 也是如此。@xref["03:meta"]{「元延续」}的例子：
+@racket[let/cc] 也是如此。@xref["03:meta"]{「元延续」}的例子，内层的 @racket[k] 改名为 @racket[esc]，以满足 @racket[uniquify] 的假设：
 
 @examples[#:eval ev-cps #:label #f
-(cps '(let ([k (reset (let ([x (let/cc k (abort k))]) (+ x 2)))])
+(cps '(let ([k (reset (let ([x (let/cc esc (abort esc))]) (+ x 2)))])
         (+ (reset (k 3)) 100)))]
 
 运行结果是 @racket[105]。@racket[let/cc] 交出的@tech{延续}是 @racket[(λ (v.1) (λ (k.1) (k.0 v.1)))]：同样忽略调用处的@tech{延续} @racket[k.1]，改用保存的@tech{局部延续} @racket[k.0]，就是 @racket[(cps* k.0)]。而 @racket[let/lc] 交出的 @racket[k] 是平凡的，调用时与当前@tech{延续}组合，对应 @racket[cps]。@xref["03:escape-discard"]{「逃逸与丢弃」}里写成 @tech[#:key "延续传递风格"]{CPS} 箭头的 @racket[call/lc] 与 @racket[call/cc]，区别在编译输出里就是这两种形状。
