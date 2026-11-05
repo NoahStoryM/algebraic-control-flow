@@ -2,7 +2,7 @@
 
 @title[#:tag "02:2-split"]{把延续独立出来}
 
-@xref["02:anf"]{「求值顺序与 ANF」}里，每个 @racket[let] 绑定都配着一个@tech{延续} @racket[(λ (v) b)]，只是 @racket[let] 的语法替我们藏好了。把它取出来，起个名字 @racket[k]，再把整段写回函数调用：
+第一章从 C 的@tech{标签}出发：@tech{标签}标出程序里的一个位置，却不是值，不能存，也不能传；把它做成一等值，一路走到了 @racket[call/cc]。@xref["02:anf"]{「求值顺序与 ANF」}里每个 @racket[let] 绑定配着的@tech{延续} @racket[(λ (v) b)]，也处在这样的位置：它由 @racket[let] 的语法藏着，程序碰不到。给它起个名字 @racket[k]，再把整段写回函数调用：
 
 @racketblock[
 #,(hspace 2)(let ([v e]) b)
@@ -10,7 +10,7 @@
 = (let ([k (λ (v) b)]) (k e))
 = ((λ (k) (k e)) (λ (v) b))]
 
-最后一行里，@tech{延续}成了一个普通的参数：@racket[(λ (k) (k e))] 先等着@tech{延续}，拿到以后把 @racket[e] 的值交给它。第一章改写阴阳谜题时，@tech{延续}也是这样作为参数传来传去的，只不过那里要先追踪出跳转规律，才写得出这些函数。不追踪，每一步都这样收一个@tech{延续}，普通的函数和递归会变成什么样？
+最后一行里，@tech{延续}成了一个普通的参数：@racket[(λ (k) (k e))] 先等着@tech{延续}，拿到以后把 @racket[e] 的值交给它。这个@tech{延续}有了名字，是一个值，不用 @racket[call/cc] 去捕获。第一章末尾，阴阳谜题的 @tech[#:key "延续传递风格"]{CPS} 版就是这样把@tech{延续}传来传去的，只不过那里要先追踪出跳转规律，才写得出这些@tech{延续}。不追踪，每一步都这样收一个@tech{延续}，普通的函数和递归会变成什么样？
 
 @(define ev0 (make-acf-eval))
 @examples[#:eval ev0 #:hidden

@@ -2,8 +2,6 @@
 
 @title[#:tag "02:4-arrows"]{两种箭头与命题}
 
-提前返回和阴阳谜题跑起来，靠的是 @racket[anf:let] 把一步步计算接起来。普通的 @racket[let] 是复合的另一种写法：嵌在哪里都一样，只换名的绑定可有可无。@racket[anf:let] 接的是等待@tech{延续}的计算，这样接起来的，还算不算复合？
-
 @(define ev (make-acf-eval))
 @examples[#:eval ev #:hidden
 (define-type ⊥ (∪))
@@ -44,9 +42,7 @@
           [(thread-dead? t) (display s)]
           [else (sleep 0.01) (loop)])))]
 
-@section[#:tag "02:two-arrows"]{两种箭头}
-
-@xref["02:early-return"]{「提前返回」}里的 @racket[anf:let*]，一个绑定套着一个绑定。@racket[anf:let] 的写法和 @racket[let] 一样，也就碰上@xref["02:laws"]{「结合律与单位律」}同样的问题：几步可以嵌在 @racket[b] 里，也可以先接成一段，嵌进 @racket[e]；还可以插一个只换名的绑定。三步嵌在 @racket[b] 里：
+提前返回和阴阳谜题跑起来，靠的是 @racket[anf:let] 把一步步计算接起来。它的写法和 @racket[let] 一样，也就碰上@xref["02:laws"]{「结合律与单位律」}同样的问题：几步可以嵌在 @racket[b] 里，也可以先接成一段，嵌进 @racket[e]；还可以插一个只换名的绑定。三步嵌在 @racket[b] 里：
 
 @racketblock[
 (anf:let ([y (cps:f x)])
@@ -68,11 +64,9 @@
 
 两种嵌套交出的，是同一段计算吗？只换名的绑定，真的可有可无吗？
 
-@subsection[#:tag "02:bind-compose"]{绑定就是复合}
-
 @margin-note{𝒦 取@tech{延续}变量惯用的字母 k。}
 
-问题一样，解法也可以借来。那里把 @racket[let] 看成复合，问题就成了复合是否满足@tech{结合律}与@tech{单位律}。这里也把一次绑定看成一次复合：照 @racket[anf:let] 的样子，先 @racket[cps:f] 再 @racket[cps:g]，接成一支新的箭头，记作@defsym["g ∘𝒦 f" "CPS 箭头的复合，由 anf:let 给出"] @racket[∘𝒦]：
+问题一样，解法也可以借来。@xref["02:laws"]{「结合律与单位律」}那里把 @racket[let] 看成复合，问题就成了复合是否满足@tech{结合律}与@tech{单位律}。这里也把一次绑定看成一次复合：照 @racket[anf:let] 的样子，先 @racket[cps:f] 再 @racket[cps:g]，接成一支新的箭头，记作@defsym["g ∘𝒦 f" "CPS 箭头的复合，由 anf:let 给出"] @racket[∘𝒦]：
 
 @examples[#:eval ev #:label #f #:no-prompt
 (define ((∘𝒦 cps:g cps:f) x)
@@ -94,12 +88,13 @@
 (∘𝒦 cps:f cps:id)  =  cps:f
 (∘𝒦 cps:id cps:f)  =  cps:f]
 
+@racket[∘𝒦] 满足这两条运算律吗？
 
-@subsection[#:tag "02:via-contrapositive"]{借道逆否复合}
+@section[#:tag "02:via-contrapositive"]{借道逆否复合}
 
 @music{巴赫《音乐的奉献》螃蟹卡农}
 
-@racket[∘𝒦] 满足这两条运算律吗？先拿例子试试。再提升一支 @racket[mul3]，用 @racket[(fact/k 3 k)] 的三步乘法比较两种分组：
+拿例子试试。再提升一支 @racket[mul3]，用 @racket[(fact/k 3 k)] 的三步乘法比较两种分组：
 
 @examples[#:eval ev #:label #f
 (define cps:mul3 (cps (λ (v) (* 3 v))))

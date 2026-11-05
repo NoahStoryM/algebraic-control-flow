@@ -2,8 +2,6 @@
 
 @title[#:tag "02:1-anf-cps"]{求值顺序}
 
-要把算完以后要做的事当参数传，先得在代码里找到它。比如阶乘，算出 @math{(n-1)!} 以后还要乘上 @math{n}：这一步没有单独写在任何地方，只由括号的嵌套暗示着。它在哪里？
-
 @(define ev (make-acf-eval))
 @examples[#:eval ev #:hidden
 (define-type ⊥ (∪))
