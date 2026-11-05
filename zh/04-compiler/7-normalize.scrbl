@@ -9,7 +9,7 @@
 (λ (n) (λ (k.0) ((g n) (λ (v.1) ((f v.1) (λ (v.0) (k.0 v.0)))))))
 (code:comment "之后：")
 (λ (n) (λ (k.0) ((g n) (λ (v.1) ((f v.1) k.0)))))
-(code:blank)
+
 (code:comment "999 的例子：之前")
 ((λ (v.0) v.0)
  ((λ (f) ((f 42) (λ (v.3) ((λ (v.2) v.2) (add1 v.3)))))
@@ -41,7 +41,7 @@
               (eq? e v)
               (not (pair? e))))]
     [_ (eq? b v)]))
-(code:blank)
+
 (define (η? k v)
   (match k
     [`(λ (,u) ,b)
@@ -106,7 +106,7 @@
      [`(λ (,vn) ,b)       #:when (β? b vn) r*]
      [`(λ (,vn) (,k ,vn)) #:when (η? k vn) `(,k ,r*)]
      [k                                    `(,k ,r*)]))]
-(code:blank)
+
 [`(,rator . ,rand*)
  (shift ctx
    (define vn (fv))
@@ -117,7 +117,7 @@
      [`(λ (,vn) ,b)       #:when (β? b vn) `(,r* values)]
      [`(λ (,vn) (,k ,vn)) #:when (η? k vn) `(,r* ,k)]
      [k                                    `(,r* ,k)]))]
-(code:blank)
+
 [`(reset ,body)
  (shift ctx
    (define vn (fv))
@@ -134,7 +134,7 @@
 @racketblock[
 [`(shift _ ,body)
  (shift _ (cps1 body id))]
-(code:blank)
+
 [`(shift ,k ,body)
  (add-trivial! k)
  (define r

@@ -24,11 +24,11 @@
 @racketblock[
 (code:comment "原始调用点：")
 (anf1 sub (λ (w) body))
-(code:blank)
+
 (code:comment "与表中 CPS 形式相同的两参数结构：")
 (code:comment "表： ((λ (v k) body) exp (λ (w) body1))")
 (code:comment "anf1： ((λ (exp ctx) (anf1 exp ctx)) sub (λ (w) body))")
-(code:blank)
+
 (code:comment "ANF + reset/shift 一行：用 shift 取得 ctx：")
 (anf1 sub (λ (w) body))
 (code:comment "=>")
@@ -38,7 +38,7 @@
 
 @racketblock[
 (define (anf0 exp) (shift ctx (anf1 exp ctx)))
-(code:blank)
+
 (code:comment "每个 (anf1 sub (λ (w) body)) 变成：")
 (reset (let ([w (anf0 sub)]) body))]
 
@@ -110,7 +110,7 @@
 @racketblock[
 (anf0 exp)     = (shift  ctx (anf1 exp ctx))     (code:comment "anf0 由 anf1 定义")
 (anf1 exp ctx) = (reset (ctx (anf0 exp)))        (code:comment "anf1 由 anf0 定义")
-(code:blank)
+
 (code:comment "两者可以互换。把 match 逻辑移入 anf0：")
 (define (anf1 exp ctx) (reset (ctx (anf0 exp))))
 (define (anf0 exp)
@@ -145,7 +145,7 @@
    (reset (code:comment "等式 2 => 移除")
     (let ([t (anf0 test)])
       `(if ,t ,(anf1 conseq ctx) ,(anf1 alt ctx)))))]
-(code:blank)
+
 [`((λ (,x) ,body) ,rand)
  (shift ctx (code:comment "保留：ctx 在体的编译中使用")
    (reset (code:comment "等式 2 => 移除")
@@ -163,7 +163,7 @@
    (reset (code:comment "等式 2 => 移除")
     (ctx (code:comment "等式 1 => 移除")
      (anf0 `((λ (,x) ,body) ,e)))))]
-(code:blank)
+
 (code:comment "等式 2 去掉 reset，等式 1 去掉 (shift ctx (ctx ...))：")
 [`(let ([,x ,e]) ,body)
  (anf0 `((λ (,x) ,body) ,e))]]
@@ -183,7 +183,7 @@ application 分支有两个 @racket[reset]：
        (let ([d (anf0 rand)])
          `(let ([,vn (,r ,d)])
             ,(ctx vn)))))))]
-(code:blank)
+
 (code:comment "之后：")
 [`(,rator ,rand)
  (shift ctx

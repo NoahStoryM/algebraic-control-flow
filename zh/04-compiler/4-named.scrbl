@@ -27,7 +27,7 @@
 
 @racketblock[
 (define fk (make-genvar 'k))
-(code:blank)
+
 [`(if ,test ,conseq ,alt)
  (shift ctx
    (define vn (fv))

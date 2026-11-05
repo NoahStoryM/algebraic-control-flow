@@ -46,7 +46,7 @@ Lambda 分支加上 @racket[(λ (k) ...)]：
 [`(shift ,k ,body)
  (add-trivial! k)
  ...]
-(code:blank)
+
 (define ((make-genvar name [n 0]))
   (define var (string->symbol (format "~a.~a" name n)))
   (when (eq? name 'k) (add-trivial! var))
@@ -63,7 +63,7 @@ Lambda 分支加上 @racket[(λ (k) ...)]：
    (define vn (fv))
    (define d* (map anf0 rand*))
    `(let ([,vn (,r . ,d*)]) ,(ctx vn)))]
-(code:blank)
+
 [`(,rator . ,rand*)
  (shift ctx
    (define vn (fv))

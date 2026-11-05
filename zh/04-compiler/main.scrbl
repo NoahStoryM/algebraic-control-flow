@@ -19,3 +19,5 @@
 @include-section["6-caller.scrbl"]
 @include-section["7-normalize.scrbl"]
 @include-section["8-yin-yang.scrbl"]
+@include-section["9-conclusion.scrbl"]
+@include-section["10-appendix.scrbl"]

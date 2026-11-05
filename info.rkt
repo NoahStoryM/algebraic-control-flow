@@ -18,10 +18,9 @@
 ;; 每种语言一份文档，文档名带语言后缀：acf-zh，以后 acf-en（Noah 10/26）。
 (define scribblings '(("zh/main.scrbl" (multi-page) (teaching -30) "acf-zh")))
 
-;; prelude.rkt 不是模块（核对工具用 load 读入）；tools/ 是命令行脚本；check/ 是第四篇的核对材料。
+;; tools/ 是命令行脚本；check/ 是第四篇的核对材料。
 (define compile-omit-paths
-  '("tools" "check"
-    "zh/04-compiler/prelude.rkt"))
+  '("tools" "check"))
 ;; 只测各篇的 code.rkt，与 README 里的 raco test zh/*/code.rkt 一致。
 (define test-omit-paths '(#px"^(?!.*code[.]rkt$)"))
 (define clean '("compiled" "lib/compiled"))
