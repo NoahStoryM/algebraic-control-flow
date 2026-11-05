@@ -14,10 +14,10 @@
 @examples[#:eval ev-search #:label #f #:no-prompt
 (define-type ℕ⁺ Positive-Integer)
 (define-type Triangle (List ℕ⁺ ℕ⁺ ℕ⁺))
-
+code:blank
 (: pyth? (→ ℕ⁺ ℕ⁺ ℕ⁺ Boolean))
 (define (pyth? a b c) (= (+ (* a a) (* b b)) (* c c)))
-
+code:blank
 (: right-triangles (→ ℕ⁺ ℕ⁺ (Listof Triangle)))
 (define (right-triangles l h)
   (for*/list ([a (inclusive-range l h)]
@@ -38,10 +38,10 @@
 @examples[#:eval ev-search #:label #f #:no-prompt
 (define-type (Dict k v) (Listof (Pair k v)))
 (define-type Bounds (List ℕ⁺ ℕ⁺))
-
+code:blank
 (: cache (Dict Bounds (Listof Triangle)))
 (define cache '())
-
+code:blank
 (: right-triangles/cached (→ ℕ⁺ ℕ⁺ (Listof Triangle)))
 (define (right-triangles/cached l h)
   (define l×h (list l h))
