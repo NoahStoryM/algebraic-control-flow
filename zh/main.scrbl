@@ -16,6 +16,7 @@
 @include-section["02-cps/main.scrbl"]
 @include-section["03-delimited/main.scrbl"]
 @include-section["04-compiler/main.scrbl"]
+@include-section["05-relations/main.scrbl"]
 
 @section[#:tag "glossary" #:style 'unnumbered]{术语表}
 

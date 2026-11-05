@@ -26,7 +26,7 @@ A series on continuations, CPS, delimited control, relations, monads and algebra
 ```sh
 export LC_ALL=C.UTF-8   # 否则 Racket 读不了中文路径与参数
 racket tools/run-blocks.rkt zh/01-call-cc/main.scrbl   # 第一章已改用 Scribble 底本，例子在生成文档时运行
-racket tools/join-scrbl.rkt --check zh/main.scrbl zh/0[1234]-*/*.scrbl   # 中文正文每段一行
+racket tools/join-scrbl.rkt --check zh/main.scrbl zh/0[12345]-*/*.scrbl   # 中文正文每段一行
 racket tools/cmp-forms.rkt zh/01-call-cc/main.scrbl zh/01-call-cc/code.rkt
 racket tools/run-blocks.rkt zh/02-cps/main.scrbl       # 第二章也已改用 Scribble 底本
 racket tools/cmp-forms.rkt zh/02-cps/main.scrbl zh/02-cps/code.rkt
@@ -34,8 +34,8 @@ racket tools/run-blocks.rkt zh/03-delimited/main.scrbl # 第三章也已改用 S
 racket tools/cmp-forms.rkt zh/03-delimited/main.scrbl zh/03-delimited/code.rkt
 racket tools/run-blocks.rkt zh/04-compiler/main.scrbl # 第四章也已改用 Scribble 底本
 racket tools/cmp-forms.rkt zh/04-compiler/main.scrbl zh/04-compiler/code.rkt
-racket tools/run-blocks.rkt zh/05-relations/article.md 描述关系的语言   # 照原样执行正文代码块，核对每处结果
-racket tools/cmp-forms.rkt zh/05-relations/article.md zh/05-relations/code.rkt   # 正文的定义是否都在代码文件里
+racket tools/run-blocks.rkt zh/05-relations/main.scrbl # 第五章也已改用 Scribble 底本
+racket tools/cmp-forms.rkt zh/05-relations/main.scrbl zh/05-relations/code.rkt
 raco test zh/*/code.rkt
 ```
 
