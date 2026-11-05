@@ -2,7 +2,7 @@
 
 @title[#:tag "02:6-translation"]{否定翻译}
 
-宿主的 @racket[call/cc] 照 @tech[#:key "双重否定消除"]{DNE} 读，是一支箭头。把它搬到别的写法上，会落在第几层？
+放回宿主，靠的是 @racket[call/cc]。可宿主的 @racket[call/cc] 本身，照 @tech[#:key "双重否定消除"]{DNE} 读也是一支箭头，从第 2 层落到第 0 层。把它也搬到新写法上，它还落不落到第 0 层？不靠宿主的捕获，又能落到哪里？
 
 @(define ev (make-acf-eval))
 @examples[#:eval ev #:hidden

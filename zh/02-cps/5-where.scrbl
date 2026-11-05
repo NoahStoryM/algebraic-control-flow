@@ -2,7 +2,7 @@
 
 @title[#:tag "02:5-where"]{箭头指向何方}
 
-嵌入语言写下的都是等待@tech{延续}的计算。宿主里的普通代码要用它们，总得有人交进一条@tech{延续}。
+@racket[cps:call/cc] 读出来是一条直觉主义定理，它和宿主那个经典的 @racket[call/cc] 还是一回事吗？要比较，得先把两边放到一处：嵌入语言写下的箭头，放回宿主，行为还和原来一样吗？
 
 @(define ev (make-acf-eval))
 @examples[#:eval ev #:hidden

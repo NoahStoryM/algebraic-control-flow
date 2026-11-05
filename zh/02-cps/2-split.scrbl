@@ -2,7 +2,7 @@
 
 @title[#:tag "02:2-split"]{把延续独立出来}
 
-@racket[let] 的每个绑定里，都藏着一段等结果的工作。把它取出来，当作参数传。
+@xref["01:rules"]{「读出规律」}把 @racket[let/cc] 换成 @racket[define]，阴阳谜题就成了一组只传参数、只做调用的函数，宿主的捕获一次也没有出现。那是一个特例，靠的是先读出规律。@racket[let] 的每个绑定，已经把等结果的那段工作写成了一个函数；把它取出来当参数传，任何程序都能照这个样子改写，不必先追踪。
 
 @(define ev0 (make-acf-eval))
 @examples[#:eval ev0 #:hidden

@@ -2,7 +2,7 @@
 
 @title[#:tag "02:3-embedded"]{再把延续藏起来}
 
-@tech{延续}成了参数，控制也就写得出来。先写 @racket[call/cc]，再看手写的@tech{延续}能不能藏回绑定的语法里。
+@tech{延续}成了手里的参数，这一章开头的问题就可以动手试了：不捕获，写出 @racket[call/cc]。写出来还不够，第一章的提前返回和阴阳谜题，都得在新写法里照样跑起来，而且写起来不比 @racket[let/cc] 麻烦。
 
 @(define ev (make-acf-eval))
 @examples[#:eval ev #:hidden
