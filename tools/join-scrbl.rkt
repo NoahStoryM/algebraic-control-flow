@@ -7,7 +7,7 @@
 ;; 连接时：两个中文字（含全角标点）之间直接相连；全角标点后面不留空格（原先折在标点之后、
 ;; 下一行以 @racket 等开头时，排出来会多一个空格）；其余用一个空格连接。行尾的 @; 去掉且直接相连。
 ;; 下面这些地方不动：
-;;   @examples[…]、@racketblock[…]、@out-block|{…}|、@codeblock|{…}|、@tabular[…]、标题行等整块。
+;;   @examples[…]、@racketblock[…]、@racketgrammar*[…]、@out-block|{…}|、@codeblock|{…}|、@tabular[…]、标题行等整块。
 ;; 代码块里的长行仍按 Racket 的缩进手工排。
 
 (define (wide? c)
@@ -20,7 +20,7 @@
 
 ;; 整块跳过的形式：从开头一行起，到方括号或 |{ }| 配平为止
 (define code-start
-  #px"^\\s*(#lang|@\\(|@(examples|racketblock|racketblock0|interaction|out-block|codeblock|tabular|title|section|subsection|subsubsection|include-section|table-of-contents|mm)\\b)")
+  #px"^\\s*(#lang|@\\(|@(examples|racketblock|racketblock0|racketgrammar|racketgrammar\\*|interaction|out-block|codeblock|tabular|title|section|subsection|subsubsection|include-section|table-of-contents|mm)\\b)")
 ;; 收尾一个块的行：之后的行不与它相连
 (define block-end #px"(\\}\\]|^\\s*\\])\\s*$")
 ;; 不与上一行相连的行：块级形式的开头，或单独的收尾括号

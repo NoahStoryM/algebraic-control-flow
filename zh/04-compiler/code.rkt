@@ -579,9 +579,9 @@
   (provide (all-defined-out))
   (define (k0 kn)
     (displayln #\@)
-    (define (kn+1 k)
+    (define (kn+1 km)
       (display #\*)
-      (kn k))
+      (kn km))
     (kn+1 kn+1))
 )
 
@@ -590,9 +590,9 @@
   (provide (all-defined-out))
   (define (k0 kn)
     (displayln #\@)
-    (define (kn+1 k)
+    (define (kn+1 km)
       (display #\*)
-      ((kn k) values))
+      ((kn km) values))
     (kn+1 (λ (v) (λ (k.1) (k.1 (kn+1 v))))))
 )
 
@@ -637,12 +637,12 @@
    '(let ([v.1 (let ([k (λ (v.3) (let ([v.2 (+ 1 v.3)]) v.2))]) 42)])
       (let ([v.0 (+ 10 v.1)]) v.0)))
   (check-equal?
-   (delimited:anf '(reset (let* ((kn (let/lc k0 k0)) (k (let/lc kn+1 kn+1))) (kn k))))
+   (delimited:anf '(reset (let* ((kn (let/lc k0 k0)) (km (let/lc kn+1 kn+1))) (kn km))))
    '(let ([v.0
            (let ([k0
                   (λ (v.1)
                     (let ([kn v.1])
-                      (let ([kn+1 (λ (v.2) (let ([k v.2]) (let ([v.3 (kn k)]) v.3)))])
+                      (let ([kn+1 (λ (v.2) (let ([km v.2]) (let ([v.3 (kn km)]) v.3)))])
                         (let ([v.4 (kn+1 kn+1)]) v.4))))])
              (let ([v.5 (k0 k0)]) v.5))])
       v.0))
@@ -674,7 +674,7 @@
    (cps '(reset (let ([f abort]) (+ 1 (f 5)))))
    '((λ (f) ((f 5) (λ (v.2) (+ 1 v.2)))) (λ (v) (λ (k.0) v))))
   (check-equal?
-   (cps '(let ([k (reset (let ([x (let/cc k (abort k))]) (+ x 2)))]) (+ (reset (k 3)) 100)))
+   (cps '(let ([k (reset (let ([x (let/cc esc (abort esc))]) (+ x 2)))]) (+ (reset (k 3)) 100)))
    '((λ (k) ((λ (v.7) (+ v.7 100)) ((k 3) values)))
      ((λ (k.0) (λ (v.1) (λ (k.1) (k.0 v.1)))) (λ (x) (+ x 2)))))
   (check-equal?
@@ -722,14 +722,14 @@
     '(reset
       (let* ((kn (let/lc k0 (λ (v) (k0 v))))
              (_ (displayln #\@))
-             (k (let/lc kn+1 (λ (v) (kn+1 v))))
+             (km (let/lc kn+1 (λ (v) (kn+1 v))))
              (_ (display #\*)))
-        (kn k))))
+        (kn km))))
    '((λ (k0) (k0 (λ (v) (λ (k.0) (k.0 (k0 v))))))
      (λ (kn)
        ((λ (_)
           ((λ (kn+1) (kn+1 (λ (v) (λ (k.1) (k.1 (kn+1 v))))))
-           (λ (k) ((λ (_) ((kn k) values)) (display #\*)))))
+           (λ (km) ((λ (_) ((kn km) values)) (display #\*)))))
         (displayln #\@)))))
   ;; 命名 if 的实现沿用正文；调用者版中生成的 k.n 也必须是平凡名字。
   (check-equal? (delimited:anf '(f (if a b c)))
@@ -797,7 +797,7 @@
   (check-equal? (run '((λ (v.2) v.2) (add1 999))) (run '(add1 999)))
   ;; 最终版文中提供了运行结果的有限例子。
   (for ([source '((reset (let ([f abort]) (+ 1 (f 5))))
-                  (let ([k (reset (let ([x (let/cc k (abort k))]) (+ x 2)))])
+                  (let ([k (reset (let ([x (let/cc esc (abort esc))]) (+ x 2)))])
                     (+ (reset (k 3)) 100))
                   (let ([v (reset (let* ([x 3] [y (+ 2 x)]) (abort y)))]) (+ 10 v))
                   (let ([v (reset (let* ([x (shift k 3)] [y (+ 2 x)]) (abort y)))]) (+ 10 v))
@@ -811,10 +811,35 @@
     (λ () (run (cps '(reset
                       (let* ([kn (let/lc k0 (λ (v) (k0 v)))]
                              [_ (displayln #\@)]
-                             [k (let/lc kn+1 (λ (v) (kn+1 v)))]
+                             [km (let/lc kn+1 (λ (v) (kn+1 v)))]
                              [_ (display #\*)])
-                        (kn k))))))
+                        (kn km))))))
     "@\n*@\n**@\n***@"))
+  ;; 「再看阴阳谜题」：包装版与 let/cc 版并排；两者的阶梯相同，输出只差交给程序的延续。
+  (define wrapped-puzzle
+    '(reset
+      (let* ([kn (let/lc k0 (λ (v) (k0 v)))]
+             [_ (displayln #\@)]
+             [km (let/lc kn+1 (λ (v) (kn+1 v)))]
+             [_ (display #\*)])
+        (kn km))))
+  (define cc-puzzle
+    '(reset
+      (let* ([kn (let/cc k0 k0)]
+             [_ (displayln #\@)]
+             [km (let/cc kn+1 kn+1)]
+             [_ (display #\*)])
+        (kn km))))
+  (check-equal?
+   (cps cc-puzzle)
+   '((λ (k.0) (k.0 (λ (v.1) (λ (k.1) (k.0 v.1)))))
+     (λ (kn)
+       ((λ (_)
+          ((λ (k.2) (k.2 (λ (v.6) (λ (k.3) (k.2 v.6)))))
+           (λ (km) ((λ (_) ((kn km) values)) (display #\*)))))
+        (displayln #\@)))))
+  (check-true (output-starts-with? (λ () (run (cps wrapped-puzzle))) "@\n*@\n**@\n***@"))
+  (check-true (output-starts-with? (λ () (run (cps cc-puzzle))) "@\n*@\n**@\n***@"))
   ;; compiler-claims.md c 节的六例：先独立运行源程序，再比对各阶段的打印。
   (define order-cases
     '((eq? (reset (display 1)) (display 2))
@@ -892,7 +917,7 @@
       (or (val? e ks)
           (match e
             [`(,r . ,args)
-             (and (name? r) (not (set-member? ks r))
+             (and (or (and (name? r) (not (set-member? ks r))) (proc? r ks))
                   (list? args) (andmap (λ (d) (val? d ks)) args))]
             [_ #f])))
     (define (anf? e ks)
@@ -967,13 +992,14 @@
 
 (module+ test
   (require (prefix-in grammar: (submod ".." grammar))
-           (prefix-in named: (submod ".." stage-named)))
+           (prefix-in named: (submod ".." stage-named))
+           (prefix-in s9: (submod ".." stage-9)))
   ;; (a) #51 临时脚本的 36 个输入原样保留；四个已展示的反例单列预期。
   (define grammar-programs
     '((if a b c) (add1 (if a b c)) (f (if a b c)) (λ (n) (f (g n)))
       (reset (let ([f (λ (x) (shift k 999))]) (add1 (f 42))))
       (reset (let ([f abort]) (+ 1 (f 5))))
-      (let ([k (reset (let ([x (let/cc k (abort k))]) (+ x 2)))]) (+ (reset (k 3)) 100))
+      (let ([k (reset (let ([x (let/cc esc (abort esc))]) (+ x 2)))]) (+ (reset (k 3)) 100))
       (let ([v (reset (let* ([x 3] [y (+ 2 x)]) (abort y)))]) (+ 10 v))
       (let ([v (reset (let* ([x (shift k 3)] [y (+ 2 x)]) (abort y)))]) (+ 10 v))
       (let ([v (reset (let* ([x (shift k (k 3))] [y (+ 2 x)]) (abort y)))]) (+ 10 v))
@@ -981,7 +1007,7 @@
       (reset (let* ([label (λ () (let/lc k k))] [yin (label)] [_ (displayln #\@)] [yang (label)] [_ (display #\*)]) (yin yang)))
       (let ([id (reset (shift k k))]) (id (id 3)))
       (let ([id (reset (shift k (λ (v) (k v))))]) (id (id 3)))
-      (reset (let* ([kn (let/lc k0 (λ (v) (k0 v)))] [_ (displayln #\@)] [k (let/lc kn+1 (λ (v) (kn+1 v)))] [_ (display #\*)]) (kn k)))
+      (reset (let* ([kn (let/lc k0 (λ (v) (k0 v)))] [_ (displayln #\@)] [km (let/lc kn+1 (λ (v) (kn+1 v)))] [_ (display #\*)]) (kn km)))
       (let ([f add1]) (f 41)) (let ([f (λ (x) (add1 x))]) (f 41))
       (eq? (reset (display 1)) (display 2)) (eq? (display 1) (reset (display 2)))
       (let ([f (λ (a b) a)]) (f (reset (display 1)) (display 2)))
@@ -1080,7 +1106,7 @@
   ;; (c) 改写为 define 之前的完整表达式照样合文法，不扩充文法来容纳 define。
   (check-true
    (grammar:delimited-anf?
-    '(let ([k0 (λ (kn) (let ([kn+1 (λ (k) (kn k))]) (kn+1 kn+1)))]) (k0 k0))))
+    '(let ([k0 (λ (kn) (let ([kn+1 (λ (km) (kn km))]) (kn+1 kn+1)))]) (k0 k0))))
   (check-true (grammar:delimited-anf? label-result))
   (check-true
    (grammar:cps?
@@ -1088,7 +1114,7 @@
       (λ (kn)
         ((λ (_)
            ((λ (kn+1) (kn+1 (λ (v) (λ (k.1) (k.1 (kn+1 v))))))
-            (λ (k) ((λ (_) ((kn k) values)) (display #\*)))))
+            (λ (km) ((λ (_) ((kn km) values)) (display #\*)))))
          (displayln #\@))))))
   (check-true (grammar:cps? before-999))
   (check-true (grammar:cps? after-999))
@@ -1098,6 +1124,9 @@
                        (if a (resume b) (resume c))))
   (check-true (grammar:named-anf? named-cont))
   (check-false (grammar:named-anf? '(f x))) ; 普通调用应在 atom/let 中。
+  ;; atom 的调用头可以是 proc：stage-9 编译调用头为 if 的程序时会生成它。
+  (check-true (grammar:named-anf? (s9:anf '((if #t (λ (x) x) (λ (y) y)) 1))))
+  (check-false (grammar:named-anf? '(let ([v.0 (0 x)]) v.0)))
   (check-false (grammar:named-anf? '(resume x))) ; 自由名字不会自动成为延续。
   (check-true (grammar:named-anf? '(resume x) (seteq 'resume)))
   (check-false (grammar:named-anf? '(let ([r (resume x)]) r) (seteq 'resume)))

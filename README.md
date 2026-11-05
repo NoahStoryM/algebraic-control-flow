@@ -26,20 +26,20 @@ A series on continuations, CPS, delimited control, relations, monads and algebra
 ```sh
 export LC_ALL=C.UTF-8   # 否则 Racket 读不了中文路径与参数
 racket tools/run-blocks.rkt zh/01-call-cc/main.scrbl   # 第一章已改用 Scribble 底本，例子在生成文档时运行
-racket tools/join-scrbl.rkt --check zh/main.scrbl zh/0[123]-*/*.scrbl   # 中文正文每段一行
+racket tools/join-scrbl.rkt --check zh/main.scrbl zh/0[1234]-*/*.scrbl   # 中文正文每段一行
 racket tools/cmp-forms.rkt zh/01-call-cc/main.scrbl zh/01-call-cc/code.rkt
 racket tools/run-blocks.rkt zh/02-cps/main.scrbl       # 第二章也已改用 Scribble 底本
 racket tools/cmp-forms.rkt zh/02-cps/main.scrbl zh/02-cps/code.rkt
 racket tools/run-blocks.rkt zh/03-delimited/main.scrbl # 第三章也已改用 Scribble 底本
 racket tools/cmp-forms.rkt zh/03-delimited/main.scrbl zh/03-delimited/code.rkt
-racket tools/run-blocks.rkt zh/04-compiler/article.md
+racket tools/run-blocks.rkt zh/04-compiler/main.scrbl # 第四章也已改用 Scribble 底本
+racket tools/cmp-forms.rkt zh/04-compiler/main.scrbl zh/04-compiler/code.rkt
 racket tools/run-blocks.rkt zh/05-relations/article.md 描述关系的语言   # 照原样执行正文代码块，核对每处结果
-racket tools/cmp-forms.rkt zh/04-compiler/article.md zh/04-compiler/code.rkt
 racket tools/cmp-forms.rkt zh/05-relations/article.md zh/05-relations/code.rkt   # 正文的定义是否都在代码文件里
 raco test zh/*/code.rkt
 ```
 
-第四章的 `blocks.rktd` 按「节标题 + 代码块开头」唯一定位例子，逐项写明不能直接执行的块及原因；`prelude.rkt` 提供前文定义，`code.rkt` 对循环定义、无限输出和编译器做隔离测试。配置的 `stdout` 以原始打印（含换行）比较，`value` 比较结果，`exit` 捕获 `exit` 而不终止核对器。第四章逐步构造的局部 `match` 分支和未组装的中间版本在配置中标出，最终编译器在 `code.rkt` 与 `check/` 中测试。
+第四章的编译器在 `code.rkt` 里测试，各阶段版本放在子模块中；正文里的例子在生成文档时运行。
 
 `cmp-forms.rkt` 核对正文定义是否逐式出现在对应的 `code.rkt`，找不到时返回非零状态。推导中只有省略号、没有可执行函数体的定义，在各章的 `form-exceptions.rktd` 中以**完整表达式和原因**逐条列出；正文改动使排除项过期时核对会报错。同名函数在 `code.rkt` 的不同子模块中保留各阶段版本。
 
