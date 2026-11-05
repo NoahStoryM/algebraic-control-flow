@@ -2,6 +2,8 @@
 
 @title[#:tag "02:6-translation"]{否定翻译}
 
+宿主的 @racket[call/cc] 照 @tech[#:key "双重否定消除"]{DNE} 读，是一支箭头。把它搬到别的写法上，会落在第几层？
+
 @(define ev (make-acf-eval))
 @examples[#:eval ev #:hidden
 (define-type ⊥ (∪))
@@ -58,6 +60,76 @@
                           (cps:* res r))))))
     (cps:loop r*)))]
 
+@section[#:tag "02:same-arrow"]{同一支箭头}
+
+@xref["02:clavius"]{「Clavius 律」}末尾问过：@racket[cps:call/cc] 还算不算原来的 @racket[call/cc]？先分清两件事。@racket[cps:call/cc] 是把整条 @tech{Clavius 律}换写一遍：类型里的箭头全是 @math{→@subscript{𝒦}}，@racket[proc] 也换成了新的箭头。另一件是不换写定律，只把宿主的 @racket[call/cc] 照 @tech[#:key "双重否定消除"]{DNE} 读成一支@tech{宿主箭头} @math{¬¬p →@subscript{𝒟} p}，收下第 2 层的 @racket[kkp]，交出第 0 层的值，再把这一支搬到 @tech{CPS 箭头}或@tech{逆否箭头}上：这就是 @racket[(cps call/cc)] 和 @racket[(neg call/cc)]。@racket[cps:car] 就是 @racket[(cps car)]，@racket[cps:call/cc] 却不是 @racket[(cps call/cc)]，两者连 @racket[proc] 的接口都不同。至于还算不算：把过程参数和逃逸用的@tech{延续}也按新接口改写以后，@racket[cps:call/cc] 实现的仍是同一个操作，把当前@tech{延续}交给 @racket[proc]。下面看后一件事。
+
+用@xref["01:layers"]{「否定塔」}的层数看，那里的几条规则，这一章都有了现成的写法。@tech[#:key "双重否定引入"]{DNI} 加两层，就是 @racket[cps:id]：收下 @racket[p]，等一条 @racket[kp] 来，再把 @racket[p] 交给它。交来的若正是 @racket[(cps:id p)]，把 @racket[kp] 交给它，照定义一步就回到原处：
+
+@racketblock[
+#,(hspace 2)(let ([kkp (cps:id p)]) (kkp kp))
+= (kp p)]
+
+@tech{三重否定律}从第 3 层减到第 1 层，不必 @racket[call/cc]，就是 @tech[#:key "双重否定引入"]{DNI} 的逆否 @racket[(neg cps:id)]，和@xref["01:neg-q"]{「代入 ¬q」}里的 @racket[triple-negation] 做的一样：
+
+@racketblock[
+(((neg cps:id) kkkp) p)  =  (kkkp (cps:id p))]
+
+@tech[#:key "双重否定消除"]{DNE} 从第 2 层落到第 0 层，要 @racket[call/cc]；可手里的 @racket[kkp] 若只是要交给一条 @racket[kp]，@xref["01:pairing"]{「两种配对」}说，不必落到第 0 层，直接配对就行。
+
+先看 @tech{CPS 箭头}。交给 @racket[(cps call/cc)] 一段 @racket[kkp] 和@tech{延续} @racket[kp]，用@xref["02:three-forms"]{「三种写法」}那条规律：
+
+@racketblock[
+#,(hspace 2)(((cps call/cc) kkp) kp)
+= (kp (call/cc kkp))
+= (let ([p (call/cc kkp)]) (kp p))
+≈ (kkp kp)]
+
+@defsym["neg²:id" "(neg (neg id))：¬¬p →𝒦 p，也是 ¬¬p →𝒞 ¬¬p；(cps call/cc) 的纯表示"]收下 @racket[kkp]，把@tech{延续} @racket[kp] 原样交给它：这支箭头什么也不运行，收下一段计算，原样交出。代码和 @racket[id] 一样，类型却是一支 @tech{CPS 箭头}：从 @math{¬¬p} 到 @math{p}。这和@xref["02:via-contrapositive"]{「借道逆否复合」}里的 @racket[neg:id] 是同一种情形：定义相同，箭头的种类不同。记作 @racket[neg²:id]：
+
+@examples[#:eval ev #:label #f #:no-prompt
+(: neg²:id (∀ (p) (→𝒦 (¬¬ p) p)))
+(define (neg²:id kkp) kkp)]
+
+于是上面那段展开说的是：
+
+@racketblock[
+(cps call/cc)  ≈  neg²:id]
+
+@math{¬¬p →@subscript{𝒦} p} 看上去也像 @tech[#:key "双重否定消除"]{DNE}；展开到宿主，它只是 @math{¬¬p → ¬¬p}，从第 2 层到第 2 层。名字的由来：@racket[neg²] 指连用两次 @racket[neg]，@racket[neg²:id] 就是 @racket[(neg (neg id))]，也就是 @racket[(neg neg:id)]。验证一下：@racket[(neg neg:id)] 收下 @racket[kkp]，交出 @racket[(∘ kkp id)]，行为和 @racket[kkp] 一样。反过来，把它交给 @racket[uncps]，沿图表回到宿主，得到的正是 @racket[call/cc]：
+
+@racketblock[
+(uncps neg²:id)  ≈  (uncps (cps call/cc))  =  call/cc]
+
+后一步是@xref["02:back-to-host"]{「回到宿主」}里的往返，那里的论证只用到 @racket[(kq …)] 处在尾位置。直接展开也一样，@racket[(uncps neg²:id)] 就是 @racket[(∘ call/cc neg²:id)]，也就是 @racket[call/cc]：工作来自 @racket[uncps] 里已有的 @racket[call/cc]，不是 @racket[neg²:id] 自己捕获了什么。
+
+到这里，从 @racket[id] 造出的已经有四支。它们都从 @racket[id] 造出，箭头的种类与展开后的层数各不相同：
+
+@tabular[#:style 'boxed #:row-properties '(bottom-border ())
+  (list
+   (list @elem{名字} @elem{由 @racket[id] 造出} @elem{箭头} @elem{展开到宿主} @elem{层数})
+   (list @racket[id] @elem{} @elem{@math{p →@subscript{𝒟} p}} @elem{@math{p → p}} @elem{0 → 0})
+   (list @racket[neg:id] @racket[(neg id)] @elem{@math{p →@subscript{𝒰} p}} @elem{@math{¬p → ¬p}} @elem{1 → 1})
+   (list @racket[cps:id] @racket[(cps id)] @elem{@math{p →@subscript{𝒦} p}} @elem{@math{p → ¬¬p}} @elem{0 → 2})
+   (list @racket[neg²:id] @racket[(neg neg:id)] @elem{@math{¬¬p →@subscript{𝒦} p}} @elem{@math{¬¬p → ¬¬p}} @elem{2 → 2}))]
+
+表里 @racket[neg:id] 写作 @racket[(neg id)]：@racket[(neg id)] 交给 @racket[k] 得到 @racket[(∘ k id)]，与 @racket[k] 行为相同，所以代码直接用 @racket[id]。
+
+再看@tech{逆否箭头}：
+
+@racketblock[
+#,(hspace 2)(((neg call/cc) kp) kkp)
+= (kp (call/cc kkp))
+= (let ([p (call/cc kkp)]) (kp p))
+≈ (kkp kp)
+= ((cps:id kp) kkp)]
+
+@racket[(neg call/cc)] 收下第 1 层的 @racket[kp]，交出第 3 层，多了两层。最后两步，正是@xref["01:pairing"]{「两种配对」}里的两种走法：先落到第 0 层再交给 @racket[kp]，和把 @racket[kp] 升到第 3 层再与 @racket[kkp] 相遇，行为相同。展开的最后一行说，@racket[(neg call/cc)] 的行为和用在 @math{¬p} 上的 @racket[cps:id] 相同。@racket[neg:id] 就是 @racket[id]，所以 @racket[cps:id] 也就是 @racket[(cps neg:id)]。宿主里 2 → 0 的这一步，换成 @tech{CPS 箭头}是 2 → 2，换成@tech{逆否箭头}是 1 → 3，接口一变，都不再落到第 0 层。
+
+@racket[uncps] 回到宿主，靠的是 @racket[call/cc]。不用它，这些箭头能不能落到纯的宿主函数？
+
+@section[#:tag "02:neg-again"]{再用一次 neg}
+
 @margin-note{𝒞 取 constructive，构造性。}
 
 @defsym["inj" "把纯函数原样放进 𝒟（injection，注入）"]@xref["02:back-to-host"]{「回到宿主」}的 @racket[uncps] 把 @tech{CPS 箭头}变成宿主函数，里面用的是 @racket[call/cc]。这一章说的@tech{宿主箭头} 𝒟，指的是这里讨论的计算：普通的函数，加上 @racket[call/cc] 这样的控制，按@xref["02:three-forms"]{「三种写法」}约定的行为相同来比较；打印、状态这类别的作用不算在内。其中纯的那一部分，记作 𝒞@defsym["p →𝒞 q" "纯的宿主函数 p → q；𝒞 取 constructive"]：由 @racket[λ]、函数应用和纯原语写成，自己不引入控制，递归只限于能终止的情形；作为参数交进来的函数，也要是纯的。这样的构造填入纯参数时仍是纯的。运行时交进去的@tech{终结延续}由外部提供，调用它以后的退出，不算纯程序内部的构造。这里讨论的是有纯 @tech[#:key "延续传递风格"]{CPS} 表示的控制计算：对一支这样的宿主箭头 @racket[f]，有纯的 @racket[cps:f]，把它用 @racket[uncps] 放回宿主，就与 @racket[f] 行为相同。@xref["02:early-return"]{「提前返回」}里的 @racket[mul]，是按程序结构写出这支表示的一个例子。𝒟 和 𝒞 的类型都是普通的函数类型，区别只在函数怎么写，类型检查不出来。纯函数也是宿主函数，@racket[inj]（injection，注入）把它原样放进 𝒟：
@@ -71,8 +143,6 @@
 要落到纯的宿主函数，还得像宿主函数一样，用 @racket[∘] 从 @math{p} 接到 @math{q}。把类型展开看看。@tech{逆否箭头} @math{p →@subscript{𝒰} q} 是 @math{¬q → ¬p}，本身就是宿主函数，只是方向反了：从 @math{p} 写到 @math{q}，函数却从 @math{¬q} 指向 @math{¬p}。@tech{CPS 箭头} @math{p →@subscript{𝒦} q} 是 @math{p → ¬¬q}，两端对不上：一支交出的是 @math{¬¬q}，下一支要收的是 @math{q}。
 
 两端对得上的，前面倒见过一支：@racket[neg²:id]。展开到宿主，它是 @math{¬¬p → ¬¬p}，从第 2 层到第 2 层。@xref["02:same-arrow"]{「同一支箭头」}还认出，它就是 @racket[(neg neg:id)]：@tech{逆否箭头}的恒等，再用一次 @racket[neg]。
-
-@section[#:tag "02:neg-again"]{再用一次 neg}
 
 @tech{逆否箭头}既然反了一次，就再反一次。交给 @racket[neg] 一支@tech{逆否箭头} @racket[neg:f]，得到的 @racket[(neg neg:f)] 是 @math{¬¬p → ¬¬q}：方向正了，两端都裹着 @math{¬¬}，宿主的 @racket[∘] 就能接。它只在@tech{延续}前面接上 @racket[neg:f]：@racket[neg:f] 是纯的，它也是纯的，落在 𝒞 里。落到的却不是原来那支箭头，@math{p} 换成了 @math{¬¬p}。
 
