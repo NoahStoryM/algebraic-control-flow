@@ -2,7 +2,15 @@
 
 @title[#:tag "02:2-split"]{把延续独立出来}
 
-@xref["02:anf"]{「求值顺序与 ANF」}里，每个 @racket[let] 绑定都配着一个等结果的函数 @racket[(λ (v) b)]，只是语法替我们藏着，程序自己碰不到它。第一章改写阴阳谜题时，这样的函数是先追踪出跳转规律，才一个个写出来的。不追踪，直接把它取出来当参数传，普通的函数和递归会变成什么样？
+@xref["02:anf"]{「求值顺序与 ANF」}里，每个 @racket[let] 绑定都配着一个@tech{延续} @racket[(λ (v) b)]，只是 @racket[let] 的语法替我们藏好了。把它取出来，起个名字 @racket[k]，再把整段写回函数调用：
+
+@racketblock[
+#,(hspace 2)(let ([v e]) b)
+= ((λ (v) b) e)
+= (let ([k (λ (v) b)]) (k e))
+= ((λ (k) (k e)) (λ (v) b))]
+
+最后一行里，@tech{延续}成了一个普通的参数：@racket[(λ (k) (k e))] 先等着@tech{延续}，拿到以后把 @racket[e] 的值交给它。第一章改写阴阳谜题时，@tech{延续}也是这样作为参数传来传去的，只不过那里要先追踪出跳转规律，才写得出这些函数。不追踪，每一步都这样收一个@tech{延续}，普通的函数和递归会变成什么样？
 
 @(define ev0 (make-acf-eval))
 @examples[#:eval ev0 #:hidden
@@ -16,16 +24,7 @@
 
 @section[#:tag "02:cps"]{延续与 CPS}
 
-回头看@xref["02:anf"]{「求值顺序与 ANF」}开头的 @racket[let]。每个绑定都配着一个@tech{延续} @racket[(λ (v) b)]，只是 @racket[let] 的语法替我们藏好了；@tech[#:key "A-范式"]{ANF} 所做的，不过是让这种隐藏变得有规律。把@tech{延续}取出来，起个名字 @racket[k]，再把整段写回函数调用：
-
-@racketblock[
-#,(hspace 2)((λ (v) b) e)
-= (let ([k (λ (v) b)]) (k e))
-= ((λ (k) (k e)) (λ (v) b))]
-
-最后一行里，@tech{延续}成了一个普通的参数：@racket[(λ (k) (k e))] 先等着@tech{延续}，拿到以后把 @racket[e] 的值交给它。@tech{延续}于是成了独立的值，可以传来传去、存储、反复调用。
-
-那就让每个函数都额外接受这样一个参数 @racket[k]，代表「我算完之后该做什么」。函数不再把值返回给调用者，而是直接交给 @racket[k]。@racket[fact] 的 @tech[#:key "延续传递风格"]{CPS} 版本：
+让每个函数都额外接受这样一个参数 @racket[k]，代表「我算完之后该做什么」。函数不再把值返回给调用者，而是直接交给 @racket[k]。@racket[fact] 的 @tech[#:key "延续传递风格"]{CPS} 版本：
 
 @examples[#:eval ev0 #:label #f #:no-prompt
 (: fact/k (¬ Natural (¬ Natural)))
