@@ -4,7 +4,7 @@
 
 修正后的 @racket[anf1] 在每次递归调用中显式传递 @racket[ctx]，每一步都在它上面裹一层 lambda。之前，我们从第一版 @racket[anf1] 中擦除了@tech{延续}参数，得到了 @racket[anf0]，一个近恒等函数。我们能不能也从@emph{修正后}的版本中擦除@tech{延续}参数？
 
-第一次擦除之所以能成功，是因为 @racket[ctx] 只被尾调用：每个分支都以 @racket[(ctx ...)] 结尾，意味着 @racket[ctx] 不扮演任何结构角色。修正后的版本不同。在 application 分支中，@racket[ctx] 出现在生成的 @racket[let]@emph{内部}：@racket[(ctx vn)] 被嵌入了目标代码。在 @racket[if] 分支中，@racket[ctx] 被传入两个子编译。@tech{延续}不再是结果的被动接收者；它在塑造输出。简单地移除参数会丢失信息。
+第一次擦除之所以能成功，是因为 @racket[ctx] 只被尾调用：每个分支都以 @racket[(ctx ...)] 结尾，@racket[ctx] 交出什么，这个分支就原样交出什么，擦掉它，结果不变。修正后的版本不同。application 分支里，编译器调用 @racket[(ctx vn)]，交出的那段代码由逗号填进生成的 @racket[let] 的体，外面还裹着 @racket[(let ([vn (r d)]) ...)] 这一层。擦掉参数，就没有谁来写这个体：处理完 @racket[(g a)] 之后要交给 @racket[f]、再交给 @racket[h] 的那两层工作，不会出现在 @racket[v.1] 的绑定之后。@racket[if] 分支里，@racket[ctx] 被交给两个子编译，同一份后续代码要写进两支。简单地移除参数，这些都会丢掉。
 
 但@xref["03:delimited-cps"]{「定界延续与 CPS」}的对应表恰好描述了这个变换。表中 @tech[#:key "延续传递风格"]{CPS} 那一行以显式参数传递@tech{延续}，@tech[#:key "A-范式"]{ANF} 加 @racket[reset]、@racket[shift] 那一行用 @racket[shift] 在原来的位置取得它，两行是同一个程序。而 @racket[anf1] 本身就是一个 @tech[#:key "延续传递风格"]{CPS} 程序：它接收一个源表达式和一条@tech{局部延续} @math{¬ₐ⟨@ty{val}⟩}，交出 @racket[_anf]，正是@xref["03:any-base"]{「换了基的箭头」}里 @math{→@subscript{𝒦ₐ}} 箭头的形状。这张表应该也能用在编译器自己的源代码上。
 
