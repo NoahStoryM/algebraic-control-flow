@@ -48,7 +48,7 @@
                       (λ (w)
                         (k (+ v w))))))))]
 
-每次递归调用都在 @racket[k] 上多裹一层 lambda。这条 lambda 链就是调用栈，以闭包的形式建在堆上。每个闭包恰好携带一个帧所需的数据。@racket[(λ (v) (fib/k (- n 2) (λ (w) (k (+ v w)))))] 携带两份数据：@racket[(- n 2)]（待执行的第二次子调用）和外层@tech{延续} @racket[k]。第二个闭包 @racket[(λ (w) (k (+ v w)))] 携带 @racket[v]（第一个结果）和 @racket[k]。每个闭包就是一个帧：一个@tech{标记}说明接下来做什么，加上做这件事所需的数据。
+每次递归调用都在 @racket[k] 上多裹一层 lambda。这条 lambda 链就是调用栈，以闭包的形式建在堆上。每个闭包记着的，正是一个帧要记的东西。@racket[(λ (v) (fib/k (- n 2) (λ (w) (k (+ v w)))))] 捕获了 @racket[n] 和外层@tech{延续} @racket[k]，收到 @racket[v] 以后才求 @racket[(- n 2)]，做第二次子调用；显式的 @racket[(fib ...)] 帧则预先存好算出的 @racket[n-2]。存的东西不同，记得的事是同一件：第一次子调用返回以后，该算哪一支。第二个闭包 @racket[(λ (w) (k (+ v w)))] 捕获 @racket[v]（第一个结果）和 @racket[k]，对应 @racket[(add ...)] 帧。每个闭包就是一个帧：一个@tech{标记}说明接下来做什么，加上做这件事所需的数据。
 
 循环版本和 @tech[#:key "延续传递风格"]{CPS} 版本是同一个程序。一个把栈表示为带@tech{标记}的数据列表，另一个把栈表示为@tech{闭包链}。从闭包到数据@tech{标记}的变换有个名字：@defterm[#:en "defunctionalization"]{去函数化}。反向变换，从数据@tech{标记}到闭包，叫做@defterm[#:en "refunctionalization"]{再函数化}。任何一个把递归函数改写为 while 循环加显式栈的程序员，都在手工执行去函数化。
 

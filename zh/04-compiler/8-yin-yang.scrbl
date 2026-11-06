@@ -4,7 +4,7 @@
 
 @music{史蒂夫·赖希《Clapping Music》}
 
-每个源程序都包含 @racket[reset]；没有一个目标程序包含。没有标记，没有包装器，没有运行时支持。边界去了哪里？
+@xref["04:four-examples"]{四个例子}的源程序都包含 @racket[reset]，编译出的目标程序里却一个也没有：没有标记，没有包装器，也没有运行时支持。边界要从输出本身里找。
 
 @section[#:tag "04:reset-gone"]{@racket[reset] 去了哪里}
 
@@ -70,7 +70,7 @@
 
 文法把 @racket[_val] 和 @racket[_cont] 分开：@tech{延续}可以被调用，却不能当作值传来传去，它不是一等的。谜题的类型恰恰要求相反。第一章的 @math{@ty{Label} = ¬@ty{Label}} 换到局部，是 @math{@ty{Label} = ¬ₐ@ty{Label}}：@racket[Label] 既是传来传去的值，又是被调用的@tech{延续}。
 
-@xref["03:escape-discard"]{「逃逸与丢弃」}其实处理过这件事。@racket[call/lc] 交给程序的不是裸的 @racket[kₐp]，而是 @racket[(cps kₐp)]：@tech{局部延续}在宿主里是普通函数，要交给写成 @tech[#:key "延续传递风格"]{CPS} 箭头的程序，先得用 @racket[cps] 提升成 @math{→𝒦ₐ} 箭头。在源程序里做同样的事，就是把@tech{延续}包进一个 lambda：
+@xref["03:escape-discard"]{「逃逸与丢弃」}其实处理过这件事。@racket[call/lc] 交给程序的不是裸的 @racket[kₐp]，而是 @racket[(cps kₐp)]：@tech{局部延续}在宿主里是普通函数，要交给写成 @tech[#:key "延续传递风格"]{CPS} 箭头的程序，先得用 @racket[cps] 提升成 @math{→@subscript{𝒦ₐ}} 箭头。在源程序里做同样的事，就是把@tech{延续}包进一个 lambda：
 
 @examples[#:eval ev-yy #:label #f
 (cps '(let ([id (reset (shift k (λ (v) (k v))))]) (id (id 3))))

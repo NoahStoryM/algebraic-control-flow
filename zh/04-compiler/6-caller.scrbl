@@ -153,6 +153,6 @@ Lambda 分支加上 @racket[(λ (k) ...)]：
 
 @racket[_apply-cont] 有两种写法。此前文法里的 @racket[(let ([_var _anf]) _anf)]，对应的正是 @racket[(_cont _cps)]：@racket[(let ([v e]) body)] 就是 @racket[((λ (v) body) e)]，一段计算的结果交给了@tech{延续}。另一种 @racket[(_cont _val ...)] 是参数都已经是值的调用。
 
-@racket[_cont²] 产生式 @racket[(λ (_trivial) _cps)] 是一个@defterm[#:en "second-order continuation"]{二阶延续}：它以调用者的@tech{延续}为参数，使它成为@tech{延续}的@tech{延续}。它的类型是 @math{(p → a) → a = ¬ₐ¬ₐp}，@xref["03:any-base"]{「换了基的箭头」}的局部编码。@racket[_proc] 的形状是 @racket[(λ _head _cont²)]，接受参数后交出一个 @math{¬ₐ¬ₐ}，正是 @racket[anf1] 那样的 @math{→𝒦ₐ} 箭头：编译器自己的写法，现在也成了目标程序的写法。而 @racket[_apply-cont²] 不过是一个 @racket[let]，只是绑定的值碰巧是一个@tech{延续}：@racket[((λ (_trivial) _cps) _cont)] = @racket[(let ([_trivial _cont]) _cps)]。绑定本身没有什么特别的；特别的是参数。
+@racket[_cont²] 产生式 @racket[(λ (_trivial) _cps)] 是一个@defterm[#:en "second-order continuation"]{二阶延续}：它以调用者的@tech{延续}为参数，使它成为@tech{延续}的@tech{延续}。它的类型是 @math{(p → a) → a = ¬ₐ¬ₐp}，@xref["03:any-base"]{「换了基的箭头」}的局部编码。@racket[_proc] 的形状是 @racket[(λ _head _cont²)]，接受参数后交出一个 @math{¬ₐ¬ₐ}，正是 @racket[anf1] 那样的 @math{→@subscript{𝒦ₐ}} 箭头：编译器自己的写法，现在也成了目标程序的写法。而 @racket[_apply-cont²] 不过是一个 @racket[let]，只是绑定的值碰巧是一个@tech{延续}：@racket[((λ (_trivial) _cps) _cont)] = @racket[(let ([_trivial _cont]) _cps)]。绑定本身没有什么特别的；特别的是参数。
 
 β、η 都是我们手工做的；编译器能不能自己做？
