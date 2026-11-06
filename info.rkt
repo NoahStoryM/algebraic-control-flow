@@ -13,7 +13,8 @@
     "typed-racket-lib"
     "typed-racket-doc"
     "rackunit-lib"
-    "control-context"))
+    "control-context"
+    "amb"))
 
 ;; 每种语言一份文档，文档名带语言后缀：acf-zh，以后 acf-en（Noah 10/26）。
 (define scribblings '(("zh/main.scrbl" (multi-page) (teaching -30) "acf-zh")))

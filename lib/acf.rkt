@@ -50,10 +50,12 @@
                     racket/control
                     racket/undefined
                     (only-in typed/racket/base : ∀ ∪ U → case→ define-type Values Byte Real Natural Pair)
-                    control/context))
+                    control/context
+                    (only-in amb amb for/amb for*/amb in-amb)))   ; 第五章自己定义的 amb 一族，链接到 amb 库（Noah 11/6）
 ;; 同样的绑定也交给引用本模块的文档，正文里的 @racket[call/cc] 等因此能直接链接。
 (provide (for-label (all-from-out racket/base racket/function racket/match racket/control racket/undefined control/context)
-                    : ∀ ∪ U → case→ define-type Values Byte Real Natural Pair))
+                    : ∀ ∪ U → case→ define-type Values Byte Real Natural Pair
+                    amb for/amb for*/amb in-amb))
 
 (define label-context (quote-syntax here))
 
