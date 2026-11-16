@@ -1798,6 +1798,175 @@
              (λ () (run* (a b c) (pythᵒ a b c) (betweenᵒ 1 20 a) (betweenᵒ a 20 b) (betweenᵒ b 20 c)))))
 
 ;;; ═══════════════════════════════════════════════════════════════════
+;;; §10 后半（11/6 版）：未知项、代换与目标；合一；关系的世界 ℛ
+;;; ═══════════════════════════════════════════════════════════════════
+;;; 依据：outline.md 后半（PR #145，Astra 11/6 核过）；内核照 ambKanren/demo.rkt，
+;;; typed/amb 换成本章自己的 amb。11/6 定：4.3 直接用合一，不经过 rel-min。
+;;; 子模块 kanren 取代上面的 relational 与 rel-min（两者留待全章定稿后删去）。
+;;; 正文的节号：4.2 未知项、代换与目标；4.3 跑起来；5 合一；6 关系的世界；7 与逻辑的对应。
+
+(module* kanren #f
+  (provide (all-defined-out))
+
+  ;;; ─── 4.2〔正文〕 未知项、代换与目标 ───
+  (struct var ([name : Symbol]) #:transparent)        ; 未知项：按身份区分，名字只用来打印
+  (define-type Term (∪ Var Boolean Number Symbol Null (Pair Term Term)))
+  (define-type Subst (Dict Var Term))
+
+  (: walk (→ Term Subst Term))
+  (define (walk t s)
+    (define p (and (var? t) (assq t s)))
+    (if p (walk (cdr p) s) t))
+
+  (define-type Goal (→ℬ Subst Subst))
+
+  (: succeed Goal)
+  (: fail Goal)
+  (define (succeed s) s)
+  (define (fail s) (amb))
+
+  (: conj (→ Goal ... Goal))
+  (: disj (→ Goal ... Goal))
+  (define (conj . g*) (apply ∘ℬ (reverse g*)))
+  (define ((disj . g*) s) ((list->amb g*) s))
+
+  ;; 〔验证〕两个单位
+  (let* ([a (var 'a)] [g (λ (s) (cons (cons a (amb 1 2)) s))])
+    (check-equal? (in-amb ((conj succeed g) '())) (in-amb (g '())))
+    (check-equal? (in-amb ((conj g succeed) '())) (in-amb (g '())))
+    (check-equal? (in-amb ((disj fail g) '())) (in-amb (g '())))
+    (check-equal? (in-amb ((disj g fail) '())) (in-amb (g '())))
+    (check-equal? (in-amb ((conj) '())) '(()))
+    (check-equal? (in-amb ((disj) '())) '()))
+
+  ;;; ─── 4.3〔正文〕 跑起来：合一、读出值、两个包装、run* ───
+  (: unify (→ Term Term Subst Subst))
+  (define (unify u v s)
+    (let ([u (walk u s)] [v (walk v s)])
+      (cond [(and (var? u) (eq? u v)) s]
+            [(var? u) (cons (cons u v) s)]
+            [(var? v) (cons (cons v u) s)]
+            [(and (pair? u) (pair? v))
+             (unify (cdr u) (cdr v) (unify (car u) (car v) s))]
+            [(equal? u v) s]
+            [else (amb)])))
+
+  (: value-of (→ Term Subst Term))
+  (define (value-of t s)
+    (let ([t (walk t s)])
+      (cond [(var? t) (error 'value-of "~a 的值还不知道" (var-name t))]
+            [(pair? t) (cons (value-of (car t) s) (value-of (cdr t) s))]
+            [else t])))
+
+  (define (((function->relation f) . t*) s)
+    (define-values (in* out*) (split-at-right t* 1))
+    (unify (car out*) (apply f (for/list ([t in*]) (value-of t s))) s))
+
+  (define (((predicate->relation p?) . t*) s)
+    (check (apply p? (for/list ([t t*]) (value-of t s))))
+    s)
+
+  (define-syntax-rule (run* (x ...) g ...)
+    (let ([x (var 'x)] ...)
+      (in-amb (value-of (list x ...) ((conj g ...) '())))))
+
+  (define betweenᵒ (function->relation  between))
+  (define pythᵒ    (predicate->relation pyth?))
+
+  (define (right-triangles l h)
+    (run* (a b c)
+      (betweenᵒ l h a)     ; l ≤ a ≤ h
+      (betweenᵒ a h b)     ; a ≤ b ≤ h
+      (betweenᵒ b h c)     ; b ≤ c ≤ h
+      (pythᵒ a b c)))      ; a² + b² = c²
+
+  (check-equal? (right-triangles 1 20) triples)
+  (for* ([l (in-range 1 5)] [h (in-range 0 14)])
+    (check-equal? (right-triangles l h) (right-triangles₈ l h)))
+  ;; 〔正文·交互〕一行关系交出几个代换
+  (check-equal? (let ([a (var 'a)]) (in-amb ((betweenᵒ 1 3 a) '())))
+                (list (list (cons (var 'a) 1)) (list (cons (var 'a) 2)) (list (cons (var 'a) 3))))
+  ;; 〔正文·交互〕条件的先后：未知项要先有值
+  (check-exn #rx"a 的值还不知道"
+             (λ () (run* (a b c) (pythᵒ a b c) (betweenᵒ 1 20 a) (betweenᵒ a 20 b) (betweenᵒ b 20 c))))
+
+  ;;; ─── 5〔正文〕 合一：== 与倒着跑 ───
+  (: == (→ Term Term Goal))
+  (define ((== u v) s) (unify u v s))
+
+  (define-syntax-rule (fresh (x ...) g ...)
+    (λ (s) (let ([x (var 'x)] ...) ((conj g ...) s))))
+
+  (define (appendᵒ l t out)
+    (disj (conj (== l '()) (== t out))
+          (fresh (a d res)
+            (== l (cons a d))
+            (== out (cons a res))
+            (appendᵒ d t res))))
+
+  (check-equal? (run* (z) (appendᵒ '(1 2) '(3) z)) '(((1 2 3))))
+  (check-equal? (run* (x y) (appendᵒ x y '(1 2 3)))
+                '((() (1 2 3)) ((1) (2 3)) ((1 2) (3)) ((1 2 3) ())))
+  (check-exn #rx"y 的值还不知道" (λ () (run* (x y) (== x y))))
+
+  ;;; ─── 5〔正文〕 读出还不知道的项 ───
+  (: walk* (→ Term Subst Term))
+  (define (walk* t s)
+    (let ([t (walk t s)])
+      (if (pair? t) (cons (walk* (car t) s) (walk* (cdr t) s)) t)))
+
+  (: reify (→ Term Term))
+  (define (reify t)
+    (define (name-unknowns t s)
+      (let ([t (walk t s)])
+        (cond [(var? t) (cons (cons t (string->symbol (format "_.~a" (length s)))) s)]
+              [(pair? t) (name-unknowns (cdr t) (name-unknowns (car t) s))]
+              [else s])))
+    (walk* t (name-unknowns t '())))
+
+  (module+ v2
+    ;; run* 的第二版：整个查询元组一起读出（Astra 11/6），还不知道的项写成 _.0、_.1……
+    (define-syntax-rule (run* (x ...) g ...)
+      (let ([x (var 'x)] ...)
+        (in-amb (reify (walk* (list x ...) ((conj g ...) '()))))))
+    (check-equal? (run* (x y) (== x y)) '((_.0 _.0)))
+    (check-equal? (run* (x y) succeed) '((_.0 _.1)))
+    (check-equal? (run* (x y) (appendᵒ x y '(1 2))) '((() (1 2)) ((1) (2)) ((1 2) ())))
+    (check-equal? (run* (x y) (appendᵒ '(1) x y)) '((_.0 (1 . _.0))))
+
+    ;;; ─── 6〔正文〕 关系的世界 ℛ ───
+    (define (idᵒ x y) (== x y))
+    (define (∘ᵒ . r*)
+      (if (null? r*)
+          idᵒ
+          (λ (x z)
+            (fresh (y)
+              ((apply ∘ᵒ (cdr r*)) x y)
+              ((car r*) y z)))))
+
+    (define pick-aᵒ      (function->relation pick-a))
+    (define pick-bᵒ      (function->relation pick-b))
+    (define pick-cᵒ      (function->relation pick-c))
+    (define check-rightᵒ (function->relation check-right))
+    (define right-triangleᵒ (∘ᵒ check-rightᵒ pick-cᵒ pick-bᵒ pick-aᵒ))
+
+    (check-equal? (run* (t) (right-triangleᵒ '(1 20) t)) (map list triples))
+    (for* ([l (in-range 1 5)] [h (in-range 0 14)])
+      (check-equal? (run* (t) (right-triangleᵒ (list l h) t))
+                    (map list (in-amb (right-triangle (list l h))))))
+    ;; 单位：idᵒ 两边都是；(function->relation values) 只在输入已知时是（Astra 11/6 的反例）
+    (define (P x y) (== y 1))
+    (check-equal? (run* (q) ((∘ᵒ P idᵒ) q 1)) (run* (q) (P q 1)))
+    (check-equal? (run* (q) ((∘ᵒ P idᵒ) q 1)) '((_.0)))
+    (check-exn #rx"的值还不知道" (λ () (run* (q) ((∘ᵒ P (function->relation values)) q 1))))
+    (check-equal? (run* (q) ((∘ᵒ) q 5)) '((5)))
+    ;; 结合律：同一组答案
+    (check-equal? (run* (t) ((∘ᵒ check-rightᵒ (∘ᵒ pick-cᵒ (∘ᵒ pick-bᵒ pick-aᵒ))) '(1 20) t))
+                  (run* (t) ((∘ᵒ (∘ᵒ (∘ᵒ check-rightᵒ pick-cᵒ) pick-bᵒ) pick-aᵒ) '(1 20) t)))
+    ;; 方向：由函数搬来的关系不能倒着问
+    (check-exn #rx"值还不知道" (λ () (run* (b) (right-triangleᵒ b '(3 4 5)))))))
+
+;;; ═══════════════════════════════════════════════════════════════════
 ;;; 附〔验证〕 创作者笔记的素材（v5.0 不进正文；除非某一节真的用得上）
 ;;; ═══════════════════════════════════════════════════════════════════
 
@@ -1856,7 +2025,9 @@
            (only-in (submod ".." relational))
            (only-in (submod ".." relational a))
            (only-in (submod ".." relational c))
-           (only-in (submod ".." rel-min)))
+           (only-in (submod ".." rel-min))
+           (only-in (submod ".." kanren))
+           (only-in (submod ".." kanren v2)))
 
   (define src (variable-reference->module-source (#%variable-reference)))
   (define lines (file->lines src))
