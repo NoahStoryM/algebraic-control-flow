@@ -1803,6 +1803,8 @@
        (let ([s ((conj g ...) '())])
          (list (value-of x s) ...)))))
 
+  (: betweenᵒ (→ Term Term Term Goal))                  ; 关系：收下项，交出目标
+  (: pythᵒ (→ Term Term Term Goal))
   (define betweenᵒ (function->relation  between))
   (define pythᵒ    (predicate->relation pyth?))
 

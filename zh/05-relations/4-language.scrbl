@@ -100,11 +100,19 @@
 @examples[#:eval ev-goals #:no-result
 (define-type Goal (→ℬ Substitution Substitution))]
 
-这样的函数叫@defterm[#:en "goal"]{目标}。ℬ 的箭头写的是二元关系，目标也是：表的两列是收到的代换和交出的代换。为免混淆，下文的「@tech{关系}」只说 @racket[betweenᵒ]、@racket[pythᵒ] 这一种，说的是数与数之间的事；代换之间的那一种就叫目标。
+这样的函数叫@defterm[#:en "goal"]{目标}。ℬ 的箭头写的是二元关系，目标也是：表的两列是收到的代换和交出的代换。
 
 @margin-note{目标也可以写成 ℒ 的箭头 @racket[(→ℒ Substitution Substitution)]，交出一张代换的列表，用不着 @racket[amb]：接起来用的换成 @racket[∘ℒ]。两种写法之间，就是 @racket[gather] 与 @racket[scatter]。}
 
-四行条件合起来是一个目标，拆开来，每一行呢？第二行 @racket[(betweenᵒ a h b)] 要读 @racket[a] 的值，它收到的得是第一行交出的代换；它添上 @racket[b]，再交给第三行。所以每一行也是一个目标，一行一行接下去：前一个交出的代换，交给后一个。@racket[let*] 把绑定一行一行接起来，@xref["05:two-ways"]{「关系的两种写法」}认出那是 @racket[∘ℬ]；把目标一行一行接起来的，还是 @racket[∘ℬ]。几个条件同时成立，叫@tech{合取}：
+四行条件合起来是一个目标，拆开来，每一行呢？先看最后一行。@racket[pyth?] 是谓词，收下三个数，回答是或否。@racket[pythᵒ] 收下的是项，里面可能有未知项，是或否就答不出来了：成立不成立，要看未知项取什么值。它答得出的是「在哪些取值下成立」，也就是从收到的代换出发，哪些代换走得通。所以它交出的是一个目标：
+
+@racketblock[
+(: pyth? (→ ℕ⁺   ℕ⁺   ℕ⁺   Boolean))
+(: pythᵒ (→ Term Term Term Goal))]
+
+@racket[betweenᵒ] 也一样。这门语言里的@tech{关系}，是收下项、交出目标的函数；@racket[run*] 里的每一行是一次调用，交出一个目标。为免混淆，下文的「关系」只说 @racket[betweenᵒ]、@racket[pythᵒ] 这一种，说的是数与数之间的事；代换之间的那一种就叫目标。
+
+谓词的几个条件，用 @racket[and] 连起来。目标的几个条件怎样连？第二行 @racket[(betweenᵒ a h b)] 要读 @racket[a] 的值，它收到的得是第一行交出的代换；它添上 @racket[b]，再交给第三行。目标与目标之间要传东西，一行一行接下去：前一个交出的代换，交给后一个。@racket[let*] 把绑定一行一行接起来，@xref["05:two-ways"]{「关系的两种写法」}认出那是 @racket[∘ℬ]；把目标一行一行接起来的，还是 @racket[∘ℬ]。几个条件同时成立，叫@tech{合取}：
 
 @examples[#:eval ev-goals #:no-result
 (: conj (→ Goal ... Goal))
@@ -138,7 +146,7 @@
 
 三张代换，读出来是三组答案。
 
-一般的 @racket[(betweenᵒ l h a)] 里，@racket[l]、@racket[h] 可能是未知项，要先用 @racket[value-of] 读出值，再交给 @racket[between]；@racket[between] 交出的数，照 @racket[g] 的样子记在最后一个位置上。四行条件里，最后一个位置都是还没有值的未知项，添一行就够了。@racket[(pythᵒ a b c)] 的三个位置都是给 @racket[pyth?] 的，全要读出值；不成立就走不通，成立就原样交回代换：
+一般的 @racket[(betweenᵒ l h a)] 里，@racket[l]、@racket[h] 可能是未知项，要先用 @racket[value-of] 读出值，再交给 @racket[between]；@racket[between] 交出的数，照 @racket[g] 的样子记在最后一个位置上。四行条件里，最后一个位置都是还没有值的未知项，添一行就够了。@racket[(pythᵒ a b c)] 的三个位置都是给 @racket[pyth?] 的，全要读出值。谓词的是与否，成了目标的两种回答：成立就原样交回代换，不成立就一张也不交。
 
 @examples[#:eval ev-goals #:no-result
 (define (((function->relation f) . t*) s)
