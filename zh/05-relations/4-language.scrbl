@@ -39,7 +39,7 @@
 
 @section[#:tag "05:goals"]{未知项、代换与目标}
 
-先看第一个问题。@racket[a] 不是哪个数的名字，它代表一个还不知道的数；可三行条件里写的 @racket[a] 必须是同一个。没有值可以比，只能按身份区分：每个都是新造出来的东西，名字只用来打印。这样的东西叫@defterm[#:en "logic variable"]{未知项}。数、符号这些值是@defterm[#:en "term"]{项}，未知项也是项，由项组成的序对还是项：
+@racket[a] 不是哪个数的名字，它代表一个还不知道的数；可三行条件里写的 @racket[a] 必须是同一个。没有值可以比，那就为它新造一个东西，带上一个名字：
 
 @(define ev-goals (make-acf-eval))
 @examples[#:eval ev-goals #:hidden
@@ -57,7 +57,16 @@
 (define ∘ℬ ∘)
 (define (list->amb v*) (for/amb ([v (in-list v*)]) v))]
 @examples[#:eval ev-goals #:no-result
-(struct var ([name : Symbol]) #:transparent)
+(struct var ([name : Symbol]) #:transparent)]
+
+@examples[#:eval ev-goals #:label #f
+(var 'a)
+(eq? (var 'a) (var 'a))
+(let ([a (var 'a)]) (eq? a a))]
+
+造两次，打印出来一模一样，@racket[eq?] 却说它们是两个；同一次造出的才是同一个。名字只用来打印，分辨靠的是身份。这样的东西叫@defterm[#:en "logic variable"]{未知项}。数、符号这些值是@defterm[#:en "term"]{项}，未知项也是项，由项组成的序对还是项：
+
+@examples[#:eval ev-goals #:no-result
 (define-type Term (∪ Var Boolean Number Symbol Null (Pair Term Term)))]
 
 四行条件读下来，我们对这三个未知项知道得越来越多。读完 @racket[(betweenᵒ l h a)]，就知道 @racket[a] 等于范围里的某个数。知道的事要记下来，记在一张表里：键是未知项，值是它等于的那个项。键不重复，这正是@xref["05:search"]{「遍历搜索」}里缓存用的那种字典：
@@ -65,9 +74,7 @@
 @examples[#:eval ev-goals #:no-result
 (define-type Subst (Dict Var Term))]
 
-这样一张表叫@defterm[#:en "substitution"]{代换}：照着它，可以把项里的未知项换成它等于的项。表里的每一行是一条等式。值可以是数，也可以是另一个未知项，比如 @racket[x] 对着 @racket[y]，说的只是两者相等，并没有说 @racket[x] 是几。所以一张代换不是一组答案，它说的是未知项之间要满足的关系，凡是满足这些等式的取值都算数。
-
-要问一个项现在等于什么，就顺着等式一路查下去，查到一个不在表里的项为止：
+值可以是数，也可以是另一个未知项。比如 @racket[x] 对着 @racket[y]，@racket[y] 对着 @racket[5]：头一行只说两者相等，没有说 @racket[x] 是几。要问一个项现在等于什么，就顺着表一路查下去，查到一个不在表里的项为止：
 
 @examples[#:eval ev-goals #:no-result
 (: walk (→ Term Subst Term))
@@ -75,39 +82,46 @@
   (define p (and (var? t) (assq t s)))
   (if p (walk (cdr p) s) t))]
 
-@racket[assq] 按身份找键，和未知项按身份区分是一回事。
+@examples[#:eval ev-goals #:label #f
+(let* ([x (var 'x)] [y (var 'y)])
+  (walk x (list (cons x y) (cons y 5))))]
 
-再看第二个问题。@racket[(betweenᵒ l h a)] 要做的，是收到一张代换，从中读出 @racket[l]、@racket[h]，再添上一条 @racket[a] 等于某个数的等式。范围里有几个数，就交出几张添了等式的代换；条件不成立时一张也不交。收一个，交零个或多个，这是带 @racket[amb] 的函数，@xref["05:two-ways"]{「关系的两种写法」}里 ℬ 的箭头：
+@racket[x] 查到 @racket[y]，@racket[y] 查到 @racket[5]。表里的每一行是一条等式，照着它，可以把未知项换成它等于的项，所以这样一张表叫@defterm[#:en "substitution"]{代换}。@racket[assq] 按身份找键：两次造出的 @racket[(var 'a)]，在表里是两个键。
+
+一行 @racket[(betweenᵒ l h a)] 写在那里，要做的是收到一张代换，从中读出 @racket[l]、@racket[h]，再添上一条 @racket[a] 等于某个数的等式。范围里有几个数，就交出几张添了等式的代换；条件不成立时一张也不交。收一个，交零个或多个，这是带 @racket[amb] 的函数，@xref["05:two-ways"]{「关系的两种写法」}里 ℬ 的箭头：
 
 @examples[#:eval ev-goals #:no-result
 (define-type Goal (→ℬ Subst Subst))]
 
-一行关系交出的这种函数叫@defterm[#:en "goal"]{目标}。目标也是二元关系，表的两列是收到的代换和交出的代换。所有的目标都在同一对集合之间：从代换到代换。
+一行关系交出的这种函数叫@defterm[#:en "goal"]{目标}。目标也是二元关系，表的两列是收到的代换和交出的代换。为免混淆，下文的「@tech{关系}」只说 @racket[betweenᵒ]、@racket[pythᵒ] 这一种，说的是数与数之间的事；代换之间的那一种就叫目标。
 
-四行条件要同时成立，就是四个目标一个接一个：前一个交出的代换，交给后一个。@xref["05:compose"]{「二元关系的复合」}说过，有了 @racket[amb]，函数的复合就是二元关系的复合，所以这里用的就是 @racket[∘ℬ]。关系语言里的「并且」叫合取，写成 @racket[conj]。几个条件里只要有一个成立，叫析取，写成 @racket[disj]：从几个目标里挑一个来用，挑哪个都算，正是 @racket[amb]。两个目标都是从代换到代换的二元关系，表的两列对得上，析取就是把两张表并起来。
+@margin-note{目标也可以写成 ℒ 的箭头 @racket[(→ℒ Subst Subst)]，交出一张代换的列表，用不着 @racket[amb]：接起来用的换成 @racket[∘ℒ]。两种写法之间，就是 @racket[gather] 与 @racket[scatter]。}
+
+所有的目标都是从代换到代换，所以任意两个都接得上。四行条件要同时成立，就是四个目标一个接一个：前一个交出的代换，交给后一个。@xref["05:compose"]{「二元关系的复合」}说过，有了 @racket[amb]，函数的复合就是二元关系的复合，所以这里用的就是 @racket[∘ℬ]。几个条件同时成立，叫@tech{合取}：
+
+@examples[#:eval ev-goals #:no-result
+(: conj (→ Goal ... Goal))
+(define (conj . g*) (apply ∘ℬ (reverse g*)))]
+
+@racket[conj] 照写的顺序接：先写的先运行，和 @racket[let*] 一样，所以交给 @racket[∘ℬ] 之前要倒过来。
+
+一个目标也不给，接起来是什么？拿一张记着 @racket[a] 等于 @racket[1] 的代换来试：
+
+@examples[#:eval ev-goals #:label #f
+(let ([a (var 'a)])
+  ((conj) (list (cons a 1))))]
+
+代换原样交了回来，一行也没有添：@racket[(∘ℬ)] 是恒等函数。作为代换之间的二元关系，它是@defterm[#:en "identity relation"]{恒等关系}；作为条件，它什么也没有要求，总是成立。给它一个名字：
 
 @examples[#:eval ev-goals #:no-result
 (: succeed Goal)
-(: fail Goal)
-(define (succeed s) s)
-(define (fail s) (amb))
+(define (succeed s) s)]
 
-(: conj (→ Goal ... Goal))
-(: disj (→ Goal ... Goal))
-(define (conj . g*) (apply ∘ℬ (reverse g*)))
-(define ((disj . g*) s) ((list->amb g*) s))]
-
-@racket[conj] 照写的顺序接：先写的先运行，和 @racket[let*] 一样，所以交给 @racket[∘ℬ] 之前要倒过来。@racket[disj] 用 @racket[list->amb] 挑出一个目标，再把代换交给它。
-
-@racket[succeed] 原样交回代换，什么也不添，是恒等关系；@racket[fail] 一张也不交，是空关系。前者接在哪个目标前后都不改变它，后者和哪个目标并起来都不改变它：一个是合取的单位，一个是析取的单位。零个目标的合取就是 @racket[succeed]，因为 @racket[(∘ℬ)] 是恒等函数；零个目标的析取就是 @racket[fail]，因为从零个备选里挑，就是 @racket[(amb)]。
-
-@margin-note{目标也可以写成 ℒ 的箭头 @racket[(→ℒ Subst Subst)]，交出一张代换的列表：合取换成 @racket[∘ℒ]，析取换成把几张列表接起来，用不着 @racket[amb]。两种写法之间，就是 @racket[gather] 与 @racket[scatter]。}
-
-现在有两种关系，叫法要分开。@racket[betweenᵒ]、@racket[pythᵒ] 是关系语言里的@tech{关系}，说的是数与数之间的事；它们用到项上，交出目标。目标是代换与代换之间的二元关系，是实现前一种关系的办法。两种二元关系前后脚出现，下面说「关系」只指前一种。
+@racket[succeed] 接在哪个目标的前面或后面，都不改变那个目标：它是合取的@defterm[#:en "unit"]{单位}。
 
 @section[#:tag "05:run"]{跑起来}
 
-@racket[(betweenᵒ l h a)] 交出的目标，要往代换里添一条等式：@racket[a] 等于 @racket[between] 交出的数。添等式之前要先看看，@racket[a] 现在等于什么。两边一般都是项，顺着代换查到底以后分几种情况：同一个未知项，什么也不用添；一边是未知项，添上一行；两边都是序对，逐项去对；都是值，相等就过，不等就是这条时间线走不通：
+@racket[(betweenᵒ l h a)] 交出的目标，要往代换里添一条等式：@racket[a] 等于 @racket[between] 交出的数。添之前要先看看 @racket[a] 现在等于什么。等式的两边都顺着代换查到底，再比：有一边是未知项，就添上一行；两边都是序对，逐项去对；否则相等才走得通：
 
 @(define ev-run (make-acf-eval))
 @examples[#:eval ev-run #:hidden
@@ -141,6 +155,16 @@
           [(equal? u v) s]
           [else (amb)])))]
 
+拿两张各缺一项的列表来试，从空的代换开始，用 @racket[in-amb] 收下交出的代换：
+
+@examples[#:eval ev-run #:label #f
+(let ([a (var 'a)] [b (var 'b)])
+  (in-amb (unify (list a 2) (list 1 b) '())))
+(let ([a (var 'a)])
+  (in-amb (unify (list a 2) (list 1 3) '())))]
+
+头一例里 @racket[a] 对上 @racket[1]，@racket[b] 对上 @racket[2]，各添一行：两边都从对面得到了自己缺的那一项。后一例里 @racket[2] 对不上 @racket[3]，这条时间线走不通，@racket[in-amb] 一张代换也没有收到。
+
 让两个项相等，必要时往代换里添等式，这件事叫@defterm[#:en "unification"]{合一}。添的总是一个还没在表里的未知项，所以键不会重复。
 
 @racket[between] 要的是数，不是未知项。从代换里读出一个项的值，也是顺着查下去；序对就逐项读；查到底还是未知项，说明这个值还不知道：
@@ -153,7 +177,7 @@
           [(pair? t) (cons (value-of (car t) s) (value-of (cdr t) s))]
           [else t])))]
 
-两个包装各几行就写得出。函数搬成关系：读出前面几个位置的值，交给函数，让结果与最后一个位置合一。谓词搬成关系：读出所有位置的值，交给谓词，不成立就走不通，成立就原样交回代换：
+@racket[(betweenᵒ l h a)] 的前两个位置是给 @racket[between] 的，要先读出值；最后一个位置与 @racket[between] 交出的数合一。@racket[(pythᵒ a b c)] 的三个位置都是给 @racket[pyth?] 的，全要读出值；不成立就走不通，成立就原样交回代换：
 
 @examples[#:eval ev-run #:no-result
 (define (((function->relation f) . t*) s)
@@ -195,7 +219,7 @@
 
 三张代换就是这个目标的表里，以空代换开头的三行。
 
-四行条件的先后有讲究。把 @racket[pythᵒ] 挪到最前面，它要读 @racket[a] 的值，可这时候还没有哪一行给过 @racket[a] 一个值：
+把 @racket[pythᵒ] 挪到最前面：
 
 @examples[#:eval ev-run #:label #f
 (eval:error
@@ -205,4 +229,4 @@
    (betweenᵒ a 20 b)
    (betweenᵒ b 20 c)))]
 
-这是两个包装的限制：函数与谓词只能算已经知道的值。合一本身并不要求这样，两边都可以是未知项；@racket[function->relation] 只在最后一个位置用到了它。直接写一条等式，让两边都可以不知道，会怎样？
+@racket[pythᵒ] 要读 @racket[a] 的值，可这时候还没有哪一行给过 @racket[a] 一个值。四行条件要同时成立，谁先谁后本不该有分别；分别来自两个包装：函数与谓词只能算已经知道的值。合一并不要求这样，两边都可以是未知项；@racket[function->relation] 只在最后一个位置用到了它。直接写一条等式，让两边都可以不知道，会怎样？

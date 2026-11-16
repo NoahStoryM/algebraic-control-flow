@@ -2,10 +2,6 @@
 
 @title[#:tag "05:5-unify"]{合一}
 
-@racket[function->relation] 把函数的结果与最后一个位置合一，可前面几个位置都要先读出值来。@racket[unify] 自己并不在乎哪一边知道、哪一边不知道。
-
-@section[#:tag "05:equation"]{直接写等式}
-
 把合一本身做成一个关系：@racket[(== u v)] 说的是两个项相等，交出的目标让它们合一：
 
 @(define ev-unify (make-acf-eval))
@@ -23,9 +19,7 @@
   (define p (and (var? t) (assq t s)))
   (if p (walk (cdr p) s) t))
 (define (succeed s) s)
-(define (fail s) (amb))
 (define (conj . g*) (apply ∘ℬ (reverse g*)))
-(define ((disj . g*) s) ((list->amb g*) s))
 (define (unify u v s)
   (let ([u (walk u s)] [v (walk v s)])
     (cond [(and (var? u) (eq? u v)) s]
@@ -47,9 +41,40 @@
 (: == (→ Term Term Goal))
 (define ((== u v) s) (unify u v s))]
 
-只靠等式，能写出什么样的关系？拿接两张列表来试。@racket[append] 收两张列表，交出接起来的那一张；把它写成三个位置的关系 @racket[(appendᵒ l t out)]：@racket[l] 是空的，@racket[out] 就等于 @racket[t]；或者 @racket[l] 有头一项 @racket[a] 和剩下的 @racket[d]，@racket[out] 的头一项也是 @racket[a]，剩下的部分 @racket[res] 是 @racket[d] 接上 @racket[t]。
+@examples[#:eval ev-unify #:label #f
+(run* (x y) (== x 1) (== 2 y))]
 
-这里出现了 @racket[a]、@racket[d]、@racket[res] 三个只在定义里用到的未知项。@racket[run*] 的未知项列在它后面，关系的定义里也要能造自己的：
+未知项写在等式的哪一边都可以。
+
+@section[#:tag "05:equation"]{直接写等式}
+
+@racket[append] 把两张列表接成一张。它是函数，只能从左边两张算出右边一张。照它的定义写一个三个位置的关系 @racket[(appendᵒ l t out)]：@racket[l] 是空的，@racket[out] 就等于 @racket[t]；或者 @racket[l] 有头一项 @racket[a] 和剩下的 @racket[d]，@racket[out] 的头一项也是 @racket[a]，剩下的部分 @racket[res] 是 @racket[d] 接上 @racket[t]。
+
+这句话里有两样东西还写不出来。一样是「或者」：两种情形里成立一种就行。目标是带 @racket[amb] 的函数，从几个目标里挑一个来用，挑哪个都算，正是 @racket[amb]。几个条件里只要有一个成立，叫@tech{析取}：
+
+@examples[#:eval ev-unify #:no-result
+(: disj (→ Goal ... Goal))
+(define ((disj . g*) s) ((list->amb g*) s))]
+
+@examples[#:eval ev-unify #:label #f
+(run* (x) (disj (== x 1) (== x 2)))]
+
+@margin-note{目标写成 ℒ 的箭头时，析取是把几张代换的列表接起来。}
+
+两个目标都是从代换到代换的二元关系，表的两列对得上，析取就是把两张表并起来。一个目标也不给呢？
+
+@examples[#:eval ev-unify #:label #f
+(run* (x) (disj))]
+
+一组答案也没有：从零个备选里挑，就是 @racket[(amb)]。作为代换之间的二元关系，它是一行也没有的@defterm[#:en "empty relation"]{空关系}；作为条件，它总不成立。也给它一个名字：
+
+@examples[#:eval ev-unify #:no-result
+(: fail Goal)
+(define (fail s) (amb))]
+
+@racket[fail] 和哪个目标并起来，都不改变那个目标：它是析取的@tech{单位}。
+
+另一样是 @racket[a]、@racket[d]、@racket[res]：三个只在定义里用到的未知项。@racket[run*] 的未知项列在它后面，关系的定义里也要能造自己的：
 
 @examples[#:eval ev-unify #:no-result
 (define-syntax-rule (fresh (x ...) g ...)
@@ -77,7 +102,7 @@
 @examples[#:eval ev-unify #:label #f
 (run* (x y) (appendᵒ x y '(1 2 3)))]
 
-四种拆法都找到了。@racket[append] 只能从左边两张算出右边一张，@racket[appendᵒ] 里每一行都是等式，没有哪个位置是输入，哪个是输出，问哪几个位置都可以。这是关系不分输入输出的样子。这一例倒着问也能把四组找全；换了别的关系、别的问法，搜索不一定停得下来，能不能问是一回事，问了能不能答完是另一回事。由函数和谓词搬来的 @racket[betweenᵒ]、@racket[pythᵒ] 还是只能正着问，它们里面的 @racket[between] 和 @racket[pyth?] 只算已经知道的值。
+四种拆法都找到了。定义 @racket[appendᵒ] 的时候，没有哪一行写过「拆」：每一行都是等式，没有哪个位置是输入，哪个是输出。这是关系不分输入输出的样子。
 
 @section[#:tag "05:reify"]{读出还不知道的项}
 
@@ -86,9 +111,9 @@
 @examples[#:eval ev-unify #:label #f
 (eval:error (run* (x y) (== x y)))]
 
-@racket[(== x y)] 成立，代换里只有一条等式：@racket[x] 等于 @racket[y]。两个都没有值，@racket[value-of] 读不出来。可这组答案并不是空的，它说的是：@racket[x] 与 @racket[y] 是同一个数，至于是几，都可以。答案得能写出这样的意思。
+@racket[(== x y)] 成立，代换里只有一条等式：@racket[x] 等于 @racket[y]。两个都没有值，@racket[value-of] 读不出来。可这组答案并不是空的，它说的是：@racket[x] 与 @racket[y] 是同一个数，至于是几，都可以。
 
-先顺着代换把项里能换的都换掉，换不动的未知项留在原处；再给留下来的未知项依次起名 @tt{_.0}、@tt{_.1}……，同一个未知项用同一个名字：
+答案里要写得出「同一个，是几都行」，就给换不动的未知项起名字，@tt{_.0}、@tt{_.1}，依次排下去；同一个未知项用同一个名字。把还不知道的项写成看得见的名字，这一步叫 @racket[reify]：
 
 @(define ev-reify (make-acf-eval))
 @examples[#:eval ev-reify #:hidden
@@ -141,7 +166,7 @@
             [else s])))
   (walk* t (name-unknowns t '())))]
 
-@racket[reify] 里起名用的也是一张代换，把留下来的未知项换成名字。@racket[run*] 改成这样读出答案。要读的几个未知项放在一张列表里一起读，共用一套名字：
+@racket[walk*] 顺着代换把项里能换的都换掉，换不动的未知项留在原处。@racket[reify] 里起名用的也是一张代换，把留下来的未知项换成名字。@racket[run*] 改成这样读出答案。要读的几个未知项放在一张列表里一起读，共用一套名字：
 
 @examples[#:eval ev-reify #:no-result
 (define-syntax-rule (run* (x ...) g ...)
@@ -155,6 +180,6 @@
 
 第一组是 @tt{(_.0 _.0)}：两个位置相等，都可以是任何项。第二组是 @tt{(_.0 _.1)}：什么条件也没有，两个位置各自任取。两组答案里都没有一个具体的数，差别全在名字是否相同上。第三组说，@racket[y] 是 @racket[1] 接上 @racket[x]，@racket[x] 是什么都行。
 
-这正是代换说的那种关系。一组带名字的答案不是表里的一行，它代表许多行：@tt{(_.0 _.0)} 代表所有两个位置相等的行，在项上有无穷多。用到 @racket[value-of] 的那一版里，答案都是具体的值，一组就是一行，那只是未知项都有了值的特例。
+代换里 @racket[x] 对着 @racket[y] 的那一行，现在读得出来了。它没有说 @racket[x] 是几，所以一张代换不是一组答案：它说的是未知项之间要满足的关系，凡是满足这些等式的取值都算数。一组带名字的答案也就不是表里的一行，它代表许多行：@tt{(_.0 _.0)} 代表所有两个位置相等的行，在项上有无穷多。用到 @racket[value-of] 的那一版里，答案都是具体的值，一组就是一行，那只是未知项都有了值的特例。
 
 @margin-note{等式 @racket[(== x (cons 1 x))] 说 @racket[x] 是一张以 @racket[1] 开头、剩下部分又是它自己的列表。这样的项只能无穷无尽地写下去。这里的项都是有限的树，这种等式应当没有解；完整的实现在添等式之前，会先检查这个未知项是否出现在另一边。附录里的代码带着这一步，正文的例子用不到。}

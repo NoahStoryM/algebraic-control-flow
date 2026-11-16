@@ -1808,7 +1808,7 @@
 (module* kanren #f
   (provide (all-defined-out))
 
-  ;;; ─── 4.2〔正文〕 未知项、代换与目标 ───
+  ;;; ─── 4.2〔正文〕 未知项、代换与目标（正文里 disj、fail 到 5.1 才造出；代码仍放在一起）───
   (struct var ([name : Symbol]) #:transparent)        ; 未知项：按身份区分，名字只用来打印
   (define-type Term (∪ Var Boolean Number Symbol Null (Pair Term Term)))
   (define-type Subst (Dict Var Term))
@@ -1817,6 +1817,15 @@
   (define (walk t s)
     (define p (and (var? t) (assq t s)))
     (if p (walk (cdr p) s) t))
+
+  ;; 〔正文·交互〕未知项按身份区分：打印相同，eq? 不同
+  (check-equal? (format "~v" (var 'a)) "(var 'a)")
+  (check-false (eq? (var 'a) (var 'a)))
+  (check-true (let ([a (var 'a)]) (eq? a a)))
+  ;; 〔正文·交互〕顺着代换查到底
+  (check-equal? (let* ([x (var 'x)] [y (var 'y)])
+                  (walk x (list (cons x y) (cons y 5))))
+                5)
 
   (define-type Goal (→ℬ Subst Subst))
 
@@ -1838,6 +1847,9 @@
     (check-equal? (in-amb ((disj g fail) '())) (in-amb (g '())))
     (check-equal? (in-amb ((conj) '())) '(()))
     (check-equal? (in-amb ((disj) '())) '()))
+  ;; 〔正文·交互〕零个目标的合取原样交回代换
+  (check-equal? (let ([a (var 'a)]) ((conj) (list (cons a 1))))
+                (list (cons (var 'a) 1)))
 
   ;;; ─── 4.3〔正文〕 跑起来：合一、读出值、两个包装、run* ───
   (: unify (→ Term Term Subst Subst))
@@ -1850,6 +1862,12 @@
              (unify (cdr u) (cdr v) (unify (car u) (car v) s))]
             [(equal? u v) s]
             [else (amb)])))
+
+  ;; 〔正文·交互〕合一：两边各从对面得到缺的一项；对不上就走不通
+  (check-equal? (let ([a (var 'a)] [b (var 'b)])
+                  (in-amb (unify (list a 2) (list 1 b) '())))
+                (list (list (cons (var 'b) 2) (cons (var 'a) 1))))
+  (check-equal? (let ([a (var 'a)]) (in-amb (unify (list a 2) (list 1 3) '()))) '())
 
   (: value-of (→ Term Subst Term))
   (define (value-of t s)
@@ -1893,6 +1911,10 @@
   ;;; ─── 5〔正文〕 合一：== 与倒着跑 ───
   (: == (→ Term Term Goal))
   (define ((== u v) s) (unify u v s))
+  (check-equal? (run* (x y) (== x 1) (== 2 y)) '((1 2)))
+  ;; 〔正文·交互〕析取（5.1 才造出）与它的单位
+  (check-equal? (run* (x) (disj (== x 1) (== x 2))) '((1) (2)))
+  (check-equal? (run* (x) (disj)) '())
 
   (define-syntax-rule (fresh (x ...) g ...)
     (λ (s) (let ([x (var 'x)] ...) ((conj g ...) s))))
@@ -1959,6 +1981,16 @@
     (check-equal? (run* (q) ((∘ᵒ P idᵒ) q 1)) (run* (q) (P q 1)))
     (check-equal? (run* (q) ((∘ᵒ P idᵒ) q 1)) '((_.0)))
     (check-exn #rx"的值还不知道" (λ () (run* (q) ((∘ᵒ P (function->relation values)) q 1))))
+    ;; 〔正文·交互〕6.1 的写法：先用 fresh 直接接，再定义 ∘ᵒ
+    (check-equal? (run* (q) (P q 1)) '((_.0)))
+    (check-exn #rx"q 的值还不知道"
+               (λ () (run* (q) (fresh (y) ((function->relation values) q y) (P y 1)))))
+    (check-equal? (run* (q) (fresh (y) (idᵒ q y) (P y 1))) '((_.0)))
+    ;; 〔正文·交互〕7.1：合取在答案上是按共有的列拼接；没有共有的列时每行配每行
+    (check-equal? (run* (a b) (betweenᵒ 1 3 a) (betweenᵒ a 3 b))
+                  '((1 1) (1 2) (1 3) (2 2) (2 3) (3 3)))
+    (check-equal? (run* (a b) (betweenᵒ 1 2 a) (betweenᵒ 1 2 b))
+                  '((1 1) (1 2) (2 1) (2 2)))
     (check-equal? (run* (q) ((∘ᵒ) q 5)) '((5)))
     ;; 结合律：同一组答案
     (check-equal? (run* (t) ((∘ᵒ check-rightᵒ (∘ᵒ pick-cᵒ (∘ᵒ pick-bᵒ pick-aᵒ))) '(1 20) t))
