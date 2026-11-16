@@ -35,7 +35,7 @@
 (define pick-c (match-λ [(list a b h) (list a b (between b h))]))
 (define (check-right t) (check (apply pyth? t)) t)
 (define right-triangle (∘ check-right pick-c pick-b pick-a))
-(struct var ([name : Symbol]) #:transparent)
+(struct var ([name : Symbol]) #:type-name Var #:transparent)
 (define (walk t s)
   (define p (and (var? t) (assq t s)))
   (if p (walk (cdr p) s) t))

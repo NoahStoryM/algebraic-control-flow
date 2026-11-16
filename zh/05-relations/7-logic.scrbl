@@ -29,7 +29,7 @@
 (define-syntax-rule (in-amb e) (reset (list e)))
 (define (between lo hi) (for/amb ([n (inclusive-range lo hi)]) n))
 (define ∘ℬ ∘)
-(struct var ([name : Symbol]) #:transparent)
+(struct var ([name : Symbol]) #:type-name Var #:transparent)
 (define (walk t s)
   (define p (and (var? t) (assq t s)))
   (if p (walk (cdr p) s) t))

@@ -39,11 +39,9 @@
 
 @section[#:tag "05:goals"]{未知项、代换与目标}
 
-原来的写法里，名字的事不用我们操心。@racket[let*] 的每一行造出一个新的变量，把右边算出的值交给它；哪个名字对着哪个值，Racket 替我们记着，后面的行写下 @racket[a]，读到的就是那个值。这份记录从没露过面，可每一行都在用它。
+原来的写法里，名字的事不用我们操心。Racket 有一份记录表，记着每个变量的值：@racket[let*] 的每一行造出一个新的变量，把右边算出的值记进去；后面的行引用 @racket[a]，就是从这份表里查出它的值。
 
-换成 @racket[run*] 的写法，@racket[(betweenᵒ l h a)] 是一次普通的调用，参数要先有。可 @racket[a] 的值正要靠这一行来定，所以交进去的不能是那个数，只能是一个代表「还不知道的数」的东西。哪个这样的东西对着哪个值，Racket 不再替我们记，得自己记一张表。
-
-表要有键。为每个还不知道的数造一个键，带上名字：
+@racket[run*] 也造出新的变量，可它们的值要靠下面几行条件来定。@racket[(betweenᵒ l h a)] 是一次普通的调用，参数要先有，所以 @racket[run*] 造出的变量得是一种数据，可以当参数交进去。为了和 Racket 的变量分开，这种变量叫@defterm[#:en "logic variable"]{未知项}。于是这些调用的参数，除了数这样的字面量，还可能是未知项，或者由它们组成的序对，合起来叫@defterm[#:en "term"]{项}。未知项的值，Racket 不再替我们记，得自己记一张表：键是未知项，值是它等于的那个项，眼下记的都是数。
 
 @(define ev-goals (make-acf-eval))
 @examples[#:eval ev-goals #:hidden
@@ -61,27 +59,17 @@
 (define ∘ℬ ∘)
 (define (list->amb v*) (for/amb ([v (in-list v*)]) v))]
 @examples[#:eval ev-goals #:no-result
-(struct var ([name : Symbol]) #:transparent)]
+(struct var ([name : Symbol]) #:type-name Var #:transparent)
+(define-type Literal (∪ Boolean Number Char Bytes String Keyword Null Symbol))
+(define-type Term (∪ Literal Var (Pair Term Term)))
+(define-type Substitution (Dict Var Term))]
 
-@examples[#:eval ev-goals #:label #f
-(var 'a)
-(eq? (var 'a) (var 'a))
-(let ([a (var 'a)]) (eq? a a))]
-
-造两次，打印出来一模一样，@racket[eq?] 却说它们是两个；同一次造出的才是同一个。名字只用来打印，分辨靠的是身份。这样的东西叫@defterm[#:en "logic variable"]{未知项}。关系的参数可以是数、符号这些值，也可以是未知项，合起来叫@defterm[#:en "term"]{项}；由项组成的序对也是项：
-
-@examples[#:eval ev-goals #:no-result
-(define-type Term (∪ Var Boolean Number Symbol Null (Pair Term Term)))]
-
-表的键是未知项，值是它等于的那个项，眼下记的都是数。键不重复，这正是@xref["05:search"]{「遍历搜索」}里缓存用的那种字典：
-
-@examples[#:eval ev-goals #:no-result
-(define-type Subst (Dict Var Term))]
+键不重复，这正是@xref["05:search"]{「遍历搜索」}里缓存用的那种字典。
 
 要问一个项的值：本来就是值的，就是它自己；未知项去表里查，查不到，说明它的值还不知道。
 
 @examples[#:eval ev-goals #:no-result
-(: value-of (→ Term Subst Term))
+(: value-of (→ Term Substitution Term))
 (define (value-of t s)
   (cond [(not (var? t)) t]
         [(assq t s) => cdr]
@@ -94,7 +82,16 @@
  (let* ([a (var 'a)] [b (var 'b)] [s (list (cons a 3))])
    (value-of b s)))]
 
-照着这张表，可以把未知项换成它的值，所以这样一张表叫@defterm[#:en "substitution"]{代换}。@racket[assq] 按身份找键：两次造出的 @racket[(var 'a)]，在表里是两个键。
+照着这张表，可以把未知项换成它的值，所以这样一张表叫@defterm[#:en "substitution"]{代换}。
+
+@racket[assq] 按身份找键。未知项的名字只用来打印，分辨靠的是身份：
+
+@examples[#:eval ev-goals #:label #f
+(var 'a)
+(eq? (var 'a) (var 'a))
+(let ([a (var 'a)]) (eq? a a))]
+
+造两次，打印出来一模一样，在表里却是两个键；同一次造出的才是同一个。
 
 @racket[let*] 的一行 @racket[[a (between 1 3)]]，往 Racket 的那份记录里添了一个名字。@racket[(betweenᵒ 1 3 a)] 这一行要做的是同一件事，只是记录在我们手里：收到一张代换，交出添了一行的代换。先手写一个，从空的代换开始运行：
 
@@ -106,11 +103,11 @@
 @racket[g] 写出来是个普通的函数，收一张代换，交出一张。可 @racket[between] 返回了三次，@racket[g] 也就交出了三张，各记着 @racket[a] 等于其中一个数；范围要是空的，就一张也不交。收一个，交零个或多个，这是带 @racket[amb] 的函数，@xref["05:two-ways"]{「关系的两种写法」}里 ℬ 的箭头：
 
 @examples[#:eval ev-goals #:no-result
-(define-type Goal (→ℬ Subst Subst))]
+(define-type Goal (→ℬ Substitution Substitution))]
 
 一行条件交出的这种函数叫@defterm[#:en "goal"]{目标}。ℬ 的箭头写的是二元关系，目标也是：表的两列是收到的代换和交出的代换，上面那三张就是 @racket[g] 的表里以空代换开头的三行。为免混淆，下文的「@tech{关系}」只说 @racket[betweenᵒ]、@racket[pythᵒ] 这一种，说的是数与数之间的事；代换之间的那一种就叫目标。
 
-@margin-note{目标也可以写成 ℒ 的箭头 @racket[(→ℒ Subst Subst)]，交出一张代换的列表，用不着 @racket[amb]：接起来用的换成 @racket[∘ℒ]。两种写法之间，就是 @racket[gather] 与 @racket[scatter]。}
+@margin-note{目标也可以写成 ℒ 的箭头 @racket[(→ℒ Substitution Substitution)]，交出一张代换的列表，用不着 @racket[amb]：接起来用的换成 @racket[∘ℒ]。两种写法之间，就是 @racket[gather] 与 @racket[scatter]。}
 
 第二行 @racket[(betweenᵒ a h b)] 要读 @racket[a] 的值，它收到的得是第一行交出的代换。所有的目标都是从代换到代换，所以任意两个都接得上：前一个交出的，交给后一个。@racket[let*] 把绑定一行一行接起来，@xref["05:two-ways"]{「关系的两种写法」}认出那是 @racket[∘ℬ]；把目标一行一行接起来的，还是 @racket[∘ℬ]。几个条件同时成立，叫@tech{合取}：
 
@@ -139,7 +136,7 @@
 手写的 @racket[g] 里，1 和 3 是现成的数，@racket[a] 也还没有值。一般的 @racket[(betweenᵒ l h a)] 要多做两件事。@racket[l]、@racket[h] 可能是未知项，要先用 @racket[value-of] 读出值。最后一个位置也可能已经有值：它本来就是个数，或者是代换里已有记录的未知项。这时不能再添一行，只能核对它与算出的数是否相等：
 
 @examples[#:eval ev-goals #:no-result
-(: record (→ Term Term Subst Subst))
+(: record (→ Term Term Substitution Substitution))
 (define (record t v s)
   (cond [(not (var? t)) (check (equal? t v)) s]
         [(assq t s) => (λ (p) (check (equal? (cdr p) v)) s)]

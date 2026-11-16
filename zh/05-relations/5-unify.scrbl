@@ -14,7 +14,7 @@
 (define-syntax-rule (in-amb e) (reset (list e)))
 (define ∘ℬ ∘)
 (define (list->amb v*) (for/amb ([v (in-list v*)]) v))
-(struct var ([name : Symbol]) #:transparent)
+(struct var ([name : Symbol]) #:type-name Var #:transparent)
 (define (walk t s)
   (define p (and (var? t) (assq t s)))
   (if p (walk (cdr p) s) t))
@@ -125,7 +125,7 @@
 (define-syntax-rule (in-amb e) (reset (list e)))
 (define ∘ℬ ∘)
 (define (list->amb v*) (for/amb ([v (in-list v*)]) v))
-(struct var ([name : Symbol]) #:transparent)
+(struct var ([name : Symbol]) #:type-name Var #:transparent)
 (define (walk t s)
   (define p (and (var? t) (assq t s)))
   (if p (walk (cdr p) s) t))
@@ -152,7 +152,7 @@
           (== out (cons a res))
           (appendᵒ d t res))))]
 @examples[#:eval ev-reify #:no-result
-(: walk* (→ Term Subst Term))
+(: walk* (→ Term Substitution Term))
 (define (walk* t s)
   (let ([t (walk t s)])
     (if (pair? t) (cons (walk* (car t) s) (walk* (cdr t) s)) t)))

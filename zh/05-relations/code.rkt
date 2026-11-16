@@ -1758,11 +1758,12 @@
 
   ;;; ─── 4.2、4.3〔正文〕 不带合一的内核（11/16：从 let* 入手，代换先只记「未知项 ↦ 值」）───
   ;;; 第 5 节以后的内核在子模块 kanren：value-of 换成顺着查的版本，record 换成 unify。
-  (struct var ([name : Symbol]) #:transparent)          ; 未知项：按身份区分，名字只用来打印
-  (define-type Term (∪ Var Boolean Number Symbol Null (Pair Term Term)))
-  (define-type Subst (Dict Var Term))
+  (struct var ([name : Symbol]) #:type-name Var #:transparent)          ; 未知项：按身份区分，名字只用来打印
+  (define-type Literal (∪ Boolean Number Char Bytes String Keyword Null Symbol))
+  (define-type Term (∪ Literal Var (Pair Term Term)))
+  (define-type Substitution (Dict Var Term))
 
-  (: value-of (→ Term Subst Term))
+  (: value-of (→ Term Substitution Term))
   (define (value-of t s)
     (cond [(not (var? t)) t]
           [(assq t s) => cdr]
@@ -1783,7 +1784,7 @@
                   (in-amb (g '())))
                 (list (list (cons (var 'a) 1)) (list (cons (var 'a) 2)) (list (cons (var 'a) 3))))
 
-  (define-type Goal (→ℬ Subst Subst))
+  (define-type Goal (→ℬ Substitution Substitution))
 
   (: conj (→ Goal ... Goal))
   (define (conj . g*) (apply ∘ℬ (reverse g*)))          ; 合取：目标的复合
@@ -1793,7 +1794,7 @@
   (check-equal? (let ([a (var 'a)]) ((conj) (list (cons a 1))))
                 (list (cons (var 'a) 1)))
 
-  (: record (→ Term Term Subst Subst))
+  (: record (→ Term Term Substitution Substitution))
   (define (record t v s)                                ; 记下 t 是 v；本身是值或已有记录，就核对
     (cond [(not (var? t)) (check (equal? t v)) s]
           [(assq t s) => (λ (p) (check (equal? (cdr p) v)) s)]
@@ -1855,11 +1856,12 @@
   (provide (all-defined-out))
 
   ;;; ─── 4.2〔正文〕 未知项、代换与目标（正文里 disj、fail 到 5.1 才造出；代码仍放在一起）───
-  (struct var ([name : Symbol]) #:transparent)        ; 未知项：按身份区分，名字只用来打印
-  (define-type Term (∪ Var Boolean Number Symbol Null (Pair Term Term)))
-  (define-type Subst (Dict Var Term))
+  (struct var ([name : Symbol]) #:type-name Var #:transparent)        ; 未知项：按身份区分，名字只用来打印
+  (define-type Literal (∪ Boolean Number Char Bytes String Keyword Null Symbol))
+  (define-type Term (∪ Literal Var (Pair Term Term)))
+  (define-type Substitution (Dict Var Term))
 
-  (: walk (→ Term Subst Term))
+  (: walk (→ Term Substitution Term))
   (define (walk t s)
     (define p (and (var? t) (assq t s)))
     (if p (walk (cdr p) s) t))
@@ -1873,7 +1875,7 @@
                   (walk x (list (cons x y) (cons y 5))))
                 5)
 
-  (define-type Goal (→ℬ Subst Subst))
+  (define-type Goal (→ℬ Substitution Substitution))
 
   (: succeed Goal)
   (: fail Goal)
@@ -1898,7 +1900,7 @@
                 (list (cons (var 'a) 1)))
 
   ;;; ─── 4.3〔正文〕 跑起来：合一、读出值、两个包装、run* ───
-  (: unify (→ Term Term Subst Subst))
+  (: unify (→ Term Term Substitution Substitution))
   (define (unify u v s)
     (let ([u (walk u s)] [v (walk v s)])
       (cond [(and (var? u) (eq? u v)) s]
@@ -1915,7 +1917,7 @@
                 (list (list (cons (var 'b) 2) (cons (var 'a) 1))))
   (check-equal? (let ([a (var 'a)]) (in-amb (unify (list a 2) (list 1 3) '()))) '())
 
-  (: value-of (→ Term Subst Term))
+  (: value-of (→ Term Substitution Term))
   (define (value-of t s)
     (let ([t (walk t s)])
       (cond [(var? t) (error 'value-of "~a 的值还不知道" (var-name t))]
@@ -1978,7 +1980,7 @@
   (check-exn #rx"y 的值还不知道" (λ () (run* (x y) (== x y))))
 
   ;;; ─── 5〔正文〕 读出还不知道的项 ───
-  (: walk* (→ Term Subst Term))
+  (: walk* (→ Term Substitution Term))
   (define (walk* t s)
     (let ([t (walk t s)])
       (if (pair? t) (cons (walk* (car t) s) (walk* (cdr t) s)) t)))
