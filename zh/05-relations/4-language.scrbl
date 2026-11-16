@@ -93,23 +93,18 @@
 
 造两次，打印出来一模一样，在表里却是两个键；同一次造出的才是同一个。
 
-@racket[let*] 的一行 @racket[[a (between 1 3)]]，往 Racket 的那份记录里添了一个名字。@racket[(betweenᵒ 1 3 a)] 这一行要做的是同一件事，只是记录在我们手里：收到一张代换，交出添了一行的代换。先手写一个，从空的代换开始运行：
+有了这张表，@racket[run*] 要做的事可以从两头说起。开头，它造出几个未知项，什么都还不知道，手里是一张空的代换。结尾，它交出一张列表，每一项是这几个未知项的一组取值；取值记在代换里，所以每一项都是从某一张代换里读出来的，有几组答案，就有几张代换。
 
-@examples[#:eval ev-goals #:label #f
-(let* ([a (var 'a)]
-       [g (λ (s) (cons (cons a (between 1 3)) s))])
-  (in-amb (g '())))]
-
-@racket[g] 写出来是个普通的函数，收一张代换，交出一张。可 @racket[between] 返回了三次，@racket[g] 也就交出了三张，各记着 @racket[a] 等于其中一个数；范围要是空的，就一张也不交。收一个，交零个或多个，这是带 @racket[amb] 的函数，@xref["05:two-ways"]{「关系的两种写法」}里 ℬ 的箭头：
+夹在中间的是那几行条件。它们合起来要做的事也就定了：收下那张空的代换，交出若干张，每张记着一组走得通的取值；一组也没有，就一张也不交。收一个，交零个或多个，这是带 @racket[amb] 的函数，@xref["05:two-ways"]{「关系的两种写法」}里 ℬ 的箭头：
 
 @examples[#:eval ev-goals #:no-result
 (define-type Goal (→ℬ Substitution Substitution))]
 
-一行条件交出的这种函数叫@defterm[#:en "goal"]{目标}。ℬ 的箭头写的是二元关系，目标也是：表的两列是收到的代换和交出的代换，上面那三张就是 @racket[g] 的表里以空代换开头的三行。为免混淆，下文的「@tech{关系}」只说 @racket[betweenᵒ]、@racket[pythᵒ] 这一种，说的是数与数之间的事；代换之间的那一种就叫目标。
+这样的函数叫@defterm[#:en "goal"]{目标}。ℬ 的箭头写的是二元关系，目标也是：表的两列是收到的代换和交出的代换。为免混淆，下文的「@tech{关系}」只说 @racket[betweenᵒ]、@racket[pythᵒ] 这一种，说的是数与数之间的事；代换之间的那一种就叫目标。
 
 @margin-note{目标也可以写成 ℒ 的箭头 @racket[(→ℒ Substitution Substitution)]，交出一张代换的列表，用不着 @racket[amb]：接起来用的换成 @racket[∘ℒ]。两种写法之间，就是 @racket[gather] 与 @racket[scatter]。}
 
-第二行 @racket[(betweenᵒ a h b)] 要读 @racket[a] 的值，它收到的得是第一行交出的代换。所有的目标都是从代换到代换，所以任意两个都接得上：前一个交出的，交给后一个。@racket[let*] 把绑定一行一行接起来，@xref["05:two-ways"]{「关系的两种写法」}认出那是 @racket[∘ℬ]；把目标一行一行接起来的，还是 @racket[∘ℬ]。几个条件同时成立，叫@tech{合取}：
+四行条件合起来是一个目标，拆开来，每一行呢？第二行 @racket[(betweenᵒ a h b)] 要读 @racket[a] 的值，它收到的得是第一行交出的代换；它添上 @racket[b]，再交给第三行。所以每一行也是一个目标，一行一行接下去：前一个交出的代换，交给后一个。@racket[let*] 把绑定一行一行接起来，@xref["05:two-ways"]{「关系的两种写法」}认出那是 @racket[∘ℬ]；把目标一行一行接起来的，还是 @racket[∘ℬ]。几个条件同时成立，叫@tech{合取}：
 
 @examples[#:eval ev-goals #:no-result
 (: conj (→ Goal ... Goal))
@@ -117,9 +112,33 @@
 
 @racket[conj] 照写的顺序接：先写的先运行，和 @racket[let*] 一样，所以交给 @racket[∘ℬ] 之前要倒过来。
 
+两头和中间都有了，@racket[run*] 可以写下来：造出未知项，把各行条件交出的目标接起来，从一张空的代换开始运行，再读出那几个未知项的值。走通的每条时间线交出一组，由 @racket[in-amb] 收齐。
+
+@examples[#:eval ev-goals #:no-result
+(define-syntax-rule (run* (x ...) g ...)
+  (let ([x (var 'x)] ...)
+    (in-amb
+     (let ([s ((conj g ...) '())])
+       (list (value-of x s) ...)))))]
+
 @section[#:tag "05:run"]{跑起来}
 
-手写的 @racket[g] 里，1 和 3 是现成的数。一般的 @racket[(betweenᵒ l h a)] 里，@racket[l]、@racket[h] 可能是未知项，要先用 @racket[value-of] 读出值，再交给 @racket[between]；@racket[between] 交出的数，照 @racket[g] 的样子记在最后一个位置上。四行条件里，最后一个位置都是还没有值的未知项，添一行就够了。@racket[(pythᵒ a b c)] 的三个位置都是给 @racket[pyth?] 的，全要读出值；不成立就走不通，成立就原样交回代换：
+@racket[run*] 写好了，还没有一个目标可以交给它。@racket[let*] 的一行 @racket[[a (between 1 3)]]，往 Racket 的记录表里添了一个名字；@racket[(betweenᵒ 1 3 a)] 该交出的目标，就往代换里添一行。先手写一个，从空的代换开始运行：
+
+@examples[#:eval ev-goals #:label #f
+(let* ([a (var 'a)]
+       [g (λ (s) (cons (cons a (between 1 3)) s))])
+  (in-amb (g '())))]
+
+@racket[g] 写出来是个普通的函数，收一张代换，交出一张。可 @racket[between] 返回了三次，@racket[g] 也就交出了三张，各记着 @racket[a] 等于其中一个数。把它交给 @racket[run*]：
+
+@examples[#:eval ev-goals #:label #f
+(run* (a)
+  (λ (s) (cons (cons a (between 1 3)) s)))]
+
+三张代换，读出来是三组答案。
+
+一般的 @racket[(betweenᵒ l h a)] 里，@racket[l]、@racket[h] 可能是未知项，要先用 @racket[value-of] 读出值，再交给 @racket[between]；@racket[between] 交出的数，照 @racket[g] 的样子记在最后一个位置上。四行条件里，最后一个位置都是还没有值的未知项，添一行就够了。@racket[(pythᵒ a b c)] 的三个位置都是给 @racket[pyth?] 的，全要读出值；不成立就走不通，成立就原样交回代换：
 
 @examples[#:eval ev-goals #:no-result
 (define (((function->relation f) . t*) s)
@@ -129,15 +148,6 @@
 (define (((predicate->relation p?) . t*) s)
   (check (apply p? (for/list ([t t*]) (value-of t s))))
   s)]
-
-@racket[run*] 做的是 @racket[let*] 开头的那件事：造出几个未知项。然后把各行条件交出的目标用 @racket[conj] 接起来，从一张空的代换开始运行，最后读出那几个未知项的值。走通的每条时间线交出一组，由 @racket[in-amb] 收齐：
-
-@examples[#:eval ev-goals #:no-result
-(define-syntax-rule (run* (x ...) g ...)
-  (let ([x (var 'x)] ...)
-    (in-amb
-     (let ([s ((conj g ...) '())])
-       (list (value-of x s) ...)))))]
 
 想要的写法里缺的东西都有了。伪代码原样运行：
 
@@ -155,11 +165,18 @@
 @examples[#:eval ev-goals #:label #f
 (right-triangles 1 20)]
 
-还是那六组。单独看一行，@racket[(betweenᵒ 1 3 a)] 交出的目标和手写的 @racket[g] 一样：
+还是那六组。同样的四行条件，接起来以后不读出，直接看它交出的代换：
 
 @examples[#:eval ev-goals #:label #f
-(let ([a (var 'a)])
-  (in-amb ((betweenᵒ 1 3 a) '())))]
+(let ([a (var 'a)] [b (var 'b)] [c (var 'c)])
+  (in-amb
+   ((conj (betweenᵒ 1 20 a)
+          (betweenᵒ a 20 b)
+          (betweenᵒ b 20 c)
+          (pythᵒ a b c))
+    '())))]
+
+六张代换，一张对着一组答案。@racket[right-triangles] 是边界与三角形之间的二元关系，四行条件接成的目标是代换与代换之间的二元关系。给定一组边界，前者的表里以这组边界开头的那几行，就是后者的表里以空代换开头的那几行，用 @racket[value-of] 读出来。
 
 把 @racket[pythᵒ] 挪到最前面：
 

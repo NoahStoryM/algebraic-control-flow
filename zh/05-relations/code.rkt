@@ -1818,6 +1818,14 @@
   ;; 多组边界，与 amb 版逐组相同
   (for* ([l (in-range 1 5)] [h (in-range 0 14)])
     (check-equal? (right-triangles l h) (right-triangles₈ l h)))
+  ;; 〔正文·交互〕手写的目标交给 run*
+  (check-equal? (run* (a) (λ (s) (cons (cons a (between 1 3)) s))) '((1) (2) (3)))
+  ;; 〔正文·交互〕四行条件接成的目标：六张代换，一张对着一组答案
+  (check-equal? (let ([a (var 'a)] [b (var 'b)] [c (var 'c)])
+                  (for/list ([s (in-amb ((conj (betweenᵒ 1 20 a) (betweenᵒ a 20 b) (betweenᵒ b 20 c) (pythᵒ a b c)) '()))])
+                    (map (λ (p) (cons (var-name (car p)) (cdr p))) s)))
+                (for/list ([t (right-triangles 1 20)])
+                  (list (cons 'c (third t)) (cons 'b (second t)) (cons 'a (first t)))))
   ;; 〔正文·交互〕一行关系交出的目标与手写的一样
   (check-equal? (let ([a (var 'a)]) (in-amb ((betweenᵒ 1 3 a) '())))
                 (list (list (cons (var 'a) 1)) (list (cons (var 'a) 2)) (list (cons (var 'a) 3))))
