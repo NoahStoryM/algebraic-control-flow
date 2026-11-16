@@ -117,45 +117,14 @@
 
 @racket[conj] 照写的顺序接：先写的先运行，和 @racket[let*] 一样，所以交给 @racket[∘ℬ] 之前要倒过来。
 
-一个目标也不给，接起来是什么？拿一张记着 @racket[a] 等于 @racket[1] 的代换来试：
-
-@examples[#:eval ev-goals #:label #f
-(let ([a (var 'a)])
-  ((conj) (list (cons a 1))))]
-
-代换原样交了回来，一行也没有添：@racket[(∘ℬ)] 是恒等函数。作为代换之间的二元关系，它是@defterm[#:en "identity relation"]{恒等关系}；作为条件，它什么也没有要求，总是成立。给它一个名字：
-
-@examples[#:eval ev-goals #:no-result
-(: succeed Goal)
-(define (succeed s) s)]
-
-@racket[succeed] 接在哪个目标的前面或后面，都不改变那个目标：它是合取的@defterm[#:en "unit"]{单位}。
-
 @section[#:tag "05:run"]{跑起来}
 
-手写的 @racket[g] 里，1 和 3 是现成的数，@racket[a] 也还没有值。一般的 @racket[(betweenᵒ l h a)] 要多做两件事。@racket[l]、@racket[h] 可能是未知项，要先用 @racket[value-of] 读出值。最后一个位置也可能已经有值：它本来就是个数，或者是代换里已有记录的未知项。这时不能再添一行，只能核对它与算出的数是否相等：
-
-@examples[#:eval ev-goals #:no-result
-(: record (→ Term Term Substitution Substitution))
-(define (record t v s)
-  (cond [(not (var? t)) (check (equal? t v)) s]
-        [(assq t s) => (λ (p) (check (equal? (cdr p) v)) s)]
-        [else (cons (cons t v) s)]))]
-
-@examples[#:eval ev-goals #:label #f
-(let ([a (var 'a)])
-  (in-amb (record a 2 '())))
-(let ([a (var 'a)])
-  (in-amb (record a 2 (list (cons a 3)))))]
-
-@racket[a] 还没有记录，就添上一行；已经记着 3，与 2 对不上，这条时间线走不通，@racket[in-amb] 一张代换也没有收到。添的总是一个还没在表里的未知项，所以键不会重复。
-
-@racket[(betweenᵒ l h a)] 的前两个位置是给 @racket[between] 的，读出值；@racket[between] 交出的数记在最后一个位置上。@racket[(pythᵒ a b c)] 的三个位置都是给 @racket[pyth?] 的，全要读出值；不成立就走不通，成立就原样交回代换：
+手写的 @racket[g] 里，1 和 3 是现成的数。一般的 @racket[(betweenᵒ l h a)] 里，@racket[l]、@racket[h] 可能是未知项，要先用 @racket[value-of] 读出值，再交给 @racket[between]；@racket[between] 交出的数，照 @racket[g] 的样子记在最后一个位置上。四行条件里，最后一个位置都是还没有值的未知项，添一行就够了。@racket[(pythᵒ a b c)] 的三个位置都是给 @racket[pyth?] 的，全要读出值；不成立就走不通，成立就原样交回代换：
 
 @examples[#:eval ev-goals #:no-result
 (define (((function->relation f) . t*) s)
   (define-values (in* out*) (split-at-right t* 1))
-  (record (car out*) (apply f (for/list ([t in*]) (value-of t s))) s))
+  (cons (cons (car out*) (apply f (for/list ([t in*]) (value-of t s)))) s))
 
 (define (((predicate->relation p?) . t*) s)
   (check (apply p? (for/list ([t t*]) (value-of t s))))

@@ -2,7 +2,7 @@
 
 @title[#:tag "05:5-unify"]{合一}
 
-把合一本身做成一个关系：@racket[(== u v)] 说的是两个项相等，交出的目标让它们合一：
+照手写 @racket[g] 的办法，把这样两行条件记进表里：@racket[x] 等于 @racket[y]，@racket[y] 等于 5。然后问 @racket[x] 的值：
 
 @(define ev-unify (make-acf-eval))
 @examples[#:eval ev-unify #:hidden
@@ -15,11 +15,38 @@
 (define ∘ℬ ∘)
 (define (list->amb v*) (for/amb ([v (in-list v*)]) v))
 (struct var ([name : Symbol]) #:type-name Var #:transparent)
+(define (value-of t s)
+  (cond [(not (var? t)) t]
+        [(assq t s) => cdr]
+        [else (error 'value-of "~a 的值还不知道" (var-name t))]))
+(define (conj . g*) (apply ∘ℬ (reverse g*)))
+(define-syntax-rule (run* (x ...) g ...)
+  (let ([x (var 'x)] ...)
+    (in-amb
+     (let ([s ((conj g ...) '())])
+       (list (value-of x s) ...)))))]
+@examples[#:eval ev-unify #:label #f
+(let* ([x (var 'x)] [y (var 'y)]
+       [s (list (cons x y) (cons y 5))])
+  (value-of x s))]
+
+表记下来了，值却读不对。@racket[x] 对着 @racket[y]，@racket[value-of] 只查了一次，交出的是一个未知项；可 @racket[y] 的值，表里明明有。值可以是另一个未知项的时候，查表要顺着查下去，查到一个不在表里的项为止：
+
+@examples[#:eval ev-unify #:no-result
+(: walk (→ Term Substitution Term))
 (define (walk t s)
   (define p (and (var? t) (assq t s)))
-  (if p (walk (cdr p) s) t))
-(define (succeed s) s)
-(define (conj . g*) (apply ∘ℬ (reverse g*)))
+  (if p (walk (cdr p) s) t))]
+
+@examples[#:eval ev-unify #:label #f
+(let* ([x (var 'x)] [y (var 'y)]
+       [s (list (cons x y) (cons y 5))])
+  (walk x s))]
+
+添一行也不能照旧了。比如表里已经记着 @racket[x] 等于 5，再来一行条件说 @racket[x] 等于 6，直接添上，@racket[x] 就占了两行；条件要是写成 6 等于 @racket[x]，键还成了一个数。添之前，两边都要先顺着表查到底，再比：有一边是未知项，就添上一行；两边都是序对，逐项去对；否则相等才走得通：
+
+@examples[#:eval ev-unify #:no-result
+(: unify (→ Term Term Substitution Substitution))
 (define (unify u v s)
   (let ([u (walk u s)] [v (walk v s)])
     (cond [(and (var? u) (eq? u v)) s]
@@ -28,23 +55,49 @@
           [(and (pair? u) (pair? v))
            (unify (cdr u) (cdr v) (unify (car u) (car v) s))]
           [(equal? u v) s]
-          [else (amb)])))
-(define (value-of t s)
-  (let ([t (walk t s)])
-    (cond [(var? t) (error 'value-of "~a 的值还不知道" (var-name t))]
-          [(pair? t) (cons (value-of (car t) s) (value-of (cdr t) s))]
-          [else t])))
-(define-syntax-rule (run* (x ...) g ...)
-  (let ([x (var 'x)] ...)
-    (in-amb (value-of (list x ...) ((conj g ...) '())))))]
+          [else (amb)])))]
+
+@examples[#:eval ev-unify #:label #f
+(let ([x (var 'x)] [y (var 'y)])
+  (in-amb (unify x y '())))
+(let ([a (var 'a)] [b (var 'b)])
+  (in-amb (unify (list a 2) (list 1 b) '())))
+(let ([x (var 'x)])
+  (in-amb (unify 6 x (list (cons x 5)))))]
+
+头一例两边都不知道，添的一行记着 @racket[x] 等于 @racket[y]。第二例是两张各缺一项的列表，逐项去对，@racket[a] 对上 1，@racket[b] 对上 2：两边都从对面得到了自己缺的那一项。第三例里 @racket[x] 查到 5，与 6 对不上，这条时间线走不通，@racket[in-amb] 一张代换也没有收到。
+
+让两个项相等，必要时往代换里添一行，这件事叫@defterm[#:en "unification"]{合一}。添的总是一个还没在表里的未知项，所以键不会重复。代换也跟着变了样：一行记的不再是某个未知项的值，而是一条等式。
+
+把合一本身做成一个关系：@racket[(== u v)] 说的是两个项相等，交出的目标让它们合一。
+
 @examples[#:eval ev-unify #:no-result
 (: == (→ Term Term Goal))
 (define ((== u v) s) (unify u v s))]
 
-@examples[#:eval ev-unify #:label #f
-(run* (x y) (== x 1) (== 2 y))]
+@racket[value-of] 也改成顺着查；项是序对，就逐项读：
 
-未知项写在等式的哪一边都可以。
+@examples[#:eval ev-unify #:no-result
+(: value-of (→ Term Substitution Term))
+(define (value-of t s)
+  (let ([t (walk t s)])
+    (cond [(var? t) (error 'value-of "~a 的值还不知道" (var-name t))]
+          [(pair? t) (cons (value-of (car t) s) (value-of (cdr t) s))]
+          [else t])))]
+
+@examples[#:eval ev-unify #:label #f
+(run* (x y) (== x y) (== y 5))
+(run* (x y) (== x 1) (== 2 y))
+(run* (x) (== x 5) (== 6 x))]
+
+未知项写在等式的哪一边都可以，两边都是未知项也可以。
+
+@racket[function->relation] 原先默认最后一个位置是还没有值的未知项，直接添一行。现在让它与函数交出的值合一：没有值就添一行，有值就成了核对。
+
+@examples[#:eval ev-unify #:no-result
+(define (((function->relation f) . t*) s)
+  (define-values (in* out*) (split-at-right t* 1))
+  (unify (car out*) (apply f (for/list ([t in*]) (value-of t s))) s))]
 
 @section[#:tag "05:equation"]{直接写等式}
 
@@ -61,18 +114,25 @@
 
 @margin-note{目标写成 ℒ 的箭头时，析取是把几张代换的列表接起来。}
 
-两个目标都是从代换到代换的二元关系，表的两列对得上，析取就是把两张表并起来。一个目标也不给呢？
+两个目标都是从代换到代换的二元关系，表的两列对得上，析取就是把两张表并起来。
+
+@racket[conj] 与 @racket[disj] 都不限目标的个数。一个也不给呢？拿一张记着 @racket[a] 等于 1 的代换，各试一次：
 
 @examples[#:eval ev-unify #:label #f
-(run* (x) (disj))]
+(let ([a (var 'a)])
+  (in-amb ((conj) (list (cons a 1)))))
+(let ([a (var 'a)])
+  (in-amb ((disj) (list (cons a 1)))))]
 
-一组答案也没有：从零个备选里挑，就是 @racket[(amb)]。作为代换之间的二元关系，它是一行也没有的@defterm[#:en "empty relation"]{空关系}；作为条件，它总不成立。也给它一个名字：
+零个目标的合取把代换原样交了回来，一行也没有添：@racket[(∘ℬ)] 是恒等函数。零个目标的析取一张也不交：从零个备选里挑，就是 @racket[(amb)]。作为代换之间的二元关系，一个是@defterm[#:en "identity relation"]{恒等关系}，一个是一行也没有的@defterm[#:en "empty relation"]{空关系}；作为条件，一个总成立，一个总不成立。给它们各起一个名字：
 
 @examples[#:eval ev-unify #:no-result
+(: succeed Goal)
 (: fail Goal)
+(define (succeed s) s)
 (define (fail s) (amb))]
 
-@racket[fail] 和哪个目标并起来，都不改变那个目标：它是析取的@tech{单位}。
+@racket[succeed] 接在哪个目标的前面或后面，都不改变那个目标；@racket[fail] 和哪个目标并起来，也不改变那个目标。一个是合取的@defterm[#:en "unit"]{单位}，一个是析取的单位。
 
 另一样是 @racket[a]、@racket[d]、@racket[res]：三个只在定义里用到的未知项。@racket[run*] 的未知项列在它后面，关系的定义里也要能造自己的：
 

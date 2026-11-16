@@ -1757,7 +1757,7 @@
   (provide (all-defined-out))
 
   ;;; ─── 4.2、4.3〔正文〕 不带合一的内核（11/16：从 let* 入手，代换先只记「未知项 ↦ 值」）───
-  ;;; 第 5 节以后的内核在子模块 kanren：value-of 换成顺着查的版本，record 换成 unify。
+  ;;; 第 5 节以后的内核在子模块 kanren：value-of 换成顺着查的版本，添一行换成 unify。
   (struct var ([name : Symbol]) #:type-name Var #:transparent)          ; 未知项：按身份区分，名字只用来打印
   (define-type Literal (∪ Boolean Number Char Bytes String Keyword Null Symbol))
   (define-type Term (∪ Literal Var (Pair Term Term)))
@@ -1789,25 +1789,9 @@
   (: conj (→ Goal ... Goal))
   (define (conj . g*) (apply ∘ℬ (reverse g*)))          ; 合取：目标的复合
 
-  (: succeed Goal)
-  (define (succeed s) s)
-  (check-equal? (let ([a (var 'a)]) ((conj) (list (cons a 1))))
-                (list (cons (var 'a) 1)))
-
-  (: record (→ Term Term Substitution Substitution))
-  (define (record t v s)                                ; 记下 t 是 v；本身是值或已有记录，就核对
-    (cond [(not (var? t)) (check (equal? t v)) s]
-          [(assq t s) => (λ (p) (check (equal? (cdr p) v)) s)]
-          [else (cons (cons t v) s)]))
-  (check-equal? (let ([a (var 'a)]) (in-amb (record a 2 '())))
-                (list (list (cons (var 'a) 2))))
-  (check-equal? (let ([a (var 'a)]) (in-amb (record a 2 (list (cons a 3))))) '())
-  (check-equal? (in-amb (record 2 2 '())) '(()))
-  (check-equal? (in-amb (record 3 2 '())) '())
-
-  (define (((function->relation f) . t*) s)             ; 最后一个位置是结果
+  (define (((function->relation f) . t*) s)             ; 最后一个位置默认是还没有值的未知项，直接添一行
     (define-values (in* out*) (split-at-right t* 1))
-    (record (car out*) (apply f (for/list ([t in*]) (value-of t s))) s))
+    (cons (cons (car out*) (apply f (for/list ([t in*]) (value-of t s)))) s))
 
   (define (((predicate->relation p?) . t*) s)
     (check (apply p? (for/list ([t t*]) (value-of t s))))
@@ -1837,9 +1821,6 @@
   ;; 〔正文·交互〕一行关系交出的目标与手写的一样
   (check-equal? (let ([a (var 'a)]) (in-amb ((betweenᵒ 1 3 a) '())))
                 (list (list (cons (var 'a) 1)) (list (cons (var 'a) 2)) (list (cons (var 'a) 3))))
-  ;; 最后一个位置已有值时是核对，不是再添一行
-  (check-equal? (run* (a) (betweenᵒ 1 3 a) (betweenᵒ 2 5 a)) '((2) (3)))
-  (check-equal? (in-amb ((betweenᵒ 1 3 2) '())) '(()))
   ;; 〔正文·交互〕条件的先后：未知项要先有值
   (check-exn #rx"a 的值还不知道"
              (λ () (run* (a b c) (pythᵒ a b c) (betweenᵒ 1 20 a) (betweenᵒ a 20 b) (betweenᵒ b 20 c)))))
@@ -1932,9 +1913,11 @@
     (check (apply p? (for/list ([t t*]) (value-of t s))))
     s)
 
-  (define-syntax-rule (run* (x ...) g ...)
+  (define-syntax-rule (run* (x ...) g ...)               ; 4.3 的写法，第 5 节沿用
     (let ([x (var 'x)] ...)
-      (in-amb (value-of (list x ...) ((conj g ...) '())))))
+      (in-amb
+       (let ([s ((conj g ...) '())])
+         (list (value-of x s) ...)))))
 
   (define betweenᵒ (function->relation  between))
   (define pythᵒ    (predicate->relation pyth?))
@@ -1960,6 +1943,21 @@
   (: == (→ Term Term Goal))
   (define ((== u v) s) (unify u v s))
   (check-equal? (run* (x y) (== x 1) (== 2 y)) '((1 2)))
+  (check-equal? (run* (x y) (== x y) (== y 5)) '((5 5)))
+  (check-equal? (run* (x) (== x 5) (== 6 x)) '())
+  ;; 〔正文·交互〕第 5 节开头：只查一次读不对，顺着查才读得对
+  (let* ([x (var 'x)] [y (var 'y)] [s (list (cons x y) (cons y 5))])
+    (check-equal? (cdr (assq x s)) y)
+    (check-equal? (walk x s) 5))
+  (check-equal? (let ([x (var 'x)] [y (var 'y)]) (in-amb (unify x y '())))
+                (list (list (cons (var 'x) (var 'y)))))
+  (check-equal? (let ([x (var 'x)]) (in-amb (unify 6 x (list (cons x 5))))) '())
+  ;; function->relation 的最后一个位置与结果合一：有值就成了核对
+  (check-equal? (run* (a) (betweenᵒ 1 3 a) (betweenᵒ 2 5 a)) '((2) (3)))
+  (check-equal? (in-amb ((betweenᵒ 1 3 2) '())) '(()))
+  ;; 〔正文·交互〕两个单位并排
+  (check-equal? (let ([a (var 'a)]) (in-amb ((conj) (list (cons a 1))))) (list (list (cons (var 'a) 1))))
+  (check-equal? (let ([a (var 'a)]) (in-amb ((disj) (list (cons a 1))))) '())
   ;; 〔正文·交互〕析取（5.1 才造出）与它的单位
   (check-equal? (run* (x) (disj (== x 1) (== x 2))) '((1) (2)))
   (check-equal? (run* (x) (disj)) '())
