@@ -1754,30 +1754,70 @@
 ;;; 旧的内核（上面的 relational 子模块，带合一）只为旧测试留着，收尾时清理。
 ;;; ════════════════════════════════════════════════════════════════
 (module* rel-min #f
-  (require racket/dict)
   (provide (all-defined-out))
 
-  ;; ── 内核（暂定，实现各节定稿时再整理）──
-  (struct var ([name : Symbol]))                        ; 未知项，按身份区分
-  (define (value-of t s)                                ; 项现在的值；未知项还没有记录就报错
+  ;;; ─── 4.2、4.3〔正文〕 不带合一的内核（11/16：从 let* 入手，代换先只记「未知项 ↦ 值」）───
+  ;;; 第 5 节以后的内核在子模块 kanren：value-of 换成顺着查的版本，record 换成 unify。
+  (struct var ([name : Symbol]) #:transparent)          ; 未知项：按身份区分，名字只用来打印
+  (define-type Term (∪ Var Boolean Number Symbol Null (Pair Term Term)))
+  (define-type Subst (Dict Var Term))
+
+  (: value-of (→ Term Subst Term))
+  (define (value-of t s)
     (cond [(not (var? t)) t]
-          [(dict-has-key? s t) (dict-ref s t)]
-          [else (error 'value-of "~a 还没有确定" (var-name t))]))
-  (define (record x v s)                                ; 记下 x 是 v；已有记录或本身是值，就核对
-    (cond [(not (var? x)) (check (equal? x v)) s]
-          [(dict-has-key? s x) (check (equal? (dict-ref s x) v)) s]
-          [else (dict-set s x v)]))
+          [(assq t s) => cdr]
+          [else (error 'value-of "~a 的值还不知道" (var-name t))]))
+
+  ;; 〔正文·交互〕未知项按身份区分；读出值
+  (check-equal? (format "~v" (var 'a)) "(var 'a)")
+  (check-false (eq? (var 'a) (var 'a)))
+  (check-true (let ([a (var 'a)]) (eq? a a)))
+  (check-equal? (let* ([a (var 'a)] [s (list (cons a 3))])
+                  (list (value-of 5 s) (value-of a s)))
+                '(5 3))
+  (check-exn #rx"b 的值还不知道"
+             (λ () (let* ([a (var 'a)] [b (var 'b)] [s (list (cons a 3))]) (value-of b s))))
+  ;; 〔正文·交互〕手写的目标：between 返回三次，就交出三张代换
+  (check-equal? (let* ([a (var 'a)]
+                       [g (λ (s) (cons (cons a (between 1 3)) s))])
+                  (in-amb (g '())))
+                (list (list (cons (var 'a) 1)) (list (cons (var 'a) 2)) (list (cons (var 'a) 3))))
+
+  (define-type Goal (→ℬ Subst Subst))
+
+  (: conj (→ Goal ... Goal))
+  (define (conj . g*) (apply ∘ℬ (reverse g*)))          ; 合取：目标的复合
+
+  (: succeed Goal)
+  (define (succeed s) s)
+  (check-equal? (let ([a (var 'a)]) ((conj) (list (cons a 1))))
+                (list (cons (var 'a) 1)))
+
+  (: record (→ Term Term Subst Subst))
+  (define (record t v s)                                ; 记下 t 是 v；本身是值或已有记录，就核对
+    (cond [(not (var? t)) (check (equal? t v)) s]
+          [(assq t s) => (λ (p) (check (equal? (cdr p) v)) s)]
+          [else (cons (cons t v) s)]))
+  (check-equal? (let ([a (var 'a)]) (in-amb (record a 2 '())))
+                (list (list (cons (var 'a) 2))))
+  (check-equal? (let ([a (var 'a)]) (in-amb (record a 2 (list (cons a 3))))) '())
+  (check-equal? (in-amb (record 2 2 '())) '(()))
+  (check-equal? (in-amb (record 3 2 '())) '())
+
   (define (((function->relation f) . t*) s)             ; 最后一个位置是结果
     (define-values (in* out*) (split-at-right t* 1))
     (record (car out*) (apply f (for/list ([t in*]) (value-of t s))) s))
+
   (define (((predicate->relation p?) . t*) s)
-    (check (apply p? (for/list ([t t*]) (value-of t s)))) s)
-  (define (conj . g*) (apply ∘ (reverse g*)))           ; 合取：目标的复合
+    (check (apply p? (for/list ([t t*]) (value-of t s))))
+    s)
+
   (define-syntax-rule (run* (x ...) g ...)
     (let ([x (var 'x)] ...)
-      (in-amb (let ([s ((conj g ...) '())]) (list (value-of x s) ...)))))
+      (in-amb
+       (let ([s ((conj g ...) '())])
+         (list (value-of x s) ...)))))
 
-  ;; ── §9〔正文 09〕 描述关系的语言：伪代码，在这里原样运行 ──
   (define betweenᵒ (function->relation  between))
   (define pythᵒ    (predicate->relation pyth?))
 
@@ -1790,11 +1830,17 @@
 
   (check-equal? (right-triangles 1 20)
                 '((3 4 5) (5 12 13) (6 8 10) (8 15 17) (9 12 15) (12 16 20)))
-  ;; 多组边界，与 06 的 amb 版逐组相同
+  ;; 多组边界，与 amb 版逐组相同
   (for* ([l (in-range 1 5)] [h (in-range 0 14)])
     (check-equal? (right-triangles l h) (right-triangles₈ l h)))
-  ;; 条件的先后有讲究：未知项要先有值，后面的条件才读得到
-  (check-exn #rx"还没有确定"
+  ;; 〔正文·交互〕一行关系交出的目标与手写的一样
+  (check-equal? (let ([a (var 'a)]) (in-amb ((betweenᵒ 1 3 a) '())))
+                (list (list (cons (var 'a) 1)) (list (cons (var 'a) 2)) (list (cons (var 'a) 3))))
+  ;; 最后一个位置已有值时是核对，不是再添一行
+  (check-equal? (run* (a) (betweenᵒ 1 3 a) (betweenᵒ 2 5 a)) '((2) (3)))
+  (check-equal? (in-amb ((betweenᵒ 1 3 2) '())) '(()))
+  ;; 〔正文·交互〕条件的先后：未知项要先有值
+  (check-exn #rx"a 的值还不知道"
              (λ () (run* (a b c) (pythᵒ a b c) (betweenᵒ 1 20 a) (betweenᵒ a 20 b) (betweenᵒ b 20 c)))))
 
 ;;; ═══════════════════════════════════════════════════════════════════
@@ -1802,7 +1848,7 @@
 ;;; ═══════════════════════════════════════════════════════════════════
 ;;; 依据：outline.md 后半（PR #145，Astra 11/6 核过）；内核照 ambKanren/demo.rkt，
 ;;; typed/amb 换成本章自己的 amb。11/6 定：4.3 直接用合一，不经过 rel-min。
-;;; 子模块 kanren 取代上面的 relational 与 rel-min（两者留待全章定稿后删去）。
+;;; 子模块 kanren 取代上面的 relational（留待全章定稿后删去）；rel-min 是 4.2、4.3 的内核（11/16 起正文用它）。
 ;;; 正文的节号：4.2 未知项、代换与目标；4.3 跑起来；5 合一；6 关系的世界；7 与逻辑的对应。
 
 (module* kanren #f
