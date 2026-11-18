@@ -2,7 +2,7 @@
 
 @title[#:tag "05:appendix"]{附录：库代码}
 
-这里收的是这一章造出的东西：不确定运算符、关系的两种写法，以及关系语言。直角三角形、@racket[appendᵒ] 这些例子不在其中。关系语言的 @racket[run*] 是读出还不知道的项的那一版；@racket[ext-s] 在添等式之前检查未知项是否出现在另一边，正文从略。
+这里收的是这一章造出的东西：不确定运算符、关系的两种写法，以及关系语言。直角三角形、@racket[appendᵒ] 这些例子不在其中。关系语言的 @racket[run*] 是读出还不知道的项的那一版；@xref["05:reify"]{「读出还不知道的项」}的旁注说，完整的实现在添等式之前会先检查未知项是否出现在另一边；这一步在这里是 @racket[ext-s]。
 
 @codeblock|{
 #lang typed/racket/no-check
@@ -54,34 +54,35 @@
 
 ;; 关系语言
 
-(struct var ([name : Symbol]) #:transparent)
-(define-type Term (∪ Var Boolean Number Symbol Null (Pair Term Term)))
-(define-type Subst (Listof (Pair Var Term)))
-(define-type Goal (→ℬ Subst Subst))
+(struct var ([name : Symbol]) #:type-name Var #:transparent)
+(define-type Literal (∪ Boolean Number Char Bytes String Keyword Null Symbol))
+(define-type Term (∪ Literal Var (Pair Term Term)))
+(define-type Substitution (Listof (Pair Var Term)))
+(define-type Goal (→ℬ Substitution Substitution))
 
-(: walk (→ Term Subst Term))
+(: walk (→ Term Substitution Term))
 (define (walk t s)
   (define p (and (var? t) (assq t s)))
   (if p (walk (cdr p) s) t))
 
-(: walk* (→ Term Subst Term))
+(: walk* (→ Term Substitution Term))
 (define (walk* t s)
   (let ([t (walk t s)])
     (if (pair? t) (cons (walk* (car t) s) (walk* (cdr t) s)) t)))
 
-(: occurs? (→ Var Term Subst Boolean))
+(: occurs? (→ Var Term Substitution Boolean))
 (define (occurs? x t s)
   (let ([t (walk t s)])
     (cond [(var? t) (eq? x t)]
           [(pair? t) (or (occurs? x (car t) s) (occurs? x (cdr t) s))]
           [else #f])))
 
-(: ext-s (→ Var Term Subst Subst))
+(: ext-s (→ Var Term Substitution Substitution))
 (define (ext-s x t s)
   (when (occurs? x t s) (amb))
   (cons (cons x t) s))
 
-(: unify (→ Term Term Subst Subst))
+(: unify (→ Term Term Substitution Substitution))
 (define (unify u v s)
   (let ([u (walk u s)] [v (walk v s)])
     (cond [(and (var? u) (eq? u v)) s]
@@ -92,7 +93,7 @@
           [(equal? u v) s]
           [else (amb)])))
 
-(: value-of (→ Term Subst Term))
+(: value-of (→ Term Substitution Term))
 (define (value-of t s)
   (let ([t (walk t s)])
     (cond [(var? t) (error 'value-of "~a 的值还不知道" (var-name t))]
