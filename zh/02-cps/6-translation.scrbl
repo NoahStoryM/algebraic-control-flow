@@ -154,11 +154,14 @@
       (case→ (→ (→𝒟 p q) (→𝒰     p      q))
              (→ (→𝒰 p q) (→𝒞 (¬¬ p) (¬¬ q))))))]
 
-从宿主出发，沿 @racket[neg] 走两次，类型上走的正是这条路：一支 @math{p →@subscript{𝒟} q} 的控制计算，对应一支纯的 @math{¬¬p →@subscript{𝒞} ¬¬q}，每个类型裹上一层 @math{¬¬}。这个对应记作 @racket[neg²]。
+从宿主出发，沿 @racket[neg] 走两次，类型上走的正是这条路：一支 @math{p →@subscript{𝒟} q} 的控制计算，对应一支纯的 @math{¬¬p →@subscript{𝒞} ¬¬q}，每个类型裹上一层 @math{¬¬}。这个对应记作 @racket[neg²]：
+
+@racketblock[
+(: neg² (∀ (p q) (→ (→𝒟 p q) (→𝒞 (¬¬ p) (¬¬ q)))))]
 
 这支纯箭头怎样得到？取 @racket[f] 的纯表示 @racket[cps:f]，先 @racket[flip]、再 @racket[neg]：@racket[(flip cps:f)] 是 @math{¬q → ¬p}，再取一次逆否，正好是 @math{¬¬p → ¬¬q}。@racket[cps:f] 是纯的，@racket[(neg (flip cps:f))] 也只用 @racket[λ] 和函数调用，落在 𝒞 里。
 
-代码上，@racket[neg²] 就是两次 @racket[neg] 连起来。它只把 @racket[f] 包上两层，并不改写 @racket[f] 的内部，有两种读法：
+代码上，直接把 @racket[neg] 连用两次写成 @racket[(∘ neg neg)]，它只把 @racket[f] 包上两层，并不改写 @racket[f] 的内部，有另外两种读法：
 
 @examples[#:eval ev #:no-result
 (: neg²
