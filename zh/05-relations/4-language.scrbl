@@ -199,38 +199,3 @@
   '()))]
 
 六张代换，一张对着一组答案。@racket[right-triangles] 是边界与三角形之间的二元关系，四行条件接成的目标是代换与代换之间的二元关系。给定一组边界，前者的表里以这组边界开头的那几行，就是后者的表里以空代换开头的那几行，用 @racket[value-of] 读出来。
-
-不过这一版还经不起稍微换一种问法。先看最后一个位置：@racket[function->relation] 默认它永远是一个还没值的未知项，直接往表里添一行。要是同一个未知项出现在两行的最后一列，比如找同时在 1 到 2 之间、又在 2 到 3 之间的数，或者干脆在最后一列填进一个已知的数，直接添一行就坏了：
-
-@examples[#:eval ev-goals #:label #f
-(run* (a) (∧ (betweenᵒ 1 2 a) (betweenᵒ 2 3 a)))
-(in-amb ((betweenᵒ 1 3 2) '()))]
-
-头一例里 3 明明不在 1 到 2 之间，却跟着出来了，2 还出了两次：第二行直接把新的一行盖在了前面。第二例更怪，代换的键成了数 2。
-
-再换一下四行条件的顺序，把 @racket[pythᵒ] 挪到最前面：
-
-@examples[#:eval ev-goals #:label #f
-(eval:error
- (run* (a b c)
-   (∧ (pythᵒ a b c)
-      (betweenᵒ 1 20 a)
-      (betweenᵒ a 20 b)
-      (betweenᵒ b 20 c))))]
-
-@racket[pythᵒ] 要读 @racket[a] 的值，可这时候还没有哪一行给过 @racket[a] 一个值。借来的函数与谓词骨子里仍然分输入和输出，只能算已经知道的值。拿最简单的函数 @racket[id] 试一试，就能看得更清楚：
-
-@examples[#:eval ev-goals #:label #f
-(define idᵒ (function->relation id))
-(run* (y) (idᵒ 5 y))
-(eval:error (run* (x) (idᵒ x 5)))]
-
-从谓词的角度看，相等是二元谓词 @racket[equal?]。换用 @racket[predicate->relation] 试一试：
-
-@examples[#:eval ev-goals #:label #f
-(define equalᵒ (predicate->relation equal?))
-(run* () (equalᵒ 5 5))
-(eval:error (run* (y) (equalᵒ 5 y)))
-(eval:error (run* (x) (equalᵒ x 5)))]
-
-从函数搬来的 @racket[idᵒ] 要求左边已知，从谓词搬来的 @racket[equalᵒ] 要求两边都已知，哪一种都写不出真正对称的相等。@racket[id] 本来是函数复合的单位。在关系语言里，两个关系怎样复合，它的单位又该是什么样子？

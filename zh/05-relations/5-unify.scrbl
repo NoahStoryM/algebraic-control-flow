@@ -2,7 +2,7 @@
 
 @title[#:tag "05:5-unify"]{复合与合一}
 
-@racket[id] 是函数复合的单位。换到关系语言里，先看两个关系怎样复合，再看这个复合需要怎样的单位。
+在函数世界里，把两步接起来用 @racket[∘]；带 @racket[amb] 的函数和交出列表的函数，也各自有了 @racket[∘ℬ] 与 @racket[∘ℒ]。换到刚造出的关系语言，两个二元关系怎样复合？
 
 @section[#:tag "05:compose-o"]{在关系语言里复合}
 
@@ -40,12 +40,14 @@
 (define (((function->relation f) . t*) s)
   (define-values (in* out*) (split-at-right t* 1))
   (cons (cons (car out*) (apply f (for/list ([t in*]) (value-of t s)))) s))
+(define (((predicate->relation p?) . t*) s)
+  (check (apply p? (for/list ([t t*]) (value-of t s))))
+  s)
 (define-syntax-rule (run* (x ...) g)
   (let ([x (var 'x)] ...)
     (in-amb
      (let ([s (g '())])
-       (list (value-of x s) ...)))))
-(define idᵒ (function->relation id))]
+       (list (value-of x s) ...)))))]
 @examples[#:eval ev-comp #:no-result
 (define-syntax-rule (∃ (x ...) g)
   (λ (s) (let ([x (var 'x)] ...) (g s))))]
@@ -96,23 +98,40 @@
 
 前两行的右边交出 @racket[z]；第三行没有谁交出什么，@racket[x] 与 @racket[z] 都只是位置。三种都是复合，中间结果 @racket[y] 在前两行由绑定命名，在第三行由 @racket[∃] 造出。
 
-不过四步是从函数搬来的，里面的函数仍然只算已经知道的值。倒过来问哪组边界能得到 @racket[(3 4 5)]：
+有了复合，自然要问：@racket[∘ᵒ] 的单位是什么？函数的复合 @racket[∘] 有恒等函数 @racket[id]，@racket[∘ℒ] 有 @racket[(λ (x) (list x))]。作为二元关系，复合的单位说的是两个位置完全一样：无论接在哪个二元关系的左边还是右边，都不改变原来的关系。
+
+手头已经有了 @racket[function->relation] 和 @racket[predicate->relation]，不妨各试一次。从函数的角度看，输入和输出完全一样的函数正是 @racket[id]，把它搬成关系：
 
 @examples[#:eval ev-comp #:label #f
-(eval:error (run* (b) (right-triangleᵒ b '(3 4 5))))]
+(define idᵒ (function->relation id))
+(run* (y) (idᵒ 5 y))
+(eval:error (run* (x) (idᵒ x 5)))]
 
-@racket[pick-aᵒ] 要读出边界 @racket[b] 的值，可边界正是要问的东西。
-
-现在回头看 @racket[∘ᵒ] 的单位。前面把 @racket[id] 搬成了 @racket[(function->relation id)]，可只要左边是未知项，它立刻报错。哪怕写成两条简单的等式，@racket[x] 等于 @racket[y]、@racket[y] 等于 5，它也走不下去：
+左边已知时行得通，右边已知、左边未知就报错。哪怕写成两条简单的等式，@racket[x] 等于 @racket[y]、@racket[y] 等于 5，它也走不下去：
 
 @examples[#:eval ev-comp #:label #f
 (eval:error (run* (x y) (∧ (idᵒ x y) (idᵒ y 5))))]
 
-@racket[idᵒ] 要先读出 @racket[x] 的值，可 @racket[x] 的值要等第二行才定下来；换成 @racket[equalᵒ] 也一样，两边都得先知道。「交出原样的值」和「检查两边相等」都分了已知与未知；关系的单位说的是两个位置相等，两边都可以暂时不知道。
+@racket[idᵒ] 要先读出 @racket[x] 的值，可 @racket[x] 的值要等第二行才定下来。
+
+再换从谓词的角度看：两个位置完全一样，对应的二元谓词是 @racket[equal?]。用 @racket[predicate->relation] 把它搬成关系：
+
+@examples[#:eval ev-comp #:label #f
+(define equalᵒ (predicate->relation equal?))
+(run* () (equalᵒ 5 5))
+(eval:error (run* (y) (equalᵒ 5 y)))
+(eval:error (run* (x) (equalᵒ x 5)))]
+
+这一次两边都必须先知道，哪一头换成未知项都会报错。毛病出在同一处：借来的函数与谓词骨子里仍然分输入和输出，只能算已经知道的值。从函数搬来的 @racket[idᵒ] 要求左边已知，从谓词搬来的 @racket[equalᵒ] 要求两边都已知；同样的限制也挡在倒问 @racket[right-triangleᵒ] 面前：
+
+@examples[#:eval ev-comp #:label #f
+(eval:error (run* (b) (right-triangleᵒ b '(3 4 5))))]
+
+把 @racket[pythᵒ] 挪到 @racket[right-triangles] 的最前面，也会在 @racket[value-of] 处报一样的错。无论借函数还是借谓词，都造不出真正对称的单位。关系复合的单位说的是两个位置相等，两边都可以暂时不知道，这没法借来，得在关系语言里自己做。
 
 @section[#:tag "05:unify-step"]{合一}
 
-不借 @racket[id]，照手写 @racket[g] 的办法，直接把这两行等式记进表里：@racket[x] 等于 @racket[y]，@racket[y] 等于 5。然后问 @racket[x] 的值：
+不借 @racket[id] 和 @racket[equal?]，照手写 @racket[g] 的办法，直接把这两行等式记进表里：@racket[x] 等于 @racket[y]，@racket[y] 等于 5。然后问 @racket[x] 的值：
 
 @(define ev-unify (make-acf-eval))
 @examples[#:eval ev-unify #:hidden
@@ -219,7 +238,18 @@
 (run* (q) (idᵒ q 5))
 (run* (q) (idᵒ 5 q))]
 
-回头看 @racket[function->relation]：原先默认最后一个位置是还没有值的未知项，直接添一行。现在让它与函数交出的值合一：没有值就添一行，有值就成了核对。
+顺手回头看 @racket[function->relation]：它原先默认最后一个位置永远是还没值的未知项，直接往代换里添一行。要是同一个未知项出现在两行的最后一列，比如找同时在 1 到 2 之间、又在 2 到 3 之间的数，或者干脆在最后一列填进一个已知的数，直接添一行就坏了：
+
+@examples[#:eval ev-unify #:hidden
+(define (((function->relation f) . t*) s)
+  (define-values (in* out*) (split-at-right t* 1))
+  (cons (cons (car out*) (apply f (for/list ([t in*]) (value-of t s)))) s))
+(define betweenᵒ (function->relation between))]
+@examples[#:eval ev-unify #:label #f
+(run* (a) (∧ (betweenᵒ 1 2 a) (betweenᵒ 2 3 a)))
+(in-amb ((betweenᵒ 1 3 2) '()))]
+
+头一例里 3 明明不在 1 到 2 之间，却跟着出来了，2 还出了两次：第二行直接把新的一行盖在了前面。第二例更怪，代换的键成了数 2。现在把直接添一行换成与函数交出的值合一：没有值就添一行，有值就成了核对。
 
 @examples[#:eval ev-unify #:no-result
 (: function->relation (∀ (a ... b) (→ (→ℬ a ... b) (→ Term ... Term Goal))))
@@ -227,7 +257,7 @@
   (define-values (in* out*) (split-at-right t* 1))
   (unify (car out*) (apply f (for/list ([t in*]) (value-of t s))) s))]
 
-前面直接添一行时坏掉的那两例，现在都走得通了：
+两例立刻都走得通了：
 
 @examples[#:eval ev-unify #:hidden
 (define betweenᵒ (function->relation between))]
