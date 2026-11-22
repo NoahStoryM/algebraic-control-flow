@@ -167,13 +167,33 @@ between  =  (scatter inclusive-range)]
 
 第一行的 @racket[f]、@racket[g] 是 ℬ 的箭头，第二行的是 ℒ 的箭头。两种箭头各有一种绑定的写法，写出来的都是复合，多出来的只是中间结果的名字。
 
+@racket[∘ℒ] 靠的是改换复合，让 @math{p →@subscript{ℒ} q} 这种箭头自己接得上。还有另一种办法：把每支 ℒ 的箭头包一层，让它收一张列表、交出一张列表，回到纯宿主 𝒞 里，普通的 @racket[∘] 就又能直接接上：
+
+@examples[#:eval ev-two-ways #:no-result
+(: extend (∀ (p q) (→ (→ℒ p q) (→𝒞 (Listof p) (Listof q)))))
+(define ((extend f) xs) (append-map f xs))]
+
+@racket[extend] 把 @racket[∘ℒ] 送回普通的 @racket[∘]，把单位 @racket[(λ (x) (list x))] 送回 @racket[id]：
+
+@racketblock[
+(extend (∘ℒ g f))          =  (∘ (extend g) (extend f))
+(extend (λ (x) (list x)))  =  id]
+
 把到这里出现的三个世界和它们之间的转换画成一张@tech{图表}：
 
 @out-block|{                  gather
-             ┌──────────────→ ℒ
-𝒞 ───inj───→ ℬ ←──────────────┘
-                  scatter}|
+             ┌─────────────→ ℒ
+𝒞 ───inj───→ ℬ ←────────────┘│
+↑                 scatter    │
+└────────── extend ──────────┘}|
 
-右边 ℬ 与 ℒ 之间是一个@tech{交换图表}：经 @racket[gather] 过去、再经 @racket[scatter] 回来，或者反过来走一趟，都回到原来的箭头。
+右边 ℬ 与 ℒ 之间是一个@tech{交换图表}：经 @racket[gather] 过去、再经 @racket[scatter] 回来，或者反过来走一趟，都回到原来的箭头。把一支纯函数 @racket[f] 沿着外圈从 𝒞 出发，经 @racket[inj]、@racket[gather]、@racket[extend] 绕回 𝒞，展开它：
+
+@racketblock[
+#,(hspace 2)((extend (gather (inj f))) xs)
+= (append-map (λ (x) (list (f x))) xs)
+= (map f xs)]
+
+从 𝒞 绕一圈回来，纯函数 @racket[f] 成了用在列表上的 @racket[(λ (xs) (map f xs))]。
 
 @bold{练习}：化简里有一步，@racket[in-amb] 展开成 @racket[reset] 与 @racket[list]，@racket[list->amb] 则直接换成了 @racket[choose]，这暗示两者的行为相同。展开 @racket[for/amb] 的定义，验证 @racket[list->amb] 与 @racket[choose] 是同一个函数。提示：@racket[for/amb] 交给 @racket[choose] 的是一张 λ 的列表，选出来以后还要调用一次。
