@@ -225,4 +225,12 @@
 (run* (y) (idᵒ 5 y))
 (eval:error (run* (x) (idᵒ x 5)))]
 
-@racket[id] 把收到的值原样交出，搬成关系以后说的就是两个位置相等。可交换一下两个位置，@racket[(idᵒ x 5)] 就走不通了。@racket[id] 本来是函数复合的单位。在关系语言里，两个关系怎样复合，它的单位又该是什么样子？
+从谓词的角度看，相等是二元谓词 @racket[equal?]。换用 @racket[predicate->relation] 试一试：
+
+@examples[#:eval ev-goals #:label #f
+(define equalᵒ (predicate->relation equal?))
+(run* () (equalᵒ 5 5))
+(eval:error (run* (y) (equalᵒ 5 y)))
+(eval:error (run* (x) (equalᵒ x 5)))]
+
+从函数搬来的 @racket[idᵒ] 要求左边已知，从谓词搬来的 @racket[equalᵒ] 要求两边都已知，哪一种都写不出真正对称的相等。@racket[id] 本来是函数复合的单位。在关系语言里，两个关系怎样复合，它的单位又该是什么样子？

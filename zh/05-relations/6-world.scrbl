@@ -158,12 +158,8 @@
 (define-syntax-rule (∃ (x ...) g)
   (λ (s) (let ([x (var 'x)] ...) (g s))))
 (define idᵒ ≡)
-(define ∘ᵒ
-  (case-λ
-    [() idᵒ]
-    [(Pᵒ) Pᵒ]
-    [(Qᵒ Pᵒ) (λ (x z) (∃ (y) (∧ (Pᵒ x y) (Qᵒ y z))))]
-    [(Qᵒ . Pᵒ*) (∘ᵒ Qᵒ (apply ∘ᵒ Pᵒ*))]))
+(define ((∘ᵒ Qᵒ Pᵒ) x z)
+  (∃ (y) (∧ (Pᵒ x y) (Qᵒ y z))))
 (define (appendᵒ l t out)
   (∨ (∧ (≡ l '()) (≡ t out))
      (∃ (a d res)

@@ -151,11 +151,7 @@
 (: idᵒ (→ Term Term Goal))
 (define idᵒ ≡)
 
-(: ∘ᵒ (→ (→ Term Term Goal) ... (→ Term Term Goal)))
-(define ∘ᵒ
-  (case-λ
-    [() idᵒ]
-    [(Pᵒ) Pᵒ]
-    [(Qᵒ Pᵒ) (λ (x z) (∃ (y) (∧ (Pᵒ x y) (Qᵒ y z))))]
-    [(Qᵒ . Pᵒ*) (∘ᵒ Qᵒ (apply ∘ᵒ Pᵒ*))]))
+(: ∘ᵒ (→ (→ Term Term Goal) (→ Term Term Goal) (→ Term Term Goal)))
+(define ((∘ᵒ Qᵒ Pᵒ) x z)
+  (∃ (y) (∧ (Pᵒ x y) (Qᵒ y z))))
 }|

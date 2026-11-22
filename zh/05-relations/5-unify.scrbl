@@ -59,15 +59,12 @@
 
 「存在这样的 @math{y}」就是 @racket[∃]，未知项 @racket[y] 替我们占住中间那一列，用不着穷举全集；「并且」就是 @racket[∧]。在代换层，@racket[∧] 是目标的复合 @racket[∘ℬ]；在答案表上，@racket[∧] 把两张表按共有的列拼起来，中间的 @racket[y] 就是两张表首尾相连时的那一列，@racket[run*] 只读出 @racket[x] 与 @racket[z]，中间那一列被遮住了。
 
-关系多于两个时，一个一个这样接下去。先把一个或多个关系的复合写出来：
+把两个关系的复合写成函数 @racket[∘ᵒ]：
 
 @examples[#:eval ev-comp #:no-result
-(: ∘ᵒ (→ (→ Term Term Goal) ... (→ Term Term Goal)))
-(define ∘ᵒ
-  (case-λ
-    [(Pᵒ) Pᵒ]
-    [(Qᵒ Pᵒ) (λ (x z) (∃ (y) (∧ (Pᵒ x y) (Qᵒ y z))))]
-    [(Qᵒ . Pᵒ*) (∘ᵒ Qᵒ (apply ∘ᵒ Pᵒ*))]))]
+(: ∘ᵒ (→ (→ Term Term Goal) (→ Term Term Goal) (→ Term Term Goal)))
+(define ((∘ᵒ Qᵒ Pᵒ) x z)
+  (∃ (y) (∧ (Pᵒ x y) (Qᵒ y z))))]
 
 @defsym["Qᵒ ∘ᵒ Pᵒ" "关系语言里的复合：∃ 造出中间的未知项"]@racket[∘ᵒ] 和 @racket[∘] 一样从右往左写：两个关系复合时，中间的 @racket[y] 把它们连起来，右边的关系说 @racket[x] 与 @racket[y]，左边的说 @racket[y] 与 @racket[z]。
 
@@ -78,7 +75,8 @@
 (define pick-bᵒ      (function->relation pick-b))
 (define pick-cᵒ      (function->relation pick-c))
 (define check-rightᵒ (function->relation check-right))
-(define right-triangleᵒ (∘ᵒ check-rightᵒ pick-cᵒ pick-bᵒ pick-aᵒ))]
+(define right-triangleᵒ
+  (∘ᵒ check-rightᵒ (∘ᵒ pick-cᵒ (∘ᵒ pick-bᵒ pick-aᵒ))))]
 
 从 1 到 20 跑一遍：
 
@@ -105,12 +103,12 @@
 
 @racket[pick-aᵒ] 要读出边界 @racket[b] 的值，可边界正是要问的东西。
 
-现在回头看零个关系的复合，也就是 @racket[∘ᵒ] 的单位。前面把 @racket[id] 搬成了 @racket[(function->relation id)]，可只要左边是未知项，它立刻报错。哪怕写成两条简单的等式，@racket[x] 等于 @racket[y]、@racket[y] 等于 5，它也走不下去：
+现在回头看 @racket[∘ᵒ] 的单位。前面把 @racket[id] 搬成了 @racket[(function->relation id)]，可只要左边是未知项，它立刻报错。哪怕写成两条简单的等式，@racket[x] 等于 @racket[y]、@racket[y] 等于 5，它也走不下去：
 
 @examples[#:eval ev-comp #:label #f
 (eval:error (run* (x y) (∧ (idᵒ x y) (idᵒ y 5))))]
 
-@racket[idᵒ] 要先读出 @racket[x] 的值，可 @racket[x] 的值要等第二行才定下来。「交出原样的值」是函数的说法，分了输入和输出；关系的单位说的是两个位置相等，两边都可以暂时不知道。
+@racket[idᵒ] 要先读出 @racket[x] 的值，可 @racket[x] 的值要等第二行才定下来；换成 @racket[equalᵒ] 也一样，两边都得先知道。「交出原样的值」和「检查两边相等」都分了已知与未知；关系的单位说的是两个位置相等，两边都可以暂时不知道。
 
 @section[#:tag "05:unify-step"]{合一}
 
@@ -209,25 +207,17 @@
 (run* (x y) (∧ (≡ x 1) (≡ 2 y)))
 (run* (x) (∧ (≡ x 5) (≡ 6 x)))]
 
-未知项写在等式的哪一边都可以，两边都是未知项也可以。@racket[∘ᵒ] 一直在找的单位，正是合一 @racket[≡] 本身。补上零个关系的分支，@racket[∘ᵒ] 就齐了：
+未知项写在等式的哪一边都可以，两边都是未知项也可以。@racket[∘ᵒ] 一直在找的单位，正是合一 @racket[≡] 本身：
 
 @examples[#:eval ev-unify #:no-result
 (: idᵒ (→ Term Term Goal))
-(define idᵒ ≡)
+(define idᵒ ≡)]
 
-(: ∘ᵒ (→ (→ Term Term Goal) ... (→ Term Term Goal)))
-(define ∘ᵒ
-  (case-λ
-    [() idᵒ]
-    [(Pᵒ) Pᵒ]
-    [(Qᵒ Pᵒ) (λ (x z) (∃ (y) (∧ (Pᵒ x y) (Qᵒ y z))))]
-    [(Qᵒ . Pᵒ*) (∘ᵒ Qᵒ (apply ∘ᵒ Pᵒ*))]))]
-
-试一试零个关系的复合，两个位置都能问：
+无论哪边是未知项，它都能接得住：
 
 @examples[#:eval ev-unify #:label #f
-(run* (q) ((∘ᵒ) q 5))
-(run* (q) ((∘ᵒ) 5 q))]
+(run* (q) (idᵒ q 5))
+(run* (q) (idᵒ 5 q))]
 
 回头看 @racket[function->relation]：原先默认最后一个位置是还没有值的未知项，直接添一行。现在让它与函数交出的值合一：没有值就添一行，有值就成了核对。
 
