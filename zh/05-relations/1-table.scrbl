@@ -36,10 +36,10 @@
 为了这六组边，循环试了 1540 组。用同样的边界再调用一次，这 1540 组还得从头试一遍，交出的却还是那六组：@racket[right-triangles] 是一个纯函数，输出只由输入决定。既然如此，算过的结果就可以记下来，下次遇到同样的边界直接取出。这就是缓存：
 
 @examples[#:eval ev-search #:no-result
-(define-type (Dict k v) (Listof (Pair k v)))
+(define-type (Dictionary k v) (Listof (Pair k v)))
 (define-type Bounds (List ℕ⁺ ℕ⁺))
 
-(: cache (Dict Bounds (Listof Triangle)))
+(: cache (Dictionary Bounds (Listof Triangle)))
 (define cache '())
 
 (: right-triangles/cached (→ ℕ⁺ ℕ⁺ (Listof Triangle)))
@@ -62,7 +62,7 @@
 眼下 @racket[cache] 只记着三组边界。设想把所有的边界都算过一遍，它会是一张巨大的@defterm{表}，每组边界都是其中的键。到那时循环就用不着了，@racket[right-triangles] 只剩下一次查找，可以写成：
 
 @examples[#:eval ev-search #:no-result
-(: dictionary->function (∀ (v k ...) (→ (Dict (List k ... k) v) (→ k ... k v))))
+(: dictionary->function (∀ (v k ...) (→ (Dictionary (List k ... k) v) (→ k ... k v))))
 (define ((dictionary->function dict) . key) (dict-ref dict key))
 
 (define right-triangles (dictionary->function cache))]
@@ -71,14 +71,14 @@
 
 @section[#:tag "05:relation"]{关系}
 
-我们把带键的表 @racket[(Dict k v)] 定义为 @racket[(Listof (Pair k v))]，可这个定义本身并没有要求 @racket[k] 是键：同一个 @racket[k] 出现几次，类型都不管。@racket[cache] 里的边界不重复，只是因为我们把同一组边界的答案都收进了一张列表。不如放开这个限制，把表摊开，让每组答案各自配上它的边界：
+我们把带键的表 @racket[(Dictionary k v)] 定义为 @racket[(Listof (Pair k v))]，可这个定义本身并没有要求 @racket[k] 是键：同一个 @racket[k] 出现几次，类型都不管。@racket[cache] 里的边界不重复，只是因为我们把同一组边界的答案都收进了一张列表。不如放开这个限制，把表摊开，让每组答案各自配上它的边界：
 
 @(define ev-relation (make-acf-eval))
 @examples[#:eval ev-relation #:hidden
 (require acf/zh/05-relations/show)
 (define-type ℕ⁺ Positive-Integer)
 (define-type Triangle (List ℕ⁺ ℕ⁺ ℕ⁺))
-(define-type (Dict k v) (Listof (Pair k v)))
+(define-type (Dictionary k v) (Listof (Pair k v)))
 (define-type Bounds (List ℕ⁺ ℕ⁺))
 (define (pyth? a b c) (= (+ (* a a) (* b b)) (* c c)))
 (define (right-triangles l h)
@@ -138,7 +138,7 @@ rows/5]
 (pyth? 3 4 5)
 (pyth? 3 4 6)]
 
-作为函数，@racket[pyth?] 是三条边与布尔值之间的二元关系：三条边合成一组占一列，布尔值占一列。让它交出 @racket[#t] 的输入构成 @math{ℕ⁺ × ℕ⁺ × ℕ⁺} 的一个子集 @math{{(a, b, c) | a² + b² = c²}}，这是一个三元关系。谓词判断的，就是输入在不在这个子集里。所以 @math{N} 个参数的谓词描述了一个 @math{N} 元关系。零个参数的谓词只有 @racket[(λ () #t)] 和 @racket[(λ () #f)]，正好对应两个零元关系 @math{{()}} 和 @math{{}}。
+作为函数，@racket[pyth?] 是三条边与布尔值之间的二元关系：三条边合成一组占一列，布尔值占一列。让它交出 @racket[#t] 的输入构成 @math{ℕ⁺ × ℕ⁺ × ℕ⁺} 的一个子集 @math{{(a, b, c) | a² + b² = c²}}，这是一个三元关系。谓词判断的，就是输入在不在这个子集里；数学里把这种只回答一个元素在不在子集里的函数叫@defterm[#:en "characteristic function"]{特征函数}。所以 @math{N} 个参数的谓词描述了一个 @math{N} 元关系。零个参数的谓词只有 @racket[(λ () #t)] 和 @racket[(λ () #f)]，正好对应两个零元关系 @math{{()}} 和 @math{{}}。
 
 @section[#:tag "05:endless-table"]{写不完的表}
 
@@ -178,7 +178,7 @@ rows/5]
 
 函数是一个特殊的二元关系，对应一个字典；一般的二元关系对应一张表。一个输入对应的可以是一行、许多行，或者一行也没有，这些行的右边一列合起来，是 @math{B} 的一个子集；一行也没有时，就是空集 @math{{}}。@math{B} 的所有子集也构成一个集合，叫 @math{B} 的@defterm[#:en "power set"]{幂集}，记作 @math{P(B)}。每个输入都对应 @math{P(B)} 的一个元素，所以给定输入集合 @math{A} 与输出集合 @math{B}，二元关系 @math{R ⊆ A × B} 与函数 @math{A → P(B)} 一一对应：按输入收拢，就从关系得到函数；摊开，又从函数回到关系。
 
-程序里用列表代替集合，@racket[(table->relation rows)] 就是这样一个交出列表的函数。列表比集合多记了先后与重复，也只能列出有限多项，所以只有每个输入对应的行能完整列出来的关系，才能这样表示。记着列表的字典，摊开就是一张表；一张表，按键收拢，又是一个记着列表的字典。不计先后与重复，二者可以来回转换，但不是@tech{同构}。对数学关系来说，@racket[(1 4)] 有几组答案，只看它有没有出现在 @racket[rows] 里就知道：一行也没有，答案就是空列表。可 @racket[cache] 还多记了一件事：哪些边界已经算过。把 @racket[(1 4)] 和它的空列表留在 @racket[cache] 里，或者把这一项从 @racket[cache] 里删掉，摊出的 @racket[rows] 逐行相同，@racket[(dict-has-key? cache '(1 4))] 的结果却一真一假。按键收拢 @racket[rows]，只能找回表里出现过的键，@racket[(1 4)] 这条「已经查过、但没有答案」的记录，摊开以后就丢了。
+程序里用列表代替集合，@racket[(table->relation rows)] 就是这样一个交出列表的函数。列表比集合多记了先后与重复，也只能列出有限多项，所以只有每个输入对应的行能完整列出来的关系，才能这样表示。记着列表的部分字典，摊开就是一张表；一张表，按键收拢，又是一个记着列表的字典。和上面说的全函数 @math{A → P(B)} 不同，不计先后与重复，部分字典与表可以来回转换，但不是@tech{同构}。对数学关系来说，@racket[(1 4)] 有几组答案，只看它有没有出现在 @racket[rows] 里就知道：一行也没有，答案就是空列表。可 @racket[cache] 还多记了一件事：哪些边界已经算过。把 @racket[(1 4)] 和它的空列表留在 @racket[cache] 里，或者把这一项从 @racket[cache] 里删掉，摊出的 @racket[rows] 逐行相同，@racket[(dict-has-key? cache '(1 4))] 的结果却一真一假。按键收拢 @racket[rows]，只能找回表里出现过的键，@racket[(1 4)] 这条「已经查过、但没有答案」的记录，摊开以后就丢了。
 
 不过表可能有无穷多行。@math{R} 就是这样，边界有无穷多组，整张表是写不完的。眼下算过的边界只有三组，摊成 @racket[rows]，还能看到其中有解的两组。好在程序用不着整张表，问到哪几行，算出哪几行就够了。@racket[right-triangles/cached] 正是这样做的：收到一组没算过的边界，现算，记进 @racket[cache]。表不是事先写好的，而是随着查找一点点长出来。
 

@@ -85,10 +85,10 @@
 (define-syntax-rule (for/amb clauses body ...) ((choose (for/list clauses (λ () body ...)))))
 (define-syntax-rule (in-amb e) (reset (list e)))]
 @examples[#:eval ev-two-ways #:no-result
-(define-type (→𝒞 p q) (→ p q))
-(define-type (→ℬ p q) (→ p q))
+(define-type (→𝒞 p ... q) (→ p ... q))
+(define-type (→ℬ p ... q) (→ p ... q))
 
-(: inj (∀ (p q) (→ (→𝒞 p q) (→ℬ p q))))
+(: inj (∀ (p ... q) (→ (→𝒞 p ... q) (→ℬ p ... q))))
 (define (inj f) f)
 
 (: ∘ℬ (∀ (p ...) (→ (→ℬ pn-1 pn) ... (→ℬ p1 p2) (→ℬ p1 pn))))
@@ -97,7 +97,7 @@
 要找的箭头不用另造，它早就有了，我们也不陌生：交出列表的函数。@racket[right-triangles] 是，@racket[inclusive-range] 也是，我们从一开始就是这样模拟关系的，只是列表多记了结果的先后和重复，表不记这些。一个输入对应的结果不分几次返回，而是装进一张列表，一次交出来；箭头的类型从 @math{p → q} 改成 @math{p → (@ty{Listof} q)}。这种箭头@defsym["p →ℒ q" "交出列表的函数：纯宿主里的二元关系"]记作 @math{→@subscript{ℒ}}，都是纯函数。
 
 @examples[#:eval ev-two-ways #:no-result
-(define-type (→ℒ p q) (→ p (Listof q)))]
+(define-type (→ℒ p ... q) (→ p ... (Listof q)))]
 
 ℬ 与 ℒ 的箭头模拟的是同一样东西，二元关系，两种箭头也可以来回搬。从 ℒ 到 ℬ，把交出的列表交给 @racket[amb]，散成几条时间线，叫 @racket[scatter]；从 ℬ 到 ℒ，用 @racket[in-amb] 把各条时间线的结果收成一张列表，叫 @racket[gather]：
 
@@ -105,13 +105,13 @@
 (: list->amb (∀ (p) (→ (Listof p) p)))
 (define (list->amb v*) (for/amb ([v (in-list v*)]) v))
 
-(: scatter (∀ (p q) (→ (→ℒ p q) (→ℬ p q))))
+(: scatter (∀ (p ... q) (→ (→ℒ p ... q) (→ℬ p ... q))))
 (define (scatter f) (∘ list->amb f))
 
-(: gather (∀ (p q) (→ (→ℬ p q) (→ℒ p q))))
+(: gather (∀ (p ... q) (→ (→ℬ p ... q) (→ℒ p ... q))))
 (define ((gather g) . x*) (in-amb (apply g x*)))]
 
-搬过去再搬回来，得到的还是原来的箭头：@racket[(in-amb (list->amb v*))] 把 @racket[v*] 的每一项各包成一张列表，再接起来，还是 @racket[v*]；反过来，@racket[(list->amb (in-amb e))] 把 @racket[e] 的结果收齐了再逐个交出，后面的计算看到的还是那些结果。来回一趟都回到原处，所以两种箭头@tech{同构}，是同一组二元关系的两种写法；这里比的是 @racket[in-amb] 收到的列表，先后与重复都算在内。@racket[between] 与 @racket[inclusive-range] 就是同一个二元关系的两种写法：
+搬过去再搬回来，得到的还是原来的箭头：@racket[(in-amb (list->amb v*))] 把 @racket[v*] 的每一项各包成一张列表，再接起来，还是 @racket[v*]；反过来，@racket[(list->amb (in-amb e))] 把 @racket[e] 的结果收齐了再逐个交出，后面的计算看到的还是那些结果。在本章纯的、有限的搜索范围内，来回一趟都回到原处，所以两种箭头@tech{同构}，是同一组二元关系的两种写法；这里比的是 @racket[in-amb] 收到的列表，先后与重复都算在内。@racket[between] 与 @racket[inclusive-range] 就是同一个二元关系的两种写法：
 
 @racketblock[
 inclusive-range  =  (gather between)
