@@ -129,6 +129,42 @@
 
 @racket[∧] 照写的顺序接：先写的先运行，和 @racket[let*] 一样，所以交给 @racket[∘ℬ] 之前要倒过来。
 
+@racket[∧] 不限目标的个数。一个也不给呢？拿一张记着 @racket[a] 等于 1 的代换试一次：
+
+@examples[#:eval ev-goals #:label #f
+(in-amb ((∧) (list (cons a 1))))]
+
+零个目标的合取把代换原样交了回来，什么也没有做：@racket[(∘ℬ)] 就是带 @racket[amb] 时的恒等函数 @racket[id]。作为代换之间的二元关系，它是@defterm[#:en "identity relation"]{恒等关系}；作为条件，它总成立，总是成功。给它起名 @racket[⊤]：
+
+@examples[#:eval ev-goals #:no-result
+(: ⊤ Goal)
+(define (⊤ s) s)]
+
+@racket[⊤] 接在哪个目标的前面或后面，都不改变那个目标，是合取的@defterm[#:en "unit"]{单位}。@xref["05:relation"]{「关系」}数过，零元关系只有两个，@math{{()}} 与 @math{{}}；@racket[⊤] 不提任何未知项，正好对应总成立的 @math{{()}}。
+
+另一个零元关系是空集 @math{{}}：作为代换之间的二元关系，它是一行也没有的@defterm[#:en "empty relation"]{空关系}；作为条件，它总不成立，总是失败。带 @racket[amb] 时，一张代换也不交就是 @racket[(amb)]。给它起名 @racket[⊥]：
+
+@margin-note{前四章用 @racket[⊤] 与 @racket[⊥] 记单元类型与空类型；这里借用同一对逻辑真假记号表示 @racket[Goal] 类型的值，一个是恒等目标，一个是失败目标。}
+
+@examples[#:eval ev-goals #:no-result
+(: ⊥ Goal)
+(define (⊥ s) (amb))]
+
+有了「并且」@racket[∧]，自然还有「或者」。两个目标都是从代换到代换的二元关系，也就是同一个笛卡尔积的子集，它们的并集依然是这个笛卡尔积的子集。带 @racket[amb] 时，把几个目标并起来就是从其中挑一个来用，挑哪个都算，正是 @racket[amb]。几个条件里只要有一个成立，叫@tech{析取}，照集合语言里的记号写成 @racket[∨]：
+
+@examples[#:eval ev-goals #:no-result
+(: ∨ (→ Goal ... Goal))
+(define ((∨ . g*) s) ((list->amb g*) s))]
+
+@margin-note{目标写成 ℒ 的箭头时，析取是把几张代换的列表接起来。}
+
+一个目标也不给 @racket[∨]，就是从零个备选里挑，结果正好是失败：
+
+@examples[#:eval ev-goals #:label #f
+(in-amb ((∨) (list (cons a 1))))]
+
+@racket[⊥] 和哪个目标并起来，都不改变那个目标；@racket[⊥] 正是析取的单位。
+
 两头和中间都有了，@racket[run*] 可以写下来：造出未知项，从一张空的代换开始运行目标 @racket[g]，再读出那几个未知项的值。走通的每条时间线交出一组，由 @racket[in-amb] 收齐。
 
 @examples[#:eval ev-goals #:no-result

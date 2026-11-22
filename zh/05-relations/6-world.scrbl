@@ -2,13 +2,13 @@
 
 @title[#:tag "05:6-world"]{关系的世界}
 
-有了 @racket[≡]、@racket[∧] 和 @racket[∃]，关系语言已经能写等式、接条件、复合关系。只靠这些，能不借函数和谓词，直接写出一个递归的关系吗？
+有了 @racket[≡]、@racket[∧]、@racket[∨]、@racket[∃] 和两个单位 @racket[⊤]、@racket[⊥]，关系语言已经能写等式、接条件、并分支、复合关系。只靠这些，能不借函数和谓词，直接写出一个递归的关系吗？
 
 @section[#:tag "05:equation"]{直接写等式}
 
 @racket[append] 把两张列表接成一张。它是函数，只能从左边两张算出右边一张。照它的定义写一个三个位置的关系 @racket[(appendᵒ l t out)]：@racket[l] 是空的，@racket[out] 就等于 @racket[t]；或者 @racket[l] 有头一项 @racket[a] 和剩下的 @racket[d]，@racket[out] 的头一项也是 @racket[a]，剩下的部分 @racket[res] 是 @racket[d] 接上 @racket[t]。
 
-这句话里只剩一样东西还写不出来：「或者」，两种情形里成立一种就行。目标是带 @racket[amb] 的函数，从几个目标里挑一个来用，挑哪个都算，正是 @racket[amb]。几个条件里只要有一个成立，叫@tech{析取}，照集合语言里的记号写成 @racket[∨]：
+两种情形用 @racket[∨] 并起来，每种情形里的几条等式用 @racket[∧] 连起来，中间用到的未知项 @racket[a]、@racket[d]、@racket[res] 用 @racket[∃] 造出。@racket[appendᵒ] 照上面那句话逐字写下来：
 
 @(define ev-world (make-acf-eval))
 @examples[#:eval ev-world #:hidden
@@ -25,7 +25,10 @@
 (define (walk t s)
   (define p (and (var? t) (assq t s)))
   (if p (walk (cdr p) s) t))
+(define (⊤ s) s)
+(define (⊥ s) (amb))
 (define (∧ . g*) (apply ∘ℬ (reverse g*)))
+(define ((∨ . g*) s) ((list->amb g*) s))
 (define (unify u v s)
   (let ([u (walk u s)] [v (walk v s)])
     (cond [(and (var? u) (eq? u v)) s]
@@ -50,40 +53,7 @@
   (let ([x (var 'x)] ...)
     (in-amb
      (let ([s (g '())])
-       (list (value-of x s) ...)))))
-(define a (var 'a))]
-@examples[#:eval ev-world #:no-result
-(: ∨ (→ Goal ... Goal))
-(define ((∨ . g*) s) ((list->amb g*) s))]
-
-试一试：
-
-@examples[#:eval ev-world #:label #f
-(run* (x) (∨ (≡ x 1) (≡ x 2)))]
-
-@margin-note{目标写成 ℒ 的箭头时，析取是把几张代换的列表接起来。}
-
-两个目标都是从代换到代换的二元关系，表的两列对得上，@racket[∨] 就是把两张表并起来。
-
-@racket[∧] 与 @racket[∨] 都不限目标的个数。一个也不给呢？拿一张记着 @racket[a] 等于 1 的代换，各试一次：
-
-@examples[#:eval ev-world #:label #f
-(in-amb ((∧) (list (cons a 1))))
-(in-amb ((∨) (list (cons a 1))))]
-
-零个目标的合取把代换原样交了回来，一行也没有添：@racket[(∘ℬ)] 是恒等函数。零个目标的析取一张也不交：从零个备选里挑，就是 @racket[(amb)]。作为代换之间的二元关系，一个是@defterm[#:en "identity relation"]{恒等关系}，一个是一行也没有的@defterm[#:en "empty relation"]{空关系}；作为条件，一个总成立，一个总不成立。给它们各起一个名字：
-
-@margin-note{前四章用 @racket[⊤] 与 @racket[⊥] 记单元类型与空类型；这里借用同一对逻辑真假记号表示 @racket[Goal] 类型的值，一个是恒等目标，一个是失败目标。}
-
-@examples[#:eval ev-world #:no-result
-(: ⊤ Goal)
-(: ⊥ Goal)
-(define (⊤ s) s)
-(define (⊥ s) (amb))]
-
-@racket[⊤] 接在哪个目标的前面或后面，都不改变那个目标；@racket[⊥] 和哪个目标并起来，也不改变那个目标。一个是合取的@defterm[#:en "unit"]{单位}，一个是析取的单位。@xref["05:relation"]{「关系」}数过，零元关系只有两个，@math{{()}} 与 @math{{}}；@racket[⊤] 与 @racket[⊥] 不提任何未知项，正好对应那两个零元关系。
-
-中间用到的未知项 @racket[a]、@racket[d]、@racket[res]，照样用 @racket[∃] 造出。@racket[appendᵒ] 照上面那句话逐字写下来：
+       (list (value-of x s) ...)))))]
 
 @examples[#:eval ev-world #:no-result
 (define (appendᵒ l t out)
@@ -210,7 +180,7 @@
 (eval:error (run* (q) ((∘ᵒ Pᵒ (function->relation id)) q 1)))
 (run* (q) ((∘ᵒ Pᵒ idᵒ) q 1))]
 
-@racket[Pᵒ] 自己答得出来：@racket[q] 是什么都行。接上 @racket[(function->relation id)] 仍然报错；换成 @racket[idᵒ]，答案和 @racket[Pᵒ] 自己的一样。@xref["05:goals"]{「未知项、代换与目标」}把目标与关系分成了两层，两层各有自己的恒等关系：在代换层，目标复合 @racket[∧] 的单位是 @racket[⊤]；在关系层，在 @racket[run*] 读出结果的意义下，二元关系复合 @racket[∘ᵒ] 的单位就是合一 @racket[≡]。特征函数写不出复合，因为缺少 @racket[∃]；函数的 @racket[id] 当不了关系的单位，因为分了输入输出；@racket[∃] 与 @racket[≡] 正好补齐了这两样。
+@racket[Pᵒ] 自己答得出来：@racket[q] 是什么都行。接上 @racket[(function->relation id)] 仍然报错；换成 @racket[idᵒ]，答案和 @racket[Pᵒ] 自己的一样。到这里，这门语言里三种运算的单位都齐了：在代换层，合取 @racket[∧] 的单位是 @racket[⊤]，析取 @racket[∨] 的单位是 @racket[⊥]；在关系层，在 @racket[run*] 读出结果的意义下，二元关系复合 @racket[∘ᵒ] 的单位就是合一 @racket[≡]。特征函数写不出复合，因为缺少 @racket[∃]；函数的 @racket[id] 当不了关系的单位，因为分了输入输出；@racket[∃] 与 @racket[≡] 正好补齐了这两样。
 
 @margin-note{和常见的实现相比，还有几处不同：未知项按身份区分，不编号；合取是直接复合，何时推迟一步计算、怎样取用答案，写法也不一样，交出答案的顺序因此可能不同。}
 
