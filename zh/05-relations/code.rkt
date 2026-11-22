@@ -1846,23 +1846,25 @@
   ;; 〔正文·交互〕条件的先后：未知项要先有值
   (check-exn #rx"a 的值还不知道"
              (λ () (run* (a b c) (∧ (pythᵒ a b c) (betweenᵒ 1 20 a) (betweenᵒ a 20 b) (betweenᵒ b 20 c)))))
-  ;; 〔正文·交互〕4.3 末尾与 5.1：拿 id 搬成 idᵒ，再由 ∃ 与 ∧ 造出 1+ 参 ∘ᵒ
+  ;; 〔正文·交互〕4.3 末尾与 5.1：拿 id 搬成 idᵒ、equal? 搬成 equalᵒ，再由 ∃ 与 ∧ 造出二元 ∘ᵒ
   (define idᵒ (function->relation id))
   (check-equal? (run* (y) (idᵒ 5 y)) '((5)))
   (check-exn #rx"x 的值还不知道" (λ () (run* (x) (idᵒ x 5))))
+  (define equalᵒ (predicate->relation equal?))
+  (check-equal? (run* () (equalᵒ 5 5)) '(()))
+  (check-exn #rx"y 的值还不知道" (λ () (run* (y) (equalᵒ 5 y))))
+  (check-exn #rx"x 的值还不知道" (λ () (run* (x) (equalᵒ x 5))))
   (define-syntax-rule (∃ (x ...) g)
     (λ (s) (let ([x (var 'x)] ...) (g s))))
-  (: ∘ᵒ (→ (→ Term Term Goal) ... (→ Term Term Goal)))
-  (define ∘ᵒ
-    (case-λ
-      [(Pᵒ) Pᵒ]
-      [(Qᵒ Pᵒ) (λ (x z) (∃ (y) (∧ (Pᵒ x y) (Qᵒ y z))))]
-      [(Qᵒ . Pᵒ*) (∘ᵒ Qᵒ (apply ∘ᵒ Pᵒ*))]))
+  (: ∘ᵒ (→ (→ Term Term Goal) (→ Term Term Goal) (→ Term Term Goal)))
+  (define ((∘ᵒ Qᵒ Pᵒ) x z)
+    (∃ (y) (∧ (Pᵒ x y) (Qᵒ y z))))
   (define pick-aᵒ      (function->relation pick-a))
   (define pick-bᵒ      (function->relation pick-b))
   (define pick-cᵒ      (function->relation pick-c))
   (define check-rightᵒ (function->relation check-right))
-  (define right-triangleᵒ (∘ᵒ check-rightᵒ pick-cᵒ pick-bᵒ pick-aᵒ))
+  (define right-triangleᵒ
+    (∘ᵒ check-rightᵒ (∘ᵒ pick-cᵒ (∘ᵒ pick-bᵒ pick-aᵒ))))
   (check-equal? (run* (t) (right-triangleᵒ '(1 20) t)) (map list triples))
   (check-exn #rx"b 的值还不知道" (λ () (run* (b) (right-triangleᵒ b '(3 4 5)))))
   (check-exn #rx"x 的值还不知道" (λ () (run* (x y) (∧ (idᵒ x y) (idᵒ y 5))))))
@@ -2056,19 +2058,16 @@
     ;;; ─── 5.2、6.2、6.3〔正文〕 合一单位元 idᵒ、完整 ∘ᵒ 与关系的世界 ℛ ───
     (: idᵒ (→ Term Term Goal))
     (define idᵒ ≡)
-    (: ∘ᵒ (→ (→ Term Term Goal) ... (→ Term Term Goal)))
-    (define ∘ᵒ
-      (case-λ
-        [() idᵒ]
-        [(Pᵒ) Pᵒ]
-        [(Qᵒ Pᵒ) (λ (x z) (∃ (y) (∧ (Pᵒ x y) (Qᵒ y z))))]
-        [(Qᵒ . Pᵒ*) (∘ᵒ Qᵒ (apply ∘ᵒ Pᵒ*))]))
+    (: ∘ᵒ (→ (→ Term Term Goal) (→ Term Term Goal) (→ Term Term Goal)))
+    (define ((∘ᵒ Qᵒ Pᵒ) x z)
+      (∃ (y) (∧ (Pᵒ x y) (Qᵒ y z))))
 
     (define pick-aᵒ      (function->relation pick-a))
     (define pick-bᵒ      (function->relation pick-b))
     (define pick-cᵒ      (function->relation pick-c))
     (define check-rightᵒ (function->relation check-right))
-    (define right-triangleᵒ (∘ᵒ check-rightᵒ pick-cᵒ pick-bᵒ pick-aᵒ))
+    (define right-triangleᵒ
+      (∘ᵒ check-rightᵒ (∘ᵒ pick-cᵒ (∘ᵒ pick-bᵒ pick-aᵒ))))
 
     (check-equal? (run* (t) (right-triangleᵒ '(1 20) t)) (map list triples))
     (for* ([l (in-range 1 5)] [h (in-range 0 14)])
@@ -2085,8 +2084,8 @@
                   '((1 1) (1 2) (1 3) (2 2) (2 3) (3 3)))
     (check-equal? (run* (a b) (∧ (betweenᵒ 1 2 a) (betweenᵒ 1 2 b)))
                   '((1 1) (1 2) (2 1) (2 2)))
-    (check-equal? (run* (q) ((∘ᵒ) q 5)) '((5)))
-    (check-equal? (run* (q) ((∘ᵒ) 5 q)) '((5)))
+    (check-equal? (run* (q) (idᵒ q 5)) '((5)))
+    (check-equal? (run* (q) (idᵒ 5 q)) '((5)))
     ;; 结合律：同一组答案
     (check-equal? (run* (t) ((∘ᵒ check-rightᵒ (∘ᵒ pick-cᵒ (∘ᵒ pick-bᵒ pick-aᵒ))) '(1 20) t))
                   (run* (t) ((∘ᵒ (∘ᵒ (∘ᵒ check-rightᵒ pick-cᵒ) pick-bᵒ) pick-aᵒ) '(1 20) t)))
