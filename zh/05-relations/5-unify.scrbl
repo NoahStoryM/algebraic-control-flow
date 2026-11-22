@@ -105,7 +105,7 @@
   (define-values (in* out*) (split-at-right t* 1))
   (unify (car out*) (apply f (for/list ([t in*]) (value-of t s))) s))]
 
-上一节坏掉的那两例，现在都走得通了：
+前面直接添一行时坏掉的那两例，现在都走得通了：
 
 @examples[#:eval ev-unify #:hidden
 (define betweenᵒ (function->relation between))]

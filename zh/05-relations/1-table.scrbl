@@ -174,7 +174,7 @@ rows/5]
 ((table->relation rows) 1 20)
 ((table->relation rows) 1 4)]
 
-@racket[(table->relation rows)] 收到一组边界，交出一张三角形的列表，类型是 @racket[(→ ℕ⁺ ℕ⁺ (Listof Triangle))]，正是 @racket[right-triangles] 的类型。上一节把 @racket[cache] 里的列表摊开，得到了 @racket[rows]；这里按键把 @racket[rows] 收拢，@racket[cache] 里的每组边界又对上了原来那张列表。
+@racket[(table->relation rows)] 收到一组边界，交出一张三角形的列表，类型是 @racket[(→ ℕ⁺ ℕ⁺ (Listof Triangle))]，正是 @racket[right-triangles] 的类型。@xref["05:relation"]{「关系」}把 @racket[cache] 里的列表摊开，得到了 @racket[rows]；这里按键把 @racket[rows] 收拢，@racket[cache] 里的每组边界又对上了原来那张列表。
 
 函数是一个特殊的二元关系，对应一个字典；一般的二元关系对应一张表。一个输入对应的可以是一行、许多行，或者一行也没有，这些行的右边一列合起来，是 @math{B} 的一个子集；一行也没有时，就是空集 @math{{}}。@math{B} 的所有子集也构成一个集合，叫 @math{B} 的@defterm[#:en "power set"]{幂集}，记作 @math{P(B)}。每个输入都对应 @math{P(B)} 的一个元素，所以给定输入集合 @math{A} 与输出集合 @math{B}，二元关系 @math{R ⊆ A × B} 与函数 @math{A → P(B)} 一一对应：按输入收拢，就从关系得到函数；摊开，又从函数回到关系。
 

@@ -2,7 +2,7 @@
 
 @title[#:tag "05:4-language"]{描述关系的语言}
 
-到这里，关系都是用函数模拟的：交出列表的函数，或者带 @racket[amb] 的函数。可函数总分输入和输出，表里的列本来不分——能不能直接把表里的条件写下来？
+到这里，关系都是用函数模拟的：交出列表的函数，或者带 @racket[amb] 的函数。可函数总分输入和输出，表里的列本来不分。能不能直接把表里的条件写下来？
 
 @section[#:tag "05:wanted"]{想要的写法}
 
@@ -108,7 +108,7 @@
 @examples[#:eval ev-goals #:no-result
 (define-type Goal (→ℬ Substitution Substitution))]
 
-这样的函数叫@defterm[#:en "goal"]{目标}。ℬ 的箭头写的是二元关系，目标也是：表的两列是收到的代换和交出的代换。这里因此有两层：目标作用在代换上（@racket[(→ℬ Substitution Substitution)]），而下面要写的关系作用在项上，调用以后交出一个目标（@racket[(→ Term ... Goal)]）。
+这样的函数叫@defterm[#:en "goal"]{目标}。ℬ 的箭头写的是二元关系，目标也是：表的两列是收到的代换和交出的代换。这里因此有两层：目标用在代换上（@racket[(→ℬ Substitution Substitution)]），而关系用在项上，调用以后交出一个目标（@racket[(→ Term ... Goal)]）。
 
 @margin-note{目标也可以写成 ℒ 的箭头 @racket[(→ℒ Substitution Substitution)]，交出一张代换的列表，用不着 @racket[amb]：接起来用的换成 @racket[∘ℒ]。两种写法之间，就是 @racket[gather] 与 @racket[scatter]。}
 
