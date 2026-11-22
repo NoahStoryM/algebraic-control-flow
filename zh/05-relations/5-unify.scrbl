@@ -36,7 +36,10 @@
   (cond [(not (var? t)) t]
         [(assq t s) => cdr]
         [else (error 'value-of "~a 的值还不知道" (var-name t))]))
+(define (⊤ s) s)
+(define (⊥ s) (amb))
 (define (∧ . g*) (apply ∘ℬ (reverse g*)))
+(define ((∨ . g*) s) ((list->amb g*) s))
 (define (((function->relation f) . t*) s)
   (define-values (in* out*) (split-at-right t* 1))
   (cons (cons (car out*) (apply f (for/list ([t in*]) (value-of t s)))) s))
@@ -158,7 +161,10 @@
   (cond [(not (var? t)) t]
         [(assq t s) => cdr]
         [else (error 'value-of "~a 的值还不知道" (var-name t))]))
+(define (⊤ s) s)
+(define (⊥ s) (amb))
 (define (∧ . g*) (apply ∘ℬ (reverse g*)))
+(define ((∨ . g*) s) ((list->amb g*) s))
 (define-syntax-rule (∃ (x ...) g)
   (λ (s) (let ([x (var 'x)] ...) (g s))))
 (define-syntax-rule (run* (x ...) g)
@@ -274,3 +280,41 @@
 (run* (a) (∧ (betweenᵒ 1 2 a) (betweenᵒ 2 3 a)))
 (run* () (betweenᵒ 1 3 2))
 (run* () (betweenᵒ 1 3 5))]
+
+@section[#:tag "05:equation"]{直接写等式}
+
+有了 @racket[≡]、@racket[∧]、@racket[∨]、@racket[∃] 和两个单位 @racket[⊤]、@racket[⊥]，关系语言已经能写等式、接条件、并分支、复合关系。只靠这些，不借函数和谓词，能不能直接写出一个递归的关系？
+
+@racket[append] 把两张列表接成一张。它是函数，只能从左边两张算出右边一张。照它的定义写一个三个位置的关系 @racket[(appendᵒ l t out)]：@racket[l] 是空的，@racket[out] 就等于 @racket[t]；或者 @racket[l] 有头一项 @racket[a] 和剩下的 @racket[d]，@racket[out] 的头一项也是 @racket[a]，剩下的部分 @racket[res] 是 @racket[d] 接上 @racket[t]。
+
+两种情形用 @racket[∨] 并起来，每种情形里的几条等式用 @racket[∧] 连起来，中间用到的未知项 @racket[a]、@racket[d]、@racket[res] 用 @racket[∃] 造出。@racket[appendᵒ] 照上面那句话逐字写下来：
+
+@examples[#:eval ev-unify #:no-result
+(define (appendᵒ l t out)
+  (∨ (∧ (≡ l '()) (≡ t out))
+     (∃ (a d res)
+       (∧ (≡ l (cons a d))
+          (≡ out (cons a res))
+          (appendᵒ d t res)))))]
+
+@racket[appendᵒ] 在第二支里调用自己。要是 @racket[∃] 一上来就运行里面的条件，构造目标时就会一层层调用下去，停不下来；等到收到代换才运行，递归走几层，看的是代换里的列表有多长。
+
+正着问，它和 @racket[append] 一样：
+
+@examples[#:eval ev-unify #:label #f
+(run* (z) (appendᵒ '(1 2) '(3) z))]
+
+反过来，给出接好的那一张，问前两个位置：
+
+@examples[#:eval ev-unify #:label #f
+(run* (x y) (appendᵒ x y '(1 2 3)))]
+
+四种拆法都找到了。定义 @racket[appendᵒ] 的时候，没有哪一行写过「拆」：每一行都是等式，没有哪个位置是输入，哪个是输出。这是关系不分输入输出的样子。
+
+@margin-note{如果答案里还留着未绑定的未知项（比如 @racket[(run* (x y) (≡ x y))] 或 @racket[(run* (x y) (appendᵒ '(1) x y))]），@racket[value-of] 读不出来；另外，像 @racket[(≡ x (cons 1 x))] 这样的循环等式也需要在添等式前拦截。附录的完整库代码补上了这两步：用 @racket[walk*] 与 @racket[reify] 把未绑定未知项打印成 @tt{_.0}、@tt{_.1}，并用 @racket[occurs?] 与 @racket[ext-s] 做循环检查。}
+
+到这里，这门语言里三种运算和它们的单位都齐了：在代换层，合取 @racket[∧] 的单位是 @racket[⊤]，析取 @racket[∨] 的单位是 @racket[⊥]；在关系层，二元关系复合 @racket[∘ᵒ] 的单位正是合一 @racket[≡]。特征函数写不出复合，因为缺少 @racket[∃]；函数的 @racket[id] 当不了关系的单位，因为分了输入输出；@racket[∃] 与 @racket[≡] 正好补齐了这两样。
+
+@margin-note{和常见的实现相比，还有几处不同：未知项按身份区分，不编号；合取是直接复合，何时推迟一步计算、怎样取用答案，写法也不一样，交出答案的顺序因此可能不同。}
+
+整个小语言只有等式 @racket[≡]、@racket[∧]、@racket[∨]、@racket[∃] 和两个单位 @racket[⊤]、@racket[⊥]，实现不到一百行。它的骨架就是 microKanren，@defterm[#:en "relational programming"]{关系式编程}（@defterm[#:en "logic programming"]{逻辑式编程}的一个分支）语言 miniKanren 的一个极小内核。在那里，未知项叫@defterm[#:en "logic variable"]{逻辑变量}，这六个记号常写作 @racket[==]、@racket[conj]、@racket[disj]、@racket[fresh]、@racket[succeed]、@racket[fail]，而 @racket[run*] 与 @racket[fresh] 也常添上一层语法糖，把多行目标自动包进 @racket[conj]。常见的实现用流来回溯：目标交出一串代换，合取与析取都要自己写出怎样接、怎样并。这里用 @racket[amb] 回溯，@racket[∧] 就是 ℬ 的复合，@racket[∨] 就是 @racket[amb]，这两样都是现成的；剩下要写的，主要是合一。
