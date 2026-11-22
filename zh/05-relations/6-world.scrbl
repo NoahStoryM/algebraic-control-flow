@@ -14,10 +14,10 @@
 
 @racketblock[
 (∃ (y)
-  (P x y)
-  (Q y z))]
+  (∧ (P x y)
+     (Q y z)))]
 
-「存在这样的 @math{y}」就是 @racket[∃]，未知项 @racket[y] 替我们占住中间那一列，用不着穷举全集；「并且」就是写在一起的两行。在代换层，@racket[∧] 是目标的复合 @racket[∘ℬ]；在答案表上，@racket[∧] 把两张表按共有的列拼起来，中间的 @racket[y] 就是两张表首尾相连时的那一列，@racket[run*] 只读出 @racket[x] 与 @racket[z]，中间那一列被遮住了。
+「存在这样的 @math{y}」就是 @racket[∃]，未知项 @racket[y] 替我们占住中间那一列，用不着穷举全集；「并且」就是 @racket[∧]。在代换层，@racket[∧] 是目标的复合 @racket[∘ℬ]；在答案表上，@racket[∧] 把两张表按共有的列拼起来，中间的 @racket[y] 就是两张表首尾相连时的那一列，@racket[run*] 只读出 @racket[x] 与 @racket[z]，中间那一列被遮住了。
 
 关系多于两个时，一个一个这样接下去。零个关系的复合该是什么？零个函数的复合是恒等函数 @racket[id]，把它搬成关系试一试。拿一个只看第二个位置的 @racket[P]，在它右边接上 @racket[(function->relation id)]：
 
@@ -64,8 +64,8 @@
   (define-values (in* out*) (split-at-right t* 1))
   (unify (car out*) (apply f (for/list ([t in*]) (value-of t s))) s))
 (define ((≡ u v) s) (unify u v s))
-(define-syntax-rule (∃ (x ...) g ...)
-  (λ (s) (let ([x (var 'x)] ...) ((∧ g ...) s))))
+(define-syntax-rule (∃ (x ...) g)
+  (λ (s) (let ([x (var 'x)] ...) (g s))))
 (define (walk* t s)
   (let ([t (walk t s)])
     (if (pair? t) (cons (walk* (car t) s) (walk* (cdr t) s)) t)))
@@ -76,9 +76,9 @@
             [(pair? t) (name-unknowns (cdr t) (name-unknowns (car t) s))]
             [else s])))
   (walk* t (name-unknowns t '())))
-(define-syntax-rule (run* (x ...) g ...)
+(define-syntax-rule (run* (x ...) g)
   (let ([x (var 'x)] ...)
-    (in-amb (reify (walk* (list x ...) ((∧ g ...) '()))))))]
+    (in-amb (reify (walk* (list x ...) (g '()))))))]
 @examples[#:eval ev-world #:no-result
 (define (P x y) (≡ y 1))]
 
@@ -87,8 +87,8 @@
 (eval:error
  (run* (q)
    (∃ (y)
-     ((function->relation id) q y)
-     (P y 1))))]
+     (∧ ((function->relation id) q y)
+        (P y 1)))))]
 
 @racket[P] 自己答得出来：@racket[q] 是什么都行。接上 @racket[(function->relation id)]，同样的问题就问不出来了：它要先读出 @racket[q] 的值，可 @racket[q] 正是要问的。「交出原样的值」是函数的说法，分了输入和输出。关系的说法是两个位置相等，一条等式：
 
@@ -98,8 +98,8 @@
 @examples[#:eval ev-world #:label #f
 (run* (q)
   (∃ (y)
-    (idᵒ q y)
-    (P y 1)))]
+    (∧ (idᵒ q y)
+       (P y 1))))]
 
 答案和 @racket[P] 自己的一样。在关系语言里，恒等关系是相等：两个位置相等，问哪个都可以。零个关系的复合就是 @racket[idᵒ]，复合可以按参数个数直接写出来：
 
@@ -108,7 +108,7 @@
   (case-λ
     [() idᵒ]
     [(P) P]
-    [(Q P) (λ (x z) (∃ (y) (P x y) (Q y z)))]
+    [(Q P) (λ (x z) (∃ (y) (∧ (P x y) (Q y z))))]
     [(Q . P*) (∘ᵒ Q (apply ∘ᵒ P*))]))]
 
 @defsym["Q ∘ᵒ P" "关系语言里的复合：∃ 造出中间的未知项"]@racket[∘ᵒ] 和 @racket[∘] 一样从右往左写：两个关系复合时，中间的 @racket[y] 把它们连起来，右边的关系说 @racket[x] 与 @racket[y]，左边的说 @racket[y] 与 @racket[z]。
@@ -136,7 +136,7 @@
 @racketblock[
 (let*      ([y (f x)] [z (g y)]) z)  =  ((∘ℬ g f) x)
 (for*/list ([y (f x)] [z (g y)]) z)  =  ((∘ℒ g f) x)
-(∃ (y) (P x y) (Q y z))              =  ((∘ᵒ Q P) x z)]
+(∃ (y) (∧ (P x y) (Q y z)))          =  ((∘ᵒ Q P) x z)]
 
 前两行的右边交出 @racket[z]；第三行没有谁交出什么，@racket[x] 与 @racket[z] 都只是位置。三种都是复合，中间结果 @racket[y] 在前两行由绑定命名，在第三行由 @racket[∃] 造出。
 

@@ -21,10 +21,10 @@
         [(assq t s) => cdr]
         [else (error 'value-of "~a 的值还不知道" (var-name t))]))
 (define (∧ . g*) (apply ∘ℬ (reverse g*)))
-(define-syntax-rule (run* (x ...) g ...)
+(define-syntax-rule (run* (x ...) g)
   (let ([x (var 'x)] ...)
     (in-amb
-     (let ([s ((∧ g ...) '())])
+     (let ([s (g '())])
        (list (value-of x s) ...)))))]
 @examples[#:eval ev-unify #:label #f
 (let* ([x (var 'x)] [y (var 'y)]
@@ -76,7 +76,7 @@
 (: ≡ (→ Term Term Goal))
 (define ((≡ u v) s) (unify u v s))]
 
-@racket[value-of] 也改成顺着查；项是序对，就逐项读：
+@racket[value-of] 也改成顺着查，项是序对就逐项读；走到头还剩未知项就报错，所以它交出的都是不含未知项的 @racket[Data]：
 
 @examples[#:eval ev-unify #:no-result
 (: value-of (→ Term Substitution Data))
@@ -87,9 +87,9 @@
           [else t])))]
 
 @examples[#:eval ev-unify #:label #f
-(run* (x y) (≡ x y) (≡ y 5))
-(run* (x y) (≡ x 1) (≡ 2 y))
-(run* (x) (≡ x 5) (≡ 6 x))]
+(run* (x y) (∧ (≡ x y) (≡ y 5)))
+(run* (x y) (∧ (≡ x 1) (≡ 2 y)))
+(run* (x) (∧ (≡ x 5) (≡ 6 x)))]
 
 未知项写在等式的哪一边都可以，两边都是未知项也可以。
 
@@ -106,7 +106,7 @@
 @examples[#:eval ev-unify #:hidden
 (define betweenᵒ (function->relation between))]
 @examples[#:eval ev-unify #:label #f
-(run* (a) (betweenᵒ 1 2 a) (betweenᵒ 2 3 a))
+(run* (a) (∧ (betweenᵒ 1 2 a) (betweenᵒ 2 3 a)))
 (run* () (betweenᵒ 1 3 2))
 (run* () (betweenᵒ 1 3 5))]
 
@@ -148,8 +148,8 @@
 另一样是 @racket[a]、@racket[d]、@racket[res]：三个只在定义里用到的未知项，说的是「存在这样的 @racket[a]、@racket[d]、@racket[res]」。@racket[run*] 的未知项列在它后面，关系的定义里也要能造自己的：
 
 @examples[#:eval ev-unify #:no-result
-(define-syntax-rule (∃ (x ...) g ...)
-  (λ (s) (let ([x (var 'x)] ...) ((∧ g ...) s))))]
+(define-syntax-rule (∃ (x ...) g)
+  (λ (s) (let ([x (var 'x)] ...) (g s))))]
 
 @racket[∃] 交出的也是目标。它等收到代换时才造未知项，再运行里面的条件：每用一次，造出的都是新的。@racket[appendᵒ] 照上面那句话逐字写下来：
 
@@ -157,9 +157,9 @@
 (define (appendᵒ l t out)
   (∨ (∧ (≡ l '()) (≡ t out))
      (∃ (a d res)
-       (≡ l (cons a d))
-       (≡ out (cons a res))
-       (appendᵒ d t res))))]
+       (∧ (≡ l (cons a d))
+          (≡ out (cons a res))
+          (appendᵒ d t res)))))]
 
 @racket[appendᵒ] 在第二支里调用自己。要是 @racket[∃] 一上来就运行里面的条件，构造目标时就会一层层调用下去，停不下来；等到收到代换才运行，递归走几层，看的是代换里的列表有多长。
 
@@ -214,14 +214,14 @@
           [(equal? u v) s]
           [else (amb)])))
 (define ((≡ u v) s) (unify u v s))
-(define-syntax-rule (∃ (x ...) g ...)
-  (λ (s) (let ([x (var 'x)] ...) ((∧ g ...) s))))
+(define-syntax-rule (∃ (x ...) g)
+  (λ (s) (let ([x (var 'x)] ...) (g s))))
 (define (appendᵒ l t out)
   (∨ (∧ (≡ l '()) (≡ t out))
      (∃ (a d res)
-       (≡ l (cons a d))
-       (≡ out (cons a res))
-       (appendᵒ d t res))))]
+       (∧ (≡ l (cons a d))
+          (≡ out (cons a res))
+          (appendᵒ d t res)))))]
 @examples[#:eval ev-reify #:no-result
 (: walk* (→ Term Substitution Term))
 (define (walk* t s)
@@ -240,9 +240,9 @@
 @racket[walk*] 顺着代换把项里能换的都换掉，换不动的未知项留在原处。@racket[reify] 里起名用的也是一张代换，把留下来的未知项换成符号，交出不含未知项的 @racket[Data]。@racket[run*] 改成这样读出答案。要读的几个未知项放在一张列表里一起读，共用一套名字：
 
 @examples[#:eval ev-reify #:no-result
-(define-syntax-rule (run* (x ...) g ...)
+(define-syntax-rule (run* (x ...) g)
   (let ([x (var 'x)] ...)
-    (in-amb (reify (walk* (list x ...) ((∧ g ...) '()))))))]
+    (in-amb (reify (walk* (list x ...) (g '()))))))]
 
 @examples[#:eval ev-reify #:label #f
 (run* (x y) (≡ x y))
@@ -257,4 +257,4 @@
 
 @margin-note{和常见的实现相比，还有几处不同：未知项按身份区分，不编号；合取是直接复合，何时推迟一步计算、怎样取用答案，写法也不一样，交出答案的顺序因此可能不同。}
 
-到这里，这门小语言已经造齐了：只有等式 @racket[≡]、@racket[∧]、@racket[∨]、@racket[∃] 和两个单位 @racket[⊤]、@racket[⊥]，整个实现不到一百行。它的骨架就是 microKanren，@defterm[#:en "logic programming"]{逻辑式编程}语言 miniKanren 的一个极小内核。在那里，未知项叫@defterm[#:en "logic variable"]{逻辑变量}，这六个记号常写作 @racket[==]、@racket[conj]、@racket[disj]、@racket[fresh]、@racket[succeed]、@racket[fail]。常见的实现用流来回溯：目标交出一串代换，合取与析取都要自己写出怎样接、怎样并。这里用 @racket[amb] 回溯，@racket[∧] 就是 ℬ 的复合，@racket[∨] 就是 @racket[amb]，这两样都是现成的；剩下要写的，主要是合一。
+到这里，这门小语言已经造齐了：只有等式 @racket[≡]、@racket[∧]、@racket[∨]、@racket[∃] 和两个单位 @racket[⊤]、@racket[⊥]，整个实现不到一百行。它的骨架就是 microKanren，@defterm[#:en "logic programming"]{逻辑式编程}语言 miniKanren 的一个极小内核。在那里，未知项叫@defterm[#:en "logic variable"]{逻辑变量}，这六个记号常写作 @racket[==]、@racket[conj]、@racket[disj]、@racket[fresh]、@racket[succeed]、@racket[fail]，而 @racket[run*] 与 @racket[fresh] 也常添上一层语法糖，把多行目标自动包进 @racket[conj]。常见的实现用流来回溯：目标交出一串代换，合取与析取都要自己写出怎样接、怎样并。这里用 @racket[amb] 回溯，@racket[∧] 就是 ℬ 的复合，@racket[∨] 就是 @racket[amb]，这两样都是现成的；剩下要写的，主要是合一。

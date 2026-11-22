@@ -32,12 +32,12 @@
 @racketblock[
 (define (right-triangles l h)
   (run* (a b c)
-    (betweenᵒ l h a)     (code:comment "l ≤ a ≤ h")
-    (betweenᵒ a h b)     (code:comment "a ≤ b ≤ h")
-    (betweenᵒ b h c)     (code:comment "b ≤ c ≤ h")
-    (pythᵒ a b c)))      (code:comment "a² + b² = c²")]
+    (∧ (betweenᵒ l h a)     (code:comment "l ≤ a ≤ h")
+       (betweenᵒ a h b)     (code:comment "a ≤ b ≤ h")
+       (betweenᵒ b h c)     (code:comment "b ≤ c ≤ h")
+       (pythᵒ a b c))))     (code:comment "a² + b² = c²")]
 
-@racket[run*] 对应集合的花括号，@racket[(a b c)] 是竖线左边的形状，下面四行是竖线右边用 @math{∧} 连起来的条件。与 @racket[amb] 版也是一行对一行：三个绑定成了三行 @racket[betweenᵒ]，@racket[check] 的一行成了 @racket[pythᵒ]，最后交出的 @racket[(list a b c)] 挪到了 @racket[run*] 后面，@racket[in-amb] 那一层也收进了 @racket[run*]。
+@racket[run*] 对应集合的花括号，@racket[(a b c)] 是竖线左边的形状，里面的 @racket[∧] 逐字照抄了竖线右边用 @math{∧} 连起来的四条条件。与 @racket[amb] 版也是一行对一行：三个绑定成了三行 @racket[betweenᵒ]，@racket[check] 的一行成了 @racket[pythᵒ]，最后交出的 @racket[(list a b c)] 挪到了 @racket[run*] 后面，@racket[in-amb] 那一层也收进了 @racket[run*]。
 
 这还只是想要的写法，@racket[function->relation]、@racket[predicate->relation]、@racket[run*] 都还没有。改写里有一处不只是换名字：@racket[a]、@racket[b]、@racket[c] 原来由 @racket[let*] 绑定，每一行右边算出一个值，交给左边的名字；现在它们列在 @racket[run*] 后面，是三个还不知道的数，四行条件各说了一件关于它们的事。没有了绑定，这三个名字是什么？一行 @racket[(betweenᵒ l h a)] 写在那里，又交出了什么？
 
@@ -74,7 +74,7 @@
 要问一个项的值：本来就是值的，就是它自己；未知项去表里查，查不到，说明它的值还不知道。
 
 @examples[#:eval ev-goals #:no-result
-(: value-of (→ Term Substitution Data))
+(: value-of (→ Term Substitution Term))
 (define (value-of t s)
   (cond [(not (var? t)) t]
         [(assq t s) => cdr]
@@ -125,13 +125,13 @@
 
 @racket[∧] 照写的顺序接：先写的先运行，和 @racket[let*] 一样，所以交给 @racket[∘ℬ] 之前要倒过来。
 
-两头和中间都有了，@racket[run*] 可以写下来：造出未知项，把各行条件交出的目标用 @racket[∧] 接起来，从一张空的代换开始运行，再读出那几个未知项的值。走通的每条时间线交出一组，由 @racket[in-amb] 收齐。
+两头和中间都有了，@racket[run*] 可以写下来：造出未知项，从一张空的代换开始运行目标 @racket[g]，再读出那几个未知项的值。走通的每条时间线交出一组，由 @racket[in-amb] 收齐。
 
 @examples[#:eval ev-goals #:no-result
-(define-syntax-rule (run* (x ...) g ...)
+(define-syntax-rule (run* (x ...) g)
   (let ([x (var 'x)] ...)
     (in-amb
-     (let ([s ((∧ g ...) '())])
+     (let ([s (g '())])
        (list (value-of x s) ...)))))]
 
 @section[#:tag "05:run"]{跑起来}
@@ -172,10 +172,10 @@
 
 (define (right-triangles l h)
   (run* (a b c)
-    (betweenᵒ l h a)     (code:comment "l ≤ a ≤ h")
-    (betweenᵒ a h b)     (code:comment "a ≤ b ≤ h")
-    (betweenᵒ b h c)     (code:comment "b ≤ c ≤ h")
-    (pythᵒ a b c)))      (code:comment "a² + b² = c²")]
+    (∧ (betweenᵒ l h a)     (code:comment "l ≤ a ≤ h")
+       (betweenᵒ a h b)     (code:comment "a ≤ b ≤ h")
+       (betweenᵒ b h c)     (code:comment "b ≤ c ≤ h")
+       (pythᵒ a b c))))     (code:comment "a² + b² = c²")]
 
 @examples[#:eval ev-goals #:label #f
 (right-triangles 1 20)]
@@ -196,7 +196,7 @@
 不过这一版还经不起稍微换一种问法。先看最后一个位置：@racket[function->relation] 默认它永远是一个还没值的未知项，直接往表里添一行。要是同一个未知项出现在两行的最后一列，比如找同时在 1 到 2 之间、又在 2 到 3 之间的数，或者干脆在最后一列填进一个已知的数，直接添一行就坏了：
 
 @examples[#:eval ev-goals #:label #f
-(run* (a) (betweenᵒ 1 2 a) (betweenᵒ 2 3 a))
+(run* (a) (∧ (betweenᵒ 1 2 a) (betweenᵒ 2 3 a)))
 (in-amb ((betweenᵒ 1 3 2) '()))]
 
 头一例里 3 明明不在 1 到 2 之间，却跟着出来了，2 还出了两次：第二行直接把新的一行盖在了前面。第二例更怪，代换的键成了数 2。
@@ -206,9 +206,9 @@
 @examples[#:eval ev-goals #:label #f
 (eval:error
  (run* (a b c)
-   (pythᵒ a b c)
-   (betweenᵒ 1 20 a)
-   (betweenᵒ a 20 b)
-   (betweenᵒ b 20 c)))]
+   (∧ (pythᵒ a b c)
+      (betweenᵒ 1 20 a)
+      (betweenᵒ a 20 b)
+      (betweenᵒ b 20 c))))]
 
 @racket[pythᵒ] 要读 @racket[a] 的值，可这时候还没有哪一行给过 @racket[a] 一个值。四行条件要同时成立，谁先谁后本不该有分别；分别来自两个包装，借来的函数与谓词骨子里仍然分输入和输出，只能算已经知道的值。不借函数和谓词，能不能直接造一个两个位置完全对称、交换顺序毫无区别的关系？集合语言里最基本的那一个就是相等：@math{x = y} 和 @math{y = x} 说的是同一件事，两边都可以是还不知道的未知项。

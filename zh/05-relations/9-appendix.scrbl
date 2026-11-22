@@ -126,12 +126,12 @@
 (define (∧ . g*) (apply ∘ℬ (reverse g*)))
 (define ((∨ . g*) s) ((list->amb g*) s))
 
-(define-syntax-rule (∃ (x ...) g ...)
-  (λ (s) (let ([x (var 'x)] ...) ((∧ g ...) s))))
+(define-syntax-rule (∃ (x ...) g)
+  (λ (s) (let ([x (var 'x)] ...) (g s))))
 
-(define-syntax-rule (run* (x ...) g ...)
+(define-syntax-rule (run* (x ...) g)
   (let ([x (var 'x)] ...)
-    (in-amb (reify (walk* (list x ...) ((∧ g ...) '()))))))
+    (in-amb (reify (walk* (list x ...) (g '()))))))
 
 (: function->relation (→ (→ℬ Data ... Data) (→ Term ... Goal)))
 (define (((function->relation f) . t*) s)
@@ -151,6 +151,6 @@
   (case-λ
     [() idᵒ]
     [(P) P]
-    [(Q P) (λ (x z) (∃ (y) (P x y) (Q y z)))]
+    [(Q P) (λ (x z) (∃ (y) (∧ (P x y) (Q y z))))]
     [(Q . P*) (∘ᵒ Q (apply ∘ᵒ P*))]))
 }|
