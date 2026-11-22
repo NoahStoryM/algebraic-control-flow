@@ -155,7 +155,7 @@
 (define ∘ᵒ
   (case-λ
     [() idᵒ]
-    [(P) P]
-    [(Q P) (λ (x z) (∃ (y) (∧ (P x y) (Q y z))))]
-    [(Q . P*) (∘ᵒ Q (apply ∘ᵒ P*))]))
+    [(Pᵒ) Pᵒ]
+    [(Qᵒ Pᵒ) (λ (x z) (∃ (y) (∧ (Pᵒ x y) (Qᵒ y z))))]
+    [(Qᵒ . Pᵒ*) (∘ᵒ Qᵒ (apply ∘ᵒ Pᵒ*))]))
 }|

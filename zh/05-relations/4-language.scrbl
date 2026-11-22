@@ -51,6 +51,7 @@
 @examples[#:eval ev-goals #:hidden
 (require racket/control)
 (define ∘ compose)
+(define id (∘))
 (define-type (Dictionary k v) (Listof (Pair k v)))
 (define (pyth? a b c) (= (+ (* a a) (* b b)) (* c c)))
 (define (choose p*) (shift k (append-map k p*)))
@@ -217,4 +218,11 @@
       (betweenᵒ a 20 b)
       (betweenᵒ b 20 c))))]
 
-@racket[pythᵒ] 要读 @racket[a] 的值，可这时候还没有哪一行给过 @racket[a] 一个值。四行条件要同时成立，谁先谁后本不该有分别；分别来自两个包装，借来的函数与谓词骨子里仍然分输入和输出，只能算已经知道的值。不借函数和谓词，能不能直接造一个两个位置完全对称、交换顺序毫无区别的关系？集合语言里最基本的那一个就是相等：@math{x = y} 和 @math{y = x} 说的是同一件事，两边都可以是还不知道的未知项。
+@racket[pythᵒ] 要读 @racket[a] 的值，可这时候还没有哪一行给过 @racket[a] 一个值。借来的函数与谓词骨子里仍然分输入和输出，只能算已经知道的值。拿最简单的函数 @racket[id] 试一试，就能看得更清楚：
+
+@examples[#:eval ev-goals #:label #f
+(define idᵒ (function->relation id))
+(run* (y) (idᵒ 5 y))
+(eval:error (run* (x) (idᵒ x 5)))]
+
+@racket[id] 把收到的值原样交出，搬成关系以后说的就是两个位置相等。可交换一下两个位置，@racket[(idᵒ x 5)] 就走不通了。@racket[id] 本来是函数复合的单位。在关系语言里，两个关系怎样复合，它的单位又该是什么样子？
