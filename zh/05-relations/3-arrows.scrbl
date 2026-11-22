@@ -171,7 +171,7 @@ between  =  (scatter inclusive-range)]
 
 @examples[#:eval ev-two-ways #:no-result
 (: flat-map (∀ (p q) (→ (→ℒ p q) (→𝒞 (Listof p) (Listof q)))))
-(define ((flat-map f) xs) (append-map f xs))]
+(define flat-map (curry append-map))]
 
 @racket[flat-map] 把 ℒ 的箭头搬回纯宿主 𝒞，普通的 @racket[∘] 于是又接得上了。刚才的 @racket[∘ℒ] 其实就是把左边的箭头经 @racket[flat-map] 搬回 𝒞 再用 @racket[∘] 接上；@racket[flat-map] 本身也把 @racket[∘ℒ] 送回普通的 @racket[∘]，把单位 @racket[(λ (x) (list x))] 送回 @racket[id]：
 
@@ -184,7 +184,9 @@ between  =  (scatter inclusive-range)]
 
 @out-block|{𝒞 ───inj─────→ ℬ
 ↑              ↑
+│              │
 │      scatter │ gather
+│              │
 │              ↓
 └── flat-map ─ ℒ}|
 
