@@ -1845,7 +1845,29 @@
   (check-equal? (in-amb ((betweenᵒ 1 3 2) '())) '(((2 . 1)) ((2 . 2)) ((2 . 3))))
   ;; 〔正文·交互〕条件的先后：未知项要先有值
   (check-exn #rx"a 的值还不知道"
-             (λ () (run* (a b c) (∧ (pythᵒ a b c) (betweenᵒ 1 20 a) (betweenᵒ a 20 b) (betweenᵒ b 20 c))))))
+             (λ () (run* (a b c) (∧ (pythᵒ a b c) (betweenᵒ 1 20 a) (betweenᵒ a 20 b) (betweenᵒ b 20 c)))))
+  ;; 〔正文·交互〕4.3 末尾与 5.1：拿 id 搬成 idᵒ、equal? 搬成 equalᵒ，再由 ∃ 与 ∧ 造出二元 ∘ᵒ
+  (define idᵒ (function->relation id))
+  (check-equal? (run* (y) (idᵒ 5 y)) '((5)))
+  (check-exn #rx"x 的值还不知道" (λ () (run* (x) (idᵒ x 5))))
+  (define equalᵒ (predicate->relation equal?))
+  (check-equal? (run* () (equalᵒ 5 5)) '(()))
+  (check-exn #rx"y 的值还不知道" (λ () (run* (y) (equalᵒ 5 y))))
+  (check-exn #rx"x 的值还不知道" (λ () (run* (x) (equalᵒ x 5))))
+  (define-syntax-rule (∃ (x ...) g)
+    (λ (s) (let ([x (var 'x)] ...) (g s))))
+  (: ∘ᵒ (→ (→ Term Term Goal) (→ Term Term Goal) (→ Term Term Goal)))
+  (define ((∘ᵒ Qᵒ Pᵒ) x z)
+    (∃ (y) (∧ (Pᵒ x y) (Qᵒ y z))))
+  (define pick-aᵒ      (function->relation pick-a))
+  (define pick-bᵒ      (function->relation pick-b))
+  (define pick-cᵒ      (function->relation pick-c))
+  (define check-rightᵒ (function->relation check-right))
+  (define right-triangleᵒ
+    (∘ᵒ check-rightᵒ (∘ᵒ pick-cᵒ (∘ᵒ pick-bᵒ pick-aᵒ))))
+  (check-equal? (run* (t) (right-triangleᵒ '(1 20) t)) (map list triples))
+  (check-exn #rx"b 的值还不知道" (λ () (run* (b) (right-triangleᵒ b '(3 4 5)))))
+  (check-exn #rx"x 的值还不知道" (λ () (run* (x y) (∧ (idᵒ x y) (idᵒ y 5))))))
 
 ;;; ═══════════════════════════════════════════════════════════════════
 ;;; §10 后半（11/21 改线）：未知项、代换与目标；合一；关系的世界 ℛ
@@ -2033,52 +2055,46 @@
     (check-equal? (run* (x) (≡ x '_.0)) '((_.0)))
     (check-equal? (run* (x) ⊤) '((_.0)))
 
-    ;;; ─── 6〔正文〕 关系的世界 ℛ ───
+    ;;; ─── 5.2、6.2、6.3〔正文〕 合一单位元 idᵒ、完整 ∘ᵒ 与关系的世界 ℛ ───
     (: idᵒ (→ Term Term Goal))
     (define idᵒ ≡)
-    (: ∘ᵒ (→ (→ Term Term Goal) ... (→ Term Term Goal)))
-    (define ∘ᵒ
-      (case-λ
-        [() idᵒ]
-        [(P) P]
-        [(Q P) (λ (x z) (∃ (y) (∧ (P x y) (Q y z))))]
-        [(Q . P*) (∘ᵒ Q (apply ∘ᵒ P*))]))
+    (: ∘ᵒ (→ (→ Term Term Goal) (→ Term Term Goal) (→ Term Term Goal)))
+    (define ((∘ᵒ Qᵒ Pᵒ) x z)
+      (∃ (y) (∧ (Pᵒ x y) (Qᵒ y z))))
 
     (define pick-aᵒ      (function->relation pick-a))
     (define pick-bᵒ      (function->relation pick-b))
     (define pick-cᵒ      (function->relation pick-c))
     (define check-rightᵒ (function->relation check-right))
-    (define right-triangleᵒ (∘ᵒ check-rightᵒ pick-cᵒ pick-bᵒ pick-aᵒ))
+    (define right-triangleᵒ
+      (∘ᵒ check-rightᵒ (∘ᵒ pick-cᵒ (∘ᵒ pick-bᵒ pick-aᵒ))))
 
     (check-equal? (run* (t) (right-triangleᵒ '(1 20) t)) (map list triples))
     (for* ([l (in-range 1 5)] [h (in-range 0 14)])
       (check-equal? (run* (t) (right-triangleᵒ (list l h) t))
                     (map list (in-amb (right-triangle (list l h))))))
     ;; 单位：idᵒ 两边都是；(function->relation id) 只在输入已知时是
-    (define (P x y) (≡ y 1))
-    (check-equal? (run* (q) ((∘ᵒ P idᵒ) q 1)) (run* (q) (P q 1)))
-    (check-equal? (run* (q) ((∘ᵒ P idᵒ) q 1)) '((_.0)))
-    (check-exn #rx"q 的值还不知道" (λ () (run* (q) ((∘ᵒ P (function->relation id)) q 1))))
-    ;; 〔正文·交互〕6.1 的写法：先用 ∃ 直接接，再定义 ∘ᵒ
-    (check-equal? (run* (q) (P q 1)) '((_.0)))
-    (check-exn #rx"q 的值还不知道"
-               (λ () (run* (q) (∃ (y) (∧ ((function->relation id) q y) (P y 1))))))
-    (check-equal? (run* (q) (∃ (y) (∧ (idᵒ q y) (P y 1)))) '((_.0)))
-    ;; 6.1：合取在答案上是按共有的列拼接；没有共有的列时每行配每行
+    (define (Pᵒ x y) (≡ y 1))
+    (check-equal? (run* (q) ((∘ᵒ Pᵒ idᵒ) q 1)) (run* (q) (Pᵒ q 1)))
+    (check-equal? (run* (q) ((∘ᵒ Pᵒ idᵒ) q 1)) '((_.0)))
+    (check-exn #rx"q 的值还不知道" (λ () (run* (q) ((∘ᵒ Pᵒ (function->relation id)) q 1))))
+    (check-equal? (run* (q) (Pᵒ q 1)) '((_.0)))
+    ;; 合取在答案上是按共有的列拼接；没有共有的列时每行配每行
     (check-equal? (run* (a b) (∧ (betweenᵒ 1 3 a) (betweenᵒ a 3 b)))
                   '((1 1) (1 2) (1 3) (2 2) (2 3) (3 3)))
     (check-equal? (run* (a b) (∧ (betweenᵒ 1 2 a) (betweenᵒ 1 2 b)))
                   '((1 1) (1 2) (2 1) (2 2)))
-    (check-equal? (run* (q) ((∘ᵒ) q 5)) '((5)))
+    (check-equal? (run* (q) (idᵒ q 5)) '((5)))
+    (check-equal? (run* (q) (idᵒ 5 q)) '((5)))
     ;; 结合律：同一组答案
     (check-equal? (run* (t) ((∘ᵒ check-rightᵒ (∘ᵒ pick-cᵒ (∘ᵒ pick-bᵒ pick-aᵒ))) '(1 20) t))
                   (run* (t) ((∘ᵒ (∘ᵒ (∘ᵒ check-rightᵒ pick-cᵒ) pick-bᵒ) pick-aᵒ) '(1 20) t)))
-    ;; 方向：由函数搬来的关系不能倒着问（因 ∘ᵒ 有 [(P) P]，报错直接是 b）
+    ;; 方向：由函数搬来的关系不能倒着问（因 ∘ᵒ 有 [(Pᵒ) Pᵒ]，报错直接是 b）
     (check-exn #rx"b 的值还不知道" (λ () (run* (b) (right-triangleᵒ b '(3 4 5)))))
-    ;; 6.3（数学库 #76 第 6 条）：全关系 U 无论以哪一列为输入都对着无穷多行
-    (define (U x y) ⊤)
-    (check-equal? (run* (y) (U 1 y)) '((_.0)))
-    (check-equal? (run* (x) (U x 1)) '((_.0)))))
+    ;; 6.3（数学库 #76 第 6 条）：全关系 Uᵒ 无论以哪一列为输入都对着无穷多行
+    (define (Uᵒ x y) ⊤)
+    (check-equal? (run* (y) (Uᵒ 1 y)) '((_.0)))
+    (check-equal? (run* (x) (Uᵒ x 1)) '((_.0)))))
 
 ;;; ═══════════════════════════════════════════════════════════════════
 ;;; 附〔验证〕 创作者笔记的素材（v5.0 不进正文；除非某一节真的用得上）

@@ -2,7 +2,7 @@
 
 @title[#:tag "05:appendix"]{附录：库代码}
 
-这里收的是这一章造出的东西：不确定运算符、关系的两种写法，以及关系语言。直角三角形、@racket[appendᵒ] 这些例子不在其中。关系语言的 @racket[run*] 是读出还不知道的项的那一版；@xref["05:reify"]{「读出还不知道的项」}的旁注说，完整的实现在添等式之前会先检查未知项是否出现在另一边；这一步在这里是 @racket[ext-s]。
+这里收的是这一章造出的东西：不确定运算符、关系的两种写法，以及关系语言。直角三角形、@racket[appendᵒ] 这些例子不在其中。关系语言的完整实现在正文的基础上补了两处工程细节：添等式前检查循环的 @racket[occurs?] 与 @racket[ext-s]，以及把未绑定未知项打印成 @tt{_.0}、@tt{_.1} 的 @racket[walk*] 与 @racket[reify]（见 @xref["05:equation"]{「直接写等式」}的旁注）。
 
 @codeblock|{
 #lang typed/racket/no-check
@@ -55,6 +55,9 @@
     [() (λ (x) (list x))]
     [f* (define-values (g* f) (split-at-right f* 1))
         (λ x* (foldr append-map (apply (car f) x*) g*))]))
+
+(: flat-map (∀ (p q) (→ (→ℒ p q) (→𝒞 (Listof p) (Listof q)))))
+(define flat-map (curry append-map))
 
 ;; 关系语言
 
@@ -155,7 +158,8 @@
 (define ∘ᵒ
   (case-λ
     [() idᵒ]
-    [(P) P]
-    [(Q P) (λ (x z) (∃ (y) (∧ (P x y) (Q y z))))]
-    [(Q . P*) (∘ᵒ Q (apply ∘ᵒ P*))]))
+    [(Pᵒ) Pᵒ]
+    [(Qᵒ . Pᵒ*)
+     (define Pᵒ (apply ∘ᵒ Pᵒ*))
+     (λ (x z) (∃ (y) (∧ (Pᵒ x y) (Qᵒ y z))))]))
 }|

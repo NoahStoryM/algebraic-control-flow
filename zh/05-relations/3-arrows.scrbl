@@ -2,7 +2,7 @@
 
 @title[#:tag "05:3-arrows"]{关系成为箭头}
 
-有了 @racket[amb]，普通写法的函数就能表示关系。这一节把关系接起来，再回到纯的宿主，看关系在那里是什么样子。
+有了 @racket[amb]，@racket[between] 写出来像个普通函数，却能为同一组输入交出多个结果。函数可以用 @racket[∘] 一段一段接起来，这样的函数也能这样接吗？
 
 @section[#:tag "05:compose"]{二元关系的复合}
 
@@ -166,5 +166,37 @@ between  =  (scatter inclusive-range)]
 (for*/list ([y (f x)] [z (g y)]) z)  =  ((∘ℒ g f) x)]
 
 第一行的 @racket[f]、@racket[g] 是 ℬ 的箭头，第二行的是 ℒ 的箭头。两种箭头各有一种绑定的写法，写出来的都是复合，多出来的只是中间结果的名字。
+
+回头看刚才化简出来的 @racket[(append-map g (f x))]。把 @racket[append-map] 柯里化，先只交给它第一步的 @racket[g]，得到的函数收一张列表、交出一张列表，记作 @racket[flat-map]：
+
+@examples[#:eval ev-two-ways #:no-result
+(: flat-map (∀ (p q) (→ (→ℒ p q) (→𝒞 (Listof p) (Listof q)))))
+(define flat-map (curry append-map))]
+
+@racket[flat-map] 把 ℒ 的箭头搬回纯宿主 𝒞，普通的 @racket[∘] 于是又接得上了。刚才的 @racket[∘ℒ] 其实就是把左边的箭头经 @racket[flat-map] 搬回 𝒞 再用 @racket[∘] 接上；@racket[flat-map] 本身也把 @racket[∘ℒ] 送回普通的 @racket[∘]，把单位 @racket[(λ (x) (list x))] 送回 @racket[id]：
+
+@racketblock[
+(∘ℒ g f)                     =  (∘ (flat-map g) f)
+(flat-map (∘ℒ g f))          =  (∘ (flat-map g) (flat-map f))
+(flat-map (λ (x) (list x)))  =  id]
+
+把到这里出现的三个世界和它们之间的转换画成一张@tech{图表}：
+
+@out-block|{𝒞 ───inj─────→ ℬ
+↑              ↑
+│              │
+│      scatter │ gather
+│              │
+│              ↓
+└── flat-map ─ ℒ}|
+
+右边 ℬ 与 ℒ 之间是一个@tech{交换图表}：经 @racket[gather] 过去、再经 @racket[scatter] 回来，或者反过来走一趟，都回到原来的箭头。把一支纯函数 @racket[f] 沿着外圈从 𝒞 出发，经 @racket[inj]、@racket[gather]、@racket[flat-map] 绕回 𝒞，展开它：
+
+@racketblock[
+#,(hspace 2)((flat-map (gather (inj f))) xs)
+= (append-map (λ (x) (list (f x))) xs)
+= (map f xs)]
+
+从 𝒞 绕一圈回来，纯函数 @racket[f] 成了用在列表上的 @racket[(λ (xs) (map f xs))]。
 
 @bold{练习}：化简里有一步，@racket[in-amb] 展开成 @racket[reset] 与 @racket[list]，@racket[list->amb] 则直接换成了 @racket[choose]，这暗示两者的行为相同。展开 @racket[for/amb] 的定义，验证 @racket[list->amb] 与 @racket[choose] 是同一个函数。提示：@racket[for/amb] 交给 @racket[choose] 的是一张 λ 的列表，选出来以后还要调用一次。
