@@ -70,6 +70,15 @@
 
 @defsym["Qᵒ ∘ᵒ Pᵒ" "关系语言里的复合：∃ 造出中间的未知项"]@racket[∘ᵒ] 和 @racket[∘] 一样从右往左写：两个关系复合时，中间的 @racket[y] 把它们连起来，右边的关系说 @racket[x] 与 @racket[y]，左边的说 @racket[y] 与 @racket[z]。
 
+@bold{练习}：上面的 @racket[∘ᵒ] 一次只接两个关系。把它扩充成可以接收一个或多个二元关系的版本：只给一个时原样交出，给多个时从右往左依次用二元复合接起来。后面的代码直接用这个多参数版本（附录里收有完整定义）。
+
+@examples[#:eval ev-comp #:hidden
+(define ∘ᵒ
+  (case-λ
+    [(Pᵒ) Pᵒ]
+    [(Qᵒ . Pᵒ*)
+     (define Pᵒ (apply ∘ᵒ Pᵒ*))
+     (λ (x z) (∃ (y) (∧ (Pᵒ x y) (Qᵒ y z))))]))]
 拿 @racket[right-triangle] 的四步试一试。四步都是带 @racket[amb] 的函数，用 @racket[function->relation] 各搬成一个关系，再用 @racket[∘ᵒ] 接起来：
 
 @examples[#:eval ev-comp #:no-result
@@ -78,7 +87,7 @@
 (define pick-cᵒ      (function->relation pick-c))
 (define check-rightᵒ (function->relation check-right))
 (define right-triangleᵒ
-  (∘ᵒ check-rightᵒ (∘ᵒ pick-cᵒ (∘ᵒ pick-bᵒ pick-aᵒ))))]
+  (∘ᵒ check-rightᵒ pick-cᵒ pick-bᵒ pick-aᵒ))]
 
 从 1 到 20 跑一遍：
 
