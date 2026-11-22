@@ -145,7 +145,7 @@
 
 ;; 关系的世界
 
-(define (idᵒ x y) (≡ x y))
+(define idᵒ ≡)
 
 (define ∘ᵒ
   (case-λ

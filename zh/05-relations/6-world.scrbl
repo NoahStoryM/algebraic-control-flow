@@ -88,10 +88,10 @@
      (∧ ((function->relation id) q y)
         (P y 1)))))]
 
-@racket[P] 自己答得出来：@racket[q] 是什么都行。接上 @racket[(function->relation id)]，同样的问题就问不出来了：它要先读出 @racket[q] 的值，可 @racket[q] 正是要问的。「交出原样的值」是函数的说法，分了输入和输出。关系的说法是两个位置相等，一条等式：
+@racket[P] 自己答得出来：@racket[q] 是什么都行。接上 @racket[(function->relation id)]，同样的问题就问不出来了：它要先读出 @racket[q] 的值，可 @racket[q] 正是要问的。「交出原样的值」是函数的说法，分了输入和输出。关系的说法是两个位置相等，而上一节造出的合一 @racket[≡] 正是这个关系本身：
 
 @examples[#:eval ev-world #:no-result
-(define (idᵒ x y) (≡ x y))]
+(define idᵒ ≡)]
 
 换成 @racket[idᵒ] 再试：
 
@@ -101,7 +101,7 @@
     (∧ (idᵒ q y)
        (P y 1))))]
 
-答案和 @racket[P] 自己的一样。在关系语言里，恒等关系是相等：两个位置相等，问哪个都可以。零个关系的复合就是 @racket[idᵒ]，复合可以按参数个数直接写出来：
+答案和 @racket[P] 自己的一样。上一节把目标与关系分成了两层，两层各有自己的恒等关系：在代换层，目标复合 @racket[∧] 的单位是 @racket[⊤]；在关系层，二元关系复合的单位就是合一 @racket[≡]。特征函数写不出复合，因为缺少 @racket[∃]；函数的 @racket[id] 当不了关系的单位，因为分了输入输出；上一节造出的 @racket[∃] 与 @racket[≡]，正好补齐了这两样。零个关系的复合就是 @racket[idᵒ]，复合可以按参数个数直接写出来：
 
 @examples[#:eval ev-world #:no-result
 (define ∘ᵒ
