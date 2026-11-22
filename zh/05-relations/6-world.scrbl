@@ -6,21 +6,26 @@
 
 @section[#:tag "05:compose-o"]{在关系语言里复合}
 
-@racket[P] 说的是 @racket[x] 与 @racket[y] 之间的事，@racket[Q] 说的是 @racket[y] 与 @racket[z] 之间的事。接起来以后只剩 @racket[x] 与 @racket[z] 两个位置，中间那一项没有名字。那就用 @racket[fresh] 为它造一个未知项，再写下两行条件：
+@xref["05:compose"]{「二元关系的复合」}用集合的语言写过二元关系的复合：@math{(x, z)} 在 @math{Q ∘ P} 里，当且仅当存在这样的 @math{y}，@math{(x, y)} 在 @math{P} 里，并且 @math{(y, z)} 在 @math{Q} 里。
+
+如果只用@tech{谓词}（也就是@tech{特征函数}）来表示二元关系，照这句话去复合两个二元谓词 @racket[P?] 与 @racket[Q?]，会直接卡在「存在这样的 @math{y}」上：@racket[P?] 与 @racket[Q?] 只负责检查给定的一对值在不在关系里，除非把 @math{y} 所在集合的全部元素列出来逐个试一遍（而且这个集合还得有限），否则单靠特征函数写不出复合。
+
+换到刚造出的关系语言，集合里的那句话可以逐字翻译过来：用 @racket[∃] 为中间那一项造一个未知项，再写下两行条件：
 
 @racketblock[
-(fresh (y)
+(∃ (y)
   (P x y)
   (Q y z))]
 
-这正是@xref["05:compose"]{「二元关系的复合」}用集合的语言写下的那个复合：@math{(x, z)} 在 @math{Q ∘ P} 里，当且仅当存在这样的 @math{y}，@math{(x, y)} 在 @math{P} 里，并且 @math{(y, z)} 在 @math{Q} 里。「存在这样的 @math{y}」是 @racket[fresh]，「并且」是写在一起的两行。在表上，@racket[fresh] 造出的 @racket[y] 就是两张表首尾相连时中间那一列；@racket[run*] 只读出 @racket[x] 与 @racket[z]，中间那一列被遮住了。
+「存在这样的 @math{y}」就是 @racket[∃]，未知项 @racket[y] 替我们占住中间那一列，用不着穷举全集；「并且」就是写在一起的两行。在代换层，@racket[∧] 是目标的复合 @racket[∘ℬ]；在答案表上，@racket[∧] 把两张表按共有的列拼起来，中间的 @racket[y] 就是两张表首尾相连时的那一列，@racket[run*] 只读出 @racket[x] 与 @racket[z]，中间那一列被遮住了。
 
-关系多于两个时，一个一个这样接下去。零个关系的复合该是什么？零个函数的复合是恒等函数 @racket[values]，把它搬成关系试一试。拿一个只看第二个位置的 @racket[P]，在它右边接上 @racket[(function->relation values)]：
+关系多于两个时，一个一个这样接下去。零个关系的复合该是什么？零个函数的复合是恒等函数 @racket[id]，把它搬成关系试一试。拿一个只看第二个位置的 @racket[P]，在它右边接上 @racket[(function->relation id)]：
 
 @(define ev-world (make-acf-eval))
 @examples[#:eval ev-world #:hidden
 (require racket/control)
 (define ∘ compose)
+(define id (∘))
 (define (pyth? a b c) (= (+ (* a a) (* b b)) (* c c)))
 (define (choose p*) (shift k (append-map k p*)))
 (define-syntax-rule (amb e ...) ((choose (list (λ () e) ...))))
@@ -39,8 +44,8 @@
 (define (walk t s)
   (define p (and (var? t) (assq t s)))
   (if p (walk (cdr p) s) t))
-(define (succeed s) s)
-(define (conj . g*) (apply ∘ℬ (reverse g*)))
+(define (⊤ s) s)
+(define (∧ . g*) (apply ∘ℬ (reverse g*)))
 (define (unify u v s)
   (let ([u (walk u s)] [v (walk v s)])
     (cond [(and (var? u) (eq? u v)) s]
@@ -58,9 +63,9 @@
 (define (((function->relation f) . t*) s)
   (define-values (in* out*) (split-at-right t* 1))
   (unify (car out*) (apply f (for/list ([t in*]) (value-of t s))) s))
-(define ((== u v) s) (unify u v s))
-(define-syntax-rule (fresh (x ...) g ...)
-  (λ (s) (let ([x (var 'x)] ...) ((conj g ...) s))))
+(define ((≡ u v) s) (unify u v s))
+(define-syntax-rule (∃ (x ...) g ...)
+  (λ (s) (let ([x (var 'x)] ...) ((∧ g ...) s))))
 (define (walk* t s)
   (let ([t (walk t s)])
     (if (pair? t) (cons (walk* (car t) s) (walk* (cdr t) s)) t)))
@@ -73,41 +78,40 @@
   (walk* t (name-unknowns t '())))
 (define-syntax-rule (run* (x ...) g ...)
   (let ([x (var 'x)] ...)
-    (in-amb (reify (walk* (list x ...) ((conj g ...) '()))))))]
+    (in-amb (reify (walk* (list x ...) ((∧ g ...) '()))))))]
 @examples[#:eval ev-world #:no-result
-(define (P x y) (== y 1))]
+(define (P x y) (≡ y 1))]
 
 @examples[#:eval ev-world #:label #f
 (run* (q) (P q 1))
 (eval:error
  (run* (q)
-   (fresh (y)
-     ((function->relation values) q y)
+   (∃ (y)
+     ((function->relation id) q y)
      (P y 1))))]
 
-@racket[P] 自己答得出来：@racket[q] 是什么都行。接上 @racket[(function->relation values)]，同样的问题就问不出来了：它要先读出 @racket[q] 的值，可 @racket[q] 正是要问的。「交出原样的值」是函数的说法，分了输入和输出。关系的说法是两个位置相等，一条等式：
+@racket[P] 自己答得出来：@racket[q] 是什么都行。接上 @racket[(function->relation id)]，同样的问题就问不出来了：它要先读出 @racket[q] 的值，可 @racket[q] 正是要问的。「交出原样的值」是函数的说法，分了输入和输出。关系的说法是两个位置相等，一条等式：
 
 @examples[#:eval ev-world #:no-result
-(define (idᵒ x y) (== x y))]
+(define (idᵒ x y) (≡ x y))]
 
 @examples[#:eval ev-world #:label #f
 (run* (q)
-  (fresh (y)
+  (∃ (y)
     (idᵒ q y)
     (P y 1)))]
 
-答案和 @racket[P] 自己的一样。在关系语言里，恒等关系是相等：两个位置相等，问哪个都可以。零个关系的复合就是 @racket[idᵒ]，复合可以写下来了：
+答案和 @racket[P] 自己的一样。在关系语言里，恒等关系是相等：两个位置相等，问哪个都可以。零个关系的复合就是 @racket[idᵒ]，复合可以按参数个数直接写出来：
 
 @examples[#:eval ev-world #:no-result
-(define (∘ᵒ . r*)
-  (if (null? r*)
-      idᵒ
-      (λ (x z)
-        (fresh (y)
-          ((apply ∘ᵒ (cdr r*)) x y)
-          ((car r*) y z)))))]
+(define ∘ᵒ
+  (case-λ
+    [() idᵒ]
+    [(P) P]
+    [(Q P) (λ (x z) (∃ (y) (P x y) (Q y z)))]
+    [(Q . P*) (∘ᵒ Q (apply ∘ᵒ P*))]))]
 
-@defsym["Q ∘ᵒ P" "关系语言里的复合：fresh 造出中间的未知项"]@racket[∘ᵒ] 和 @racket[∘] 一样从右往左写：中间的 @racket[y] 把两个关系连起来，右边的关系说 @racket[x] 与 @racket[y]，左边的说 @racket[y] 与 @racket[z]。
+@defsym["Q ∘ᵒ P" "关系语言里的复合：∃ 造出中间的未知项"]@racket[∘ᵒ] 和 @racket[∘] 一样从右往左写：两个关系复合时，中间的 @racket[y] 把它们连起来，右边的关系说 @racket[x] 与 @racket[y]，左边的说 @racket[y] 与 @racket[z]。
 
 @section[#:tag "05:four-steps-o"]{四步搬过来}
 
@@ -132,18 +136,16 @@
 @racketblock[
 (let*      ([y (f x)] [z (g y)]) z)  =  ((∘ℬ g f) x)
 (for*/list ([y (f x)] [z (g y)]) z)  =  ((∘ℒ g f) x)
-(fresh (y) (P x y) (Q y z))          =  ((∘ᵒ Q P) x z)]
+(∃ (y) (P x y) (Q y z))              =  ((∘ᵒ Q P) x z)]
 
-前两行的右边交出 @racket[z]；第三行没有谁交出什么，@racket[x] 与 @racket[z] 都只是位置。三种都是复合，中间结果 @racket[y] 在前两行由绑定命名，在第三行由 @racket[fresh] 造出。
+前两行的右边交出 @racket[z]；第三行没有谁交出什么，@racket[x] 与 @racket[z] 都只是位置。三种都是复合，中间结果 @racket[y] 在前两行由绑定命名，在第三行由 @racket[∃] 造出。
 
 关系语言不分输入输出，可四步是从函数搬来的，里面的函数仍然只算已经知道的值。倒过来问哪组边界能得到 @racket[(3 4 5)]：
 
 @examples[#:eval ev-world #:label #f
 (eval:error (run* (b) (right-triangleᵒ b '(3 4 5))))]
 
-@margin-note{报错里的 @racket[y] 是 @racket[∘ᵒ] 造出的未知项：最右边接的是 @racket[idᵒ]，@racket[y] 与 @racket[b] 相等，同样没有值。}
-
-@racket[pick-aᵒ] 要读出边界的值，可边界正是要问的东西。
+@racket[pick-aᵒ] 要读出边界 @racket[b] 的值，可边界正是要问的东西。
 
 @section[#:tag "05:worlds"]{几个世界之间}
 
@@ -153,4 +155,13 @@
 
 从 ℬ 到 ℛ，刚才搬过：@racket[function->relation] 把四步搬成关系，照原来的方向问，六组照样出来。
 
-从 ℛ 往回搬，就不一定了。ℒ 的箭头收到一个输入，交出一张列表，列出表里与它同在一行的每一项。拿前面那个只看第二个位置的 @racket[P] 来说，把第二个位置当作输入，问 @racket[(run* (q) (P q 1))]，答案是 @tt{(_.0)}：@racket[q] 是什么都行。同一个输入对着无穷多行，写不成一张列表；ℬ 的箭头要为每一行返回一次，同样走不完。@xref["05:compose"]{「二元关系的复合」}说过，带 @racket[amb] 的函数表示的是每个输入只占有限多行的二元关系。ℛ 里的关系不受这个限制：@tt{_.0} 这一个名字，就代表了那无穷多行。
+从 ℛ 往回搬，就不一定了。ℒ 的箭头收到一个输入，交出一张列表，列出表里与它同在一行的每一项。看一个最简单的二元关系，全关系 @racket[U]，任何两个项都满足它：
+
+@examples[#:eval ev-world #:no-result
+(define (U x y) ⊤)]
+
+@examples[#:eval ev-world #:label #f
+(run* (y) (U 1 y))
+(run* (x) (U x 1))]
+
+无论固定哪一列当作输入，答案都是 @tt{(_.0)}：另一列是什么都行。同一个输入对着无穷多行，写不成一张有限的列表；ℬ 的箭头要为每一行返回一次，同样走不完。@xref["05:compose"]{「二元关系的复合」}说过，带 @racket[amb] 的函数表示的是每个输入只占有限多行的二元关系。ℛ 里的关系不受这个限制：@tt{_.0} 这一个名字，就代表了那无穷多行。

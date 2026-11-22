@@ -48,16 +48,20 @@
 (define ((gather g) . x*) (in-amb (apply g x*)))
 
 (: ∘ℒ (∀ (p ...) (→ (→ℒ pn-1 pn) ... (→ℒ p1 p2) (→ℒ p1 pn))))
-(define (∘ℒ . f*)
-  (define-values (g* f) (split-at-right f* 1))
-  (λ x* (foldr append-map (apply (car f) x*) g*)))
+(define ∘ℒ
+  (case-λ
+    [() (λ (x) (list x))]
+    [f* (define-values (g* f) (split-at-right f* 1))
+        (λ x* (foldr append-map (apply (car f) x*) g*))]))
 
 ;; 关系语言
 
+(define-type (Dictionary k v) (Listof (Pair k v)))
 (struct var ([name : Symbol]) #:type-name Var #:transparent)
 (define-type Literal (∪ Boolean Number Char Bytes String Keyword Null Symbol))
+(define-type Data (∪ Literal (Pair Data Data)))
 (define-type Term (∪ Literal Var (Pair Term Term)))
-(define-type Substitution (Listof (Pair Var Term)))
+(define-type Substitution (Dictionary Var Term))
 (define-type Goal (→ℬ Substitution Substitution))
 
 (: walk (→ Term Substitution Term))
@@ -93,14 +97,14 @@
           [(equal? u v) s]
           [else (amb)])))
 
-(: value-of (→ Term Substitution Term))
+(: value-of (→ Term Substitution Data))
 (define (value-of t s)
   (let ([t (walk t s)])
     (cond [(var? t) (error 'value-of "~a 的值还不知道" (var-name t))]
           [(pair? t) (cons (value-of (car t) s) (value-of (cdr t) s))]
           [else t])))
 
-(: reify (→ Term Term))
+(: reify (→ Term Data))
 (define (reify t)
   (define (name-unknowns t s)
     (let ([t (walk t s)])
@@ -109,43 +113,44 @@
             [else s])))
   (walk* t (name-unknowns t '())))
 
-(: succeed Goal)
-(: fail Goal)
-(define (succeed s) s)
-(define (fail s) (amb))
+(: ⊤ Goal)
+(: ⊥ Goal)
+(define (⊤ s) s)
+(define (⊥ s) (amb))
 
-(: == (→ Term Term Goal))
-(define ((== u v) s) (unify u v s))
+(: ≡ (→ Term Term Goal))
+(define ((≡ u v) s) (unify u v s))
 
-(: conj (→ Goal ... Goal))
-(: disj (→ Goal ... Goal))
-(define (conj . g*) (apply ∘ℬ (reverse g*)))
-(define ((disj . g*) s) ((list->amb g*) s))
+(: ∧ (→ Goal ... Goal))
+(: ∨ (→ Goal ... Goal))
+(define (∧ . g*) (apply ∘ℬ (reverse g*)))
+(define ((∨ . g*) s) ((list->amb g*) s))
 
-(define-syntax-rule (fresh (x ...) g ...)
-  (λ (s) (let ([x (var 'x)] ...) ((conj g ...) s))))
+(define-syntax-rule (∃ (x ...) g ...)
+  (λ (s) (let ([x (var 'x)] ...) ((∧ g ...) s))))
 
 (define-syntax-rule (run* (x ...) g ...)
   (let ([x (var 'x)] ...)
-    (in-amb (reify (walk* (list x ...) ((conj g ...) '()))))))
+    (in-amb (reify (walk* (list x ...) ((∧ g ...) '()))))))
 
+(: function->relation (→ (→ℬ Data ... Data) (→ Term ... Goal)))
 (define (((function->relation f) . t*) s)
   (define-values (in* out*) (split-at-right t* 1))
   (unify (car out*) (apply f (for/list ([t in*]) (value-of t s))) s))
 
+(: predicate->relation (→ (→ Data ... Boolean) (→ Term ... Goal)))
 (define (((predicate->relation p?) . t*) s)
   (check (apply p? (for/list ([t t*]) (value-of t s))))
   s)
 
 ;; 关系的世界
 
-(define (idᵒ x y) (== x y))
+(define (idᵒ x y) (≡ x y))
 
-(define (∘ᵒ . r*)
-  (if (null? r*)
-      idᵒ
-      (λ (x z)
-        (fresh (y)
-          ((apply ∘ᵒ (cdr r*)) x y)
-          ((car r*) y z)))))
+(define ∘ᵒ
+  (case-λ
+    [() idᵒ]
+    [(P) P]
+    [(Q P) (λ (x z) (∃ (y) (P x y) (Q y z)))]
+    [(Q . P*) (∘ᵒ Q (apply ∘ᵒ P*))]))
 }|

@@ -17,13 +17,17 @@
 
 @racket[between] 是交出结果的函数，写在绑定的右边，取出一个数来；@racket[pyth?] 是谓词，只回答是或否，要靠 @racket[check] 才用得上。一个取，一个查。它们描述的却是同一类东西：@racket[between] 是边界与其间的数之间的关系，@racket[pyth?] 是三条边之间的关系。取与查的分别来自函数，不来自关系。
 
-设想有一门语言，直接写关系。@racket[between] 和 @racket[pyth?] 在其中各有对应的关系，名字后面添一个上标 ᵒ：
+@xref["05:relation"]{「关系」}用集合的语言写过直角三角形。借着边界与边之间的关系，同一件事可以写成：
+
+@mm{{(a, b, c) | between(l, h, a) ∧ between(a, h, b) ∧ between(b, h, c) ∧ pyth(a, b, c)}}
+
+集合语言里没有「取」和「查」，四项都是关系，用 @math{∧} 连在一起，要求同时成立。能不能把这套集合语言逐字翻译成能运行的程序？设想有一门直接写关系的语言，@racket[between] 和 @racket[pyth?] 在其中各有对应的关系，名字后面添一个上标 ᵒ：
 
 @racketblock[
 (define betweenᵒ (function->relation  between))
 (define pythᵒ    (predicate->relation pyth?))]
 
-@racket[(pythᵒ a b c)] 说的是 @racket[a]、@racket[b]、@racket[c] 满足勾股定理。@racket[between] 收两个数交出一个，@racket[betweenᵒ] 就有三个位置，结果排在最后：@racket[(betweenᵒ l h a)] 说的是 @racket[a] 在 @racket[l] 与 @racket[h] 之间。两个关系的写法一样，不再分取与查。搜索写成：
+@racket[(pythᵒ a b c)] 说的是 @racket[a]、@racket[b]、@racket[c] 满足勾股定理。@racket[between] 收两个数交出一个，@racket[betweenᵒ] 就有三个位置，结果排在最后：@racket[(betweenᵒ l h a)] 说的是 @racket[a] 在 @racket[l] 与 @racket[h] 之间。两个关系的写法一样，不再分取与查。把上面的集合逐字翻成程序：
 
 @racketblock[
 (define (right-triangles l h)
@@ -33,7 +37,7 @@
     (betweenᵒ b h c)     (code:comment "b ≤ c ≤ h")
     (pythᵒ a b c)))      (code:comment "a² + b² = c²")]
 
-与 @racket[amb] 版一行对一行：三个绑定成了三行 @racket[betweenᵒ]，@racket[check] 的一行成了 @racket[pythᵒ]，最后交出的 @racket[(list a b c)] 挪到了 @racket[run*] 后面，@racket[in-amb] 那一层也收进了 @racket[run*]。它读起来更像集合的写法：@racket[run*] 是花括号，@racket[(a b c)] 是竖线左边的形状，下面四行是竖线右边的条件，要同时成立。
+@racket[run*] 对应集合的花括号，@racket[(a b c)] 是竖线左边的形状，下面四行是竖线右边用 @math{∧} 连起来的条件。与 @racket[amb] 版也是一行对一行：三个绑定成了三行 @racket[betweenᵒ]，@racket[check] 的一行成了 @racket[pythᵒ]，最后交出的 @racket[(list a b c)] 挪到了 @racket[run*] 后面，@racket[in-amb] 那一层也收进了 @racket[run*]。
 
 这还只是想要的写法，@racket[function->relation]、@racket[predicate->relation]、@racket[run*] 都还没有。改写里有一处不只是换名字：@racket[a]、@racket[b]、@racket[c] 原来由 @racket[let*] 绑定，每一行右边算出一个值，交给左边的名字；现在它们列在 @racket[run*] 后面，是三个还不知道的数，四行条件各说了一件关于它们的事。没有了绑定，这三个名字是什么？一行 @racket[(betweenᵒ l h a)] 写在那里，又交出了什么？
 
@@ -41,13 +45,13 @@
 
 原来的写法里，名字的事不用我们操心。Racket 有一份记录表，记着每个变量的值：@racket[let*] 的每一行造出一个新的变量，把右边算出的值记进去；后面的行引用 @racket[a]，就是从这份表里查出它的值。
 
-@racket[run*] 也造出新的变量，可它们的值要靠下面几行条件来定。@racket[(betweenᵒ l h a)] 是一次普通的调用，参数要先有，所以 @racket[run*] 造出的变量得是一种数据，可以当参数交进去。为了和 Racket 的变量分开，这种变量叫@defterm[#:en "logic variable"]{未知项}。于是这些调用的参数，除了数这样的字面量，还可能是未知项，或者由它们组成的序对，合起来叫@defterm[#:en "term"]{项}。未知项的值，Racket 不再替我们记，得自己记一张表：键是未知项，值是它等于的那个项，眼下记的都是数。
+@racket[run*] 也造出新的变量，可它们的值要靠下面几行条件来定。@racket[(betweenᵒ l h a)] 是一次普通的调用，参数要先有，所以 @racket[run*] 造出的变量得是一种数据，可以当参数交进去。为了和 Racket 的变量分开，这种变量叫@defterm{未知项}。不含未知项的值由数这样的字面量和序对组成，记作 @racket[Data]；添上未知项 @racket[Var]，合起来叫@defterm[#:en "term"]{项}。未知项的值，Racket 不再替我们记，得自己记一张字典：键是未知项，值是它等于的那个项，眼下记的都是数。
 
 @(define ev-goals (make-acf-eval))
 @examples[#:eval ev-goals #:hidden
 (require racket/control)
 (define ∘ compose)
-(define-type (Dict k v) (Listof (Pair k v)))
+(define-type (Dictionary k v) (Listof (Pair k v)))
 (define (pyth? a b c) (= (+ (* a a) (* b b)) (* c c)))
 (define (choose p*) (shift k (append-map k p*)))
 (define-syntax-rule (amb e ...) ((choose (list (λ () e) ...))))
@@ -61,15 +65,16 @@
 @examples[#:eval ev-goals #:no-result
 (struct var ([name : Symbol]) #:type-name Var #:transparent)
 (define-type Literal (∪ Boolean Number Char Bytes String Keyword Null Symbol))
+(define-type Data (∪ Literal (Pair Data Data)))
 (define-type Term (∪ Literal Var (Pair Term Term)))
-(define-type Substitution (Dict Var Term))]
+(define-type Substitution (Dictionary Var Term))]
 
 键不重复，这正是@xref["05:search"]{「遍历搜索」}里缓存用的那种字典。
 
 要问一个项的值：本来就是值的，就是它自己；未知项去表里查，查不到，说明它的值还不知道。
 
 @examples[#:eval ev-goals #:no-result
-(: value-of (→ Term Substitution Term))
+(: value-of (→ Term Substitution Data))
 (define (value-of t s)
   (cond [(not (var? t)) t]
         [(assq t s) => cdr]
@@ -110,23 +115,23 @@
 (: pyth? (→ ℕ⁺   ℕ⁺   ℕ⁺   Boolean))
 (: pythᵒ (→ Term Term Term Goal))]
 
-@racket[betweenᵒ] 也一样。这门语言里的@tech{关系}，是收下项、交出目标的函数；@racket[run*] 里的每一行是一次调用，交出一个目标。为免混淆，下文的「关系」只说 @racket[betweenᵒ]、@racket[pythᵒ] 这一种，说的是数与数之间的事；代换之间的那一种就叫目标。
+一般地，@tech{谓词}（也就是@tech{特征函数}）与这门语言里的@tech{关系}，类型正好并排对照：谓词是 @racket[(→ Data ... Boolean)]，收下数据，回答是或否；关系是 @racket[(→ Term ... Goal)]，收下可以含有未知项的项，交出目标。@racket[betweenᵒ] 也一样，@racket[run*] 里的每一行都是一次调用，交出一个目标。为免混淆，下文的「关系」只说 @racket[betweenᵒ]、@racket[pythᵒ] 这一种，说的是数与数之间的事；代换之间的那一种就叫目标。
 
-谓词的几个条件，用 @racket[and] 连起来。目标的几个条件怎样连？第二行 @racket[(betweenᵒ a h b)] 要读 @racket[a] 的值，它收到的得是第一行交出的代换；它添上 @racket[b]，再交给第三行。目标与目标之间要传东西，一行一行接下去：前一个交出的代换，交给后一个。@racket[let*] 把绑定一行一行接起来，@xref["05:two-ways"]{「关系的两种写法」}认出那是 @racket[∘ℬ]；把目标一行一行接起来的，还是 @racket[∘ℬ]。几个条件同时成立，叫@tech{合取}：
+谓词的几个条件，用 @racket[and] 连起来，集合语言里写成 @math{∧}。目标的几个条件怎样连？第二行 @racket[(betweenᵒ a h b)] 要读 @racket[a] 的值，它收到的得是第一行交出的代换；它添上 @racket[b]，再交给第三行。目标与目标之间要传东西，一行一行接下去：前一个交出的代换，交给后一个。@racket[let*] 把绑定一行一行接起来，@xref["05:two-ways"]{「关系的两种写法」}认出那是 @racket[∘ℬ]；把目标一行一行接起来的，还是 @racket[∘ℬ]。几个条件同时成立，叫@tech{合取}，照集合语言里的记号写成 @racket[∧]：
 
 @examples[#:eval ev-goals #:no-result
-(: conj (→ Goal ... Goal))
-(define (conj . g*) (apply ∘ℬ (reverse g*)))]
+(: ∧ (→ Goal ... Goal))
+(define (∧ . g*) (apply ∘ℬ (reverse g*)))]
 
-@racket[conj] 照写的顺序接：先写的先运行，和 @racket[let*] 一样，所以交给 @racket[∘ℬ] 之前要倒过来。
+@racket[∧] 照写的顺序接：先写的先运行，和 @racket[let*] 一样，所以交给 @racket[∘ℬ] 之前要倒过来。
 
-两头和中间都有了，@racket[run*] 可以写下来：造出未知项，把各行条件交出的目标接起来，从一张空的代换开始运行，再读出那几个未知项的值。走通的每条时间线交出一组，由 @racket[in-amb] 收齐。
+两头和中间都有了，@racket[run*] 可以写下来：造出未知项，把各行条件交出的目标用 @racket[∧] 接起来，从一张空的代换开始运行，再读出那几个未知项的值。走通的每条时间线交出一组，由 @racket[in-amb] 收齐。
 
 @examples[#:eval ev-goals #:no-result
 (define-syntax-rule (run* (x ...) g ...)
   (let ([x (var 'x)] ...)
     (in-amb
-     (let ([s ((conj g ...) '())])
+     (let ([s ((∧ g ...) '())])
        (list (value-of x s) ...)))))]
 
 @section[#:tag "05:run"]{跑起来}
@@ -149,10 +154,12 @@
 一般的 @racket[(betweenᵒ l h a)] 里，@racket[l]、@racket[h] 可能是未知项，要先用 @racket[value-of] 读出值，再交给 @racket[between]；@racket[between] 交出的数，照 @racket[g] 的样子记在最后一个位置上。四行条件里，最后一个位置都是还没有值的未知项，添一行就够了。@racket[(pythᵒ a b c)] 的三个位置都是给 @racket[pyth?] 的，全要读出值。谓词的是与否，成了目标的两种回答：成立就原样交回代换，不成立就一张也不交。
 
 @examples[#:eval ev-goals #:no-result
+(: function->relation (→ (→ℬ Data ... Data) (→ Term ... Goal)))
 (define (((function->relation f) . t*) s)
   (define-values (in* out*) (split-at-right t* 1))
   (cons (cons (car out*) (apply f (for/list ([t in*]) (value-of t s)))) s))
 
+(: predicate->relation (→ (→ Data ... Boolean) (→ Term ... Goal)))
 (define (((predicate->relation p?) . t*) s)
   (check (apply p? (for/list ([t t*]) (value-of t s))))
   s)]
@@ -178,15 +185,23 @@
 @examples[#:eval ev-goals #:label #f
 (let ([a (var 'a)] [b (var 'b)] [c (var 'c)])
   (in-amb
-   ((conj (betweenᵒ 1 20 a)
-          (betweenᵒ a 20 b)
-          (betweenᵒ b 20 c)
-          (pythᵒ a b c))
+   ((∧ (betweenᵒ 1 20 a)
+       (betweenᵒ a 20 b)
+       (betweenᵒ b 20 c)
+       (pythᵒ a b c))
     '())))]
 
 六张代换，一张对着一组答案。@racket[right-triangles] 是边界与三角形之间的二元关系，四行条件接成的目标是代换与代换之间的二元关系。给定一组边界，前者的表里以这组边界开头的那几行，就是后者的表里以空代换开头的那几行，用 @racket[value-of] 读出来。
 
-把 @racket[pythᵒ] 挪到最前面：
+不过这一版还经不起稍微换一种问法。先看最后一个位置：@racket[function->relation] 默认它永远是一个还没值的未知项，直接往表里添一行。要是同一个未知项出现在两行的最后一列，比如找同时在 1 到 2 之间、又在 2 到 3 之间的数，或者干脆在最后一列填进一个已知的数，直接添一行就坏了：
+
+@examples[#:eval ev-goals #:label #f
+(run* (a) (betweenᵒ 1 2 a) (betweenᵒ 2 3 a))
+(in-amb ((betweenᵒ 1 3 2) '()))]
+
+头一例里 3 明明不在 1 到 2 之间，却跟着出来了，2 还出了两次：第二行直接把新的一行盖在了前面。第二例更怪，代换的键成了数 2。
+
+再换一下四行条件的顺序，把 @racket[pythᵒ] 挪到最前面：
 
 @examples[#:eval ev-goals #:label #f
 (eval:error
@@ -196,4 +211,4 @@
    (betweenᵒ a 20 b)
    (betweenᵒ b 20 c)))]
 
-@racket[pythᵒ] 要读 @racket[a] 的值，可这时候还没有哪一行给过 @racket[a] 一个值。四行条件要同时成立，谁先谁后本不该有分别；分别来自两个包装：函数与谓词只能算已经知道的值。代换里记得下的也只有这样的事：某个未知项等于某个值。要是一行条件说的是两个未知项相等，两边都还不知道，这张表记得下吗？
+@racket[pythᵒ] 要读 @racket[a] 的值，可这时候还没有哪一行给过 @racket[a] 一个值。四行条件要同时成立，谁先谁后本不该有分别；分别来自两个包装，借来的函数与谓词骨子里仍然分输入和输出，只能算已经知道的值。不借函数和谓词，能不能直接造一个两个位置完全对称、交换顺序毫无区别的关系？集合语言里最基本的那一个就是相等：@math{x = y} 和 @math{y = x} 说的是同一件事，两边都可以是还不知道的未知项。
