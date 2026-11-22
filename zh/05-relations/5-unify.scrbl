@@ -27,9 +27,10 @@
      (let ([s (g '())])
        (list (value-of x s) ...)))))]
 @examples[#:eval ev-unify #:label #f
-(let* ([x (var 'x)] [y (var 'y)]
-       [s (list (cons x y) (cons y 5))])
-  (value-of x s))]
+(define x (var 'x))
+(define y (var 'y))
+(define s (list (cons x y) (cons y 5)))
+(value-of x s)]
 
 表记下来了，值却读不对。@racket[x] 对着 @racket[y]，@racket[value-of] 只查了一次，交出的是一个未知项；可 @racket[y] 的值，表里明明有。值可以是另一个未知项的时候，查表要顺着查下去，查到一个不在表里的项为止：
 
@@ -39,10 +40,10 @@
   (define p (and (var? t) (assq t s)))
   (if p (walk (cdr p) s) t))]
 
+用刚才那张代换试一试：
+
 @examples[#:eval ev-unify #:label #f
-(let* ([x (var 'x)] [y (var 'y)]
-       [s (list (cons x y) (cons y 5))])
-  (walk x s))]
+(walk x s)]
 
 添一行也不能照旧了。比如表里已经记着 @racket[x] 等于 5，再来一行等式说 @racket[x] 等于 6，直接添上，@racket[x] 就占了两行；等式要是写成 6 等于 @racket[x]，键还成了一个数。添之前，两边都要先顺着表查到底，再对称地比：有一边是未知项，就添上一行；两边都是序对，逐项去对；否则相等才走得通：
 
@@ -58,13 +59,14 @@
           [(equal? u v) s]
           [else (amb)])))]
 
+试三组不同的情况：
+
 @examples[#:eval ev-unify #:label #f
-(let ([x (var 'x)] [y (var 'y)])
-  (in-amb (unify x y '())))
-(let ([a (var 'a)] [b (var 'b)])
-  (in-amb (unify (list a 2) (list 1 b) '())))
-(let ([x (var 'x)])
-  (in-amb (unify 6 x (list (cons x 5)))))]
+(define a (var 'a))
+(define b (var 'b))
+(in-amb (unify x y '()))
+(in-amb (unify (list a 2) (list 1 b) '()))
+(in-amb (unify 6 x (list (cons x 5))))]
 
 头一例两边都不知道，添的一行记着 @racket[x] 等于 @racket[y]。第二例是两张各缺一项的列表，逐项去对，@racket[a] 对上 1，@racket[b] 对上 2：两边都从对面得到了自己缺的那一项。第三例里 @racket[x] 查到 5，与 6 对不上，这条时间线走不通，@racket[in-amb] 一张代换也没有收到。
 
@@ -85,6 +87,8 @@
     (cond [(var? t) (error 'value-of "~a 的值还不知道" (var-name t))]
           [(pair? t) (cons (value-of (car t) s) (value-of (cdr t) s))]
           [else t])))]
+
+用 @racket[≡] 和 @racket[run*] 试一试：
 
 @examples[#:eval ev-unify #:label #f
 (run* (x y) (∧ (≡ x y) (≡ y 5)))
@@ -120,6 +124,8 @@
 (: ∨ (→ Goal ... Goal))
 (define ((∨ . g*) s) ((list->amb g*) s))]
 
+试一试：
+
 @examples[#:eval ev-unify #:label #f
 (run* (x) (∨ (≡ x 1) (≡ x 2)))]
 
@@ -130,10 +136,8 @@
 @racket[∧] 与 @racket[∨] 都不限目标的个数。一个也不给呢？拿一张记着 @racket[a] 等于 1 的代换，各试一次：
 
 @examples[#:eval ev-unify #:label #f
-(let ([a (var 'a)])
-  (in-amb ((∧) (list (cons a 1)))))
-(let ([a (var 'a)])
-  (in-amb ((∨) (list (cons a 1)))))]
+(in-amb ((∧) (list (cons a 1))))
+(in-amb ((∨) (list (cons a 1))))]
 
 零个目标的合取把代换原样交了回来，一行也没有添：@racket[(∘ℬ)] 是恒等函数。零个目标的析取一张也不交：从零个备选里挑，就是 @racket[(amb)]。作为代换之间的二元关系，一个是@defterm[#:en "identity relation"]{恒等关系}，一个是一行也没有的@defterm[#:en "empty relation"]{空关系}；作为条件，一个总成立，一个总不成立。给它们各起一个名字：
 
@@ -243,6 +247,8 @@
 (define-syntax-rule (run* (x ...) g)
   (let ([x (var 'x)] ...)
     (in-amb (reify (walk* (list x ...) (g '()))))))]
+
+再试刚才报错的那一句，顺便看另外两例：
 
 @examples[#:eval ev-reify #:label #f
 (run* (x y) (≡ x y))

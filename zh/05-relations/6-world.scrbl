@@ -79,10 +79,8 @@
 (define-syntax-rule (run* (x ...) g)
   (let ([x (var 'x)] ...)
     (in-amb (reify (walk* (list x ...) (g '()))))))]
-@examples[#:eval ev-world #:no-result
-(define (P x y) (≡ y 1))]
-
 @examples[#:eval ev-world #:label #f
+(define (P x y) (≡ y 1))
 (run* (q) (P q 1))
 (eval:error
  (run* (q)
@@ -94,6 +92,8 @@
 
 @examples[#:eval ev-world #:no-result
 (define (idᵒ x y) (≡ x y))]
+
+换成 @racket[idᵒ] 再试：
 
 @examples[#:eval ev-world #:label #f
 (run* (q)
@@ -123,6 +123,8 @@
 (define pick-cᵒ      (function->relation pick-c))
 (define check-rightᵒ (function->relation check-right))
 (define right-triangleᵒ (∘ᵒ check-rightᵒ pick-cᵒ pick-bᵒ pick-aᵒ))]
+
+从 1 到 20 跑一遍：
 
 @examples[#:eval ev-world #:label #f
 (run* (t) (right-triangleᵒ '(1 20) t))]
@@ -157,10 +159,8 @@
 
 从 ℛ 往回搬，就不一定了。ℒ 的箭头收到一个输入，交出一张列表，列出表里与它同在一行的每一项。看一个最简单的二元关系，全关系 @racket[U]，任何两个项都满足它：
 
-@examples[#:eval ev-world #:no-result
-(define (U x y) ⊤)]
-
 @examples[#:eval ev-world #:label #f
+(define (U x y) ⊤)
 (run* (y) (U 1 y))
 (run* (x) (U x 1))]
 

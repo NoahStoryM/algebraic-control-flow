@@ -80,12 +80,15 @@
         [(assq t s) => cdr]
         [else (error 'value-of "~a 的值还不知道" (var-name t))]))]
 
+试一试查得到和查不到的情形：
+
 @examples[#:eval ev-goals #:label #f
-(let* ([a (var 'a)] [s (list (cons a 3))])
-  (list (value-of 5 s) (value-of a s)))
-(eval:error
- (let* ([a (var 'a)] [b (var 'b)] [s (list (cons a 3))])
-   (value-of b s)))]
+(define a (var 'a))
+(define b (var 'b))
+(define s (list (cons a 3)))
+(value-of 5 s)
+(value-of a s)
+(eval:error (value-of b s))]
 
 照着这张表，可以把未知项换成它的值，所以这样一张表叫@defterm[#:en "substitution"]{代换}。
 
@@ -94,7 +97,7 @@
 @examples[#:eval ev-goals #:label #f
 (var 'a)
 (eq? (var 'a) (var 'a))
-(let ([a (var 'a)]) (eq? a a))]
+(eq? a a)]
 
 造两次，打印出来一模一样，在表里却是两个键；同一次造出的才是同一个。
 
@@ -139,9 +142,8 @@
 @racket[run*] 写好了，还没有一个目标可以交给它。@racket[let*] 的一行 @racket[[a (between 1 3)]]，往 Racket 的记录表里添了一个名字；@racket[(betweenᵒ 1 3 a)] 该交出的目标，就往代换里添一行。先手写一个，从空的代换开始运行：
 
 @examples[#:eval ev-goals #:label #f
-(let* ([a (var 'a)]
-       [g (λ (s) (cons (cons a (between 1 3)) s))])
-  (in-amb (g '())))]
+(define g (λ (s) (cons (cons a (between 1 3)) s)))
+(in-amb (g '()))]
 
 @racket[g] 写出来是个普通的函数，收一张代换，交出一张。可 @racket[between] 返回了三次，@racket[g] 也就交出了三张，各记着 @racket[a] 等于其中一个数。把它交给 @racket[run*]：
 
@@ -177,19 +179,21 @@
        (betweenᵒ b h c)     (code:comment "b ≤ c ≤ h")
        (pythᵒ a b c))))     (code:comment "a² + b² = c²")]
 
+上下界仍取 1 和 20：
+
 @examples[#:eval ev-goals #:label #f
 (right-triangles 1 20)]
 
 还是那六组。同样的四行条件，接起来以后不读出，直接看它交出的代换：
 
 @examples[#:eval ev-goals #:label #f
-(let ([a (var 'a)] [b (var 'b)] [c (var 'c)])
-  (in-amb
-   ((∧ (betweenᵒ 1 20 a)
-       (betweenᵒ a 20 b)
-       (betweenᵒ b 20 c)
-       (pythᵒ a b c))
-    '())))]
+(define c (var 'c))
+(in-amb
+ ((∧ (betweenᵒ 1 20 a)
+     (betweenᵒ a 20 b)
+     (betweenᵒ b 20 c)
+     (pythᵒ a b c))
+  '()))]
 
 六张代换，一张对着一组答案。@racket[right-triangles] 是边界与三角形之间的二元关系，四行条件接成的目标是代换与代换之间的二元关系。给定一组边界，前者的表里以这组边界开头的那几行，就是后者的表里以空代换开头的那几行，用 @racket[value-of] 读出来。
 
