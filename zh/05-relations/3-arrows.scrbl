@@ -167,4 +167,13 @@ between  =  (scatter inclusive-range)]
 
 第一行的 @racket[f]、@racket[g] 是 ℬ 的箭头，第二行的是 ℒ 的箭头。两种箭头各有一种绑定的写法，写出来的都是复合，多出来的只是中间结果的名字。
 
+把到这里出现的三个世界和它们之间的转换画成一张@tech{图表}：
+
+@out-block|{                  gather
+             ┌──────────────→ ℒ
+𝒞 ───inj───→ ℬ ←──────────────┘
+                  scatter}|
+
+右边 ℬ 与 ℒ 之间是一个@tech{交换图表}：经 @racket[gather] 过去、再经 @racket[scatter] 回来，或者反过来走一趟，都回到原来的箭头。
+
 @bold{练习}：化简里有一步，@racket[in-amb] 展开成 @racket[reset] 与 @racket[list]，@racket[list->amb] 则直接换成了 @racket[choose]，这暗示两者的行为相同。展开 @racket[for/amb] 的定义，验证 @racket[list->amb] 与 @racket[choose] 是同一个函数。提示：@racket[for/amb] 交给 @racket[choose] 的是一张 λ 的列表，选出来以后还要调用一次。

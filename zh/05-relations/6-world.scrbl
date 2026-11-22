@@ -186,23 +186,11 @@
 
 到这里，这门小语言已经造齐了：只有等式 @racket[≡]、@racket[∧]、@racket[∨]、@racket[∃] 和两个单位 @racket[⊤]、@racket[⊥]，整个实现不到一百行。它的骨架就是 microKanren，@defterm[#:en "logic programming"]{逻辑式编程}语言 miniKanren 的一个极小内核。在那里，未知项叫@defterm[#:en "logic variable"]{逻辑变量}，这六个记号常写作 @racket[==]、@racket[conj]、@racket[disj]、@racket[fresh]、@racket[succeed]、@racket[fail]，而 @racket[run*] 与 @racket[fresh] 也常添上一层语法糖，把多行目标自动包进 @racket[conj]。常见的实现用流来回溯：目标交出一串代换，合取与析取都要自己写出怎样接、怎样并。这里用 @racket[amb] 回溯，@racket[∧] 就是 ℬ 的复合，@racket[∨] 就是 @racket[amb]，这两样都是现成的；剩下要写的，主要是合一。
 
-@section[#:tag "05:worlds"]{几个世界之间}
+@section[#:tag "05:worlds"]{更大的世界}
 
-同一个二元关系，这一章有了三种写法：ℬ 里带 @racket[amb] 的函数，ℒ 里交出列表的函数，还有关系语言里的关系。前两种用 @racket[gather] 与 @racket[scatter] 来回搬，来回一趟回到原处。第三种所在的地方也起一个名字，记作 ℛ。把这一章出现的四个世界和它们之间的转换画成一张@tech{图表}：
+关系语言里的关系所在的地方也起一个名字，记作 ℛ。前面在 ℬ 与 ℒ 之间用 @racket[gather] 与 @racket[scatter] 来回搬，来回一趟回到原处；从 ℬ 到 ℛ，@racket[function->relation] 也能把带 @racket[amb] 的函数搬成关系（从 ℒ 到 ℛ，先用 @racket[scatter] 搬到 ℬ），照原来的方向问，六组照样出来。
 
-@out-block|{                  gather
-             ┌──────────────→ ℒ
-𝒞 ───inj───→ ℬ ←──────────────┘
-             │    scatter
-     function->relation
-             ↓
-             ℛ}|
-
-@margin-note{来回一趟回到原处，比的是列表，先后与重复都算在内，搜索要能走完。搬到 ℛ 以后，核对的是输入已经知道的那些问法。从 ℒ 到 ℛ，先用 @racket[scatter] 搬到 ℬ。}
-
-右上角 ℬ 与 ℒ 之间是一个@tech{交换图表}：经 @racket[gather] 过去、再经 @racket[scatter] 回来，或者反过来走一趟，都回到原来的箭头。往下从 ℬ 到 ℛ，@racket[function->relation] 把四步搬成关系，照原来的方向问，六组照样出来。
-
-可是从 ℛ 往回搬，图表里没有画回去的箭头。ℒ 的箭头收到一个输入，交出一张列表，列出表里与它同在一行的每一项。看一个最简单的二元关系，全关系 @racket[Uᵒ]，任何两个项都满足它：
+可是从 ℛ 搬回 ℬ 或 ℒ，一般做不到。ℒ 的箭头收到一个输入，交出一张列表，列出表里与它同在一行的每一项。看一个最简单的二元关系，全关系 @racket[Uᵒ]，任何两个项都满足它：
 
 @examples[#:eval ev-reify #:label #f
 (define (Uᵒ x y) ⊤)
