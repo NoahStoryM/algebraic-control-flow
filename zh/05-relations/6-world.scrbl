@@ -184,17 +184,17 @@
 
 @margin-note{和常见的实现相比，还有几处不同：未知项按身份区分，不编号；合取是直接复合，何时推迟一步计算、怎样取用答案，写法也不一样，交出答案的顺序因此可能不同。}
 
-到这里，这门小语言已经造齐了：只有等式 @racket[≡]、@racket[∧]、@racket[∨]、@racket[∃] 和两个单位 @racket[⊤]、@racket[⊥]，整个实现不到一百行。它的骨架就是 microKanren，@defterm[#:en "logic programming"]{逻辑式编程}语言 miniKanren 的一个极小内核。在那里，未知项叫@defterm[#:en "logic variable"]{逻辑变量}，这六个记号常写作 @racket[==]、@racket[conj]、@racket[disj]、@racket[fresh]、@racket[succeed]、@racket[fail]，而 @racket[run*] 与 @racket[fresh] 也常添上一层语法糖，把多行目标自动包进 @racket[conj]。常见的实现用流来回溯：目标交出一串代换，合取与析取都要自己写出怎样接、怎样并。这里用 @racket[amb] 回溯，@racket[∧] 就是 ℬ 的复合，@racket[∨] 就是 @racket[amb]，这两样都是现成的；剩下要写的，主要是合一。
+到这里，这门小语言已经造齐了：只有等式 @racket[≡]、@racket[∧]、@racket[∨]、@racket[∃] 和两个单位 @racket[⊤]、@racket[⊥]，整个实现不到一百行。它的骨架就是 microKanren，@defterm[#:en "relational programming"]{关系式编程}（@defterm[#:en "logic programming"]{逻辑式编程}的一个分支）语言 miniKanren 的一个极小内核。在那里，未知项叫@defterm[#:en "logic variable"]{逻辑变量}，这六个记号常写作 @racket[==]、@racket[conj]、@racket[disj]、@racket[fresh]、@racket[succeed]、@racket[fail]，而 @racket[run*] 与 @racket[fresh] 也常添上一层语法糖，把多行目标自动包进 @racket[conj]。常见的实现用流来回溯：目标交出一串代换，合取与析取都要自己写出怎样接、怎样并。这里用 @racket[amb] 回溯，@racket[∧] 就是 ℬ 的复合，@racket[∨] 就是 @racket[amb]，这两样都是现成的；剩下要写的，主要是合一。
 
 @section[#:tag "05:worlds"]{更大的世界}
 
-关系语言里的关系所在的地方也起一个名字，记作 ℛ。前面在 ℬ 与 ℒ 之间用 @racket[gather] 与 @racket[scatter] 来回搬，来回一趟回到原处；从 ℬ 到 ℛ，@racket[function->relation] 也能把带 @racket[amb] 的函数搬成关系（从 ℒ 到 ℛ，先用 @racket[scatter] 搬到 ℬ），照原来的方向问，六组照样出来。
+前面在 ℬ 与 ℒ 之间用 @racket[gather] 与 @racket[scatter] 来回搬，来回一趟回到原处；用 @racket[function->relation] 也能把 ℬ 里带 @racket[amb] 的函数搬进这门关系语言（从 ℒ 出发，先用 @racket[scatter] 搬到 ℬ），照原来的方向问，六组照样出来。
 
-可是从 ℛ 搬回 ℬ 或 ℒ，一般做不到。ℒ 的箭头收到一个输入，交出一张列表，列出表里与它同在一行的每一项。看一个最简单的二元关系，全关系 @racket[Uᵒ]，任何两个项都满足它：
+可是反过来，把关系语言里的关系搬回 ℬ 或 ℒ，一般做不到。ℒ 的箭头收到一个输入，交出一张列表，列出表里与它同在一行的每一项。看一个最简单的二元关系，全关系 @racket[Uᵒ]，任何两个项都满足它：
 
 @examples[#:eval ev-reify #:label #f
 (define (Uᵒ x y) ⊤)
 (run* (y) (Uᵒ 1 y))
 (run* (x) (Uᵒ x 1))]
 
-无论固定哪一列当作输入，答案都是 @tt{(_.0)}：另一列是什么都行。同一个输入对着无穷多行，无法一般地写成枚举同一外延关系全部具体输出的有限列表；ℬ 的箭头要为每一行返回一次，同样走不完。@xref["05:compose"]{「二元关系的复合」}说过，带 @racket[amb] 的函数表示的是每个输入只占有限多行的二元关系。ℛ 里的关系不受这个限制：@tt{_.0} 这一个名字，就代表了那无穷多行。
+无论固定哪一列当作输入，答案都是 @tt{(_.0)}：另一列是什么都行。同一个输入对着无穷多行，无法一般地写成枚举同一外延关系全部具体输出的有限列表；ℬ 的箭头要为每一行返回一次，同样走不完。@xref["05:compose"]{「二元关系的复合」}说过，带 @racket[amb] 的函数表示的是每个输入只占有限多行的二元关系。关系语言里的关系不受这个限制：@tt{_.0} 这一个名字，就代表了那无穷多行。

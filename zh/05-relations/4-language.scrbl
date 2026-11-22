@@ -1,6 +1,6 @@
 #lang acf/scribble
 
-@title[#:tag "05:4-language"]{描述关系的语言}
+@title[#:tag "05:4-language"]{关系式编程}
 
 到这里，关系都是用函数模拟的：交出列表的函数，或者带 @racket[amb] 的函数。可函数总分输入和输出，表里的列本来不分。能不能直接把表里的条件写下来？
 
