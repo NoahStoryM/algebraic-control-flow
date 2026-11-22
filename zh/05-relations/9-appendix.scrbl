@@ -56,8 +56,8 @@
     [f* (define-values (g* f) (split-at-right f* 1))
         (λ x* (foldr append-map (apply (car f) x*) g*))]))
 
-(: extend (∀ (p q) (→ (→ℒ p q) (→𝒞 (Listof p) (Listof q)))))
-(define ((extend f) xs) (append-map f xs))
+(: flat-map (∀ (p q) (→ (→ℒ p q) (→𝒞 (Listof p) (Listof q)))))
+(define ((flat-map f) xs) (append-map f xs))
 
 ;; 关系语言
 

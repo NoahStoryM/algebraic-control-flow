@@ -167,30 +167,31 @@ between  =  (scatter inclusive-range)]
 
 第一行的 @racket[f]、@racket[g] 是 ℬ 的箭头，第二行的是 ℒ 的箭头。两种箭头各有一种绑定的写法，写出来的都是复合，多出来的只是中间结果的名字。
 
-@racket[∘ℒ] 靠的是改换复合，让 @math{p →@subscript{ℒ} q} 这种箭头自己接得上。还有另一种办法：把每支 ℒ 的箭头包一层，让它收一张列表、交出一张列表，回到纯宿主 𝒞 里，普通的 @racket[∘] 就又能直接接上：
+回头看刚才化简出来的 @racket[(append-map g (f x))]。把 @racket[append-map] 柯里化，先只交给它第一步的 @racket[g]，得到的函数收一张列表、交出一张列表，记作 @racket[flat-map]：
 
 @examples[#:eval ev-two-ways #:no-result
-(: extend (∀ (p q) (→ (→ℒ p q) (→𝒞 (Listof p) (Listof q)))))
-(define ((extend f) xs) (append-map f xs))]
+(: flat-map (∀ (p q) (→ (→ℒ p q) (→𝒞 (Listof p) (Listof q)))))
+(define ((flat-map f) xs) (append-map f xs))]
 
-@racket[extend] 把 @racket[∘ℒ] 送回普通的 @racket[∘]，把单位 @racket[(λ (x) (list x))] 送回 @racket[id]：
+@racket[flat-map] 把 ℒ 的箭头搬回纯宿主 𝒞，普通的 @racket[∘] 于是又接得上了。刚才的 @racket[∘ℒ] 其实就是把左边的箭头经 @racket[flat-map] 搬回 𝒞 再用 @racket[∘] 接上；@racket[flat-map] 本身也把 @racket[∘ℒ] 送回普通的 @racket[∘]，把单位 @racket[(λ (x) (list x))] 送回 @racket[id]：
 
 @racketblock[
-(extend (∘ℒ g f))          =  (∘ (extend g) (extend f))
-(extend (λ (x) (list x)))  =  id]
+(∘ℒ g f)                     =  (∘ (flat-map g) f)
+(flat-map (∘ℒ g f))          =  (∘ (flat-map g) (flat-map f))
+(flat-map (λ (x) (list x)))  =  id]
 
 把到这里出现的三个世界和它们之间的转换画成一张@tech{图表}：
 
-@out-block|{                  gather
-             ┌─────────────→ ℒ
-𝒞 ───inj───→ ℬ ←────────────┘│
-↑                 scatter    │
-└────────── extend ──────────┘}|
+@out-block|{𝒞 ───inj─────→ ℬ
+↑              ↑
+│      scatter │ gather
+│              ↓
+└── flat-map ─ ℒ}|
 
-右边 ℬ 与 ℒ 之间是一个@tech{交换图表}：经 @racket[gather] 过去、再经 @racket[scatter] 回来，或者反过来走一趟，都回到原来的箭头。把一支纯函数 @racket[f] 沿着外圈从 𝒞 出发，经 @racket[inj]、@racket[gather]、@racket[extend] 绕回 𝒞，展开它：
+右边 ℬ 与 ℒ 之间是一个@tech{交换图表}：经 @racket[gather] 过去、再经 @racket[scatter] 回来，或者反过来走一趟，都回到原来的箭头。把一支纯函数 @racket[f] 沿着外圈从 𝒞 出发，经 @racket[inj]、@racket[gather]、@racket[flat-map] 绕回 𝒞，展开它：
 
 @racketblock[
-#,(hspace 2)((extend (gather (inj f))) xs)
+#,(hspace 2)((flat-map (gather (inj f))) xs)
 = (append-map (λ (x) (list (f x))) xs)
 = (map f xs)]
 
