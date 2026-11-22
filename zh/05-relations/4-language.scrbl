@@ -59,7 +59,7 @@
 (define-syntax-rule (in-amb e) (reset (list e)))
 (define (between lo hi) (for/amb ([n (inclusive-range lo hi)]) n))
 (define (check ok?) (unless ok? (amb)))
-(define-type (→ℬ p q) (→ p q))
+(define-type (→ℬ p ... q) (→ p ... q))
 (define ∘ℬ ∘)
 (define (list->amb v*) (for/amb ([v (in-list v*)]) v))]
 @examples[#:eval ev-goals #:no-result
@@ -108,7 +108,7 @@
 @examples[#:eval ev-goals #:no-result
 (define-type Goal (→ℬ Substitution Substitution))]
 
-这样的函数叫@defterm[#:en "goal"]{目标}。ℬ 的箭头写的是二元关系，目标也是：表的两列是收到的代换和交出的代换。
+这样的函数叫@defterm[#:en "goal"]{目标}。ℬ 的箭头写的是二元关系，目标也是：表的两列是收到的代换和交出的代换。这里因此有两层：目标作用在代换上（@racket[(→ℬ Substitution Substitution)]），而下面要写的关系作用在项上，调用以后交出一个目标（@racket[(→ Term ... Goal)]）。
 
 @margin-note{目标也可以写成 ℒ 的箭头 @racket[(→ℒ Substitution Substitution)]，交出一张代换的列表，用不着 @racket[amb]：接起来用的换成 @racket[∘ℒ]。两种写法之间，就是 @racket[gather] 与 @racket[scatter]。}
 
@@ -156,15 +156,17 @@
 一般的 @racket[(betweenᵒ l h a)] 里，@racket[l]、@racket[h] 可能是未知项，要先用 @racket[value-of] 读出值，再交给 @racket[between]；@racket[between] 交出的数，照 @racket[g] 的样子记在最后一个位置上。四行条件里，最后一个位置都是还没有值的未知项，添一行就够了。@racket[(pythᵒ a b c)] 的三个位置都是给 @racket[pyth?] 的，全要读出值。谓词的是与否，成了目标的两种回答：成立就原样交回代换，不成立就一张也不交。
 
 @examples[#:eval ev-goals #:no-result
-(: function->relation (→ (→ℬ Data ... Data) (→ Term ... Goal)))
+(: function->relation (∀ (a ... b) (→ (→ℬ a ... b) (→ Term ... Term Goal))))
 (define (((function->relation f) . t*) s)
   (define-values (in* out*) (split-at-right t* 1))
   (cons (cons (car out*) (apply f (for/list ([t in*]) (value-of t s)))) s))
 
-(: predicate->relation (→ (→ Data ... Boolean) (→ Term ... Goal)))
+(: predicate->relation (∀ (a ...) (→ (→ a ... Boolean) (→ Term ... Goal))))
 (define (((predicate->relation p?) . t*) s)
   (check (apply p? (for/list ([t t*]) (value-of t s))))
   s)]
+
+@margin-note{这里的 @racket[a ...] 与 @racket[b] 是 @racket[Data] 的子类型（如 @racket[ℕ⁺]）；包装后的关系多出一个结果位置，调用时读出的已知参数仍需落在原函数或谓词的定义域里。}
 
 想要的写法里缺的东西都有了。伪代码原样运行：
 

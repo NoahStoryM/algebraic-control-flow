@@ -19,8 +19,10 @@
 (define (choose p*) (shift k (append-map k p*)))
 
 (define-syntax-rule (amb e ...) ((choose (list (λ () e) ...))))
-(define-syntax-rule (for/amb  clauses body ...) ((choose (for/list  clauses (λ () body ...)))))
-(define-syntax-rule (for*/amb clauses body ...) ((choose (for*/list clauses (λ () body ...)))))
+(define-syntax-rule (for/amb clauses body ...)
+  ((choose (for/list clauses (λ () body ...)))))
+(define-syntax-rule (for*/amb clauses body ...)
+  ((choose (for*/list clauses (λ () body ...)))))
 (define-syntax-rule (in-amb e) (reset (list e)))
 
 (: check (→ Boolean Void))
@@ -28,11 +30,11 @@
 
 ;; 关系的两种写法
 
-(define-type (→𝒞 p q) (→ p q))
-(define-type (→ℬ p q) (→ p q))
-(define-type (→ℒ p q) (→ p (Listof q)))
+(define-type (→𝒞 p ... q) (→ p ... q))
+(define-type (→ℬ p ... q) (→ p ... q))
+(define-type (→ℒ p ... q) (→ p ... (Listof q)))
 
-(: inj (∀ (p q) (→ (→𝒞 p q) (→ℬ p q))))
+(: inj (∀ (p ... q) (→ (→𝒞 p ... q) (→ℬ p ... q))))
 (define (inj f) f)
 
 (: ∘ℬ (∀ (p ...) (→ (→ℬ pn-1 pn) ... (→ℬ p1 p2) (→ℬ p1 pn))))
@@ -41,10 +43,10 @@
 (: list->amb (∀ (p) (→ (Listof p) p)))
 (define (list->amb v*) (for/amb ([v (in-list v*)]) v))
 
-(: scatter (∀ (p q) (→ (→ℒ p q) (→ℬ p q))))
+(: scatter (∀ (p ... q) (→ (→ℒ p ... q) (→ℬ p ... q))))
 (define (scatter f) (∘ list->amb f))
 
-(: gather (∀ (p q) (→ (→ℬ p q) (→ℒ p q))))
+(: gather (∀ (p ... q) (→ (→ℬ p ... q) (→ℒ p ... q))))
 (define ((gather g) . x*) (in-amb (apply g x*)))
 
 (: ∘ℒ (∀ (p ...) (→ (→ℒ pn-1 pn) ... (→ℒ p1 p2) (→ℒ p1 pn))))
@@ -108,7 +110,8 @@
 (define (reify t)
   (define (name-unknowns t s)
     (let ([t (walk t s)])
-      (cond [(var? t) (cons (cons t (string->symbol (format "_.~a" (length s)))) s)]
+      (cond [(var? t)
+             (cons (cons t (string->symbol (format "_.~a" (length s)))) s)]
             [(pair? t) (name-unknowns (cdr t) (name-unknowns (car t) s))]
             [else s])))
   (walk* t (name-unknowns t '())))
@@ -133,20 +136,22 @@
   (let ([x (var 'x)] ...)
     (in-amb (reify (walk* (list x ...) (g '()))))))
 
-(: function->relation (→ (→ℬ Data ... Data) (→ Term ... Goal)))
+(: function->relation (∀ (a ... b) (→ (→ℬ a ... b) (→ Term ... Term Goal))))
 (define (((function->relation f) . t*) s)
   (define-values (in* out*) (split-at-right t* 1))
   (unify (car out*) (apply f (for/list ([t in*]) (value-of t s))) s))
 
-(: predicate->relation (→ (→ Data ... Boolean) (→ Term ... Goal)))
+(: predicate->relation (∀ (a ...) (→ (→ a ... Boolean) (→ Term ... Goal))))
 (define (((predicate->relation p?) . t*) s)
   (check (apply p? (for/list ([t t*]) (value-of t s))))
   s)
 
 ;; 关系的世界
 
+(: idᵒ (→ Term Term Goal))
 (define idᵒ ≡)
 
+(: ∘ᵒ (→ (→ Term Term Goal) ... (→ Term Term Goal)))
 (define ∘ᵒ
   (case-λ
     [() idᵒ]

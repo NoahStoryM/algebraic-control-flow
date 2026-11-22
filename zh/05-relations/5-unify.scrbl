@@ -100,7 +100,7 @@
 回头看 @racket[function->relation]：原先默认最后一个位置是还没有值的未知项，直接添一行。现在让它与函数交出的值合一：没有值就添一行，有值就成了核对。
 
 @examples[#:eval ev-unify #:no-result
-(: function->relation (→ (→ℬ Data ... Data) (→ Term ... Goal)))
+(: function->relation (∀ (a ... b) (→ (→ℬ a ... b) (→ Term ... Term Goal))))
 (define (((function->relation f) . t*) s)
   (define-values (in* out*) (split-at-right t* 1))
   (unify (car out*) (apply f (for/list ([t in*]) (value-of t s))) s))]
@@ -140,6 +140,8 @@
 (in-amb ((∨) (list (cons a 1))))]
 
 零个目标的合取把代换原样交了回来，一行也没有添：@racket[(∘ℬ)] 是恒等函数。零个目标的析取一张也不交：从零个备选里挑，就是 @racket[(amb)]。作为代换之间的二元关系，一个是@defterm[#:en "identity relation"]{恒等关系}，一个是一行也没有的@defterm[#:en "empty relation"]{空关系}；作为条件，一个总成立，一个总不成立。给它们各起一个名字：
+
+@margin-note{前四章用 @racket[⊤] 与 @racket[⊥] 记单元类型与空类型；这里借用同一对逻辑真假记号表示 @racket[Goal] 类型的值，一个是恒等目标，一个是失败目标。}
 
 @examples[#:eval ev-unify #:no-result
 (: ⊤ Goal)
@@ -236,7 +238,8 @@
 (define (reify t)
   (define (name-unknowns t s)
     (let ([t (walk t s)])
-      (cond [(var? t) (cons (cons t (string->symbol (format "_.~a" (length s)))) s)]
+      (cond [(var? t)
+             (cons (cons t (string->symbol (format "_.~a" (length s)))) s)]
             [(pair? t) (name-unknowns (cdr t) (name-unknowns (car t) s))]
             [else s])))
   (walk* t (name-unknowns t '())))]
