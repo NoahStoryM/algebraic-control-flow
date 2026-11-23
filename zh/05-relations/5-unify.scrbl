@@ -126,7 +126,7 @@
 
 第一行每走通一次交出一个 @racket[z]，第二行把这些 @racket[z] 收成一张列表，第三行的 @racket[x] 与 @racket[z] 都是@tech{关系}的位置，调用交出的是@tech{目标}。三种都是复合，中间的 @racket[y] 在前两行由绑定命名，在第三行由 @racket[∃] 造出。
 
-有了复合，自然要问它的@tech{单位}。@xref["05:compose"]{「二元关系的复合」}里，这张@tech{单位}表已经有了两种现成的宿主写法：恒等函数 @racket[id] 与二元@tech{谓词} @racket[equal?]。把它们翻进关系语言，手头的两个包装够不够用？
+有了复合，自然要问它的@tech{单位}。@xref["05:two-ways"]{「关系的两种写法」}里，这张@tech{单位}表已经有了两种现成的宿主写法：恒等函数 @racket[id] 与二元@tech{谓词} @racket[equal?]。把它们翻进关系语言，手头的两个包装够不够用？
 
 @section[#:tag "05:unify-step"]{合一}
 

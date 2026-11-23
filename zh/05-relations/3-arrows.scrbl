@@ -69,12 +69,6 @@
 
 「存在这样的 @math{y}」成了「@math{P(x)} 里的每个 @math{y} 各取一次 @math{Q(y)}，再并起来」。
 
-有了复合，再看它的@defterm[#:en "unit"]{单位}。在集合的语言里，纯函数 @math{f} 对应的表是 @math{{(a, b) | b = f(a)}}。把 @math{f} 换成恒等函数 @racket[id]，式子化简为：
-
-@mm{{(a, b) | b = id(a)} = {(a, b) | b = a}}
-
-这张表把每个值都和它自己配成一行。把它接在任意@tech{二元关系}的左边或右边，中间一列都必须等于外列的值，遮住中间一列后原来的表完整留下。对应的@tech{特征函数}（也就是@tech{谓词}），正是判断两项是否相等的 @racket[equal?]；@racket[id] 和 @racket[equal?] 在这里描述的是同一张表。
-
 @section[#:tag "05:two-ways"]{关系的两种写法}
 
 有了 @racket[amb]，函数就是@tech{二元关系}，函数的复合就是@tech{二元关系}的复合。可是这份方便是借来的：@racket[amb] 不是宿主原有的运算，它靠 @racket[shift] 和 @racket[reset] 做出来，@racket[between] 也算不上纯函数。纯的宿主里没有 @racket[amb]，那里的@tech{二元关系}是什么样子？
@@ -99,6 +93,12 @@
 
 (: ∘ℬ (∀ (p ...) (→ (→ℬ pn-1 pn) ... (→ℬ p1 p2) (→ℬ p1 pn))))
 (define ∘ℬ ∘)]
+
+既然 ℬ 里的复合就是 @racket[∘]，它的@defterm[#:en "unit"]{单位}自然就是纯函数 @racket[id]（经 @racket[inj] 放进 ℬ 里还是 @racket[id]）。在集合的语言里，纯函数 @math{f} 对应的表是 @math{{(a, b) | b = f(a)}}，把 @math{f} 换成 @racket[id]，式子化简为：
+
+@mm{{(a, b) | b = id(a)} = {(a, b) | b = a}}
+
+这张表把每个值都和它自己配成一行：接在任意@tech{二元关系}的左边或右边，遮住中间一列后原来的表完整留下。对应的@tech{特征函数}（也就是@tech{谓词}），正是判断两项是否相等的 @racket[equal?]；@racket[id] 和 @racket[equal?] 在这里描述的是同一张表。
 
 要找的箭头不用另造，它早就有了，我们也不陌生：交出列表的函数。@racket[right-triangles] 是，@racket[inclusive-range] 也是，我们从一开始就是这样模拟@tech{关系}的，只是列表多记了结果的先后和重复，表不记这些。一个输入对应的结果不分几次返回，而是装进一张列表，一次交出来；箭头的类型从 @math{p → q} 改成 @math{p → (@ty{Listof} q)}。这种箭头@defsym["p →ℒ q" "交出列表的函数：纯宿主里的二元关系"]记作 @math{→@subscript{ℒ}}，都是纯函数。
 
