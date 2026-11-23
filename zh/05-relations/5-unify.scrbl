@@ -10,7 +10,28 @@
 
 @mm{{() | ⊤} = {()} @hspace[4] {() | ⊥} = {}}
 
-用上一节刚写出的 @racket[predicate->relation] 把这两个零参@tech{谓词}包装成@tech{关系}，再无参调用一次，交给不读任何位置的 @racket[(run* () ...)]：
+用上一节刚写出的 @racket[predicate->relation] 把它们包装成零元@tech{关系}，再无参调用一次，就得到两个@tech{目标}。把 @racket[predicate->relation] 与 @racket[check] 的定义展开，看看这两个@tech{目标}到底是什么。先看 @racket[(λ () #t)]：
+
+@racketblock[
+  ((predicate->relation (λ () #t)))
+= (λ (s) (check (apply (λ () #t) '())) s)
+= (λ (s) (check #t) s)
+= (λ (s) (unless #t (amb)) s)
+= (λ (s) s)]
+
+再看 @racket[(λ () #f)]：
+
+@racketblock[
+  ((predicate->relation (λ () #f)))
+= (λ (s) (check (apply (λ () #f) '())) s)
+= (λ (s) (check #f) s)
+= (λ (s) (unless #f (amb)) s)
+= (λ (s) (amb) s)
+= (λ (s) (amb))]
+
+最后一步里，@racket[(amb)] 直接放弃当前分支，后面的 @racket[s] 永远走不到，所以它与 @racket[(λ (s) (amb))] 行为相同。作为@tech{代换}之间的@tech{二元关系}，前者把任意@tech{代换}原样交回一次，是@defterm[#:en "identity relation"]{恒等关系}，总成立、总是成功，记作 @racket[⊤]；后者一次也不交，是一行也没有的@defterm[#:en "empty relation"]{空关系}，总不成立、总是失败，记作 @racket[⊥]：
+
+@margin-note{前四章用 @racket[⊤] 与 @racket[⊥] 记单元类型与@tech{空类型}；这里借用同一对逻辑真假记号表示 @racket[Goal] 类型的值，一个是恒等@tech{目标}，一个是失败@tech{目标}。}
 
 @(define ev-comp (make-acf-eval))
 @examples[#:eval ev-comp #:hidden
@@ -44,35 +65,6 @@
     (in-amb
      (let ([s (g '())])
        (list (value-of x s) ...)))))]
-@examples[#:eval ev-comp #:label #f
-(run* () ((predicate->relation (λ () #t))))
-(run* () ((predicate->relation (λ () #f))))]
-
-就算一个@tech{未知项}也不读，成功一次和一次也没成功，交出的列表仍然不同：第一行的 @racket['(())] 里有一行答案，行里有零个元素；第二行的 @racket['()] 里一行也没有。
-
-把 @racket[predicate->relation] 和 @racket[check] 的定义展开，看看这两个无参调用交出的@tech{目标}到底是什么。先看 @racket[(λ () #t)]：
-
-@racketblock[
-  ((predicate->relation (λ () #t)))
-= (λ (s) (check (apply (λ () #t) '())) s)
-= (λ (s) (check #t) s)
-= (λ (s) (unless #t (amb)) s)
-= (λ (s) s)]
-
-再看 @racket[(λ () #f)]：
-
-@racketblock[
-  ((predicate->relation (λ () #f)))
-= (λ (s) (check (apply (λ () #f) '())) s)
-= (λ (s) (check #f) s)
-= (λ (s) (unless #f (amb)) s)
-= (λ (s) (amb) s)
-= (λ (s) (amb))]
-
-最后一步里，@racket[(amb)] 直接放弃当前分支，后面的 @racket[s] 永远走不到，所以它与 @racket[(λ (s) (amb))] 行为相同。作为@tech{代换}之间的@tech{二元关系}，前者把任意@tech{代换}原样交回一次，是@defterm[#:en "identity relation"]{恒等关系}，总成立、总是成功，记作 @racket[⊤]；后者一次也不交，是一行也没有的@defterm[#:en "empty relation"]{空关系}，总不成立、总是失败，记作 @racket[⊥]：
-
-@margin-note{前四章用 @racket[⊤] 与 @racket[⊥] 记单元类型与@tech{空类型}；这里借用同一对逻辑真假记号表示 @racket[Goal] 类型的值，一个是恒等@tech{目标}，一个是失败@tech{目标}。}
-
 @examples[#:eval ev-comp #:no-result
 (: ⊤ Goal)
 (define (⊤ s) s)
@@ -80,7 +72,13 @@
 (: ⊥ Goal)
 (define (⊥ s) (amb))]
 
-两张零列的表，用现有的包装就已经能翻成最简单的两个@tech{目标}。
+现在把两张集合表逐字翻进关系语言，交给不读任何位置的 @racket[(run* () ...)]：
+
+@examples[#:eval ev-comp #:label #f
+(run* () ⊤)
+(run* () ⊥)]
+
+就算一个@tech{未知项}也不读，成功一次和一次也没成功，交出的列表仍然不同：第一行的 @racket['(())] 里有一行答案，行里有零个元素；第二行的 @racket['()] 里一行也没有。两张零列的表，用现有的包装就已经能翻出来。
 
 @section[#:tag "05:compose-o"]{藏起中间一列}
 
