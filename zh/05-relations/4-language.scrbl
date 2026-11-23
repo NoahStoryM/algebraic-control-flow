@@ -106,27 +106,25 @@
 @examples[#:eval ev-goals #:no-result
 (define-type Goal (→ℬ Substitution Substitution))]
 
-这里因此有两层：@tech{目标}收一张@tech{代换}、交出若干张@tech{代换}（@racket[(→ℬ Substitution Substitution)]）；@tech{关系}则收几个@tech{项}，调用后交出一个@tech{目标}（@racket[(→ Term ... Goal)]）。比如 @racket[(betweenᵒ 1 3 a)] 交出的是一个@tech{目标}，把空@tech{代换}交给这个@tech{目标}，才会走出三条分支、得到三张分别记着 @racket[a] 等于 1、2、3 的@tech{代换}。
-
 @margin-note{不用 @racket[amb]、直接按 @racket[(→ℒ Substitution Substitution)] 写成纯函数也可以，接起来用的换成 @racket[∘ℒ]；两种写法之间，正是 @racket[gather] 与 @racket[scatter]。}
 
-四条条件合起来是一个@tech{目标}，拆开来，每一条呢？先看最后的 @racket[(pythᵒ a b c)]。@racket[pyth?] 是@tech{谓词}，收下三个数，回答是或否。@racket[pythᵒ] 收下的是项，里面可能有@tech{未知项}，是或否就答不出来了：成立不成立，要看@tech{未知项}取什么值。@racket[pythᵒ] 答得出的是「在哪些取值下成立」，也就是从收到的@tech{代换}出发，哪些@tech{代换}走得通。所以它交出的是一个@tech{目标}：
+四条条件合起来是一个@tech{目标}，拆开来，每一条呢？先看最后的 @racket[(pythᵒ a b c)]。@racket[pyth?] 是@tech{谓词}，收下三个数，回答是或否。@racket[pythᵒ] 收下的是@tech{项}，里面可能有@tech{未知项}，是或否就答不出来了：成立不成立，要看@tech{未知项}取什么值。它答得出的是「在哪些取值下成立」，也就是从收到的@tech{代换}出发，哪些@tech{代换}走得通。所以 @racket[(pythᵒ a b c)] 交出的也是一个@tech{目标}：
 
 @racketblock[
 (: pyth? (→ ℕ⁺   ℕ⁺   ℕ⁺   Boolean))
 (: pythᵒ (→ Term Term Term Goal))]
 
-一般地，@tech{谓词}（也就是@tech{特征函数}）与这门语言里的@tech{关系}，类型正好并排对照：@tech{谓词}是 @racket[(→ Data ... Boolean)]，收下数据，回答是或否；@tech{关系}是 @racket[(→ Term ... Goal)]，收下可以含有@tech{未知项}的项，交出@tech{目标}。@racket[betweenᵒ] 也一样，@racket[run*] 里的每一条条件都是一次@tech{关系}调用，交出一个@tech{目标}。为免混淆，下文的「关系」只说 @racket[betweenᵒ]、@racket[pythᵒ] 这一种，说的是数与数之间的事；@tech{代换}之间的那一种就叫@tech{目标}。
+@racket[betweenᵒ] 也一样：@racket[(betweenᵒ 1 3 a)] 交出一个@tech{目标}，把空@tech{代换}交给它，才会走出三条分支，得到三张分别记着 @racket[a] 等于 1、2、3 的@tech{代换}。一般地，@tech{谓词}（也就是@tech{特征函数}）的类型是 @racket[(→ Data ... Boolean)]，收下数据、回答是或否；这门语言里的@tech{关系}类型是 @racket[(→ Term ... Goal)]，收下可能含有@tech{未知项}的@tech{项}，交出一个@tech{目标}。为免混淆，下文的「关系」专指 @racket[betweenᵒ]、@racket[pythᵒ] 这一种，说的是数据之间的事；@tech{代换}之间的那一种就叫@tech{目标}。
 
-@section[#:tag "05:run"]{跑起来}
-
-@tech{谓词}写的条件用 @racket[and] 连起来，集合语言里写成 @math{∧}。几个@tech{目标}怎样连？@racket[(betweenᵒ a h b)] 要读 @racket[a] 的值，收到的得是前一个@tech{目标} @racket[(betweenᵒ l h a)] 交出的@tech{代换}；它给@tech{代换}添上 @racket[b] 的值，再交给下一个@tech{目标} @racket[(betweenᵒ b h c)]。前一个@tech{目标}交出的@tech{代换}交给后一个：@xref["05:compose-l"]{「列表箭头的复合」}里，@racket[let*] 中先后两次调用写成了 @racket[∘ℬ]；这里接起前后两个@tech{目标}，用的也是 @racket[∘ℬ]。几个@tech{目标}同时成立，叫@tech{合取}，照集合语言里的记号写成 @racket[∧]：
+每一条条件都是一个@tech{目标}，四条合起来还是一个@tech{目标}，把它们接起来的 @racket[∧] 类型就是 @racket[(→ Goal ... Goal)]。@racket[(betweenᵒ a h b)] 要读 @racket[a] 的值，收到的得是前一个@tech{目标} @racket[(betweenᵒ l h a)] 交出的@tech{代换}；它给@tech{代换}添上 @racket[b] 的值，再交给下一个@tech{目标} @racket[(betweenᵒ b h c)]。前一个@tech{目标}交出的@tech{代换}交给后一个：@xref["05:compose-l"]{「列表箭头的复合」}里，@racket[let*] 中先后两次调用写成了 @racket[∘ℬ]；这里接起前后两个@tech{目标}，用的也是 @racket[∘ℬ]。几个@tech{目标}同时成立，叫@tech{合取}：
 
 @examples[#:eval ev-goals #:no-result
 (: ∧ (→ Goal ... Goal))
 (define (∧ . g*) (apply ∘ℬ (reverse g*)))]
 
 @racket[∧] 照写的顺序接：先写的先运行，和 @racket[let*] 一样，所以交给 @racket[∘ℬ] 之前要倒过来。
+
+@section[#:tag "05:run"]{跑起来}
 
 两头和中间都有了，@racket[run*] 可以写下来：造出@tech{未知项}，从一张空的@tech{代换}开始运行@tech{目标} @racket[g]，再读出那几个@tech{未知项}的值。走通的每条时间线交出一组取值，由 @racket[in-amb] 收齐。
 
