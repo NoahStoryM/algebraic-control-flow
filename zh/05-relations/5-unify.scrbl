@@ -289,7 +289,22 @@
 (run* (a) (∧ (betweenᵒ 1 2 a) (betweenᵒ 2 3 a)))
 (in-amb ((betweenᵒ 1 3 2) '()))]
 
-头一例里 3 明明不在 1 到 2 之间，却跟着出来了，2 还出了两次：第二行直接把新的一行盖在了前面。第二例更怪，@tech{代换}的键成了数 2。现在把直接添一行换成与函数交出的值@tech{合一}：没有值就添一行，有值就成了核对。
+头一例里 3 明明不在 1 到 2 之间，却跟着出来了，2 还出了两次：第二行直接把新的一行盖在了前面。第二例更怪，@tech{代换}的键成了数 2。
+
+像上一节那样先手写 @racket[betweenᵒ]，把原先的直接添一行换成与交出的值@tech{合一}：没有值就添一行，有值就成了核对：
+
+@examples[#:eval ev-unify #:no-result
+(define ((betweenᵒ l h a) s)
+  (unify a (between (value-of l s) (value-of h s)) s))]
+
+两例立刻都走得通了：
+
+@examples[#:eval ev-unify #:label #f
+(run* (a) (∧ (betweenᵒ 1 2 a) (betweenᵒ 2 3 a)))
+(run* () (betweenᵒ 1 3 2))
+(run* () (betweenᵒ 1 3 5))]
+
+把这一步放进 @racket[function->relation]：
 
 @examples[#:eval ev-unify #:no-result
 (: function->relation (∀ (a ... b) (→ (→ℬ a ... b) (→ Term ... Term Goal))))
@@ -297,22 +312,15 @@
   (define-values (in* out*) (split-at-right t* 1))
   (unify (car out*) (apply f (for/list ([t in*]) (value-of t s))) s))]
 
-两例立刻都走得通了：
-
-@examples[#:eval ev-unify #:hidden
-(define betweenᵒ (function->relation between))]
-@examples[#:eval ev-unify #:label #f
-(run* (a) (∧ (betweenᵒ 1 2 a) (betweenᵒ 2 3 a)))
-(run* () (betweenᵒ 1 3 2))
-(run* () (betweenᵒ 1 3 5))]
-
 @section[#:tag "05:equation"]{把两种情形并起来}
 
-有了 @racket[≡]、@racket[∧]、@racket[∨] 和 @racket[∃]，不借函数和@tech{谓词}，能不能直接写出一个递归的@tech{关系}？
+前面借来的 @racket[betweenᵒ] 和 @racket[pythᵒ] 都靠宿主函数算出值来，只能顺着输入算输出。现在手里已经有了 @racket[≡]、@racket[∧]、@racket[∨] 和 @racket[∃]，而且 @racket[unify] 天生就会匹配空表与序对。看看这一章在 @racket[append-map] 里反复用到的列表拼接函数 @racket[append]：它只拆装空表与 @racket[cons]，却因为写成函数，只能把左边两张列表接成右边一张，答不出「哪两张列表接起来是 @racket['(1 2 3)]」。不借宿主函数，直接用关系语言把 @racket[append] 的两种情形写出来：
 
-@racket[append] 把两张列表接成一张。它是函数，只能从左边两张算出右边一张。照它的定义写一个三个位置的@tech{关系} @racket[(appendᵒ l t out)]：@racket[l] 是空的，@racket[out] 就等于 @racket[t]；或者 @racket[l] 有头一个元素 @racket[a] 和剩下的 @racket[d]，@racket[out] 的头一个元素也是 @racket[a]，剩下的部分 @racket[res] 是 @racket[d] 接上 @racket[t]。
+@itemlist[
+@item{@racket[l] 是空的，@racket[out] 就等于 @racket[t]；}
+@item{@racket[l] 有头一个元素 @racket[a] 和剩下的 @racket[d]，@racket[out] 的头一个元素也是 @racket[a]，剩下的部分 @racket[res] 是 @racket[d] 接上 @racket[t]。}]
 
-两种情形用 @racket[∨] 并起来，每种情形里的几条等式用 @racket[∧] 连起来，中间用到的@tech{未知项} @racket[a]、@racket[d]、@racket[res] 用 @racket[∃] 造出。@racket[appendᵒ] 照上面那句话逐字写下来：
+两种情形用 @racket[∨] 并起来，每种情形里的几条等式用 @racket[∧] 连起来，中间用到的@tech{未知项} @racket[a]、@racket[d]、@racket[res] 用 @racket[∃] 造出，就得到三个位置的@tech{关系} @racket[appendᵒ]：
 
 @examples[#:eval ev-unify #:no-result
 (define (appendᵒ l t out)
@@ -338,10 +346,38 @@
 
 四种拆法都找到了。定义 @racket[appendᵒ] 的时候，没有哪一行写过「拆」：每一行都是等式，没有哪个位置是输入，哪个是输出。这是@tech{关系}不分输入输出的样子。
 
+写 @racket[appendᵒ] 时，@racket[run*]、@racket[∃] 和 @racket[∨] 的每一支里面都套了一层 @racket[∧]。给它们添上一层语法糖，让 @racket[run*] 与 @racket[fresh]（也就是带自动@tech{合取}的 @racket[∃]）自动把多条@tech{目标}用 @racket[∧] 接起来，再用 @racket[conde] 写出多支的@tech{析取}：
+
+@examples[#:eval ev-unify #:no-result
+(define-syntax-rule (run* (x ...) g ...)
+  (let ([x (var 'x)] ...)
+    (in-amb
+     (let ([s ((∧ g ...) '())])
+       (list (value-of x s) ...)))))
+
+(define-syntax-rule (fresh (x ...) g ...)
+  (∃ (x ...) (∧ g ...)))
+
+(define-syntax-rule (conde [g ...] ...)
+  (∨ (∧ g ...) ...))]
+
+用这三样重写 @racket[appendᵒ]，再跑一次：
+
+@examples[#:eval ev-unify #:label #f
+(define (appendᵒ l t out)
+  (conde
+   [(≡ l '()) (≡ t out)]
+   [(fresh (a d res)
+      (≡ l (cons a d))
+      (≡ out (cons a res))
+      (appendᵒ d t res))]))
+
+(run* (x y) (appendᵒ x y '(1 2 3)))]
+
 到这里，这门语言里的三种运算和它们的@tech{单位}都齐了：在@tech{代换}层，@tech{合取} @racket[∧] 的@tech{单位}是 @racket[⊤]，@tech{析取} @racket[∨] 的@tech{单位}是 @racket[⊥]；在@tech{关系}层，按外面两列的解看，@tech{二元关系}复合 @racket[∘ᵒ] 的@tech{单位}正是@tech{合一} @racket[≡]（@tech{合一}可能往@tech{代换}里添等式，@racket[⊤] 总是原样交回）。
 
-我们为了把@tech{关系}直接写下来，一步步添上了 @racket[≡]、@racket[∧]、@racket[∨]、@racket[∃] 和两个@tech{单位} @racket[⊤]、@racket[⊥]。整个语言只有这六样，实现不到一百行，它的骨架正是 microKanren，@defterm[#:en "relational programming"]{关系式编程}（@defterm[#:en "logic programming"]{逻辑式编程}的一个分支）语言 miniKanren 的极小内核。
+我们为了把@tech{关系}直接写下来，一步步添上了 @racket[≡]、@racket[∧]、@racket[∨]、@racket[∃] 和两个@tech{单位} @racket[⊤]、@racket[⊥]，再包上 @racket[run*]、@racket[fresh]、@racket[conde] 这层语法。整个语言实现不到一百行，它的骨架正是 microKanren，上面那层语法正是@defterm[#:en "relational programming"]{关系式编程}（@defterm[#:en "logic programming"]{逻辑式编程}的一个分支）语言 miniKanren 的极小内核。
 
 @margin-note{和常见的实现相比，还有几处不同：@tech{未知项}按身份区分，不编号；@tech{合取}是直接复合，何时推迟一步计算、怎样取用答案，写法也不一样，交出答案的顺序因此可能不同。}
 
-在那里，@tech{未知项}叫@defterm[#:en "logic variable"]{逻辑变量}，这六个记号常写作 @racket[==]、@racket[conj]、@racket[disj]、@racket[fresh]、@racket[succeed]、@racket[fail]，@racket[run*] 与 @racket[fresh] 也常添上一层语法糖，把多条@tech{目标}自动包进 @racket[conj]。常见的实现用流来@tech{回溯}，@tech{目标}交出一串@tech{代换}，@tech{合取}与@tech{析取}都要自己写出怎样接、怎样并。这里用 @racket[amb] @tech{回溯}，@racket[∧] 就是 ℬ 的复合，@racket[∨] 就是 @racket[amb]，这两样都是现成的；剩下要写的，主要是@tech{合一}。
+在那里，@tech{未知项}叫@defterm[#:en "logic variable"]{逻辑变量}，底层的六个记号常写作 @racket[==]、@racket[conj]、@racket[disj]、@racket[fresh]、@racket[succeed]、@racket[fail]。常见的实现用流来@tech{回溯}，@tech{目标}交出一串@tech{代换}，@tech{合取}与@tech{析取}都要自己写出怎样接、怎样并。这里用 @racket[amb] @tech{回溯}，@racket[∧] 就是 ℬ 的复合，@racket[∨] 就是 @racket[amb]，这两样都是现成的；剩下要写的，主要是@tech{合一}。
