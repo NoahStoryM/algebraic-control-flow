@@ -1244,6 +1244,16 @@
 (: gather (∀ (p ... q) (→ (→ℬ p ... q) (→ℒ p ... q))))
 (define ((gather g) . x*) (in-amb (apply g x*)))
 
+(: flat-map (∀ (p q) (→ (→ℒ p q) (→𝒞 (Listof p) (Listof q)))))
+(define flat-map (curry append-map))
+(let ([f (λ (x) (list x (+ x 1)))]
+      [g (λ (x) (list (* x 2) (* x 3)))]
+      [xs '(1 2 3)])
+  (check-equal? ((∘ℒ g f) 2) ((∘ (flat-map g) f) 2))
+  (check-equal? ((flat-map (∘ℒ g f)) xs) ((∘ (flat-map g) (flat-map f)) xs))
+  (check-equal? ((flat-map (λ (x) (list x))) xs) (id xs))
+  (check-equal? ((flat-map (gather (inj add1))) xs) (map add1 xs)))
+
 ;; between 与 inclusive-range 互为对方搬过来的样子
 (for* ([lo (in-range 1 5)] [hi (in-range 0 7)])
   (check-equal? (in-amb ((scatter inclusive-range) lo hi)) (in-amb (between lo hi)))
@@ -1846,28 +1856,38 @@
   ;; 〔正文·交互〕条件的先后：未知项要先有值
   (check-exn #rx"a 的值还不知道"
              (λ () (run* (a b c) (∧ (pythᵒ a b c) (betweenᵒ 1 20 a) (betweenᵒ a 20 b) (betweenᵒ b 20 c)))))
-  ;; 〔正文·交互〕4.3 末尾与 5.1：拿 id 搬成 idᵒ、equal? 搬成 equalᵒ，再由 ∃ 与 ∧ 造出二元 ∘ᵒ
-  (define idᵒ (function->relation id))
-  (check-equal? (run* (y) (idᵒ 5 y)) '((5)))
-  (check-exn #rx"x 的值还不知道" (λ () (run* (x) (idᵒ x 5))))
-  (define equalᵒ (predicate->relation equal?))
-  (check-equal? (run* () (equalᵒ 5 5)) '(()))
-  (check-exn #rx"y 的值还不知道" (λ () (run* (y) (equalᵒ 5 y))))
-  (check-exn #rx"x 的值还不知道" (λ () (run* (x) (equalᵒ x 5))))
+  ;; 〔正文·交互〕5.1：先由 ∃ 与 ∧ 造出二元 ∘ᵒ，再分别试 (function->relation id) 与 (predicate->relation equal?)
   (define-syntax-rule (∃ (x ...) g)
     (λ (s) (let ([x (var 'x)] ...) (g s))))
-  (: ∘ᵒ (→ (→ Term Term Goal) (→ Term Term Goal) (→ Term Term Goal)))
-  (define ((∘ᵒ Qᵒ Pᵒ) x z)
-    (∃ (y) (∧ (Pᵒ x y) (Qᵒ y z))))
+  ;; 5.1 正文给出的二元 ∘ᵒ
+  (let ()
+    (: ∘ᵒ (→ (→ Term Term Goal) (→ Term Term Goal) (→ Term Term Goal)))
+    (define ((∘ᵒ Qᵒ Pᵒ) x z)
+      (∃ (y) (∧ (Pᵒ x y) (Qᵒ y z))))
+    (void ∘ᵒ))
+  ;; 5.1 练习扩充后的多参数 ∘ᵒ，供 right-triangleᵒ 直接使用
+  (define ∘ᵒ
+    (case-λ
+      [(Pᵒ) Pᵒ]
+      [(Qᵒ . Pᵒ*)
+       (define Pᵒ (apply ∘ᵒ Pᵒ*))
+       (λ (x z) (∃ (y) (∧ (Pᵒ x y) (Qᵒ y z))))]))
   (define pick-aᵒ      (function->relation pick-a))
   (define pick-bᵒ      (function->relation pick-b))
   (define pick-cᵒ      (function->relation pick-c))
   (define check-rightᵒ (function->relation check-right))
   (define right-triangleᵒ
-    (∘ᵒ check-rightᵒ (∘ᵒ pick-cᵒ (∘ᵒ pick-bᵒ pick-aᵒ))))
+    (∘ᵒ check-rightᵒ pick-cᵒ pick-bᵒ pick-aᵒ))
   (check-equal? (run* (t) (right-triangleᵒ '(1 20) t)) (map list triples))
   (check-exn #rx"b 的值还不知道" (λ () (run* (b) (right-triangleᵒ b '(3 4 5)))))
-  (check-exn #rx"x 的值还不知道" (λ () (run* (x y) (∧ (idᵒ x y) (idᵒ y 5))))))
+  (define idᵒ (function->relation id))
+  (check-equal? (run* (y) (idᵒ 5 y)) '((5)))
+  (check-exn #rx"x 的值还不知道" (λ () (run* (x) (idᵒ x 5))))
+  (check-exn #rx"x 的值还不知道" (λ () (run* (x y) (∧ (idᵒ x y) (idᵒ y 5)))))
+  (define equalᵒ (predicate->relation equal?))
+  (check-equal? (run* () (equalᵒ 5 5)) '(()))
+  (check-exn #rx"y 的值还不知道" (λ () (run* (y) (equalᵒ 5 y))))
+  (check-exn #rx"x 的值还不知道" (λ () (run* (x) (equalᵒ x 5)))))
 
 ;;; ═══════════════════════════════════════════════════════════════════
 ;;; §10 后半（11/21 改线）：未知项、代换与目标；合一；关系的世界 ℛ
@@ -2058,16 +2078,21 @@
     ;;; ─── 5.2、6.2、6.3〔正文〕 合一单位元 idᵒ、完整 ∘ᵒ 与关系的世界 ℛ ───
     (: idᵒ (→ Term Term Goal))
     (define idᵒ ≡)
-    (: ∘ᵒ (→ (→ Term Term Goal) (→ Term Term Goal) (→ Term Term Goal)))
-    (define ((∘ᵒ Qᵒ Pᵒ) x z)
-      (∃ (y) (∧ (Pᵒ x y) (Qᵒ y z))))
+    (: ∘ᵒ (→ (→ Term Term Goal) ... (→ Term Term Goal)))
+    (define ∘ᵒ
+      (case-λ
+        [() idᵒ]
+        [(Pᵒ) Pᵒ]
+        [(Qᵒ . Pᵒ*)
+         (define Pᵒ (apply ∘ᵒ Pᵒ*))
+         (λ (x z) (∃ (y) (∧ (Pᵒ x y) (Qᵒ y z))))]))
 
     (define pick-aᵒ      (function->relation pick-a))
     (define pick-bᵒ      (function->relation pick-b))
     (define pick-cᵒ      (function->relation pick-c))
     (define check-rightᵒ (function->relation check-right))
     (define right-triangleᵒ
-      (∘ᵒ check-rightᵒ (∘ᵒ pick-cᵒ (∘ᵒ pick-bᵒ pick-aᵒ))))
+      (∘ᵒ check-rightᵒ pick-cᵒ pick-bᵒ pick-aᵒ))
 
     (check-equal? (run* (t) (right-triangleᵒ '(1 20) t)) (map list triples))
     (for* ([l (in-range 1 5)] [h (in-range 0 14)])
@@ -2086,6 +2111,8 @@
                   '((1 1) (1 2) (2 1) (2 2)))
     (check-equal? (run* (q) (idᵒ q 5)) '((5)))
     (check-equal? (run* (q) (idᵒ 5 q)) '((5)))
+    (check-equal? (run* (q) ((∘ᵒ) 5 q)) '((5)))
+    (check-equal? (run* (q) ((∘ᵒ idᵒ) 5 q)) '((5)))
     ;; 结合律：同一组答案
     (check-equal? (run* (t) ((∘ᵒ check-rightᵒ (∘ᵒ pick-cᵒ (∘ᵒ pick-bᵒ pick-aᵒ))) '(1 20) t))
                   (run* (t) ((∘ᵒ (∘ᵒ (∘ᵒ check-rightᵒ pick-cᵒ) pick-bᵒ) pick-aᵒ) '(1 20) t)))
