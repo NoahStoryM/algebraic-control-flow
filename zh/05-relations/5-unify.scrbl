@@ -83,7 +83,7 @@
 
 @racket[⊤] 还是@tech{合取} @racket[∧] 的@tech{单位}：不给任何参数时，@racket[(∧)] 把空列表交给 @racket[(apply ∘ℬ ...)]，无参调用 @racket[∘ℬ]（也就是 @racket[∘]）交出 @racket[id]，即 @racket[(λ (s) s)]，正是 @racket[⊤]；把 @racket[⊤] 接在任意@tech{目标} @racket[g] 的前面或后面，复合上的都是 @racket[id]，@racket[(∧ g ⊤)] 与 @racket[(∧ ⊤ g)] 都还是 @racket[g]。
 
-再看 @racket[⊥]：@racket[(λ (s) (amb))]。@racket[(amb)] 是零支的 @racket[amb]，不试任何支路、一次也不交；如果它是某种组合的零参情形，从零支放成多支，就是让收到的几条@tech{目标}各自从同一张@tech{代换} @racket[s] 出发、逐个试过去，照@xref["05:compose"]{「二元关系的复合」}里的记法，把各支路的表并起来。这就是「或者」，也就是@tech{析取} @racket[∨]：
+再看 @racket[⊥]：@racket[(λ (s) (amb))]。@racket[(amb)] 是零支的 @racket[amb]，不试任何支路、一次也不交；与@tech{合取}相对的@tech{析取} @racket[∨] 把它放成多支，让收到的几条@tech{目标}各自从同一张@tech{代换} @racket[s] 出发、逐个试过去，照@xref["05:compose"]{「二元关系的复合」}里的记法把各支路的表并起来：
 
 @margin-note{@tech{目标}写成 ℒ 的箭头时，@tech{析取}是把几张@tech{代换}的列表接起来。}
 
