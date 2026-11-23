@@ -140,9 +140,9 @@
 (: ⊤ Goal)
 (define (⊤ s) s)]
 
-@racket[⊤] 接在哪个目标的前面或后面，都不改变那个目标，是合取的@defterm[#:en "unit"]{单位}。@xref["05:relation"]{「关系」}数过，零元关系只有两个，@math{{()}} 与 @math{{}}；@racket[⊤] 不提任何未知项，正好对应总成立的 @math{{()}}。
+@racket[⊤] 接在哪个目标的前面或后面，都不改变那个目标，是合取的@defterm[#:en "unit"]{单位}。
 
-另一个零元关系是空集 @math{{}}：作为代换之间的二元关系，它是一行也没有的@defterm[#:en "empty relation"]{空关系}；作为条件，它总不成立，总是失败。带 @racket[amb] 时，一张代换也不交就是 @racket[(amb)]。给它起名 @racket[⊥]：
+@racket[⊤] 收到哪张代换都原样交回。要让一个条件总是失败，它收到代换后该交出什么？一张代换也不交，就是 @racket[(amb)]。作为代换之间的二元关系，它是一行也没有的@defterm[#:en "empty relation"]{空关系}；作为条件，它总不成立，总是失败。给它起名 @racket[⊥]：
 
 @margin-note{前四章用 @racket[⊤] 与 @racket[⊥] 记单元类型与空类型；这里借用同一对逻辑真假记号表示 @racket[Goal] 类型的值，一个是恒等目标，一个是失败目标。}
 
@@ -204,6 +204,14 @@
   s)]
 
 @margin-note{这里的 @racket[a ...] 与 @racket[b] 是 @racket[Data] 的子类型（如 @racket[ℕ⁺]）；包装后的关系多出一个结果位置，调用时读出的已知参数仍需落在原函数或谓词的定义域里。}
+
+@xref["05:relation"]{「关系」}数过，零元关系只有两个，@math{{()}} 与 @math{{}}，对应两个零参谓词 @racket[(λ () #t)] 与 @racket[(λ () #f)]。把它们交给 @racket[predicate->relation]，再把这个零元关系无参调用一次，就得到目标：
+
+@examples[#:eval ev-goals #:label #f
+(run* () ((predicate->relation (λ () #t))))
+(run* () ((predicate->relation (λ () #f))))]
+
+就算一个未知项也不问，成功一次和一次也没成功，交出的列表仍然不同：第一行有一个答案，因为没有未知项要读，那个答案就是空元组 @racket['()]；第二行一个答案也没有。两个谓词都没有参数要查，真时把收到的代换原样交回，假时一张也不交，对任意代换都正好是刚才的 @racket[⊤] 和 @racket[⊥]。
 
 想要的写法里缺的东西都有了。伪代码原样运行：
 
