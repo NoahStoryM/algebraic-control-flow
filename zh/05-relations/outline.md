@@ -123,14 +123,14 @@
 - 造与认：
   - **未知项**：`var`（带 `#:type-name Var`），演示按身份区分（`eq?`）。
   - **项、代换与查表**：`Literal`、`Data`、`Term`、`Substitution`（`(Dictionary Var Term)`）；只查一次表的 `(: value-of (→ Term Substitution Term))`（用 `assq` 按身份查键），运行成功与报错两例。
-  - **目标与关系类型**：从 `run*` 两头先认出中间是 `→ℒ`（代换之间的二元关系），换用同构的 `→ℬ` 定义 `(define-type Goal (→ℬ Substitution Substitution))`（旁注：纯 `→ℒ` 与 `∘ℒ` 写法）；由 `(run* (x ...) g)` 里 `g : Goal` 推出 `∧ : (→ Goal ... Goal)`，进而逼出带 `ᵒ` 后缀的关系类型为 `(→ Term ... Goal)`，与谓词 `(→ Data ... Boolean)` 并排对照。
+  - **目标、`run*` 与关系类型**：从 `run*` 两头先认出中间是 `→ℒ`（代换之间的二元关系），换用同构的 `→ℬ` 定义 `(define-type Goal (→ℬ Substitution Substitution))`（旁注：纯 `→ℒ` 与 `∘ℒ` 写法），直接写出 `run*` 宏；由 `(run* (x ...) g)` 里 `g : Goal` 推出 `∧ : (→ Goal ... Goal)`，进而逼出带 `ᵒ` 后缀的关系类型为 `(→ Term ... Goal)`，与谓词 `(→ Data ... Boolean)` 并排对照。
 - 名字：**未知项**、`Data`、**项**（term）、**代换**（substitution）、**目标**（goal）、`value-of`。
 
 ### 4.3 跑起来
 
-- 造：写出 `run*`（造未知项、从空代换开始运行目标 `g`、`in-amb` 收齐并用 `value-of` 读出）；手写简版 `betweenᵒ`，用 `in-amb` 看三张代换，再交给 `run*` 验证读出三组答案。
-- 造：用 `∘ℬ` 倒序复合写出合取 `∧`；写出极简版 `function->relation`（默认最后一个位置是还没值的未知项，直接添一行）与 `predicate->relation`，内核对应 `code.rkt` 的 `rel-min` 子模块。
-- 认：4.1 的伪代码原样跑通，还是那六组；直接看四行条件接成的目标交出的六张代换，收在「用 `value-of` 读出来」，不提前揭短。
+- 造：先照类型手写 `betweenᵒ` 与 `pythᵒ`，用 `in-amb` 看 `betweenᵒ` 的三张代换并交给 `run*` 读出三组答案；再用 `∘ℬ` 倒序复合写出合取 `∧`。
+- 认：4.1 的 `right-triangles` 直接跑通，还是那六组；直接看四行条件接成的目标交出的六张代换。
+- 造：把手写 `betweenᵒ`、`pythᵒ` 的固定模式抽象为极简版 `function->relation`（默认最后一个位置是还没值的未知项，直接添一行）与 `predicate->relation`，兑现 4.1 开头两行伪代码（内核对应 `code.rkt` 的 `rel-min` 子模块）。
 - 名字：`∧`。
 
 ## 5 复合与合一

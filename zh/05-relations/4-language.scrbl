@@ -108,6 +108,15 @@
 
 @margin-note{不用 @racket[amb]、直接按 @racket[(→ℒ Substitution Substitution)] 写成纯函数也可以，接起来用的换成 @racket[∘ℒ]；两种写法之间，正是 @racket[gather] 与 @racket[scatter]。}
 
+两头和中间都看清了，外层的 @racket[run*] 立刻可以写下来：造出@tech{未知项}，从一张空的@tech{代换}开始运行@tech{目标} @racket[g]，再读出那几个@tech{未知项}的值。走通的每条时间线交出一组取值，由 @racket[in-amb] 收齐：
+
+@examples[#:eval ev-goals #:no-result
+(define-syntax-rule (run* (x ...) g)
+  (let ([x (var 'x)] ...)
+    (in-amb
+     (let ([s (g '())])
+       (list (value-of x s) ...)))))]
+
 在 @racket[(run* (x ...) g)] 里，@racket[g] 是 @racket[Goal] 类型的表达式。开头的伪代码里，填在这个位置的是 @racket[∧]，所以@tech{合取} @racket[∧] 的返回类型就是 @racket[Goal]；它把几条同类的条件合成一条，参数类型与返回类型一致，因此每个参数也都是 @racket[Goal]，类型是 @racket[(→ Goal ... Goal)]。
 
 @racket[∧] 的参数都是 @racket[Goal]，传给它的 @racket[(betweenᵒ l h a)] 和 @racket[(pythᵒ a b c)] 也就都得交出 @racket[Goal]；而它们收下的参数可以含有@tech{未知项}，类型是 @racket[Term]。带 ᵒ 后缀的@tech{关系}，类型于是顺势逼了出来：参数是 @racket[Term]，返回值是 @racket[Goal]。拿 @racket[pyth?] 与 @racket[pythᵒ] 并排对照：
@@ -120,19 +129,19 @@
 
 @section[#:tag "05:run"]{跑起来}
 
-类型都定好了，先写出外层的 @racket[run*]：造出@tech{未知项}，从一张空的@tech{代换}开始运行@tech{目标} @racket[g]，再读出那几个@tech{未知项}的值。走通的每条时间线交出一组取值，由 @racket[in-amb] 收齐。
+@racket[run*] 写好了，先照类型手写 @racket[betweenᵒ] 和 @racket[pythᵒ]。在 @racket[(betweenᵒ l h a)] 里，@racket[l]、@racket[h] 可能是@tech{未知项}，先用 @racket[value-of] 读出值，交给 @racket[between]；交出的数记在最后一个位置上（前三条条件里，最后一个位置都是还没有值的@tech{未知项}，往@tech{代换}里添一条记录就够了）。@racket[(pythᵒ a b c)] 的三个位置全要读出值；@tech{谓词}的是与否，成了@tech{目标}的两种回答：成立就原样交回@tech{代换}，不成立就一张也不交。
 
 @examples[#:eval ev-goals #:no-result
-(define-syntax-rule (run* (x ...) g)
-  (let ([x (var 'x)] ...)
-    (in-amb
-     (let ([s (g '())])
-       (list (value-of x s) ...)))))]
+(define ((betweenᵒ l h a) s)
+  `([,a . ,(between (value-of l s) (value-of h s))] . ,s))
 
-@racket[run*] 写好了，先手写一个简版的 @racket[betweenᵒ] 试试看。@racket[let*] 的一行 @racket[[a (between 1 3)]]，往 Racket 的记录表里添了一个名字；@racket[(betweenᵒ 1 3 a)] 交出的@tech{目标}，就往@tech{代换}里添一条记录。先假设 @racket[l]、@racket[h] 都是已知的数，从空的@tech{代换}开始运行：
+(define ((pythᵒ a b c) s)
+  (check (pyth? (value-of a s) (value-of b s) (value-of c s)))
+  s)]
+
+先单独试一试 @racket[betweenᵒ]，从空的@tech{代换}开始运行：
 
 @examples[#:eval ev-goals #:label #f
-(define ((betweenᵒ l h a) s) `([,a . ,(between l h)] . ,s))
 (in-amb ((betweenᵒ 1 3 a) '()))]
 
 @racket[(betweenᵒ 1 3 a)] 交出的是个普通的函数，收一张@tech{代换}，交出一张。可 @racket[between] 返回了三次，它也就交出了三张，各记着 @racket[a] 等于其中一个数。把它交给 @racket[run*]：
@@ -150,37 +159,15 @@
 
 @racket[∧] 照写的顺序接：先写的先运行，和 @racket[let*] 一样，所以交给 @racket[∘ℬ] 之前要倒过来。
 
-一般的 @racket[(betweenᵒ l h a)] 里，@racket[l]、@racket[h] 可能是@tech{未知项}，要先用 @racket[value-of] 读出值，再交给 @racket[between]；@racket[between] 交出的数，照刚才手写 @racket[betweenᵒ] 的样子记在最后一个位置上（前三条条件里，最后一个位置都是还没有值的@tech{未知项}，往@tech{代换}里添一条记录就够了）。@racket[(pythᵒ a b c)] 的三个位置都是给 @racket[pyth?] 的，全要读出值；@tech{谓词}的是与否，成了@tech{目标}的两种回答：成立就原样交回@tech{代换}，不成立就一张也不交。
+现在开头的 @racket[right-triangles] 已经能直接跑起来了：
 
-@examples[#:eval ev-goals #:no-result
-(: function->relation (∀ (a ... b) (→ (→ℬ a ... b) (→ Term ... Term Goal))))
-(define (((function->relation f) . t*) s)
-  (define-values (in* out*) (split-at-right t* 1))
-  (cons (cons (car out*) (apply f (for/list ([t in*]) (value-of t s)))) s))
-
-(: predicate->relation (∀ (a ...) (→ (→ a ... Boolean) (→ Term ... Goal))))
-(define (((predicate->relation p?) . t*) s)
-  (check (apply p? (for/list ([t t*]) (value-of t s))))
-  s)]
-
-@margin-note{这里的 @racket[a ...] 与 @racket[b] 是 @racket[Data] 的子类型（如 @racket[ℕ⁺]）；@racket[function->relation] 在原有参数之后添一个结果位置，@racket[predicate->relation] 保留原@tech{谓词}的参数个数，两种包装读出的参数都须落在原函数或@tech{谓词}的定义域里。}
-
-想要的写法里缺的东西都有了。伪代码原样运行：
-
-@examples[#:eval ev-goals #:no-result
-(define betweenᵒ (function->relation  between))
-(define pythᵒ    (predicate->relation pyth?))
-
+@examples[#:eval ev-goals #:label #f
 (define (right-triangles l h)
   (run* (a b c)
     (∧ (betweenᵒ l h a)     (code:comment "l ≤ a ≤ h")
        (betweenᵒ a h b)     (code:comment "a ≤ b ≤ h")
        (betweenᵒ b h c)     (code:comment "b ≤ c ≤ h")
-       (pythᵒ a b c))))     (code:comment "a² + b² = c²")]
-
-上下界仍取 1 和 20：
-
-@examples[#:eval ev-goals #:label #f
+       (pythᵒ a b c))))     (code:comment "a² + b² = c²")
 (right-triangles 1 20)]
 
 还是那六组。同样的四条条件，接成一个@tech{目标}后不读出，直接看它交出的@tech{代换}：
@@ -195,3 +182,24 @@
   '()))]
 
 六张@tech{代换}，一张对着一组答案。@racket[right-triangles] 是边界与三角形之间的@tech{二元关系}，四条条件接成的@tech{目标}是@tech{代换}与@tech{代换}之间的@tech{二元关系}。给定一组边界，从这个@tech{目标}交出的每张@tech{代换}里用 @racket[value-of] 读出 @racket[a]、@racket[b]、@racket[c]，就得到 @racket[right-triangles] 表里对应的三角形。
+
+回头看刚才手写的 @racket[betweenᵒ] 与 @racket[pythᵒ]，做的都是同一套活：把前面的参数用 @racket[value-of] 读出来，交给原函数或原@tech{谓词}，函数版把结果添进@tech{代换}，@tech{谓词}版用 @racket[check] 拦下不成立的分支。把这两套模板抽出来，就得到开头想要的 @racket[function->relation] 与 @racket[predicate->relation]：
+
+@examples[#:eval ev-goals #:no-result
+(: function->relation (∀ (a ... b) (→ (→ℬ a ... b) (→ Term ... Term Goal))))
+(define (((function->relation f) . t*) s)
+  (define-values (in* out*) (split-at-right t* 1))
+  (cons (cons (car out*) (apply f (for/list ([t in*]) (value-of t s)))) s))
+
+(: predicate->relation (∀ (a ...) (→ (→ a ... Boolean) (→ Term ... Goal))))
+(define (((predicate->relation p?) . t*) s)
+  (check (apply p? (for/list ([t t*]) (value-of t s))))
+  s)]
+
+@margin-note{这里的 @racket[a ...] 与 @racket[b] 是 @racket[Data] 的子类型（如 @racket[ℕ⁺]）；@racket[function->relation] 在原有参数之后添一个结果位置，@racket[predicate->relation] 保留原@tech{谓词}的参数个数，两种包装读出的参数都须落在原函数或@tech{谓词}的定义域里。}
+
+于是开头那两行伪代码也原样成立了：
+
+@examples[#:eval ev-goals #:no-result
+(define betweenᵒ (function->relation  between))
+(define pythᵒ    (predicate->relation pyth?))]
