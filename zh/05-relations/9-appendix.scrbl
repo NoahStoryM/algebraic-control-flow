@@ -149,7 +149,7 @@
   (check (apply p? (for/list ([t t*]) (value-of t s))))
   s)
 
-;; 关系的世界
+;; 关系的复合与单位
 
 (: idᵒ (→ Term Term Goal))
 (define idᵒ ≡)

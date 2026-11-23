@@ -117,6 +117,8 @@
 inclusive-range  =  (gather between)
 between  =  (scatter inclusive-range)]
 
+@section[#:tag "05:compose-l"]{列表箭头的复合}
+
 @tech{同构}的两种箭头，复合也该对得上。可是 ℒ 的箭头不能用 @racket[∘] 接：前一个交出一张列表，后一个只收其中一项。ℬ 的箭头能接，那就借@tech{同构}把 ℬ 的复合搬过来@defsym["g ∘ℒ f" "交出列表的函数的复合：借 ℬ 的复合定义，化简后是 append-map"]：先把 ℒ 的箭头搬到 ℬ，在那边接好，再搬回来。@xref["02:via-contrapositive"]{第二章借道逆否箭头}搬运 @racket[∘𝒦] 的运算律，用的也是这个办法。
 
 @examples[#:eval ev-two-ways #:no-result
@@ -169,6 +171,8 @@ between  =  (scatter inclusive-range)]
 
 第一行的 @racket[f]、@racket[g] 是 ℬ 的箭头，第二行的是 ℒ 的箭头。两种箭头各有一种绑定的写法，写出来的都是复合，多出来的只是中间结果的名字。
 
+@section[#:tag "05:back-to-c"]{回到纯宿主}
+
 回头看刚才化简出来的 @racket[(append-map g (f x))]。写循环时，手里先有一张备选列表 @racket[p*]，@racket[(choose/k p*)] 等着接下去要做的工作；这里手里先有下一步的箭头 @racket[g]，想要一个能接住 @racket[(f x)] 所交列表的函数。把两层参数换个次序，就得到 @racket[flat-map]：
 
 @examples[#:eval ev-two-ways #:no-result
@@ -182,7 +186,7 @@ between  =  (scatter inclusive-range)]
 (flat-map (∘ℒ g f))          =  (∘ (flat-map g) (flat-map f))
 (flat-map (λ (x) (list x)))  =  id]
 
-把到这里出现的三个世界和它们之间的转换画成一张@tech{图表}：
+把到这里出现的三种箭头和它们之间的转换画成一张@tech{图表}：
 
 @out-block|{𝒞 ───inj─────→ ℬ
 ↑              ↑
