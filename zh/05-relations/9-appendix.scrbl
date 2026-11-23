@@ -163,3 +163,5 @@
      (define Pᵒ (apply ∘ᵒ Pᵒ*))
      (λ (x z) (∃ (y) (∧ (Pᵒ x y) (Qᵒ y z))))]))
 }|
+
+本章的 @racket[in-amb] 一次算完并交出整张列表，只处理有限搜索；如果想在 Racket 里使用带惰性序列与公平搜索的完整实现，可以参考 @hyperlink["https://github.com/NoahStoryM/amb"]{amb}（提供惰性的 @racket[in-amb] 与可暂停的搜索）以及建在它之上的 @hyperlink["https://github.com/NoahStoryM/ambKanren"]{ambKanren}。

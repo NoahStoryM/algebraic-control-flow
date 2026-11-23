@@ -97,8 +97,8 @@
 - 造：借同构把 ℬ 的复合搬过来定义 `∘ℒ`（回指第二篇借道逆否箭头搬运运算律）；两步情形逐行化简，依次经过本篇出现过的四种写法，到 `(append-map g (f x))`；不经 ℬ 直接在 𝒞 里定义 `∘ℒ`（`foldr append-map`；附录与 `code.rkt` 支持零支，一元上给出 `(λ (x) (list x))`）。
 - 认：纯宿主里，二元关系是交出列表的函数，用 `append-map` 接起来，正是上一节取并的式子；`let*` 是 `∘ℬ`，`for*/list` 是 `∘ℒ`，两种箭头各有一种绑定写法。
 - 造与认：将 `append-map` 柯里化得到 `(: flat-map (∀ (p q) (→ (→ℒ p q) (→𝒞 (Listof p) (Listof q)))))`（`(define flat-map (curry append-map))`），把 ℒ 的箭头搬回纯宿主 𝒞：`(∘ℒ g f) = (∘ (flat-map g) f)`，`(flat-map (∘ℒ g f)) = (∘ (flat-map g) (flat-map f))`，`(flat-map (λ (x) (list x))) = id`。
-- 认（上半部收尾）：画出 𝒞、ℬ、ℒ 的方形图表（`𝒞 ──inj──→ ℬ ⇄ ℒ ──flat-map──→ 𝒞`），指出 ℬ 与 ℒ 之间是**交换图表**；纯函数 `f` 沿外圈经 `inj`、`gather`、`flat-map` 绕回 𝒞 正好得到 `(λ (xs) (map f xs))`。
 - 练习：验证 `list->amb` 与 `choose` 是同一个函数。
+- 认（上半部收尾）：画出 𝒞、ℬ、ℒ 的方形图表（`𝒞 ──inj──→ ℬ ⇄ ℒ ──flat-map──→ 𝒞`），指出 ℬ 与 ℒ 之间是**交换图表**；纯函数 `f` 沿外圈经 `inj`、`gather`、`flat-map` 绕回 𝒞 正好得到 `(λ (xs) (map f xs))`。
 - 名字：ℬ、ℒ、`→ℬ`、`→ℒ`、`inj`、`∘ℬ`、`∘ℒ`、`list->amb`、`scatter`、`gather`、`flat-map`、同构、图表、交换图表。
 
 ## 4 关系式编程
@@ -153,7 +153,7 @@
   - **顺着查表 `walk`**：把 `x` 等于 `y`、`y` 等于 5 记进表里，`value-of` 只查一次读出未知项 `y`；造出 `walk` 顺着查到底。
   - **合一 `unify`**：两边先各自 `walk` 到底再对称比对（含序对逐项去对），实测三例后命名**合一**（unification）。代换的一行从「未知项的值」变成「一条等式」。
   - 造出 `(≡ u v)`；升级 `(: value-of (→ Term Substitution Data))` 为顺着查并递归读序对；实测三例。
-  - 认出 `∘ᵒ` 的单位正是合一：`(: idᵒ (→ Term Term Goal)) (define idᵒ ≡)`，验证 `(idᵒ q 5)` 与 `(idᵒ 5 q)` 双向可问。
+  - 认出 `∘ᵒ` 的单位正是合一：`(: idᵒ (→ Term Term Goal)) (define idᵒ ≡)`，按外列解集核对左右单位律（同时说明借来的谓词受求值顺序限制），并验证 `(idᵒ q 5)` 与 `(idᵒ 5 q)` 双向可问。
   - 现抓现修 `function->relation`：展示直接添一行在 `(∧ (betweenᵒ 1 2 a) (betweenᵒ 2 3 a))` 与 `(betweenᵒ 1 3 2)` 上出错，改用 `unify` 后两例与 `(betweenᵒ 1 3 5)` 全跑通。
 - 名字：`walk`、`unify`、**合一**（unification）、`≡`。
 
