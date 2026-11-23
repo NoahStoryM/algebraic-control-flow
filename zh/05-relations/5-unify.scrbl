@@ -10,7 +10,7 @@
 
 @xref["05:compose"]{「二元关系的复合」}用集合的语言写过二元关系的复合：@math{(x, z)} 在 @math{Q ∘ P} 里，当且仅当存在这样的 @math{y}，@math{(x, y)} 在 @math{P} 里，并且 @math{(y, z)} 在 @math{Q} 里。
 
-如果只用@tech{谓词}（也就是@tech{特征函数}）来表示二元关系，照这句话去复合两个二元谓词 @racket[P?] 与 @racket[Q?]，会直接卡在「存在这样的 @math{y}」上：@racket[P?] 与 @racket[Q?] 只负责检查给定的一对值在不在关系里，除非把 @math{y} 所在集合的全部元素列出来逐个试一遍（而且这个集合还得有限），否则单靠特征函数写不出复合。
+如果只用@tech{谓词}（也就是@tech{特征函数}）来表示二元关系，照这句话去复合两个二元谓词 @racket[P?] 与 @racket[Q?]，会直接卡在「存在这样的 @math{y}」上：@racket[P?] 与 @racket[Q?] 只负责检查给定的一对值在不在关系里，只给 @racket[P?] 与 @racket[Q?]，能检查一个给定的 @math{y}，却没有一般办法找出这样的 @math{y}，或判定一个也没有。
 
 换到刚造出的关系语言，「并且」已经是 @racket[∧]，只差「存在这样的 @math{y}」。@racket[run*] 会在查询开头造出未知项；复合两个关系时，也需要一个只在里面用到的中间未知项：
 
@@ -73,7 +73,7 @@
 
 @defsym["Qᵒ ∘ᵒ Pᵒ" "关系语言里的复合：∃ 造出中间的未知项"]@racket[∘ᵒ] 和 @racket[∘] 一样从右往左写：两个关系复合时，中间的 @racket[y] 把它们连起来，右边的关系说 @racket[x] 与 @racket[y]，左边的说 @racket[y] 与 @racket[z]。
 
-@bold{练习}：上面的 @racket[∘ᵒ] 一次只接两个关系。把它扩充成可以接收一个或多个二元关系的版本：只给一个时原样交出，给多个时从右往左依次用二元复合接起来。后面的代码直接用这个多参数版本（附录里收有完整定义）。
+@bold{练习}：上面的 @racket[∘ᵒ] 一次只接两个关系。把它扩充成可以接收一个或多个二元关系的版本：只给一个时原样交出，给多个时从右往左依次用二元复合接起来。后面的代码直接用这个多参数版本（@xref["05:appendix"]{附录}里收有完整定义）。
 
 @examples[#:eval ev-comp #:hidden
 (define ∘ᵒ
@@ -108,7 +108,7 @@
 (for*/list ([y (f x)] [z (g y)]) z)  =  ((∘ℒ g f) x)
 (∃ (y) (∧ (Pᵒ x y) (Qᵒ y z)))        =  ((∘ᵒ Qᵒ Pᵒ) x z)]
 
-前两行的右边交出 @racket[z]；第三行没有谁交出什么，@racket[x] 与 @racket[z] 都只是位置。三种都是复合，中间结果 @racket[y] 在前两行由绑定命名，在第三行由 @racket[∃] 造出。
+第一行每走通一次交出一个 @racket[z]，第二行把这些 @racket[z] 收成一张列表。第三行的 @racket[x] 与 @racket[z] 都是关系的位置，调用交出的是目标。三种都是复合，中间结果 @racket[y] 在前两行由绑定命名，在第三行由 @racket[∃] 造出。
 
 有了复合，自然要问：@racket[∘ᵒ] 的单位是什么？函数的复合 @racket[∘] 有恒等函数 @racket[id]，@racket[∘ℒ] 有 @racket[(λ (x) (list x))]。作为二元关系，复合的单位说的是两个位置完全一样：无论接在哪个二元关系的左边还是右边，都不改变原来的关系。
 
@@ -119,7 +119,7 @@
 (run* (y) (idᵒ 5 y))
 (eval:error (run* (x) (idᵒ x 5)))]
 
-左边已知时行得通，右边已知、左边未知就报错。哪怕写成两条简单的等式，@racket[x] 等于 @racket[y]、@racket[y] 等于 5，它也走不下去：
+左边已知、右边留给它填写时行得通，右边已知、左边未知就报错。哪怕写成两条简单的等式，@racket[x] 等于 @racket[y]、@racket[y] 等于 5，它也走不下去：
 
 @examples[#:eval ev-comp #:label #f
 (eval:error (run* (x y) (∧ (idᵒ x y) (idᵒ y 5))))]
@@ -134,7 +134,7 @@
 (eval:error (run* (y) (equalᵒ 5 y)))
 (eval:error (run* (x) (equalᵒ x 5)))]
 
-这一次两边都必须先知道，哪一头换成未知项都会报错。毛病出在同一处：借来的函数与谓词骨子里仍然分输入和输出，只能算已经知道的值。从函数搬来的 @racket[idᵒ] 要求左边已知，从谓词搬来的 @racket[equalᵒ] 要求两边都已知；同样的限制也挡在倒问 @racket[right-triangleᵒ] 面前：
+这一次两边都必须先知道，哪一头换成未知项都会报错。毛病出在同一处：两个包装都先用 @racket[value-of] 读出宿主要用的参数，借来的函数与谓词骨子里仍然分输入和输出，只能算已经知道的值。@racket[id] 要读左边，@racket[equal?] 要读两边；同样的限制也挡在倒问 @racket[right-triangleᵒ] 面前：
 
 @examples[#:eval ev-comp #:label #f
 (eval:error (run* (b) (right-triangleᵒ b '(3 4 5))))]
@@ -253,6 +253,8 @@
 (run* (q) (idᵒ q 5))
 (run* (q) (idᵒ 5 q))]
 
+把相等接在 @racket[Pᵒ] 的后面，条件是「存在 @racket[y]，@racket[(Pᵒ x y)] 成立，而且 @racket[y] 等于 @racket[z]」；这恰好就是 @racket[(Pᵒ x z)]。接在前面同理，「存在 @racket[y]，@racket[x] 等于 @racket[y]，而且 @racket[(Pᵒ y z)] 成立」也恰好是 @racket[(Pᵒ x z)]。只看外面两列允许哪些取值，@racket[≡] 就是二元关系复合的单位。实际求解还要照书写顺序运行，借来的谓词仍然要求参数先有值。
+
 顺手回头看 @racket[function->relation]：它原先默认最后一个位置永远是还没值的未知项，直接往代换里添一行。要是同一个未知项出现在两行的最后一列，比如找同时在 1 到 2 之间、又在 2 到 3 之间的数，或者干脆在最后一列填进一个已知的数，直接添一行就坏了：
 
 @examples[#:eval ev-unify #:hidden
@@ -297,7 +299,7 @@
           (≡ out (cons a res))
           (appendᵒ d t res)))))]
 
-@racket[appendᵒ] 在第二支里调用自己。要是 @racket[∃] 一上来就运行里面的条件，构造目标时就会一层层调用下去，停不下来；等到收到代换才运行，递归走几层，看的是代换里的列表有多长。
+@racket[appendᵒ] 在第二支里调用自己。要是 @racket[∃] 一上来就运行里面的条件，构造目标时就会一层层调用下去，停不下来；等到收到代换才运行，正向的例子每层消耗左表的一个 @racket[cons]，反向的例子每层消耗结果表的一个 @racket[cons]，列表有限，递归就会停下。
 
 正着问，它和 @racket[append] 一样：
 
@@ -311,9 +313,9 @@
 
 四种拆法都找到了。定义 @racket[appendᵒ] 的时候，没有哪一行写过「拆」：每一行都是等式，没有哪个位置是输入，哪个是输出。这是关系不分输入输出的样子。
 
-@margin-note{如果答案里还留着未绑定的未知项（比如 @racket[(run* (x y) (≡ x y))] 或 @racket[(run* (x y) (appendᵒ '(1) x y))]），@racket[value-of] 读不出来；另外，像 @racket[(≡ x (cons 1 x))] 这样的循环等式也需要在添等式前拦截。附录的完整库代码补上了这两步：用 @racket[walk*] 与 @racket[reify] 把未绑定未知项打印成 @tt{_.0}、@tt{_.1}，并用 @racket[occurs?] 与 @racket[ext-s] 做循环检查。}
+@margin-note{如果答案里还留着未绑定的未知项（比如 @racket[(run* (x y) (≡ x y))] 或 @racket[(run* (x y) (appendᵒ '(1) x y))]），@racket[value-of] 读不出来；另外，像 @racket[(≡ x (cons 1 x))] 这样的循环等式也需要在添等式前拦截。@xref["05:appendix"]{附录}的完整库代码补上了这两步：用 @racket[walk*] 与 @racket[reify] 把未绑定未知项打印成 @tt{_.0}、@tt{_.1}，并用 @racket[occurs?] 与 @racket[ext-s] 做循环检查。}
 
-到这里，这门语言里三种运算和它们的单位都齐了：在代换层，合取 @racket[∧] 的单位是 @racket[⊤]，析取 @racket[∨] 的单位是 @racket[⊥]；在关系层，二元关系复合 @racket[∘ᵒ] 的单位正是合一 @racket[≡]。特征函数写不出复合，因为缺少 @racket[∃]；函数的 @racket[id] 当不了关系的单位，因为分了输入输出；@racket[∃] 与 @racket[≡] 正好补齐了这两样。
+到这里，这门语言里三种运算和它们的单位都齐了：在代换层，合取 @racket[∧] 的单位是 @racket[⊤]，析取 @racket[∨] 的单位是 @racket[⊥]；在关系层，按外面两列的解看，二元关系复合 @racket[∘ᵒ] 的单位正是合一 @racket[≡]。两个谓词能核对给定的 @racket[y]，却没有给出寻找见证的通用办法，因为缺少 @racket[∃]；按输入求值的包装要求左列已知，所以函数的 @racket[id] 当不了关系的单位；@racket[∃] 与 @racket[≡] 正好补齐了这两样。
 
 @margin-note{和常见的实现相比，还有几处不同：未知项按身份区分，不编号；合取是直接复合，何时推迟一步计算、怎样取用答案，写法也不一样，交出答案的顺序因此可能不同。}
 

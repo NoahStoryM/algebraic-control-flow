@@ -28,7 +28,7 @@
 
 @racket[for/list] 也能照样写出来。@racket[(for/list ([v e*]) body)] 里，@racket[k] 要对序列 @racket[e*] 的每个值各调用一次，再把各次的结果收成一张列表，这是 @racket[map] 做的事。
 
-@racket[for*/list] 却不是嵌套的 @racket[for/list]。把 @racket[for/list] 一层层嵌套，外层 @racket[k] 的主体又是一个 @racket[for/list]，交出的是一张列表，外层的 @racket[map] 把它们收起来，就成了列表的列表。@racket[for*/list] 在每一层把内层交出的列表接成一张，也就是把 @racket[map] 换成 @racket[append-map]。三种写法并排：
+@racket[for*/list] 却不是嵌套的 @racket[for/list]。把 @racket[for/list] 一层层嵌套，外层 @racket[k] 的主体又是一个 @racket[for/list]，交出的是一张列表，外层的 @racket[map] 把它们收起来，就成了列表的列表。@racket[for*/list] 在每一层把内层交出的列表接成一张，也就是把 @racket[map] 换成 @racket[append-map]。这里的 @racket[e*] 都是列表，三种写法并排：
 
 @racketblock[
 (let ([v e]) body)            =  ((λ (k) (k e))             (λ (v) body))

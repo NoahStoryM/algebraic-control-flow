@@ -16,7 +16,6 @@
 
 ## 0 开头
 
-- 列出前四篇标题（短开头，不逐篇回顾）。
 - 接第四篇：`if` 把剩余工作写了两次、运行一次；没有替我们选择的值时，同一份剩余工作要为每个备选各运行一次，即**搜索树**，一棵不止一条时间线的树。
 - 嵌套循环走的就是搜索树；只讨论纯的、有限的搜索。剩余工作藏在哪里先放一放，先看搜索交出了什么。
 
@@ -28,7 +27,7 @@
 - 造：`ℕ⁺`、`Triangle`、`pyth?`；`for*/list` 版 `right-triangles`；1 到 20 的六组结果；试了 1540 组。
 - 造：纯函数可以缓存：`Dictionary`、`Bounds`、`cache`、`right-triangles/cached`；三次调用后的 `cache`（点出序对的点）。
 - 认：键不重复，值是装着全部答案的列表；把所有边界都算过，`cache` 是一张巨大的表，`right-triangles` 只剩查表（`dictionary->function`）；任何纯函数都可以看作以输入为键的表。
-- 名字：表（不加英文，Noah 10/4）、缓存、`dictionary->function`。
+- 名字：**表**（table）、缓存、`dictionary->function`。
 
 ### 1.2 关系
 
@@ -98,8 +97,8 @@
 - 造：借同构把 ℬ 的复合搬过来定义 `∘ℒ`（回指第二篇借道逆否箭头搬运运算律）；两步情形逐行化简，依次经过本篇出现过的四种写法，到 `(append-map g (f x))`；不经 ℬ 直接在 𝒞 里定义 `∘ℒ`（`foldr append-map`；附录与 `code.rkt` 支持零支，一元上给出 `(λ (x) (list x))`）。
 - 认：纯宿主里，二元关系是交出列表的函数，用 `append-map` 接起来，正是上一节取并的式子；`let*` 是 `∘ℬ`，`for*/list` 是 `∘ℒ`，两种箭头各有一种绑定写法。
 - 造与认：将 `append-map` 柯里化得到 `(: flat-map (∀ (p q) (→ (→ℒ p q) (→𝒞 (Listof p) (Listof q)))))`（`(define flat-map (curry append-map))`），把 ℒ 的箭头搬回纯宿主 𝒞：`(∘ℒ g f) = (∘ (flat-map g) f)`，`(flat-map (∘ℒ g f)) = (∘ (flat-map g) (flat-map f))`，`(flat-map (λ (x) (list x))) = id`。
-- 认（上半部收尾）：画出 𝒞、ℬ、ℒ 的方形图表（`𝒞 ──inj──→ ℬ ⇄ ℒ ──flat-map──→ 𝒞`），指出 ℬ 与 ℒ 之间是**交换图表**；纯函数 `f` 沿外圈经 `inj`、`gather`、`flat-map` 绕回 𝒞 正好得到 `(λ (xs) (map f xs))`。
 - 练习：验证 `list->amb` 与 `choose` 是同一个函数。
+- 认（上半部收尾）：画出 𝒞、ℬ、ℒ 的方形图表（`𝒞 ──inj──→ ℬ ⇄ ℒ ──flat-map──→ 𝒞`），指出 ℬ 与 ℒ 之间是**交换图表**；纯函数 `f` 沿外圈经 `inj`、`gather`、`flat-map` 绕回 𝒞 正好得到 `(λ (xs) (map f xs))`。
 - 名字：ℬ、ℒ、`→ℬ`、`→ℒ`、`inj`、`∘ℬ`、`∘ℒ`、`list->amb`、`scatter`、`gather`、`flat-map`、同构、图表、交换图表。
 
 ## 4 关系式编程
@@ -154,14 +153,14 @@
   - **顺着查表 `walk`**：把 `x` 等于 `y`、`y` 等于 5 记进表里，`value-of` 只查一次读出未知项 `y`；造出 `walk` 顺着查到底。
   - **合一 `unify`**：两边先各自 `walk` 到底再对称比对（含序对逐项去对），实测三例后命名**合一**（unification）。代换的一行从「未知项的值」变成「一条等式」。
   - 造出 `(≡ u v)`；升级 `(: value-of (→ Term Substitution Data))` 为顺着查并递归读序对；实测三例。
-  - 认出 `∘ᵒ` 的单位正是合一：`(: idᵒ (→ Term Term Goal)) (define idᵒ ≡)`，验证 `(idᵒ q 5)` 与 `(idᵒ 5 q)` 双向可问。
+  - 认出 `∘ᵒ` 的单位正是合一：`(: idᵒ (→ Term Term Goal)) (define idᵒ ≡)`，按外列解集核对左右单位律（同时说明借来的谓词受求值顺序限制），并验证 `(idᵒ q 5)` 与 `(idᵒ 5 q)` 双向可问。
   - 现抓现修 `function->relation`：展示直接添一行在 `(∧ (betweenᵒ 1 2 a) (betweenᵒ 2 3 a))` 与 `(betweenᵒ 1 3 2)` 上出错，改用 `unify` 后两例与 `(betweenᵒ 1 3 5)` 全跑通。
 - 名字：`walk`、`unify`、**合一**（unification）、`≡`。
 
 ### 5.3 直接写等式
 
 - 问题：有了 `≡`、`∧`、`∨`、`∃` 和 `⊤`、`⊥`，不借函数和谓词，直接写出递归的关系。
-- 造与认：一气呵成写出三元关系 `appendᵒ`（说明 `∃` 延迟构造未知项以保证递归停止）；正着问与 `append` 一样，反着问 `(run* (x y) (appendᵒ x y '(1 2 3)))` 拆出全部四种分法，展示关系不分输入输出。
+- 造与认：一气呵成写出三元关系 `appendᵒ`（说明 `∃` 推迟未知项构造，而正反两问各有有限列表逐层消耗 `cons`）；正着问与 `append` 一样，反着问 `(run* (x y) (appendᵒ x y '(1 2 3)))` 拆出全部四种分法，展示关系不分输入输出。
 - 旁注：答案含未绑定未知项时的打印（`walk*` 与 `reify`）和循环等式检查（`occurs?` 与 `ext-s`）收入附录。
 - 认（收束与揭晓）：总结三种运算与单位（代换层 `∧`/`⊤`、`∨`/`⊥`，关系层 `∘ᵒ`/`≡`）；揭晓这六个记号与不到一百行的骨架就是 **microKanren**，**关系式编程**（**逻辑式编程**的一个分支）语言 **miniKanren** 的极小内核，未知项在那里叫**逻辑变量**（旁注：与常见流实现的差异）。
 - 名字：**关系式编程**（relational programming）、**逻辑式编程**（logic programming）、**逻辑变量**（logic variable）、microKanren、miniKanren。
