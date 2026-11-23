@@ -287,7 +287,7 @@
 
 @racket[append] 把两张列表接成一张。它是函数，只能从左边两张算出右边一张。照它的定义写一个三个位置的@tech{关系} @racket[(appendᵒ l t out)]：@racket[l] 是空的，@racket[out] 就等于 @racket[t]；或者 @racket[l] 有头一项 @racket[a] 和剩下的 @racket[d]，@racket[out] 的头一项也是 @racket[a]，剩下的部分 @racket[res] 是 @racket[d] 接上 @racket[t]。
 
-这里有两种情形，只要有一种成立就算走通。两个@tech{目标}都是从@tech{代换}到@tech{代换}的@tech{二元关系}，也就是同一个笛卡尔积的子集；只看哪些@tech{代换}能出现，它们的并集依然是这个笛卡尔积的子集。带 @racket[amb] 时，把几个@tech{目标}并起来就是用 @racket[list->amb] 从其中挑一个来用，每个@tech{目标}都从收到的那张@tech{代换}出发。几个条件里只要有一个成立，叫@tech{析取}，照集合语言里的记号写成 @racket[∨]：
+这里有两种情形，只要有一种成立就算走通。每条支路都从收到的那张@tech{代换}出发，@racket[list->amb] 会让每个@tech{目标}各运行一次；只看能走通的@tech{代换}对，就是把各@tech{目标}的表并起来。几个条件里只要有一个成立，叫@tech{析取}，照集合语言里的记号写成 @racket[∨]：
 
 @examples[#:eval ev-unify #:no-result
 (: ∨ (→ Goal ... Goal))
@@ -321,7 +321,7 @@
 
 @margin-note{如果答案里还留着未绑定的@tech{未知项}（比如 @racket[(run* (x y) (≡ x y))] 或 @racket[(run* (x y) (appendᵒ '(1) x y))]），@racket[value-of] 读不出来；另外，像 @racket[(≡ x (cons 1 x))] 这样的循环等式也需要在添等式前拦截。@xref["05:appendix"]{附录}的完整库代码补上了这两步：用 @racket[walk*] 与 @racket[reify] 把未绑定@tech{未知项}打印成 @tt{_.0}、@tt{_.1}，并用 @racket[occurs?] 与 @racket[ext-s] 做循环检查。}
 
-@racket[∧] 把几步接起来，@racket[∨] 把几条路并起来。一步也不用做时，原来的@tech{代换}还在：零个@tech{目标}的 @racket[(∧)] 就是带 @racket[amb] 时的恒等函数 @racket[id]。作为@tech{代换}之间的@tech{二元关系}，它是@defterm[#:en "identity relation"]{恒等关系}；作为条件，它总成立，总是成功，给它起名 @racket[⊤]。一条路也没有时，连一张@tech{代换}也交不出来：零个@tech{目标}的 @racket[(∨)] 从零个备选里挑，就是 @racket[(amb)]。作为@tech{代换}之间的@tech{二元关系}，它是一行也没有的@defterm[#:en "empty relation"]{空关系}；作为条件，它总不成立，总是失败，给它起名 @racket[⊥]：
+@racket[∧] 把几步接起来，@racket[∨] 把几条路并起来。一步也不用做时，原来的@tech{代换}还在：零个@tech{目标}的 @racket[(∧)] 就是带 @racket[amb] 时的恒等函数 @racket[id]。作为@tech{代换}之间的@tech{二元关系}，它是@defterm[#:en "identity relation"]{恒等关系}；作为条件，它总成立，总是成功，给它起名 @racket[⊤]。一条路也没有时，零个@tech{目标}的 @racket[(∨)] 仍交出一个@tech{目标}；这个@tech{目标}收到@tech{代换}后，从零个备选里挑，也就是执行 @racket[(amb)]，一张@tech{代换}也不交。作为@tech{代换}之间的@tech{二元关系}，它是一行也没有的@defterm[#:en "empty relation"]{空关系}；作为条件，它总不成立，总是失败，给它起名 @racket[⊥]：
 
 @margin-note{前四章用 @racket[⊤] 与 @racket[⊥] 记单元类型与@tech{空类型}；这里借用同一对逻辑真假记号表示 @racket[Goal] 类型的值，一个是恒等@tech{目标}，一个是失败@tech{目标}。}
 
