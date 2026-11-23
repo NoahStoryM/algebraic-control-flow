@@ -11,18 +11,18 @@
  ((define ((betweenᵒ l h a) s)
   (unify a (between (value-of l s) (value-of h s)) s))
 "5.5.3 先手写基于合一的 betweenᵒ 与旧版对比，随后再抽象为 function->relation")
+ ((define-syntax-rule (run n (x ...) g ...)
+  (let ([x (var 'x)] ...)
+    (define ans*
+      (in-amb (reify (walk* (list x ...) ((∧ g ...) '())))))
+    (if n (take ans* (min n (length ans*))) ans*)))
+"6.3 与附录引入标准 (run n ...) 表面语法")
  ((define-syntax-rule (conde [g ...] ...)
   (∨ (∧ g ...) ...))
-"5.5.4 展示 miniKanren 表面语法糖")
- ((define-syntax-rule (run* (x ...) g ...)
-  (let ([x (var 'x)] ...)
-    (in-amb
-     (let ([s ((∧ g ...) '())])
-       (list (value-of x s) ...)))))
-"5.5.4 扩展 5.4.2 的单目标 run* 为自动合取多目标的版本")
+"6.3 与附录展示 miniKanren 表面语法糖")
  ((define-syntax-rule (fresh (x ...) g ...)
   (∃ (x ...) (∧ g ...)))
-"5.5.4 借 ∃ 定义自动合取的 fresh 语法糖")
+"6.3 与附录借 ∃ 定义自动合取的 fresh 语法糖")
  ((define (appendᵒ l t out)
   (conde
    [(≡ l '()) (≡ t out)]
@@ -30,4 +30,4 @@
       (≡ l (cons a d))
       (≡ out (cons a res))
       (appendᵒ d t res))]))
-"5.5.4 用 run*/fresh/conde 重写 appendᵒ 展示表面语法"))
+"6.3 用 run/fresh/conde 重写 appendᵒ 展示表面语法"))

@@ -2,7 +2,7 @@
 
 @title[#:tag "05:appendix"]{附录：库代码}
 
-这里收的是这一章造出的东西：@tech{不确定运算符}、@tech{关系}的两种写法，以及关系语言。直角三角形、@racket[appendᵒ] 这些例子不在其中。关系语言的完整实现在正文的基础上补了两处工程细节：添等式前检查循环的 @racket[occurs?] 与 @racket[ext-s]，以及把未绑定@tech{未知项}打印成 @tt{_.0}、@tt{_.1} 的 @racket[walk*] 与 @racket[reify]（见 @xref["05:equation"]{「把两种情形并起来」}的旁注；@tt{_.0} 是沿用惯例的显示记号，若项里本来就含有符号 @racket['_.0]，读出后会撞名）。
+这里收的是这一章造出的东西：@tech{不确定运算符}、@tech{关系}的两种写法，以及关系语言。直角三角形、@racket[appendᵒ] 这些例子不在其中。关系语言的完整实现在正文的基础上补上了添等式前检查循环的 @racket[occurs?] 与 @racket[ext-s]（见@xref["05:reify"]{「开放世界与未定下来的答案」}的旁注），并把 @racket[run*] 定义为 @racket[run] 的语法糖（@tt{_.0} 是沿用惯例的显示记号，若项里本来就含有符号 @racket['_.0]，读出后会撞名）。
 
 @codeblock|{
 #lang typed/racket/no-check
@@ -135,9 +135,20 @@
 (define-syntax-rule (∃ (x ...) g)
   (λ (s) (let ([x (var 'x)] ...) (g s))))
 
-(define-syntax-rule (run* (x ...) g)
+(define-syntax-rule (run n (x ...) g ...)
   (let ([x (var 'x)] ...)
-    (in-amb (reify (walk* (list x ...) (g '()))))))
+    (define ans*
+      (in-amb (reify (walk* (list x ...) ((∧ g ...) '())))))
+    (if n (take ans* (min n (length ans*))) ans*)))
+
+(define-syntax-rule (run* (x ...) g ...)
+  (run #f (x ...) g ...))
+
+(define-syntax-rule (fresh (x ...) g ...)
+  (∃ (x ...) (∧ g ...)))
+
+(define-syntax-rule (conde [g ...] ...)
+  (∨ (∧ g ...) ...))
 
 (: function->relation (∀ (a ... b) (→ (→ℬ a ... b) (→ Term ... Term Goal))))
 (define (((function->relation f) . t*) s)
