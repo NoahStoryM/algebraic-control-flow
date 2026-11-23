@@ -121,7 +121,9 @@
 
 一般地，@tech{谓词}（也就是@tech{特征函数}）与这门语言里的@tech{关系}，类型正好并排对照：@tech{谓词}是 @racket[(→ Data ... Boolean)]，收下数据，回答是或否；@tech{关系}是 @racket[(→ Term ... Goal)]，收下可以含有@tech{未知项}的项，交出@tech{目标}。@racket[betweenᵒ] 也一样，@racket[run*] 里的每一条条件都是一次@tech{关系}调用，交出一个@tech{目标}。为免混淆，下文的「关系」只说 @racket[betweenᵒ]、@racket[pythᵒ] 这一种，说的是数与数之间的事；@tech{代换}之间的那一种就叫@tech{目标}。
 
-@tech{谓词}写的条件用 @racket[and] 连起来，集合语言里写成 @math{∧}。几个@tech{目标}怎样连？@racket[(betweenᵒ a h b)] 要读 @racket[a] 的值，收到的得是前一个@tech{目标} @racket[(betweenᵒ l h a)] 交出的@tech{代换}；它给@tech{代换}添上 @racket[b] 的值，再交给下一个@tech{目标} @racket[(betweenᵒ b h c)]。前一个@tech{目标}交出的@tech{代换}交给后一个：@xref["05:two-ways"]{「关系的两种写法」}里，@racket[let*] 中先后两次调用写成了 @racket[∘ℬ]；这里接起前后两个@tech{目标}，用的也是 @racket[∘ℬ]。几个@tech{目标}同时成立，叫@tech{合取}，照集合语言里的记号写成 @racket[∧]：
+@section[#:tag "05:connect-goals"]{把目标接起来}
+
+@tech{谓词}写的条件用 @racket[and] 连起来，集合语言里写成 @math{∧}。几个@tech{目标}怎样连？@racket[(betweenᵒ a h b)] 要读 @racket[a] 的值，收到的得是前一个@tech{目标} @racket[(betweenᵒ l h a)] 交出的@tech{代换}；它给@tech{代换}添上 @racket[b] 的值，再交给下一个@tech{目标} @racket[(betweenᵒ b h c)]。前一个@tech{目标}交出的@tech{代换}交给后一个：@xref["05:compose-l"]{「列表箭头的复合」}里，@racket[let*] 中先后两次调用写成了 @racket[∘ℬ]；这里接起前后两个@tech{目标}，用的也是 @racket[∘ℬ]。几个@tech{目标}同时成立，叫@tech{合取}，照集合语言里的记号写成 @racket[∧]：
 
 @examples[#:eval ev-goals #:no-result
 (: ∧ (→ Goal ... Goal))

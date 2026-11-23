@@ -117,6 +117,8 @@
 inclusive-range  =  (gather between)
 between  =  (scatter inclusive-range)]
 
+@section[#:tag "05:compose-l"]{列表箭头的复合}
+
 @tech{同构}的两种箭头，复合也该对得上。可是 ℒ 的箭头不能用 @racket[∘] 接：前一个交出一张列表，后一个只收其中一项。ℬ 的箭头能接，那就借@tech{同构}把 ℬ 的复合搬过来@defsym["g ∘ℒ f" "交出列表的函数的复合：借 ℬ 的复合定义，化简后是 append-map"]：先把 ℒ 的箭头搬到 ℬ，在那边接好，再搬回来。@xref["02:via-contrapositive"]{第二章借道逆否箭头}搬运 @racket[∘𝒦] 的运算律，用的也是这个办法。
 
 @examples[#:eval ev-two-ways #:no-result

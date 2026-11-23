@@ -101,7 +101,7 @@
 
 还是那六组。@racket[pick-a] 里面用了 @racket[amb]，@racket[function->relation] 照样把它搬过来：它交出几个值，@tech{目标}就交出几张@tech{代换}。
 
-接四步的写法，到这里有了三种。@xref["05:two-ways"]{「关系的两种写法」}末尾并排了两行，这里添上第三行：
+接四步的写法，到这里有了三种。@xref["05:compose-l"]{「列表箭头的复合」}里并排写过两行，这里添上第三行：
 
 @racketblock[
 (let*      ([y (f x)] [z (g y)]) z)  =  ((∘ℬ g f) x)
