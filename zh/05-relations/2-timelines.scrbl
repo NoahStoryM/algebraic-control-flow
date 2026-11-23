@@ -20,7 +20,7 @@
             #:when (pyth? a b c))
   (list a b c))]
 
-一串绑定从上到下排开，后面的绑定可以用前面的名字，计算的先后都写在了绑定的先后里。@racket[for*/list] 的每个绑定后面，同样跟着一份等着结果的剩余工作。差别在可归约式算出了什么。@racket[(+ a 1)] 算出一个值，剩余工作拿着它运行一次。@racket[(inclusive-range 1 20)] 算出的是一个序列，@racket[a] 要取遍其中每个值，剩余工作就为每个值各运行一次。
+一串绑定从上到下排开，后面的绑定可以用前面的名字，计算的先后都写在了绑定的先后里。@racket[for*/list] 的每个绑定后面，同样跟着一份等着结果的剩余工作。差别在@tech{可归约式}算出了什么。@racket[(+ a 1)] 算出一个值，剩余工作拿着它运行一次。@racket[(inclusive-range 1 20)] 算出的是一个序列，@racket[a] 要取遍其中每个值，剩余工作就为每个值各运行一次。
 
 @xref["04:4-named"]{第四章}的 @racket[if] 把剩余工作写了两次，只运行了一次。这里正相反：@racket[[a (inclusive-range 1 20)]] 之后的全部代码只写了一次，却运行了二十次，每次拿到一个不同的 @racket[a]，彼此互不相干。普通的计算里，剩余工作运行过就成为过去，一次计算只有一条时间线。这里同一份剩余工作运行了许多遍，一次搜索里有不止一条时间线。
 
@@ -67,11 +67,11 @@
 
 剩余工作有了名字，它运行了几次就数得出来。最外层的 @racket[(append-map k (inclusive-range 1 20))] 摊开是 @racket[(append (k 1) (k 2) … (k 20))]，同一个 @racket[k] 运行了二十次。参数从左到右求值，@racket[(k 1)] 连同它下面所有的 @racket[b]、@racket[c] 试完，才轮到 @racket[(k 2)]：一条路走到头，退回最近一处还有备选的地方，换下一个再走。这就是@defterm[#:en "backtracking"]{回溯}。
 
-走到最里面，直角成立的时间线交出一行，不成立的什么也不交出，@racket[append] 把交出的行接成一张列表。表里的行就是这样来的：同一组边界在表里占几行，搜索里就有几条走通的时间线。函数的输入恰好占一行，一条时间线就够了；关系的输入可以占许多行，也可以一行不占。
+走到最里面，直角成立的时间线交出一行，不成立的什么也不交出，@racket[append] 把交出的行接成一张列表。表里的行就是这样来的：同一组边界在表里占几行，搜索里就有几条走通的时间线。函数的输入恰好占一行，一条时间线就够了；@tech{关系}的输入可以占许多行，也可以一行不占。
 
 @section[#:tag "05:erase"]{擦除延续参数}
 
-摊开后的 @racket[right-triangles] 是一段 @tech[#:key "延续传递风格"]{CPS} 程序：每一层的剩余工作都写成 λ，作为参数交给 @racket[choose/k]。@xref["04:3-erase"]{第四章}的编译器也是这个形状，那里擦掉延续参数的办法，是让 @racket[shift] 在原来的位置把它取出来。对每个调用点照样做一遍：
+摊开后的 @racket[right-triangles] 是一段 @tech[#:key "延续传递风格"]{CPS} 程序：每一层的剩余工作都写成 λ，作为参数交给 @racket[choose/k]。@xref["04:3-erase"]{第四章}的编译器也是这个形状，那里擦掉@tech{延续}参数的办法，是让 @racket[shift] 在原来的位置把它取出来。对每个调用点照样做一遍：
 
 @racketblock[
 #,(hspace 2)((choose/k p*) (λ (v) body))
@@ -140,7 +140,7 @@
 
 它读起来像是一段普通的程序：三条边各从范围里取一个数，检查是不是直角，是就交出这一组边。可是普通的函数做不到里面的两件事。@racket[(between l h)] 只交出一个数，后面的代码却要为范围里的每个数各走一遍：它得「返回许多次」。@racket[check] 在条件不成立时要让这条时间线到此为止，什么也不留下：它得「不返回」。此外还要有一层，把走通的各条时间线交出的结果收到一起。
 
-一次调用可以返回许多次，也可以不返回，这样的计算叫@defterm[#:en "nondeterministic computation"]{不确定计算}。McCarthy 的@defterm[#:en "ambiguous operator"]{不确定运算符} @racket[amb] 就是为它准备的：@racket[(amb 1 2 3)] 返回三次，每次交出一个备选，后面的计算各走一遍；一个备选也不写的 @racket[(amb)] 不返回，这条时间线到此为止。再用 @racket[in-amb] 圈出一次不确定计算，把走通的结果收成一张列表：
+一次调用可以返回许多次，也可以不返回，这样的计算叫@defterm[#:en "nondeterministic computation"]{不确定计算}。McCarthy 的@defterm[#:en "ambiguous operator"]{不确定运算符} @racket[amb] 就是为它准备的：@racket[(amb 1 2 3)] 返回三次，每次交出一个备选，后面的计算各走一遍；一个备选也不写的 @racket[(amb)] 不返回，这条时间线到此为止。再用 @racket[in-amb] 圈出一次@tech{不确定计算}，把走通的结果收成一张列表：
 
 @(define ev-amb (make-acf-eval))
 @examples[#:eval ev-amb #:hidden

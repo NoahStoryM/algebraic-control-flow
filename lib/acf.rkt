@@ -45,16 +45,23 @@
 ;; 代码层面的链接与高亮不算引用外部文档）。要链接新的库，在这里加。
 ;; 正文里重新定义过的名字（call/cc、label、cc……）也链接到库里对应的那一个。
 (require (for-label racket/base
+                    racket/list
+                    racket/dict
                     racket/function
                     racket/match
                     racket/control
                     racket/undefined
-                    (only-in typed/racket/base : ∀ ∪ U → case→ define-type Values Byte Real Natural Pair)
+                    (only-in typed/racket/base
+                             : ∀ ∪ U → case→ define-type
+                             Values Byte Real Natural Positive-Integer Number Boolean Void
+                             Pair List Listof Null Symbol String Bytes Char Keyword)
                     control/context
                     (only-in amb amb for/amb for*/amb in-amb)))   ; 第五章自己定义的 amb 一族，链接到 amb 库（Noah 11/6）
 ;; 同样的绑定也交给引用本模块的文档，正文里的 @racket[call/cc] 等因此能直接链接。
-(provide (for-label (all-from-out racket/base racket/function racket/match racket/control racket/undefined control/context)
-                    : ∀ ∪ U → case→ define-type Values Byte Real Natural Pair
+(provide (for-label (all-from-out racket/base racket/list racket/dict racket/function racket/match racket/control racket/undefined control/context)
+                    : ∀ ∪ U → case→ define-type
+                    Values Byte Real Natural Positive-Integer Number Boolean Void
+                    Pair List Listof Null Symbol String Bytes Char Keyword
                     amb for/amb for*/amb in-amb))
 
 (define label-context (quote-syntax here))
