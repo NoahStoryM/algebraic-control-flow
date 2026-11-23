@@ -94,7 +94,7 @@
 @examples[#:eval ev-comp #:label #f
 (run* (t) (right-triangleᵒ '(1 20) t))]
 
-@margin-note{每组外面多了一层括号：@racket[run*] 只读了一个@tech{未知项} @racket[t]，一组答案是只有一项的列表。}
+@margin-note{每组外面多了一层括号：@racket[run*] 只读了一个@tech{未知项} @racket[t]，一组答案是只有一个元素的列表。}
 
 还是那六组。@racket[pick-a] 里面用了 @racket[amb]，@racket[function->relation] 照样把它搬过来：它交出几个值，@tech{目标}就交出几张@tech{代换}。
 
@@ -189,7 +189,7 @@
 @examples[#:eval ev-unify #:label #f
 (walk x s)]
 
-添一行也不能照旧了。比如表里已经记着 @racket[x] 等于 5，再来一行等式说 @racket[x] 等于 6，直接添上，@racket[x] 就占了两行；等式要是写成 6 等于 @racket[x]，键还成了一个数。添之前，两边都要先顺着表查到底，再对称地比：有一边是@tech{未知项}，就添上一行；两边都是序对，逐项去对；否则相等才走得通：
+添一行也不能照旧了。比如表里已经记着 @racket[x] 等于 5，再来一行等式说 @racket[x] 等于 6，直接添上，@racket[x] 就占了两行；等式要是写成 6 等于 @racket[x]，键还成了一个数。添之前，两边都要先顺着表查到底，再对称地比：有一边是@tech{未知项}，就添上一行；两边都是序对，逐个去对；否则相等才走得通：
 
 @examples[#:eval ev-unify #:no-result
 (: unify (→ Term Term Substitution Substitution))
@@ -212,7 +212,7 @@
 (in-amb (unify (list a 2) (list 1 b) '()))
 (in-amb (unify 6 x (list (cons x 5))))]
 
-头一例两边都不知道，添的一行记着 @racket[x] 等于 @racket[y]。第二例是两张各缺一项的列表，逐项去对，@racket[a] 对上 1，@racket[b] 对上 2：两边都从对面得到了自己缺的那一项。第三例里 @racket[x] 查到 5，与 6 对不上，这条时间线走不通，@racket[in-amb] 一张@tech{代换}也没有收到。
+头一例两边都不知道，添的一行记着 @racket[x] 等于 @racket[y]。第二例是两张各缺一个元素的列表，逐个去对，@racket[a] 对上 1，@racket[b] 对上 2：两边都从对面得到了自己缺的那个值。第三例里 @racket[x] 查到 5，与 6 对不上，这条时间线走不通，@racket[in-amb] 一张@tech{代换}也没有收到。
 
 让两个项相等，必要时往@tech{代换}里添一行，这件事叫@defterm[#:en "unification"]{合一}。添的总是一个还没在表里的@tech{未知项}，所以键不会重复。@tech{代换}也跟着变了样：一行记的不再是某个@tech{未知项}的值，而是一条等式。
 
@@ -222,7 +222,7 @@
 (: ≡ (→ Term Term Goal))
 (define ((≡ u v) s) (unify u v s))]
 
-@racket[value-of] 也改成顺着查，项是序对就逐项读；走到头还剩@tech{未知项}就报错，所以它交出的都是不含@tech{未知项}的 @racket[Data]：
+@racket[value-of] 也改成顺着查，遇到序对就两边各读；走到头还剩@tech{未知项}就报错，所以它交出的都是不含@tech{未知项}的 @racket[Data]：
 
 @examples[#:eval ev-unify #:no-result
 (: value-of (→ Term Substitution Data))
@@ -285,7 +285,7 @@
 
 有了 @racket[≡]、@racket[∧] 和 @racket[∃]，不借函数和@tech{谓词}，能不能直接写出一个递归的@tech{关系}？
 
-@racket[append] 把两张列表接成一张。它是函数，只能从左边两张算出右边一张。照它的定义写一个三个位置的@tech{关系} @racket[(appendᵒ l t out)]：@racket[l] 是空的，@racket[out] 就等于 @racket[t]；或者 @racket[l] 有头一项 @racket[a] 和剩下的 @racket[d]，@racket[out] 的头一项也是 @racket[a]，剩下的部分 @racket[res] 是 @racket[d] 接上 @racket[t]。
+@racket[append] 把两张列表接成一张。它是函数，只能从左边两张算出右边一张。照它的定义写一个三个位置的@tech{关系} @racket[(appendᵒ l t out)]：@racket[l] 是空的，@racket[out] 就等于 @racket[t]；或者 @racket[l] 有头一个元素 @racket[a] 和剩下的 @racket[d]，@racket[out] 的头一个元素也是 @racket[a]，剩下的部分 @racket[res] 是 @racket[d] 接上 @racket[t]。
 
 这里有两种情形，只要有一种成立就算走通。每条支路都从收到的那张@tech{代换}出发，@racket[list->amb] 会让每个@tech{目标}各运行一次；只看能走通的@tech{代换}对，就是把各@tech{目标}的表并起来。几个条件里只要有一个成立，叫@tech{析取}，照集合语言里的记号写成 @racket[∨]：
 

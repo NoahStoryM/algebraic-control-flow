@@ -21,7 +21,7 @@
 
 @mm{{(a, b, c) | between(l, h, a) ∧ between(a, h, b) ∧ between(b, h, c) ∧ pyth(a, b, c)}}
 
-集合语言里没有「取」和「查」，四项都是@tech{关系}，用 @math{∧} 连在一起，要求同时成立。能不能把这套集合语言逐字翻译成能运行的程序？设想有一门直接写@tech{关系}的语言，@racket[between] 和 @racket[pyth?] 在其中各有对应的@tech{关系}，名字后面添一个上标 ᵒ：
+集合语言里没有「取」和「查」，四条都是@tech{关系}，用 @math{∧} 连在一起，要求同时成立。能不能把这套集合语言逐字翻译成能运行的程序？设想有一门直接写@tech{关系}的语言，@racket[between] 和 @racket[pyth?] 在其中各有对应的@tech{关系}，名字后面添一个上标 ᵒ：
 
 @racketblock[
 (define betweenᵒ (function->relation  between))
@@ -97,7 +97,7 @@
 (value-of a s)
 (eval:error (value-of b s))]
 
-有了@tech{代换}，@racket[run*] 要做的事可以从两头说起。开头，它造出几个@tech{未知项}，什么都还不知道，手里是一张空的@tech{代换}。结尾，它交出一张列表，每一项是这几个@tech{未知项}的一组取值；取值记在@tech{代换}里，所以每一项都是从某一张@tech{代换}里读出来的，有几组答案，就有几张@tech{代换}。
+有了@tech{代换}，@racket[run*] 要做的事可以从两头说起。开头，它造出几个@tech{未知项}，什么都还不知道，手里是一张空的@tech{代换}。结尾，它交出一张列表，每个元素是这几个@tech{未知项}的一组取值；取值记在@tech{代换}里，所以每一组都是从某一张@tech{代换}里读出来的，有几组答案，就有几张@tech{代换}。
 
 夹在中间的是那几条条件。它们合起来要做的事也就定了：收下那张空的@tech{代换}，交出若干张@tech{代换}，每张记着一组走得通的取值；一组也没有，就一张也不交。收一个，交零个或多个，这是带 @racket[amb] 的函数，@xref["05:two-ways"]{「关系的两种写法」}里 ℬ 的箭头：
 
@@ -162,7 +162,7 @@
   (check (apply p? (for/list ([t t*]) (value-of t s))))
   s)]
 
-@margin-note{这里的 @racket[a ...] 与 @racket[b] 是 @racket[Data] 的子类型（如 @racket[ℕ⁺]）；@racket[function->relation] 在原有各项之后添一个结果位置，@racket[predicate->relation] 保留原@tech{谓词}的参数个数，两种包装读出的参数都须落在原函数或@tech{谓词}的定义域里。}
+@margin-note{这里的 @racket[a ...] 与 @racket[b] 是 @racket[Data] 的子类型（如 @racket[ℕ⁺]）；@racket[function->relation] 在原有参数之后添一个结果位置，@racket[predicate->relation] 保留原@tech{谓词}的参数个数，两种包装读出的参数都须落在原函数或@tech{谓词}的定义域里。}
 
 想要的写法里缺的东西都有了。伪代码原样运行：
 
