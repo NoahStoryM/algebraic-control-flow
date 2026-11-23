@@ -44,24 +44,13 @@
 ;; 代码块与 @c 里的标识符按下面这些库的绑定排版：着色，并链接到它们的文档（Noah 10/26：
 ;; 代码层面的链接与高亮不算引用外部文档）。要链接新的库，在这里加。
 ;; 正文里重新定义过的名字（call/cc、label、cc……）也链接到库里对应的那一个。
-(require (for-label racket/base
-                    racket/list
-                    racket/dict
-                    racket/function
-                    racket/match
-                    racket/control
+(require (for-label (only-meta-in 0 typed/racket/no-check)
+                    (except-in racket/control set)
                     racket/undefined
-                    (only-in typed/racket/base
-                             : ∀ ∪ U → case→ define-type
-                             Values Byte Real Natural Positive-Integer Number Boolean Void
-                             Pair List Listof Null Symbol String Bytes Char Keyword)
                     control/context
                     (only-in amb amb for/amb for*/amb in-amb)))   ; 第五章自己定义的 amb 一族，链接到 amb 库（Noah 11/6）
 ;; 同样的绑定也交给引用本模块的文档，正文里的 @racket[call/cc] 等因此能直接链接。
-(provide (for-label (all-from-out racket/base racket/list racket/dict racket/function racket/match racket/control racket/undefined control/context)
-                    : ∀ ∪ U → case→ define-type
-                    Values Byte Real Natural Positive-Integer Number Boolean Void
-                    Pair List Listof Null Symbol String Bytes Char Keyword
+(provide (for-label (all-from-out typed/racket/no-check racket/control racket/undefined control/context)
                     amb for/amb for*/amb in-amb))
 
 (define label-context (quote-syntax here))
