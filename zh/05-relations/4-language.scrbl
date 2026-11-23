@@ -68,9 +68,7 @@
 (define-type Term (∪ Literal Var (Pair Term Term)))
 (define-type Substitution (Dictionary Var Term))]
 
-键不重复，这正是@xref["05:search"]{「遍历搜索」}里缓存用的那种字典。
-
-要问一个项的值：本来就是值的，就是它自己；@tech{未知项}去表里查，查不到，说明它的值还不知道。
+照着这张字典，可以把@tech{未知项}换成它对应的值，所以叫@defterm[#:en "substitution"]{代换}。用 @racket[value-of] 从@tech{代换}里读出一个@tech{项}的值：不是@tech{未知项}，原样交回；是@tech{未知项}，就去表里查，查不到就报错。
 
 @examples[#:eval ev-goals #:no-result
 (: value-of (→ Term Substitution Term))
@@ -89,16 +87,11 @@
 (value-of a s)
 (eval:error (value-of b s))]
 
-照着这张表，可以把@tech{未知项}换成它的值，所以这样一张表叫@defterm[#:en "substitution"]{代换}。
-
-@racket[assq] 按身份找键。@tech{未知项}的名字只用来打印，分辨靠的是身份：
+查表用的是按身份比较的 @racket[assq]，不是比名字。@racket[var] 里的符号只用来打印，两次调用 @racket[(var 'a)] 印出来一模一样，在表里却是两个不同的键：
 
 @examples[#:eval ev-goals #:label #f
-(var 'a)
 (eq? (var 'a) (var 'a))
 (eq? a a)]
-
-造两次，打印出来一模一样，在表里却是两个键；同一次造出的才是同一个。
 
 有了@tech{代换}，@racket[run*] 要做的事可以从两头说起。开头，它造出几个@tech{未知项}，什么都还不知道，手里是一张空的@tech{代换}。结尾，它交出一张列表，每一项是这几个@tech{未知项}的一组取值；取值记在@tech{代换}里，所以每一项都是从某一张@tech{代换}里读出来的，有几组答案，就有几张@tech{代换}。
 
