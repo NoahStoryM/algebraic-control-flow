@@ -101,12 +101,12 @@
 
 夹在中间的是那几条条件。它们合起来要做的事也就定了：收下那张空的@tech{代换}，交出一张装满@tech{代换}的列表，每张记着一组走得通的取值；一组也没有，就交出空列表。收一个、交一张列表，这正是@xref["05:two-ways"]{「关系的两种写法」}里 ℒ 的箭头 @racket[(→ℒ Substitution Substitution)]，也就是@tech{代换}与@tech{代换}之间的@tech{二元关系}：左边一列是收到的@tech{代换}，右边一列是交出的@tech{代换}。
 
+@margin-note{不用 @racket[amb]、直接按 @racket[(→ℒ Substitution Substitution)] 写成纯函数也可以，接起来用的换成 @racket[∘ℒ]；两种写法之间，正是 @racket[gather] 与 @racket[scatter]。}
+
 既然是@tech{二元关系}，还可以换用@tech{同构}的 ℬ 箭头来写：用 @racket[amb] 省去处处拆列表、接列表的麻烦，留到 @racket[run*] 出口再用 @racket[in-amb] 一次收齐。这样的函数叫@defterm[#:en "goal"]{目标}：
 
 @examples[#:eval ev-goals #:no-result
 (define-type Goal (→ℬ Substitution Substitution))]
-
-@margin-note{不用 @racket[amb]、直接按 @racket[(→ℒ Substitution Substitution)] 写成纯函数也可以，接起来用的换成 @racket[∘ℒ]；两种写法之间，正是 @racket[gather] 与 @racket[scatter]。}
 
 两头和中间都看清了，外层的 @racket[run*] 立刻可以写下来：造出@tech{未知项}，从一张空的@tech{代换}开始运行@tech{目标} @racket[g]，再读出那几个@tech{未知项}的值。走通的每条时间线交出一组取值，由 @racket[in-amb] 收齐：
 
@@ -176,6 +176,8 @@
 
 还是那六组。回头看刚才手写的 @racket[betweenᵒ] 与 @racket[pythᵒ]，做的都是同一套活：把前面的参数用 @racket[value-of] 读出来，交给原函数或原@tech{谓词}，函数版把结果添进@tech{代换}，@tech{谓词}版用 @racket[check] 拦下不成立的分支。把这两套模板抽出来，就得到开头想要的 @racket[function->relation] 与 @racket[predicate->relation]：
 
+@margin-note{这里的 @racket[a ...] 与 @racket[b] 是 @racket[Data] 的子类型（如 @racket[ℕ⁺]）；@racket[function->relation] 在原有参数之后添一个结果位置，@racket[predicate->relation] 保留原@tech{谓词}的参数个数，两种包装读出的参数都须落在原函数或@tech{谓词}的定义域里。}
+
 @examples[#:eval ev-goals #:no-result
 (: function->relation (∀ (a ... b) (→ (→ℬ a ... b) (→ Term ... Term Goal))))
 (define (((function->relation f) . t*) s)
@@ -186,8 +188,6 @@
 (define (((predicate->relation p?) . t*) s)
   (check (apply p? (for/list ([t t*]) (value-of t s))))
   s)]
-
-@margin-note{这里的 @racket[a ...] 与 @racket[b] 是 @racket[Data] 的子类型（如 @racket[ℕ⁺]）；@racket[function->relation] 在原有参数之后添一个结果位置，@racket[predicate->relation] 保留原@tech{谓词}的参数个数，两种包装读出的参数都须落在原函数或@tech{谓词}的定义域里。}
 
 于是开头那两行伪代码也原样成立了：
 
