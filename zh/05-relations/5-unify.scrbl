@@ -69,7 +69,7 @@
 
 @mm{Q ∘ P = {(x, z) | ∃y, (x, y) ∈ P ∧ (y, z) ∈ Q}}
 
-放到关系语言里，@math{(x, y) ∈ P} 与 @math{(y, z) ∈ Q} 已经有写法 @racket[(Pᵒ x y)]、@racket[(Qᵒ y z)]，「并且」也已经有 @racket[∧]，空下来的只有「存在这样的 @math{y}」。需要一个只在内部用到的局部@tech{未知项}，借 @racket[run*] 造@tech{未知项}的那一步就能写出 @racket[∃]：
+放到关系语言里，@math{(x, y) ∈ P} 与 @math{(y, z) ∈ Q} 已经有写法 @racket[(Pᵒ x y)]、@racket[(Qᵒ y z)]，「并且」也已经有 @racket[∧]，空下来的只有「存在这样的 @math{y}」。把 @racket[y] 与 @racket[z] 都写在 @racket[run*] 后面，能给两条条件共用一个 @racket[y]，答案却也会多出这一列；只写 @racket[z]，两条条件里又没有 @racket[y] 可用。需要一个只在内部用到的局部@tech{未知项}，借 @racket[run*] 造@tech{未知项}的那一步就能写出 @racket[∃]：
 
 @examples[#:eval ev-comp #:no-result
 (define-syntax-rule (∃ (x ...) g)
@@ -106,11 +106,11 @@
 
 第一行每走通一次交出一个 @racket[z]，第二行把这些 @racket[z] 收成一张列表，第三行的 @racket[x] 与 @racket[z] 都是@tech{关系}的位置，调用交出的是@tech{目标}。三种都是复合，中间的 @racket[y] 在前两行由绑定命名，在第三行由 @racket[∃] 造出。
 
-有了复合，自然要问：接上一张什么样的表，遮住中间一列后会把原来的表完整留下？这就是 @racket[∘ᵒ] 的@defterm[#:en "unit"]{单位}。函数的复合 @racket[∘] 有恒等函数 @racket[id]，@racket[∘ℒ] 有 @racket[(λ (x) (list x))]；作为@tech{二元关系}，复合的@tech{单位}是左右两列完全相等的那张表，无论接在哪个@tech{二元关系}的左边还是右边，都不改变原来的@tech{关系}。
+有了复合，自然要问：接上一张什么样的表，遮住中间一列后会把原来的表完整留下？这就是 @racket[∘ᵒ] 的@defterm[#:en "unit"]{单位}，正如函数的复合 @racket[∘] 有恒等函数 @racket[id]，@racket[∘ℒ] 有 @racket[(λ (x) (list x))]。
 
 @section[#:tag "05:unify-step"]{合一}
 
-@xref["05:relation"]{「关系」}写过纯函数对应的表 @math{{(a, b) | b = f(a)}}。把 @math{f} 换成恒等函数 @racket[id]，就看见要翻译的是一张每行左右相等的表：接在任一端，新增的中间值必须等于对应的外列值，遮掉后外两列照旧。
+@xref["05:relation"]{「关系」}写过纯函数对应的表 @math{{(a, b) | b = f(a)}}。把 @math{f} 换成恒等函数 @racket[id]，得到一张每个值都和自己配成一行的表：接在任一端，新增的中间值必须等于对应的外列值，遮掉中间一列后外两列照旧。
 
 前面包装零参@tech{谓词}时一点值也不用读，直接就翻成了@tech{目标}。现在看看手头的两个包装各能做到哪一步。先试二元@tech{谓词} @racket[equal?]：
 
@@ -280,7 +280,7 @@
 
 @racket[append] 把两张列表接成一张。它是函数，只能从左边两张算出右边一张。照它的定义写一个三个位置的@tech{关系} @racket[(appendᵒ l t out)]：@racket[l] 是空的，@racket[out] 就等于 @racket[t]；或者 @racket[l] 有头一个元素 @racket[a] 和剩下的 @racket[d]，@racket[out] 的头一个元素也是 @racket[a]，剩下的部分 @racket[res] 是 @racket[d] 接上 @racket[t]。
 
-这里有两种固定的情形，符合任一边都算。@xref["05:compose"]{「二元关系的复合」}写过带索引的取并 @math{⋃ { Q(y) | y ∈ P(x) }}，那里先由 @math{P} 交出各个中间值再并起各份结果；这里不用先找中间值，直接把两张表并起来即可。每条支路都从收到的那张@tech{代换}出发，@racket[list->amb] 会让每个@tech{目标}各运行一次；只看能走通的@tech{代换}对，就是把各@tech{目标}的表并起来。几个条件里只要有一个成立，叫@tech{析取}，照集合语言里的记号写成 @racket[∨]：
+这里有两种情形，只要有一种成立就算走通。每条支路都从收到的那张@tech{代换}出发，@racket[list->amb] 会让每个@tech{目标}各运行一次；只看能走通的@tech{代换}对，就是把各@tech{目标}的表并起来（@xref["05:compose"]{「二元关系的复合」}里的取并随 @math{P(x)} 产生的中间值一份份地并，这里两份@tech{目标}已经写在眼前）。几个条件里只要有一个成立，叫@tech{析取}，照集合语言里的记号写成 @racket[∨]：
 
 @margin-note{@tech{目标}写成 ℒ 的箭头时，@tech{析取}是把几张@tech{代换}的列表接起来。}
 
@@ -314,7 +314,7 @@
 
 四种拆法都找到了。定义 @racket[appendᵒ] 的时候，没有哪一行写过「拆」：每一行都是等式，没有哪个位置是输入，哪个是输出。这是@tech{关系}不分输入输出的样子。
 
-到这里，把条件接起来的 @racket[∧] 和把支路并起来的 @racket[∨] 都用上了。回头看它们的零参边界，会正好撞上本节开头由零列表翻出来的那两个@tech{目标}：@racket[(∧)] 一步也不接，把原@tech{代换}原样交回一次，正是 @racket[⊤]，前后接上它，原@tech{目标}照走；@racket[(∨)] 造出一个没有支路可试的@tech{目标}，收到@tech{代换}后执行 @racket[(amb)]，一张也不交，正是 @racket[⊥]，在任一侧并上它，答案列表照旧。
+到这里，把条件接起来的 @racket[∧] 和把支路并起来的 @racket[∨] 都用上了。回头看它们的零参边界，会正好撞上本节开头由零列的表翻出来的那两个@tech{目标}：@racket[(∧)] 一步也不接，把原@tech{代换}原样交回一次，正是 @racket[⊤]，前后接上它，原@tech{目标}照走；@racket[(∨)] 造出一个没有支路可试的@tech{目标}，收到@tech{代换}后执行 @racket[(amb)]，一张也不交，正是 @racket[⊥]，在任一侧并上它，答案列表照旧。
 
 于是这门语言里的三种运算和它们的@tech{单位}都齐了：在@tech{代换}层，@tech{合取} @racket[∧] 的@tech{单位}是 @racket[⊤]，@tech{析取} @racket[∨] 的@tech{单位}是 @racket[⊥]；在@tech{关系}层，按外面两列的解看，@tech{二元关系}复合 @racket[∘ᵒ] 的@tech{单位}正是@tech{合一} @racket[≡]（@tech{合一}可能往@tech{代换}里添等式，@racket[⊤] 总是原样交回）。
 
