@@ -2,7 +2,7 @@
 
 @title[#:tag "05:5-unify"]{复合与合一}
 
-在函数世界里，把两步接起来用 @racket[∘]；带 @racket[amb] 的函数和交出列表的函数，也各自有了 @racket[∘ℬ] 与 @racket[∘ℒ]。换到刚造出的关系语言，两个@tech{二元关系}怎样复合？
+纯函数之间，把两步接起来用 @racket[∘]；带 @racket[amb] 的函数和交出列表的函数，也各自有了 @racket[∘ℬ] 与 @racket[∘ℒ]。换到刚造出的关系语言，两个@tech{二元关系}怎样复合？
 
 @section[#:tag "05:compose-o"]{在关系语言里复合}
 
