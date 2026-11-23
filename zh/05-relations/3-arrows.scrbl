@@ -159,6 +159,8 @@ between  =  (scatter inclusive-range)]
 
 纯的宿主里没有 @racket[amb]，二元关系在那里就是这个样子：交出列表的函数，用 @racket[append-map] 接起来。这正是@xref["05:compose"]{「二元关系的复合」}一节那个取并的式子，集合换成了列表，⋃ 换成了 @racket[append-map]。
 
+@bold{练习}：化简里有一步，@racket[in-amb] 展开成 @racket[reset] 与 @racket[list]，@racket[list->amb] 则直接换成了 @racket[choose]，这暗示两者的行为相同。展开 @racket[for/amb] 的定义，验证 @racket[list->amb] 与 @racket[choose] 是同一个函数。提示：@racket[for/amb] 交给 @racket[choose] 的是一张 λ 的列表，选出来以后还要调用一次。
+
 化简途中的两行还可以并排着看。@racket[in-amb] 里的那段 @racket[let*] 是 @racket[∘ℬ] 展开得来的，@racket[for*/list] 的循环化简下去就是 @racket[∘ℒ]：
 
 @racketblock[
@@ -167,13 +169,13 @@ between  =  (scatter inclusive-range)]
 
 第一行的 @racket[f]、@racket[g] 是 ℬ 的箭头，第二行的是 ℒ 的箭头。两种箭头各有一种绑定的写法，写出来的都是复合，多出来的只是中间结果的名字。
 
-回头看刚才化简出来的 @racket[(append-map g (f x))]。把 @racket[append-map] 柯里化，先只交给它第一步的 @racket[g]，得到的函数收一张列表、交出一张列表，记作 @racket[flat-map]：
+回头看刚才化简出来的 @racket[(append-map g (f x))]。把 @racket[append-map] 柯里化，先把函数参数 @racket[g] 交给它，得到的函数收一张列表、交出一张列表，记作 @racket[flat-map]：
 
 @examples[#:eval ev-two-ways #:no-result
 (: flat-map (∀ (p q) (→ (→ℒ p q) (→𝒞 (Listof p) (Listof q)))))
 (define flat-map (curry append-map))]
 
-@racket[flat-map] 把 ℒ 的箭头搬回纯宿主 𝒞，普通的 @racket[∘] 于是又接得上了。刚才的 @racket[∘ℒ] 其实就是把左边的箭头经 @racket[flat-map] 搬回 𝒞 再用 @racket[∘] 接上；@racket[flat-map] 本身也把 @racket[∘ℒ] 送回普通的 @racket[∘]，把单位 @racket[(λ (x) (list x))] 送回 @racket[id]：
+@racket[flat-map] 把 ℒ 的箭头搬回纯宿主 𝒞，普通的 @racket[∘] 于是又接得上了。刚才的 @racket[∘ℒ] 其实就是把左边的箭头经 @racket[flat-map] 搬回 𝒞 再用 @racket[∘] 接上；@racket[flat-map] 本身也把 @racket[∘ℒ] 送回普通的 @racket[∘]，把单位 @racket[(λ (x) (list x))] 送回 @racket[id]。下面取一元箭头，等号表示给定相应类型的输入，两边交出相同的结果列表：
 
 @racketblock[
 (∘ℒ g f)                     =  (∘ (flat-map g) f)
@@ -190,7 +192,7 @@ between  =  (scatter inclusive-range)]
 │              ↓
 └── flat-map ─ ℒ}|
 
-右边 ℬ 与 ℒ 之间是一个@tech{交换图表}：经 @racket[gather] 过去、再经 @racket[scatter] 回来，或者反过来走一趟，都回到原来的箭头。把一支纯函数 @racket[f] 沿着外圈从 𝒞 出发，经 @racket[inj]、@racket[gather]、@racket[flat-map] 绕回 𝒞，展开它：
+右边 ℬ 与 ℒ 之间是一个@tech{交换图表}：经 @racket[gather] 过去、再经 @racket[scatter] 回来，或者反过来走一趟，都回到原来的箭头。把一支纯的一元函数 @racket[f]（类型 @math{A → B}）沿着外圈从 𝒞 出发，经 @racket[inj]、@racket[gather]、@racket[flat-map] 绕回 𝒞，得到 @math{(@ty{Listof} A) → (@ty{Listof} B)}，展开它：
 
 @racketblock[
 #,(hspace 2)((flat-map (gather (inj f))) xs)
@@ -198,5 +200,3 @@ between  =  (scatter inclusive-range)]
 = (map f xs)]
 
 从 𝒞 绕一圈回来，纯函数 @racket[f] 成了用在列表上的 @racket[(λ (xs) (map f xs))]。
-
-@bold{练习}：化简里有一步，@racket[in-amb] 展开成 @racket[reset] 与 @racket[list]，@racket[list->amb] 则直接换成了 @racket[choose]，这暗示两者的行为相同。展开 @racket[for/amb] 的定义，验证 @racket[list->amb] 与 @racket[choose] 是同一个函数。提示：@racket[for/amb] 交给 @racket[choose] 的是一张 λ 的列表，选出来以后还要调用一次。

@@ -2,7 +2,7 @@
 
 @title[#:tag "05:1-table"]{表}
 
-先找一个具体的搜索问题，看看搜索交出了什么。
+同一组边界怎么会交出六组三角形？先从一个具体的搜索问题看起。
 
 @section[#:tag "05:search"]{遍历搜索}
 
@@ -59,7 +59,7 @@
 
 再看 @racket[cache] 里记下了什么：一共三行。为了看清每行的两项，这里把序对的点写了出来，点的左边是键，右边是值。键是边界，算过的不会再添，所以同一组边界只占一行。值是答案列表：一组边界对应的不是某一个答案，而是装着全部答案的一张列表，可能有六组，也可能一组都没有。
 
-眼下 @racket[cache] 只记着三组边界。设想把所有的边界都算过一遍，它会是一张巨大的@defterm{表}，每组边界都是其中的键。到那时循环就用不着了，@racket[right-triangles] 只剩下一次查找，可以写成：
+眼下 @racket[cache] 只记着三组边界。设想把所有的边界都算过一遍，它会是一张巨大的@defterm[#:en "table"]{表}，每组边界都是其中的键。到那时循环就用不着了，@racket[right-triangles] 只剩下一次查找，可以写成：
 
 @examples[#:eval ev-search #:no-result
 (: dictionary->function (∀ (v k ...) (→ (Dictionary (List k ... k) v) (→ k ... k v))))

@@ -150,7 +150,7 @@
 (: ⊥ Goal)
 (define (⊥ s) (amb))]
 
-有了「并且」@racket[∧]，自然还有「或者」。两个目标都是从代换到代换的二元关系，也就是同一个笛卡尔积的子集，它们的并集依然是这个笛卡尔积的子集。带 @racket[amb] 时，把几个目标并起来就是从其中挑一个来用，挑哪个都算，正是 @racket[amb]。几个条件里只要有一个成立，叫@tech{析取}，照集合语言里的记号写成 @racket[∨]：
+有了「并且」@racket[∧]，自然还有「或者」。两个目标都是从代换到代换的二元关系，也就是同一个笛卡尔积的子集，只看哪些代换能出现，它们的并集依然是这个笛卡尔积的子集。带 @racket[amb] 时，把几个目标并起来就是从其中挑一个来用，挑哪个都算，正是 @racket[amb]。几个条件里只要有一个成立，叫@tech{析取}，照集合语言里的记号写成 @racket[∨]：
 
 @examples[#:eval ev-goals #:no-result
 (: ∨ (→ Goal ... Goal))
@@ -176,7 +176,7 @@
 
 @section[#:tag "05:run"]{跑起来}
 
-@racket[run*] 写好了，还没有一个目标可以交给它。@racket[let*] 的一行 @racket[[a (between 1 3)]]，往 Racket 的记录表里添了一个名字；@racket[(betweenᵒ 1 3 a)] 该交出的目标，就往代换里添一行。先手写一个，从空的代换开始运行：
+@racket[run*] 写好了，还缺一个会给 @racket[a] 添值的目标。@racket[let*] 的一行 @racket[[a (between 1 3)]]，往 Racket 的记录表里添了一个名字；@racket[(betweenᵒ 1 3 a)] 该交出的目标，就往代换里添一行。先手写一个，从空的代换开始运行：
 
 @examples[#:eval ev-goals #:label #f
 (define g (λ (s) (cons (cons a (between 1 3)) s)))
@@ -190,7 +190,7 @@
 
 三张代换，读出来是三组答案。
 
-一般的 @racket[(betweenᵒ l h a)] 里，@racket[l]、@racket[h] 可能是未知项，要先用 @racket[value-of] 读出值，再交给 @racket[between]；@racket[between] 交出的数，照 @racket[g] 的样子记在最后一个位置上。四行条件里，最后一个位置都是还没有值的未知项，添一行就够了。@racket[(pythᵒ a b c)] 的三个位置都是给 @racket[pyth?] 的，全要读出值。谓词的是与否，成了目标的两种回答：成立就原样交回代换，不成立就一张也不交。
+一般的 @racket[(betweenᵒ l h a)] 里，@racket[l]、@racket[h] 可能是未知项，要先用 @racket[value-of] 读出值，再交给 @racket[between]；@racket[between] 交出的数，照 @racket[g] 的样子记在最后一个位置上。前三行里，最后一个位置都是还没有值的未知项，添一行就够了。@racket[(pythᵒ a b c)] 的三个位置都是给 @racket[pyth?] 的，全要读出值。谓词的是与否，成了目标的两种回答：成立就原样交回代换，不成立就一张也不交。
 
 @examples[#:eval ev-goals #:no-result
 (: function->relation (∀ (a ... b) (→ (→ℬ a ... b) (→ Term ... Term Goal))))
@@ -234,4 +234,4 @@
      (pythᵒ a b c))
   '()))]
 
-六张代换，一张对着一组答案。@racket[right-triangles] 是边界与三角形之间的二元关系，四行条件接成的目标是代换与代换之间的二元关系。给定一组边界，前者的表里以这组边界开头的那几行，就是后者的表里以空代换开头的那几行，用 @racket[value-of] 读出来。
+六张代换，一张对着一组答案。@racket[right-triangles] 是边界与三角形之间的二元关系，四行条件接成的目标是代换与代换之间的二元关系。给定一组边界，从四行目标交出的每张代换里用 @racket[value-of] 读出 @racket[a]、@racket[b]、@racket[c]，就得到 @racket[right-triangles] 表里对应的三角形。
