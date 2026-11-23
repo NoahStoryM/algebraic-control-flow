@@ -129,7 +129,7 @@
 ### 4.3 跑起来
 
 - 造：先照类型手写 `betweenᵒ` 与 `pythᵒ`，用 `in-amb` 看 `betweenᵒ` 的三张代换并交给 `run*` 读出三组答案；再用 `∘ℬ` 倒序复合写出合取 `∧`。
-- 认：4.1 的 `right-triangles` 直接跑通，还是那六组；直接看四行条件接成的目标交出的六张代换。
+- 认：4.1 的 `right-triangles` 直接跑通，还是那六组。
 - 造：把手写 `betweenᵒ`、`pythᵒ` 的固定模式抽象为极简版 `function->relation`（默认最后一个位置是还没值的未知项，直接添一行）与 `predicate->relation`，兑现 4.1 开头两行伪代码（内核对应 `code.rkt` 的 `rel-min` 子模块）。
 - 名字：`∧`。
 

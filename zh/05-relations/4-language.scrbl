@@ -161,29 +161,20 @@
 
 现在开头的 @racket[right-triangles] 已经能直接跑起来了：
 
-@examples[#:eval ev-goals #:label #f
+@examples[#:eval ev-goals #:no-result
 (define (right-triangles l h)
   (run* (a b c)
-    (∧ (betweenᵒ l h a)     (code:comment "l ≤ a ≤ h")
-       (betweenᵒ a h b)     (code:comment "a ≤ b ≤ h")
-       (betweenᵒ b h c)     (code:comment "b ≤ c ≤ h")
-       (pythᵒ a b c))))     (code:comment "a² + b² = c²")
-(right-triangles 1 20)]
+    (∧ (betweenᵒ l h a)
+       (betweenᵒ a h b)
+       (betweenᵒ b h c)
+       (pythᵒ a b c))))]
 
-还是那六组。同样的四条条件，接成一个@tech{目标}后不读出，直接看它交出的@tech{代换}：
+上下界仍取 1 和 20：
 
 @examples[#:eval ev-goals #:label #f
-(define c (var 'c))
-(in-amb
- ((∧ (betweenᵒ 1 20 a)
-     (betweenᵒ a 20 b)
-     (betweenᵒ b 20 c)
-     (pythᵒ a b c))
-  '()))]
+(right-triangles 1 20)]
 
-六张@tech{代换}，一张对着一组答案。@racket[right-triangles] 是边界与三角形之间的@tech{二元关系}，四条条件接成的@tech{目标}是@tech{代换}与@tech{代换}之间的@tech{二元关系}。给定一组边界，从这个@tech{目标}交出的每张@tech{代换}里用 @racket[value-of] 读出 @racket[a]、@racket[b]、@racket[c]，就得到 @racket[right-triangles] 表里对应的三角形。
-
-回头看刚才手写的 @racket[betweenᵒ] 与 @racket[pythᵒ]，做的都是同一套活：把前面的参数用 @racket[value-of] 读出来，交给原函数或原@tech{谓词}，函数版把结果添进@tech{代换}，@tech{谓词}版用 @racket[check] 拦下不成立的分支。把这两套模板抽出来，就得到开头想要的 @racket[function->relation] 与 @racket[predicate->relation]：
+还是那六组。回头看刚才手写的 @racket[betweenᵒ] 与 @racket[pythᵒ]，做的都是同一套活：把前面的参数用 @racket[value-of] 读出来，交给原函数或原@tech{谓词}，函数版把结果添进@tech{代换}，@tech{谓词}版用 @racket[check] 拦下不成立的分支。把这两套模板抽出来，就得到开头想要的 @racket[function->relation] 与 @racket[predicate->relation]：
 
 @examples[#:eval ev-goals #:no-result
 (: function->relation (∀ (a ... b) (→ (→ℬ a ... b) (→ Term ... Term Goal))))
