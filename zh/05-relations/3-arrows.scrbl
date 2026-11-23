@@ -13,7 +13,7 @@
 @racketblock[
 (inclusive-range l h)  =  (in-amb (between l h))]
 
-区别在写法。@racket[between] 写出来是个普通的函数，收到两个数，交出一个数；放在 @racket[in-amb] 里，同一组输入在表里占几行，它就返回几次。没有 @racket[amb] 的时候，函数只能表示每个输入恰好占一行的@tech{二元关系}；有了 @racket[amb]，普通写法的函数可以表示每个输入只占有限多行的@tech{二元关系}。
+区别在写法。@racket[between] 写出来是个普通的函数，收到两个数，交出一个数；放在 @racket[in-amb] 里，同一组输入在表里占几行，它就返回几次。没有 @racket[amb] 的时候，把函数一次返回的值直接当作表的右列，它只能表示每个输入恰好占一行的@tech{二元关系}；有了 @racket[amb]，普通写法的函数可以表示每个输入只占有限多行的@tech{二元关系}。
 
 @racket[right-triangles] 也可以这样得到。分成四步，每一步都写成这样的函数，收到一项，交出一项，再用普通的 @racket[∘] 接起来：
 
@@ -161,8 +161,6 @@ between  =  (scatter inclusive-range)]
 
 纯的宿主里没有 @racket[amb]，@tech{二元关系}在那里就是这个样子：交出列表的函数，用 @racket[append-map] 接起来。这正是@xref["05:compose"]{「二元关系的复合」}一节那个取并的式子，集合换成了列表，⋃ 换成了 @racket[append-map]。
 
-@bold{练习}：化简里有一步，@racket[in-amb] 展开成 @racket[reset] 与 @racket[list]，@racket[list->amb] 则直接换成了 @racket[choose]，这暗示两者的行为相同。展开 @racket[for/amb] 的定义，验证 @racket[list->amb] 与 @racket[choose] 是同一个函数。提示：@racket[for/amb] 交给 @racket[choose] 的是一张 λ 的列表，选出来以后还要调用一次。
-
 化简途中的两行还可以并排着看。@racket[in-amb] 里的那段 @racket[let*] 是 @racket[∘ℬ] 展开得来的，@racket[for*/list] 的循环化简下去就是 @racket[∘ℒ]：
 
 @racketblock[
@@ -170,6 +168,8 @@ between  =  (scatter inclusive-range)]
 (for*/list ([y (f x)] [z (g y)]) z)  =  ((∘ℒ g f) x)]
 
 第一行的 @racket[f]、@racket[g] 是 ℬ 的箭头，第二行的是 ℒ 的箭头。两种箭头各有一种绑定的写法，写出来的都是复合，多出来的只是中间结果的名字。
+
+@bold{练习}：化简里有一步，@racket[in-amb] 展开成 @racket[reset] 与 @racket[list]，@racket[list->amb] 则直接换成了 @racket[choose]，这暗示两者的行为相同。展开 @racket[for/amb] 的定义，验证 @racket[list->amb] 与 @racket[choose] 是同一个函数。提示：@racket[for/amb] 交给 @racket[choose] 的是一张 λ 的列表，选出来以后还要调用一次。
 
 @section[#:tag "05:back-to-c"]{回到纯宿主}
 
@@ -179,7 +179,7 @@ between  =  (scatter inclusive-range)]
 (: flat-map (∀ (p q) (→ (→ℒ p q) (→𝒞 (Listof p) (Listof q)))))
 (define ((flat-map g) p*) (append-map g p*))]
 
-照@xref["02:split-k"]{第二章}的写法，这就是 @racket[(flip choose/k)]。@racket[flat-map] 把 ℒ 的箭头搬回纯宿主 𝒞。普通的 @racket[∘] 于是又接得上了，而且连复合和单位都能一并搬回去。下面取一元箭头，等号表示给定相应类型的输入，两边交出相同的结果列表：
+照@xref["02:split-k"]{第二章}的写法，这就是 @racket[(flip choose/k)]。@racket[flat-map] 把 ℒ 的箭头搬回纯宿主 𝒞：@racket[f] 已经交出一整张列表，@racket[(flat-map g)] 正好能整张接住，普通的 @racket[∘] 于是又接得上了，而且连复合和单位都能一并搬回去。下面取一元箭头，等号表示给定相应类型的输入，两边交出相同的结果列表：
 
 @racketblock[
 (∘ℒ g f)                     =  (∘ (flat-map g) f)

@@ -51,7 +51,6 @@
 @examples[#:eval ev-goals #:hidden
 (require racket/control)
 (define ∘ compose)
-(define id (∘))
 (define-type (Dictionary k v) (Listof (Pair k v)))
 (define (pyth? a b c) (= (+ (* a a) (* b b)) (* c c)))
 (define (choose p*) (shift k (append-map k p*)))
@@ -61,8 +60,7 @@
 (define (between lo hi) (for/amb ([n (inclusive-range lo hi)]) n))
 (define (check ok?) (unless ok? (amb)))
 (define-type (→ℬ p ... q) (→ p ... q))
-(define ∘ℬ ∘)
-(define (list->amb v*) (for/amb ([v (in-list v*)]) v))]
+(define ∘ℬ ∘)]
 @examples[#:eval ev-goals #:no-result
 (struct var ([name : Symbol]) #:type-name Var #:transparent)
 (define-type Literal (∪ Boolean Number Char Bytes String Keyword Null Symbol))
@@ -121,7 +119,7 @@
 
 一般地，@tech{谓词}（也就是@tech{特征函数}）与这门语言里的@tech{关系}，类型正好并排对照：@tech{谓词}是 @racket[(→ Data ... Boolean)]，收下数据，回答是或否；@tech{关系}是 @racket[(→ Term ... Goal)]，收下可以含有@tech{未知项}的项，交出@tech{目标}。@racket[betweenᵒ] 也一样，@racket[run*] 里的每一条条件都是一次@tech{关系}调用，交出一个@tech{目标}。为免混淆，下文的「关系」只说 @racket[betweenᵒ]、@racket[pythᵒ] 这一种，说的是数与数之间的事；@tech{代换}之间的那一种就叫@tech{目标}。
 
-@section[#:tag "05:connect-goals"]{把目标接起来}
+@section[#:tag "05:run"]{跑起来}
 
 @tech{谓词}写的条件用 @racket[and] 连起来，集合语言里写成 @math{∧}。几个@tech{目标}怎样连？@racket[(betweenᵒ a h b)] 要读 @racket[a] 的值，收到的得是前一个@tech{目标} @racket[(betweenᵒ l h a)] 交出的@tech{代换}；它给@tech{代换}添上 @racket[b] 的值，再交给下一个@tech{目标} @racket[(betweenᵒ b h c)]。前一个@tech{目标}交出的@tech{代换}交给后一个：@xref["05:compose-l"]{「列表箭头的复合」}里，@racket[let*] 中先后两次调用写成了 @racket[∘ℬ]；这里接起前后两个@tech{目标}，用的也是 @racket[∘ℬ]。几个@tech{目标}同时成立，叫@tech{合取}，照集合语言里的记号写成 @racket[∧]：
 
@@ -131,42 +129,6 @@
 
 @racket[∧] 照写的顺序接：先写的先运行，和 @racket[let*] 一样，所以交给 @racket[∘ℬ] 之前要倒过来。
 
-@racket[∧] 不限@tech{目标}的个数。一个也不给呢？拿一张记着 @racket[a] 等于 1 的@tech{代换}试一次：
-
-@examples[#:eval ev-goals #:label #f
-(in-amb ((∧) (list (cons a 1))))]
-
-零个@tech{目标}的@tech{合取}把@tech{代换}原样交了回来，什么也没有做：@racket[(∘ℬ)] 就是带 @racket[amb] 时的恒等函数 @racket[id]。作为@tech{代换}之间的@tech{二元关系}，它是@defterm[#:en "identity relation"]{恒等关系}；作为条件，它总成立，总是成功。给它起名 @racket[⊤]：
-
-@examples[#:eval ev-goals #:no-result
-(: ⊤ Goal)
-(define (⊤ s) s)]
-
-@racket[⊤] 接在哪个@tech{目标}的前面或后面，都不改变那个@tech{目标}，是@tech{合取}的@defterm[#:en "unit"]{单位}。
-
-@racket[⊤] 收到哪张@tech{代换}都原样交回。要让一个条件总是失败，它收到@tech{代换}后该交出什么？一张@tech{代换}也不交，就是 @racket[(amb)]。作为@tech{代换}之间的@tech{二元关系}，它是一行也没有的@defterm[#:en "empty relation"]{空关系}；作为条件，它总不成立，总是失败。给它起名 @racket[⊥]：
-
-@margin-note{前四章用 @racket[⊤] 与 @racket[⊥] 记单元类型与@tech{空类型}；这里借用同一对逻辑真假记号表示 @racket[Goal] 类型的值，一个是恒等@tech{目标}，一个是失败@tech{目标}。}
-
-@examples[#:eval ev-goals #:no-result
-(: ⊥ Goal)
-(define (⊥ s) (amb))]
-
-有了「并且」@racket[∧]，自然还有「或者」。两个@tech{目标}都是从@tech{代换}到@tech{代换}的@tech{二元关系}，也就是同一个笛卡尔积的子集，只看哪些@tech{代换}能出现，它们的并集依然是这个笛卡尔积的子集。带 @racket[amb] 时，把几个@tech{目标}并起来就是从其中挑一个来用，挑哪个都算，正是 @racket[amb]。几个条件里只要有一个成立，叫@tech{析取}，照集合语言里的记号写成 @racket[∨]：
-
-@examples[#:eval ev-goals #:no-result
-(: ∨ (→ Goal ... Goal))
-(define ((∨ . g*) s) ((list->amb g*) s))]
-
-@margin-note{@tech{目标}写成 ℒ 的箭头时，@tech{析取}是把几张@tech{代换}的列表接起来。}
-
-一个@tech{目标}也不给 @racket[∨]，就是从零个备选里挑，结果正好是失败：
-
-@examples[#:eval ev-goals #:label #f
-(in-amb ((∨) (list (cons a 1))))]
-
-@racket[⊥] 和哪个@tech{目标}并起来，都不改变那个@tech{目标}；@racket[⊥] 正是@tech{析取}的@tech{单位}。
-
 两头和中间都有了，@racket[run*] 可以写下来：造出@tech{未知项}，从一张空的@tech{代换}开始运行@tech{目标} @racket[g]，再读出那几个@tech{未知项}的值。走通的每条时间线交出一组取值，由 @racket[in-amb] 收齐。
 
 @examples[#:eval ev-goals #:no-result
@@ -175,8 +137,6 @@
     (in-amb
      (let ([s (g '())])
        (list (value-of x s) ...)))))]
-
-@section[#:tag "05:run"]{跑起来}
 
 @racket[run*] 写好了，还缺一个会给 @racket[a] 添值的@tech{目标}。@racket[let*] 的一行 @racket[[a (between 1 3)]]，往 Racket 的记录表里添了一个名字；@racket[(betweenᵒ 1 3 a)] 该交出的@tech{目标}，就往@tech{代换}里添一条记录。先手写一个，从空的@tech{代换}开始运行：
 
@@ -206,14 +166,6 @@
   s)]
 
 @margin-note{这里的 @racket[a ...] 与 @racket[b] 是 @racket[Data] 的子类型（如 @racket[ℕ⁺]）；@racket[function->relation] 在原有各项之后添一个结果位置，@racket[predicate->relation] 保留原@tech{谓词}的参数个数，两种包装读出的参数都须落在原函数或@tech{谓词}的定义域里。}
-
-@xref["05:relation"]{「关系」}数过，零元关系只有两个，@math{{()}} 与 @math{{}}，对应两个零参@tech{谓词} @racket[(λ () #t)] 与 @racket[(λ () #f)]。把它们交给 @racket[predicate->relation]，再把这个零元关系无参调用一次，就得到@tech{目标}：
-
-@examples[#:eval ev-goals #:label #f
-(run* () ((predicate->relation (λ () #t))))
-(run* () ((predicate->relation (λ () #f))))]
-
-就算一个@tech{未知项}也不问，成功一次和一次也没成功，交出的列表仍然不同：第一行有一个答案，因为没有@tech{未知项}要读，那个答案就是空元组 @racket['()]；第二行一个答案也没有。两个@tech{谓词}都没有参数要查，真时把收到的@tech{代换}原样交回，假时一张也不交，对任意@tech{代换}都正好是刚才的 @racket[⊤] 和 @racket[⊥]。
 
 想要的写法里缺的东西都有了。伪代码原样运行：
 
