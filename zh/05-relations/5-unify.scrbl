@@ -36,10 +36,7 @@
   (cond [(not (var? t)) t]
         [(assq t s) => cdr]
         [else (error 'value-of "~a 的值还不知道" (var-name t))]))
-(define (⊤ s) s)
-(define (⊥ s) (amb))
 (define (∧ . g*) (apply ∘ℬ (reverse g*)))
-(define ((∨ . g*) s) ((list->amb g*) s))
 (define (((function->relation f) . t*) s)
   (define-values (in* out*) (split-at-right t* 1))
   (cons (cons (car out*) (apply f (for/list ([t in*]) (value-of t s)))) s))
@@ -94,10 +91,10 @@
 
 从 1 到 20 跑一遍：
 
+@margin-note{每组外面多了一层括号：@racket[run*] 只读了一个@tech{未知项} @racket[t]，一组答案是只有一个元素的列表。}
+
 @examples[#:eval ev-comp #:label #f
 (run* (t) (right-triangleᵒ '(1 20) t))]
-
-@margin-note{每组外面多了一层括号：@racket[run*] 只读了一个@tech{未知项} @racket[t]，一组答案是只有一项的列表。}
 
 还是那六组。@racket[pick-a] 里面用了 @racket[amb]，@racket[function->relation] 照样把它搬过来：它交出几个值，@tech{目标}就交出几张@tech{代换}。
 
@@ -110,7 +107,7 @@
 
 第一行每走通一次交出一个 @racket[z]，第二行把这些 @racket[z] 收成一张列表。第三行的 @racket[x] 与 @racket[z] 都是@tech{关系}的位置，调用交出的是@tech{目标}。三种都是复合，中间结果 @racket[y] 在前两行由绑定命名，在第三行由 @racket[∃] 造出。
 
-有了复合，自然要问：@racket[∘ᵒ] 的@tech{单位}是什么？函数的复合 @racket[∘] 有恒等函数 @racket[id]，@racket[∘ℒ] 有 @racket[(λ (x) (list x))]。作为@tech{二元关系}，复合的@tech{单位}说的是两个位置完全一样：无论接在哪个@tech{二元关系}的左边还是右边，都不改变原来的@tech{关系}。
+有了复合，自然要问：@racket[∘ᵒ] 的@defterm[#:en "unit"]{单位}是什么？函数的复合 @racket[∘] 有恒等函数 @racket[id]，@racket[∘ℒ] 有 @racket[(λ (x) (list x))]。作为@tech{二元关系}，复合的@tech{单位}说的是两个位置完全一样：无论接在哪个@tech{二元关系}的左边还是右边，都不改变原来的@tech{关系}。
 
 手头已经有了 @racket[function->relation] 和 @racket[predicate->relation]，不妨各试一次。从函数的角度看，输入和输出完全一样的函数正是 @racket[id]，把它搬成@tech{关系}：
 
@@ -143,7 +140,7 @@
 
 @section[#:tag "05:unify-step"]{合一}
 
-不借 @racket[id] 和 @racket[equal?]，照手写 @racket[g] 的办法，直接把这两行等式记进表里：@racket[x] 等于 @racket[y]，@racket[y] 等于 5。然后问 @racket[x] 的值：
+不借 @racket[id] 和 @racket[equal?]，照前面往@tech{代换}里添记录的办法，直接把这两行等式记进表里：@racket[x] 等于 @racket[y]，@racket[y] 等于 5。然后问 @racket[x] 的值：
 
 @(define ev-unify (make-acf-eval))
 @examples[#:eval ev-unify #:hidden
@@ -154,6 +151,7 @@
 (define-syntax-rule (for/amb clauses body ...) ((choose (for/list clauses (λ () body ...)))))
 (define-syntax-rule (in-amb e) (reset (list e)))
 (define (between lo hi) (for/amb ([n (inclusive-range lo hi)]) n))
+(define (check ok?) (unless ok? (amb)))
 (define ∘ℬ ∘)
 (define (list->amb v*) (for/amb ([v (in-list v*)]) v))
 (struct var ([name : Symbol]) #:type-name Var #:transparent)
@@ -161,10 +159,10 @@
   (cond [(not (var? t)) t]
         [(assq t s) => cdr]
         [else (error 'value-of "~a 的值还不知道" (var-name t))]))
-(define (⊤ s) s)
-(define (⊥ s) (amb))
 (define (∧ . g*) (apply ∘ℬ (reverse g*)))
-(define ((∨ . g*) s) ((list->amb g*) s))
+(define (((predicate->relation p?) . t*) s)
+  (check (apply p? (for/list ([t t*]) (value-of t s))))
+  s)
 (define-syntax-rule (∃ (x ...) g)
   (λ (s) (let ([x (var 'x)] ...) (g s))))
 (define-syntax-rule (run* (x ...) g)
@@ -191,7 +189,7 @@
 @examples[#:eval ev-unify #:label #f
 (walk x s)]
 
-添一行也不能照旧了。比如表里已经记着 @racket[x] 等于 5，再来一行等式说 @racket[x] 等于 6，直接添上，@racket[x] 就占了两行；等式要是写成 6 等于 @racket[x]，键还成了一个数。添之前，两边都要先顺着表查到底，再对称地比：有一边是@tech{未知项}，就添上一行；两边都是序对，逐项去对；否则相等才走得通：
+添一行也不能照旧了。比如表里已经记着 @racket[x] 等于 5，再来一行等式说 @racket[x] 等于 6，直接添上，@racket[x] 就占了两行；等式要是写成 6 等于 @racket[x]，键还成了一个数。添之前，两边都要先顺着表查到底，再对称地比：有一边是@tech{未知项}，就添上一行；两边都是序对，逐个去对；否则相等才走得通：
 
 @examples[#:eval ev-unify #:no-result
 (: unify (→ Term Term Substitution Substitution))
@@ -214,7 +212,7 @@
 (in-amb (unify (list a 2) (list 1 b) '()))
 (in-amb (unify 6 x (list (cons x 5))))]
 
-头一例两边都不知道，添的一行记着 @racket[x] 等于 @racket[y]。第二例是两张各缺一项的列表，逐项去对，@racket[a] 对上 1，@racket[b] 对上 2：两边都从对面得到了自己缺的那一项。第三例里 @racket[x] 查到 5，与 6 对不上，这条时间线走不通，@racket[in-amb] 一张@tech{代换}也没有收到。
+头一例两边都不知道，添的一行记着 @racket[x] 等于 @racket[y]。第二例是两张各缺一个元素的列表，逐个去对，@racket[a] 对上 1，@racket[b] 对上 2：两边都从对面得到了自己缺的那个值。第三例里 @racket[x] 查到 5，与 6 对不上，这条时间线走不通，@racket[in-amb] 一张@tech{代换}也没有收到。
 
 让两个项相等，必要时往@tech{代换}里添一行，这件事叫@defterm[#:en "unification"]{合一}。添的总是一个还没在表里的@tech{未知项}，所以键不会重复。@tech{代换}也跟着变了样：一行记的不再是某个@tech{未知项}的值，而是一条等式。
 
@@ -224,7 +222,7 @@
 (: ≡ (→ Term Term Goal))
 (define ((≡ u v) s) (unify u v s))]
 
-@racket[value-of] 也改成顺着查，项是序对就逐项读；走到头还剩@tech{未知项}就报错，所以它交出的都是不含@tech{未知项}的 @racket[Data]：
+@racket[value-of] 也改成顺着查，遇到序对就两边各读；走到头还剩@tech{未知项}就报错，所以它交出的都是不含@tech{未知项}的 @racket[Data]：
 
 @examples[#:eval ev-unify #:no-result
 (: value-of (→ Term Substitution Data))
@@ -285,9 +283,17 @@
 
 @section[#:tag "05:equation"]{直接写等式}
 
-有了 @racket[≡]、@racket[∧]、@racket[∨]、@racket[∃] 和两个@tech{单位} @racket[⊤]、@racket[⊥]，关系语言已经能写等式、接条件、并分支、复合@tech{关系}。只靠这些，不借函数和@tech{谓词}，能不能直接写出一个递归的@tech{关系}？
+有了 @racket[≡]、@racket[∧] 和 @racket[∃]，不借函数和@tech{谓词}，能不能直接写出一个递归的@tech{关系}？
 
-@racket[append] 把两张列表接成一张。它是函数，只能从左边两张算出右边一张。照它的定义写一个三个位置的@tech{关系} @racket[(appendᵒ l t out)]：@racket[l] 是空的，@racket[out] 就等于 @racket[t]；或者 @racket[l] 有头一项 @racket[a] 和剩下的 @racket[d]，@racket[out] 的头一项也是 @racket[a]，剩下的部分 @racket[res] 是 @racket[d] 接上 @racket[t]。
+@racket[append] 把两张列表接成一张。它是函数，只能从左边两张算出右边一张。照它的定义写一个三个位置的@tech{关系} @racket[(appendᵒ l t out)]：@racket[l] 是空的，@racket[out] 就等于 @racket[t]；或者 @racket[l] 有头一个元素 @racket[a] 和剩下的 @racket[d]，@racket[out] 的头一个元素也是 @racket[a]，剩下的部分 @racket[res] 是 @racket[d] 接上 @racket[t]。
+
+这里有两种情形，只要有一种成立就算走通。每条支路都从收到的那张@tech{代换}出发，@racket[list->amb] 会让每个@tech{目标}各运行一次；只看能走通的@tech{代换}对，就是把各@tech{目标}的表并起来。几个条件里只要有一个成立，叫@tech{析取}，照集合语言里的记号写成 @racket[∨]：
+
+@margin-note{@tech{目标}写成 ℒ 的箭头时，@tech{析取}是把几张@tech{代换}的列表接起来。}
+
+@examples[#:eval ev-unify #:no-result
+(: ∨ (→ Goal ... Goal))
+(define ((∨ . g*) s) ((list->amb g*) s))]
 
 两种情形用 @racket[∨] 并起来，每种情形里的几条等式用 @racket[∧] 连起来，中间用到的@tech{未知项} @racket[a]、@racket[d]、@racket[res] 用 @racket[∃] 造出。@racket[appendᵒ] 照上面那句话逐字写下来：
 
@@ -311,14 +317,35 @@
 @examples[#:eval ev-unify #:label #f
 (run* (x y) (appendᵒ x y '(1 2 3)))]
 
-四种拆法都找到了。定义 @racket[appendᵒ] 的时候，没有哪一行写过「拆」：每一行都是等式，没有哪个位置是输入，哪个是输出。这是@tech{关系}不分输入输出的样子。
-
 @margin-note{如果答案里还留着未绑定的@tech{未知项}（比如 @racket[(run* (x y) (≡ x y))] 或 @racket[(run* (x y) (appendᵒ '(1) x y))]），@racket[value-of] 读不出来；另外，像 @racket[(≡ x (cons 1 x))] 这样的循环等式也需要在添等式前拦截。@xref["05:appendix"]{附录}的完整库代码补上了这两步：用 @racket[walk*] 与 @racket[reify] 把未绑定@tech{未知项}打印成 @tt{_.0}、@tt{_.1}，并用 @racket[occurs?] 与 @racket[ext-s] 做循环检查。}
 
-到这里，这门语言里的三种运算和它们的@tech{单位}都齐了：在@tech{代换}层，@tech{合取} @racket[∧] 的@tech{单位}是 @racket[⊤]，@tech{析取} @racket[∨] 的@tech{单位}是 @racket[⊥]；在@tech{关系}层，按外面两列的解看，@tech{二元关系}复合 @racket[∘ᵒ] 的@tech{单位}正是@tech{合一} @racket[≡]。
+四种拆法都找到了。定义 @racket[appendᵒ] 的时候，没有哪一行写过「拆」：每一行都是等式，没有哪个位置是输入，哪个是输出。这是@tech{关系}不分输入输出的样子。
 
-@margin-note{和常见的实现相比，还有几处不同：@tech{未知项}按身份区分，不编号；@tech{合取}是直接复合，何时推迟一步计算、怎样取用答案，写法也不一样，交出答案的顺序因此可能不同。}
+@racket[∧] 把几步接起来，@racket[∨] 把几条路并起来。一步也不用做时，原来的@tech{代换}还在：零个@tech{目标}的 @racket[(∧)] 就是带 @racket[amb] 时的恒等函数 @racket[id]。作为@tech{代换}之间的@tech{二元关系}，它是@defterm[#:en "identity relation"]{恒等关系}；作为条件，它总成立，总是成功，给它起名 @racket[⊤]。一条路也没有时，零个@tech{目标}的 @racket[(∨)] 仍交出一个@tech{目标}；这个@tech{目标}收到@tech{代换}后，从零个备选里挑，也就是执行 @racket[(amb)]，一张@tech{代换}也不交。作为@tech{代换}之间的@tech{二元关系}，它是一行也没有的@defterm[#:en "empty relation"]{空关系}；作为条件，它总不成立，总是失败，给它起名 @racket[⊥]：
+
+@margin-note{前四章用 @racket[⊤] 与 @racket[⊥] 记单元类型与@tech{空类型}；这里借用同一对逻辑真假记号表示 @racket[Goal] 类型的值，一个是恒等@tech{目标}，一个是失败@tech{目标}。}
+
+@examples[#:eval ev-unify #:no-result
+(: ⊤ Goal)
+(define (⊤ s) s)
+
+(: ⊥ Goal)
+(define (⊥ s) (amb))]
+
+在一串@tech{目标}的前面或后面接上一个原样交回的 @racket[⊤]，结果照旧，@racket[⊤] 是@tech{合取}的@tech{单位}；在任一侧并上一条不交答案的 @racket[⊥]，结果列表照旧，@racket[⊥] 是@tech{析取}的@tech{单位}。
+
+这两样也在@xref["05:relation"]{「关系」}里露过面。那里数过，零元关系只有两个，@math{{()}} 与 @math{{}}，对应两个零参@tech{谓词} @racket[(λ () #t)] 与 @racket[(λ () #f)]。它们是项这一层的零元关系；经 @racket[predicate->relation] 包装再无参调用一次，就落到@tech{代换}层，得到两个@tech{目标}：
+
+@examples[#:eval ev-unify #:label #f
+(run* () ((predicate->relation (λ () #t))))
+(run* () ((predicate->relation (λ () #f))))]
+
+就算一个@tech{未知项}也不问，成功一次和一次也没成功，交出的列表仍然不同：第一行的空元组 @racket['()] 是一个成功答案，第二行的空列表才是零个答案。两个@tech{谓词}都不用读项，对任意传入的@tech{代换}，真版原样交回一次，假版一次也不交，正好就是刚才的 @racket[⊤] 与 @racket[⊥]。
+
+到这里，这门语言里的三种运算和它们的@tech{单位}都齐了：在@tech{代换}层，@tech{合取} @racket[∧] 的@tech{单位}是 @racket[⊤]，@tech{析取} @racket[∨] 的@tech{单位}是 @racket[⊥]；在@tech{关系}层，按外面两列的解看，@tech{二元关系}复合 @racket[∘ᵒ] 的@tech{单位}正是@tech{合一} @racket[≡]（@tech{合一}可能往@tech{代换}里添等式，@racket[⊤] 总是原样交回）。
 
 我们为了把@tech{关系}直接写下来，一步步添上了 @racket[≡]、@racket[∧]、@racket[∨]、@racket[∃] 和两个@tech{单位} @racket[⊤]、@racket[⊥]。整个语言只有这六样，实现不到一百行，它的骨架正是 microKanren，@defterm[#:en "relational programming"]{关系式编程}（@defterm[#:en "logic programming"]{逻辑式编程}的一个分支）语言 miniKanren 的极小内核。
+
+@margin-note{和常见的实现相比，还有几处不同：@tech{未知项}按身份区分，不编号；@tech{合取}是直接复合，何时推迟一步计算、怎样取用答案，写法也不一样，交出答案的顺序因此可能不同。}
 
 在那里，@tech{未知项}叫@defterm[#:en "logic variable"]{逻辑变量}，这六个记号常写作 @racket[==]、@racket[conj]、@racket[disj]、@racket[fresh]、@racket[succeed]、@racket[fail]，@racket[run*] 与 @racket[fresh] 也常添上一层语法糖，把多条@tech{目标}自动包进 @racket[conj]。常见的实现用流来@tech{回溯}，@tech{目标}交出一串@tech{代换}，@tech{合取}与@tech{析取}都要自己写出怎样接、怎样并。这里用 @racket[amb] @tech{回溯}，@racket[∧] 就是 ℬ 的复合，@racket[∨] 就是 @racket[amb]，这两样都是现成的；剩下要写的，主要是@tech{合一}。
