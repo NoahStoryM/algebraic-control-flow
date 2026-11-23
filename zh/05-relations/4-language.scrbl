@@ -203,7 +203,7 @@
   (check (apply p? (for/list ([t t*]) (value-of t s))))
   s)]
 
-@margin-note{这里的 @racket[a ...] 与 @racket[b] 是 @racket[Data] 的子类型（如 @racket[ℕ⁺]）；包装后的关系多出一个结果位置，调用时读出的已知参数仍需落在原函数或谓词的定义域里。}
+@margin-note{这里的 @racket[a ...] 与 @racket[b] 是 @racket[Data] 的子类型（如 @racket[ℕ⁺]）；@racket[function->relation] 在原有各项之后添一个结果位置，@racket[predicate->relation] 保留原谓词的参数个数，两种包装读出的参数都须落在原函数或谓词的定义域里。}
 
 @xref["05:relation"]{「关系」}数过，零元关系只有两个，@math{{()}} 与 @math{{}}，对应两个零参谓词 @racket[(λ () #t)] 与 @racket[(λ () #f)]。把它们交给 @racket[predicate->relation]，再把这个零元关系无参调用一次，就得到目标：
 
