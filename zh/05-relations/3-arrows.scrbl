@@ -169,7 +169,7 @@ between  =  (scatter inclusive-range)]
 
 第一行的 @racket[f]、@racket[g] 是 ℬ 的箭头，第二行的是 ℒ 的箭头。两种箭头各有一种绑定的写法，写出来的都是复合，多出来的只是中间结果的名字。
 
-回头看刚才化简出来的 @racket[(append-map g (f x))]。把 @racket[append-map] 柯里化，先交给它一个 ℒ 的箭头 @racket[g]，剩下的函数收一张列表、交出一张列表，正好能接在 @racket[(f x)] 的外面。这个柯里化后的函数记作 @racket[flat-map]：
+回头看刚才化简出来的 @racket[(append-map g (f x))]。把 @racket[append-map] 柯里化，记作 @racket[flat-map]。先把 ℒ 的箭头 @racket[g] 交给它，得到的 @racket[(flat-map g)] 正好能接住 @racket[(f x)] 交出的列表：
 
 @examples[#:eval ev-two-ways #:no-result
 (: flat-map (∀ (p q) (→ (→ℒ p q) (→𝒞 (Listof p) (Listof q)))))
