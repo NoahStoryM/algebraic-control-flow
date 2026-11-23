@@ -57,7 +57,7 @@
         (λ x* (foldr append-map (apply (car f) x*) g*))]))
 
 (: flat-map (∀ (p q) (→ (→ℒ p q) (→𝒞 (Listof p) (Listof q)))))
-(define flat-map (curry append-map))
+(define ((flat-map g) p*) (append-map g p*))
 
 ;; 关系语言
 
