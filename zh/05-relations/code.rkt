@@ -1864,7 +1864,10 @@
     (: ∘ᵒ (→ (→ Term Term Goal) (→ Term Term Goal) (→ Term Term Goal)))
     (define ((∘ᵒ Qᵒ Pᵒ) x z)
       (∃ (y) (∧ (Pᵒ x y) (Qᵒ y z))))
-    (void ∘ᵒ))
+    (define pick-aᵒ (function->relation pick-a))
+    (define pick-bᵒ (function->relation pick-b))
+    (check-equal? (run* (t) ((∘ᵒ pick-bᵒ pick-aᵒ) '(1 2) t))
+                  '(((1 1 2)) ((1 2 2)) ((2 2 2)))))
   ;; 5.1 练习扩充后的多参数 ∘ᵒ，供 right-triangleᵒ 直接使用
   (define ∘ᵒ
     (case-λ
@@ -2063,6 +2066,45 @@
     (walk* t (name-unknowns t '())))
 
   (module+ v2
+    ;; 附录最终内核：补上列表代换版 occurs? / ext-s，并让本阶段的 unify、≡、function->relation、appendᵒ 全部走带检查的版本
+    (: occurs? (→ Var Term Substitution Boolean))
+    (define (occurs? x t s)
+      (let ([t (walk t s)])
+        (cond [(var? t) (eq? x t)]
+              [(pair? t) (or (occurs? x (car t) s) (occurs? x (cdr t) s))]
+              [else #f])))
+
+    (: ext-s (→ Var Term Substitution Substitution))
+    (define (ext-s x t s)
+      (when (occurs? x t s) (amb))
+      (cons (cons x t) s))
+
+    (: unify (→ Term Term Substitution Substitution))
+    (define (unify u v s)
+      (let ([u (walk u s)] [v (walk v s)])
+        (cond [(and (var? u) (eq? u v)) s]
+              [(var? u) (ext-s u v s)]
+              [(var? v) (ext-s v u s)]
+              [(and (pair? u) (pair? v))
+               (unify (cdr u) (cdr v) (unify (car u) (car v) s))]
+              [(equal? u v) s]
+              [else (amb)])))
+
+    (: ≡ (→ Term Term Goal))
+    (define ((≡ u v) s) (unify u v s))
+
+    (: function->relation (∀ (a ... b) (→ (→ℬ a ... b) (→ Term ... Term Goal))))
+    (define (((function->relation f) . t*) s)
+      (define-values (in* out*) (split-at-right t* 1))
+      (unify (car out*) (apply f (for/list ([t in*]) (value-of t s))) s))
+
+    (define (appendᵒ l t out)
+      (∨ (∧ (≡ l '()) (≡ t out))
+         (∃ (a d res)
+           (∧ (≡ l (cons a d))
+              (≡ out (cons a res))
+              (appendᵒ d t res)))))
+
     ;; run* 的第二版：整个查询元组一起读出，还不知道的项写成 _.0、_.1……
     (define-syntax-rule (run* (x ...) g)
       (let ([x (var 'x)] ...)
@@ -2071,6 +2113,9 @@
     (check-equal? (run* (x y) ⊤) '((_.0 _.1)))
     (check-equal? (run* (x y) (appendᵒ x y '(1 2))) '((() (1 2)) ((1) (2)) ((1 2) ())))
     (check-equal? (run* (x y) (appendᵒ '(1) x y)) '((_.0 (1 . _.0))))
+    ;; 循环等式检查（对齐 9-appendix.scrbl）：直接数代换也得 0
+    (check-equal? (let ([q (var 'q)]) (length (in-amb ((≡ q (cons 1 q)) '())))) 0)
+    (check-equal? (run* (q) (≡ q (cons 1 q))) '())
     ;; 数学库 #76 第 4 条：_.0 显示惯例，项里若本来含符号 '_.0 会撞名
     (check-equal? (run* (x) (≡ x '_.0)) '((_.0)))
     (check-equal? (run* (x) ⊤) '((_.0)))
