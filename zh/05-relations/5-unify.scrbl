@@ -88,7 +88,7 @@
 
 @mm{Q ∘ P = {(x, z) | ∃y, (x, y) ∈ P ∧ (y, z) ∈ Q}}
 
-直接把这条公式逐字翻成关系语言里的复合函数 @racket[∘ᵒ]：
+上一节写过，关系语言里@math{N}元@tech{关系}的类型是 @racket[(→ Term ... Goal)]，因此@tech{二元关系}的类型就是 @racket[(→ Term Term Goal)]。直接把这条公式逐字翻成复合函数 @racket[∘ᵒ]：
 
 @racketblock[
 (: ∘ᵒ (→ (→ Term Term Goal) (→ Term Term Goal) (→ Term Term Goal)))
