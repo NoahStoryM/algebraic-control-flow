@@ -102,26 +102,26 @@
 
 造两次，打印出来一模一样，在表里却是两个键；同一次造出的才是同一个。
 
-有了这张表，@racket[run*] 要做的事可以从两头说起。开头，它造出几个未知项，什么都还不知道，手里是一张空的代换。结尾，它交出一张列表，每一项是这几个未知项的一组取值；取值记在代换里，所以每一项都是从某一张代换里读出来的，有几组答案，就有几张代换。
+有了代换，@racket[run*] 要做的事可以从两头说起。开头，它造出几个未知项，什么都还不知道，手里是一张空的代换。结尾，它交出一张列表，每一项是这几个未知项的一组取值；取值记在代换里，所以每一项都是从某一张代换里读出来的，有几组答案，就有几张代换。
 
-夹在中间的是那几行条件。它们合起来要做的事也就定了：收下那张空的代换，交出若干张，每张记着一组走得通的取值；一组也没有，就一张也不交。收一个，交零个或多个，这是带 @racket[amb] 的函数，@xref["05:two-ways"]{「关系的两种写法」}里 ℬ 的箭头：
+夹在中间的是那几条条件。它们合起来要做的事也就定了：收下那张空的代换，交出若干张代换，每张记着一组走得通的取值；一组也没有，就一张也不交。收一个，交零个或多个，这是带 @racket[amb] 的函数，@xref["05:two-ways"]{「关系的两种写法」}里 ℬ 的箭头：
 
 @examples[#:eval ev-goals #:no-result
 (define-type Goal (→ℬ Substitution Substitution))]
 
-这样的函数叫@defterm[#:en "goal"]{目标}。ℬ 的箭头写的是二元关系，目标也是：表的两列是收到的代换和交出的代换。这里因此有两层：目标用在代换上（@racket[(→ℬ Substitution Substitution)]），而关系用在项上，调用以后交出一个目标（@racket[(→ Term ... Goal)]）。
+这样的函数叫@defterm[#:en "goal"]{目标}。ℬ 的箭头写的是二元关系，目标也是：它的两列是收到的代换和交出的代换。这里因此有两层：目标收一张代换、交出若干张代换（@racket[(→ℬ Substitution Substitution)]）；关系则收几个项，调用后交出一个目标（@racket[(→ Term ... Goal)]）。比如 @racket[(betweenᵒ 1 3 a)] 交出的是一个目标，把空代换交给这个目标，才会走出三条分支、得到三张分别记着 @racket[a] 等于 1、2、3 的代换。
 
 @margin-note{目标也可以写成 ℒ 的箭头 @racket[(→ℒ Substitution Substitution)]，交出一张代换的列表，用不着 @racket[amb]：接起来用的换成 @racket[∘ℒ]。两种写法之间，就是 @racket[gather] 与 @racket[scatter]。}
 
-四行条件合起来是一个目标，拆开来，每一行呢？先看最后一行。@racket[pyth?] 是谓词，收下三个数，回答是或否。@racket[pythᵒ] 收下的是项，里面可能有未知项，是或否就答不出来了：成立不成立，要看未知项取什么值。它答得出的是「在哪些取值下成立」，也就是从收到的代换出发，哪些代换走得通。所以它交出的是一个目标：
+四条条件合起来是一个目标，拆开来，每一条呢？先看最后的 @racket[(pythᵒ a b c)]。@racket[pyth?] 是谓词，收下三个数，回答是或否。@racket[pythᵒ] 收下的是项，里面可能有未知项，是或否就答不出来了：成立不成立，要看未知项取什么值。@racket[pythᵒ] 答得出的是「在哪些取值下成立」，也就是从收到的代换出发，哪些代换走得通。所以它交出的是一个目标：
 
 @racketblock[
 (: pyth? (→ ℕ⁺   ℕ⁺   ℕ⁺   Boolean))
 (: pythᵒ (→ Term Term Term Goal))]
 
-一般地，@tech{谓词}（也就是@tech{特征函数}）与这门语言里的@tech{关系}，类型正好并排对照：谓词是 @racket[(→ Data ... Boolean)]，收下数据，回答是或否；关系是 @racket[(→ Term ... Goal)]，收下可以含有未知项的项，交出目标。@racket[betweenᵒ] 也一样，@racket[run*] 里的每一行都是一次调用，交出一个目标。为免混淆，下文的「关系」只说 @racket[betweenᵒ]、@racket[pythᵒ] 这一种，说的是数与数之间的事；代换之间的那一种就叫目标。
+一般地，@tech{谓词}（也就是@tech{特征函数}）与这门语言里的@tech{关系}，类型正好并排对照：谓词是 @racket[(→ Data ... Boolean)]，收下数据，回答是或否；关系是 @racket[(→ Term ... Goal)]，收下可以含有未知项的项，交出目标。@racket[betweenᵒ] 也一样，@racket[run*] 里的每一条条件都是一次关系调用，交出一个目标。为免混淆，下文的「关系」只说 @racket[betweenᵒ]、@racket[pythᵒ] 这一种，说的是数与数之间的事；代换之间的那一种就叫目标。
 
-谓词的几个条件，用 @racket[and] 连起来，集合语言里写成 @math{∧}。目标的几个条件怎样连？第二行 @racket[(betweenᵒ a h b)] 要读 @racket[a] 的值，它收到的得是第一行交出的代换；它添上 @racket[b]，再交给第三行。目标与目标之间要传东西，一行一行接下去：前一个交出的代换，交给后一个。@racket[let*] 把绑定一行一行接起来，@xref["05:two-ways"]{「关系的两种写法」}认出那是 @racket[∘ℬ]；把目标一行一行接起来的，还是 @racket[∘ℬ]。几个条件同时成立，叫@tech{合取}，照集合语言里的记号写成 @racket[∧]：
+谓词写的条件用 @racket[and] 连起来，集合语言里写成 @math{∧}。几个目标怎样连？@racket[(betweenᵒ a h b)] 要读 @racket[a] 的值，收到的得是前一个目标 @racket[(betweenᵒ l h a)] 交出的代换；它给代换添上 @racket[b] 的值，再交给下一个目标 @racket[(betweenᵒ b h c)]。前一个目标交出的代换交给后一个：@xref["05:two-ways"]{「关系的两种写法」}里，@racket[let*] 中先后两次调用写成了 @racket[∘ℬ]；这里接起前后两个目标，用的也是 @racket[∘ℬ]。几个目标同时成立，叫@tech{合取}，照集合语言里的记号写成 @racket[∧]：
 
 @examples[#:eval ev-goals #:no-result
 (: ∧ (→ Goal ... Goal))
@@ -165,7 +165,7 @@
 
 @racket[⊥] 和哪个目标并起来，都不改变那个目标；@racket[⊥] 正是析取的单位。
 
-两头和中间都有了，@racket[run*] 可以写下来：造出未知项，从一张空的代换开始运行目标 @racket[g]，再读出那几个未知项的值。走通的每条时间线交出一组，由 @racket[in-amb] 收齐。
+两头和中间都有了，@racket[run*] 可以写下来：造出未知项，从一张空的代换开始运行目标 @racket[g]，再读出那几个未知项的值。走通的每条时间线交出一组取值，由 @racket[in-amb] 收齐。
 
 @examples[#:eval ev-goals #:no-result
 (define-syntax-rule (run* (x ...) g)
@@ -176,7 +176,7 @@
 
 @section[#:tag "05:run"]{跑起来}
 
-@racket[run*] 写好了，还缺一个会给 @racket[a] 添值的目标。@racket[let*] 的一行 @racket[[a (between 1 3)]]，往 Racket 的记录表里添了一个名字；@racket[(betweenᵒ 1 3 a)] 该交出的目标，就往代换里添一行。先手写一个，从空的代换开始运行：
+@racket[run*] 写好了，还缺一个会给 @racket[a] 添值的目标。@racket[let*] 的一行 @racket[[a (between 1 3)]]，往 Racket 的记录表里添了一个名字；@racket[(betweenᵒ 1 3 a)] 该交出的目标，就往代换里添一条记录。先手写一个，从空的代换开始运行：
 
 @examples[#:eval ev-goals #:label #f
 (define g (λ (s) (cons (cons a (between 1 3)) s)))
@@ -190,7 +190,7 @@
 
 三张代换，读出来是三组答案。
 
-一般的 @racket[(betweenᵒ l h a)] 里，@racket[l]、@racket[h] 可能是未知项，要先用 @racket[value-of] 读出值，再交给 @racket[between]；@racket[between] 交出的数，照 @racket[g] 的样子记在最后一个位置上。前三行里，最后一个位置都是还没有值的未知项，添一行就够了。@racket[(pythᵒ a b c)] 的三个位置都是给 @racket[pyth?] 的，全要读出值。谓词的是与否，成了目标的两种回答：成立就原样交回代换，不成立就一张也不交。
+一般的 @racket[(betweenᵒ l h a)] 里，@racket[l]、@racket[h] 可能是未知项，要先用 @racket[value-of] 读出值，再交给 @racket[between]；@racket[between] 交出的数，照 @racket[g] 的样子记在最后一个位置上。前三条条件里，最后一个位置都是还没有值的未知项，往代换里添一条记录就够了。@racket[(pythᵒ a b c)] 的三个位置都是给 @racket[pyth?] 的，全要读出值。谓词的是与否，成了目标的两种回答：成立就原样交回代换，不成立就一张也不交。
 
 @examples[#:eval ev-goals #:no-result
 (: function->relation (∀ (a ... b) (→ (→ℬ a ... b) (→ Term ... Term Goal))))
@@ -223,7 +223,7 @@
 @examples[#:eval ev-goals #:label #f
 (right-triangles 1 20)]
 
-还是那六组。同样的四行条件，接起来以后不读出，直接看它交出的代换：
+还是那六组。同样的四条条件，接成一个目标后不读出，直接看它交出的代换：
 
 @examples[#:eval ev-goals #:label #f
 (define c (var 'c))
@@ -234,4 +234,4 @@
      (pythᵒ a b c))
   '()))]
 
-六张代换，一张对着一组答案。@racket[right-triangles] 是边界与三角形之间的二元关系，四行条件接成的目标是代换与代换之间的二元关系。给定一组边界，从四行目标交出的每张代换里用 @racket[value-of] 读出 @racket[a]、@racket[b]、@racket[c]，就得到 @racket[right-triangles] 表里对应的三角形。
+六张代换，一张对着一组答案。@racket[right-triangles] 是边界与三角形之间的二元关系，四条条件接成的目标是代换与代换之间的二元关系。给定一组边界，从这个目标交出的每张代换里用 @racket[value-of] 读出 @racket[a]、@racket[b]、@racket[c]，就得到 @racket[right-triangles] 表里对应的三角形。

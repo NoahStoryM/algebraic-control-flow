@@ -169,13 +169,13 @@ between  =  (scatter inclusive-range)]
 
 第一行的 @racket[f]、@racket[g] 是 ℬ 的箭头，第二行的是 ℒ 的箭头。两种箭头各有一种绑定的写法，写出来的都是复合，多出来的只是中间结果的名字。
 
-回头看刚才化简出来的 @racket[(append-map g (f x))]。把 @racket[append-map] 柯里化，先把函数参数 @racket[g] 交给它，得到的函数收一张列表、交出一张列表，记作 @racket[flat-map]：
+回头看刚才化简出来的 @racket[(append-map g (f x))]。把 @racket[append-map] 柯里化，记作 @racket[flat-map]。先把 ℒ 的箭头 @racket[g] 交给它，得到的 @racket[(flat-map g)] 正好能接住 @racket[(f x)] 交出的列表：
 
 @examples[#:eval ev-two-ways #:no-result
 (: flat-map (∀ (p q) (→ (→ℒ p q) (→𝒞 (Listof p) (Listof q)))))
 (define flat-map (curry append-map))]
 
-@racket[flat-map] 把 ℒ 的箭头搬回纯宿主 𝒞，普通的 @racket[∘] 于是又接得上了。刚才的 @racket[∘ℒ] 其实就是把左边的箭头经 @racket[flat-map] 搬回 𝒞 再用 @racket[∘] 接上；@racket[flat-map] 本身也把 @racket[∘ℒ] 送回普通的 @racket[∘]，把单位 @racket[(λ (x) (list x))] 送回 @racket[id]。下面取一元箭头，等号表示给定相应类型的输入，两边交出相同的结果列表：
+@racket[flat-map] 把 ℒ 的箭头搬回纯宿主 𝒞。普通的 @racket[∘] 于是又接得上了，而且连复合和单位都能一并搬回去。下面取一元箭头，等号表示给定相应类型的输入，两边交出相同的结果列表：
 
 @racketblock[
 (∘ℒ g f)                     =  (∘ (flat-map g) f)
