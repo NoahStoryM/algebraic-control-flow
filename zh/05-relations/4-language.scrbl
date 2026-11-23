@@ -99,14 +99,16 @@
 
 有了@tech{代换}，@racket[run*] 要做的事可以从两头说起。开头，它造出几个@tech{未知项}，什么都还不知道，手里是一张空的@tech{代换}。结尾，它交出一张列表，每个元素是这几个@tech{未知项}的一组取值；取值记在@tech{代换}里，所以每一组都是从某一张@tech{代换}里读出来的，有几组答案，就有几张@tech{代换}。
 
-夹在中间的是那几条条件。它们合起来要做的事也就定了：收下那张空的@tech{代换}，交出若干张@tech{代换}，每张记着一组走得通的取值；一组也没有，就一张也不交。收一个，交零个或多个，这是带 @racket[amb] 的函数，@xref["05:two-ways"]{「关系的两种写法」}里 ℬ 的箭头：
+夹在中间的是那几条条件。它们合起来要做的事也就定了：收下那张空的@tech{代换}，交出一张装满@tech{代换}的列表，每张记着一组走得通的取值；一组也没有，就交出空列表。收一个、交一张列表，这正是@xref["05:two-ways"]{「关系的两种写法」}里 ℒ 的箭头 @racket[(→ℒ Substitution Substitution)]，也就是@tech{代换}与@tech{代换}之间的@tech{二元关系}：左边一列是收到的@tech{代换}，右边一列是交出的@tech{代换}。
+
+既然是@tech{二元关系}，还可以换用@tech{同构}的 ℬ 箭头来写：用 @racket[amb] 省去处处拆列表、接列表的麻烦，留到 @racket[run*] 出口再用 @racket[in-amb] 一次收齐。这样的函数叫@defterm[#:en "goal"]{目标}：
 
 @examples[#:eval ev-goals #:no-result
 (define-type Goal (→ℬ Substitution Substitution))]
 
-这样的函数叫@defterm[#:en "goal"]{目标}。ℬ 的箭头写的是@tech{二元关系}，@tech{目标}也是：它的两列是收到的@tech{代换}和交出的@tech{代换}。这里因此有两层：@tech{目标}收一张@tech{代换}、交出若干张@tech{代换}（@racket[(→ℬ Substitution Substitution)]）；@tech{关系}则收几个项，调用后交出一个@tech{目标}（@racket[(→ Term ... Goal)]）。比如 @racket[(betweenᵒ 1 3 a)] 交出的是一个@tech{目标}，把空@tech{代换}交给这个@tech{目标}，才会走出三条分支、得到三张分别记着 @racket[a] 等于 1、2、3 的@tech{代换}。
+这里因此有两层：@tech{目标}收一张@tech{代换}、交出若干张@tech{代换}（@racket[(→ℬ Substitution Substitution)]）；@tech{关系}则收几个@tech{项}，调用后交出一个@tech{目标}（@racket[(→ Term ... Goal)]）。比如 @racket[(betweenᵒ 1 3 a)] 交出的是一个@tech{目标}，把空@tech{代换}交给这个@tech{目标}，才会走出三条分支、得到三张分别记着 @racket[a] 等于 1、2、3 的@tech{代换}。
 
-@margin-note{@tech{目标}也可以写成 ℒ 的箭头 @racket[(→ℒ Substitution Substitution)]，交出一张@tech{代换}的列表，用不着 @racket[amb]：接起来用的换成 @racket[∘ℒ]。两种写法之间，就是 @racket[gather] 与 @racket[scatter]。}
+@margin-note{不用 @racket[amb]、直接按 @racket[(→ℒ Substitution Substitution)] 写成纯函数也可以，接起来用的换成 @racket[∘ℒ]；两种写法之间，正是 @racket[gather] 与 @racket[scatter]。}
 
 四条条件合起来是一个@tech{目标}，拆开来，每一条呢？先看最后的 @racket[(pythᵒ a b c)]。@racket[pyth?] 是@tech{谓词}，收下三个数，回答是或否。@racket[pythᵒ] 收下的是项，里面可能有@tech{未知项}，是或否就答不出来了：成立不成立，要看@tech{未知项}取什么值。@racket[pythᵒ] 答得出的是「在哪些取值下成立」，也就是从收到的@tech{代换}出发，哪些@tech{代换}走得通。所以它交出的是一个@tech{目标}：
 
