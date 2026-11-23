@@ -45,7 +45,7 @@
 
 原来的写法里，名字的事不用我们操心。Racket 有一份记录表，记着每个变量的值：@racket[let*] 的每一行造出一个新的变量，把右边算出的值记进去；后面的行引用 @racket[a]，就是从这份表里查出它的值。
 
-@racket[run*] 也造出新的变量，可它们的值要靠下面几行条件来定。@racket[(betweenᵒ l h a)] 是一次普通的调用，参数要先有，所以 @racket[run*] 造出的变量得是一种数据，可以当参数交进去。为了和 Racket 的变量分开，这种变量叫@defterm{未知项}。不含未知项的值由数这样的字面量和序对组成，记作 @racket[Data]；添上未知项 @racket[Var]，合起来叫@defterm[#:en "term"]{项}。@tech{未知项}的值，Racket 不再替我们记，得自己记一张字典：键是@tech{未知项}，值是它等于的那个项，眼下记的都是数。
+@racket[run*] 也造出新的变量，可它们的值要靠下面几行条件来定。@racket[(betweenᵒ l h a)] 是一次普通的调用，参数要先有，所以 @racket[run*] 造出的变量得是一种数据，可以当参数交进去。为了和 Racket 的变量分开，这种变量叫@defterm{未知项}：
 
 @(define ev-goals (make-acf-eval))
 @examples[#:eval ev-goals #:hidden
@@ -62,13 +62,24 @@
 (define-type (→ℬ p ... q) (→ p ... q))
 (define ∘ℬ ∘)]
 @examples[#:eval ev-goals #:no-result
-(struct var ([name : Symbol]) #:type-name Var #:transparent)
+(struct var ([name : Symbol]) #:type-name Var #:transparent)]
+
+@racket[var] 里的符号只用来打印，分辨@tech{未知项}靠的是身份。两次调用 @racket[(var 'a)] 印出来一模一样，却是两个不同的@tech{未知项}；只有同一次造出的才是同一个：
+
+@examples[#:eval ev-goals #:label #f
+(define a (var 'a))
+(eq? (var 'a) (var 'a))
+(eq? a a)]
+
+不含@tech{未知项}的值由数这样的字面量和序对组成，记作 @racket[Data]；添上@tech{未知项} @racket[Var]，合起来叫@defterm[#:en "term"]{项}。@tech{未知项}的值，Racket 不再替我们记，得自己记一张字典：键是@tech{未知项}，值是它对应的@tech{项}（眼下记的都是数）。照着这张字典可以把@tech{未知项}换成它的值，所以叫@defterm[#:en "substitution"]{代换}：
+
+@examples[#:eval ev-goals #:no-result
 (define-type Literal (∪ Boolean Number Char Bytes String Keyword Null Symbol))
 (define-type Data (∪ Literal (Pair Data Data)))
 (define-type Term (∪ Literal Var (Pair Term Term)))
 (define-type Substitution (Dictionary Var Term))]
 
-照着这张字典，可以把@tech{未知项}换成它对应的值，所以叫@defterm[#:en "substitution"]{代换}。用 @racket[value-of] 从@tech{代换}里读出一个@tech{项}的值：不是@tech{未知项}，原样交回；是@tech{未知项}，就去表里查，查不到就报错。
+用 @racket[value-of] 从@tech{代换}里读出一个@tech{项}的值：不是@tech{未知项}，原样交回；是@tech{未知项}，就用按身份比较的 @racket[assq] 去表里查，查不到就报错。
 
 @examples[#:eval ev-goals #:no-result
 (: value-of (→ Term Substitution Term))
@@ -80,18 +91,11 @@
 试一试查得到和查不到的情形：
 
 @examples[#:eval ev-goals #:label #f
-(define a (var 'a))
 (define b (var 'b))
 (define s (list (cons a 3)))
 (value-of 5 s)
 (value-of a s)
 (eval:error (value-of b s))]
-
-查表用的是按身份比较的 @racket[assq]，不是比名字。@racket[var] 里的符号只用来打印，两次调用 @racket[(var 'a)] 印出来一模一样，在表里却是两个不同的键：
-
-@examples[#:eval ev-goals #:label #f
-(eq? (var 'a) (var 'a))
-(eq? a a)]
 
 有了@tech{代换}，@racket[run*] 要做的事可以从两头说起。开头，它造出几个@tech{未知项}，什么都还不知道，手里是一张空的@tech{代换}。结尾，它交出一张列表，每一项是这几个@tech{未知项}的一组取值；取值记在@tech{代换}里，所以每一项都是从某一张@tech{代换}里读出来的，有几组答案，就有几张@tech{代换}。
 
