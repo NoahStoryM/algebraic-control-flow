@@ -81,9 +81,9 @@
 
 就算一个@tech{未知项}也不读，成功一次和一次也没成功，交出的列表仍然不同：第一行的 @racket['(())] 里有一行答案，行里有零个元素；第二行的 @racket['()] 里一行也没有。两张零列的表，用现有的包装就已经能翻出来。
 
-@xref["01:types-to-logic"]{第一章}检验过，@math{⊤} 是@tech{合取} @math{∧} 的@tech{单位}：@math{p ⇔ p ∧ ⊤ ⇔ ⊤ ∧ p}。这里也验一验：@racket[(∧)] 把空列表交给 @racket[(apply ∘ℬ ...)]，无参调用 @racket[∘ℬ]（也就是 @racket[∘]）交出的是 @racket[id]，即 @racket[(λ (s) s)]，正是 @racket[⊤]；把 @racket[⊤] 接在任意@tech{目标} @racket[g] 的前面或后面，复合上的都是 @racket[id]，@racket[(∧ g ⊤)] 与 @racket[(∧ ⊤ g)] 都还是 @racket[g]。
+@racket[⊤] 还是@tech{合取} @racket[∧] 的@tech{单位}：不给任何参数时，@racket[(∧)] 把空列表交给 @racket[(apply ∘ℬ ...)]，无参调用 @racket[∘ℬ]（也就是 @racket[∘]）交出 @racket[id]，即 @racket[(λ (s) s)]，正是 @racket[⊤]；把 @racket[⊤] 接在任意@tech{目标} @racket[g] 的前面或后面，复合上的都是 @racket[id]，@racket[(∧ g ⊤)] 与 @racket[(∧ ⊤ g)] 都还是 @racket[g]。
 
-@xref["01:types-to-logic"]{第一章}里，@math{⊥} 又是@tech{析取} @math{∨} 的@tech{单位}：一支也没有的联合就是 @math{⊥}，@math{p ⇔ p ∨ ⊥ ⇔ ⊥ ∨ p}。看这里的 @racket[⊥]：@racket[(λ (s) (amb))]。@racket[(amb)] 是零支的 @racket[amb]，不试任何支路、一次也不交；反过来，从零支退成多支，就是让收到的几条@tech{目标}各自从同一张@tech{代换} @racket[s] 出发、逐个试过去，照@xref["05:compose"]{「二元关系的复合」}里的记法，把各支路的表并起来。这就得到@tech{析取} @racket[∨]：
+再看 @racket[⊥]：@racket[(λ (s) (amb))]。@racket[(amb)] 是零支的 @racket[amb]，不试任何支路、一次也不交；如果它是某种组合的零参情形，从零支放成多支，就是让收到的几条@tech{目标}各自从同一张@tech{代换} @racket[s] 出发、逐个试过去，照@xref["05:compose"]{「二元关系的复合」}里的记法，把各支路的表并起来。这就是「或者」，也就是@tech{析取} @racket[∨]：
 
 @margin-note{@tech{目标}写成 ℒ 的箭头时，@tech{析取}是把几张@tech{代换}的列表接起来。}
 
