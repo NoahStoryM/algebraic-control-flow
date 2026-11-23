@@ -46,6 +46,7 @@
 (define (between lo hi) (for/amb ([n (inclusive-range lo hi)]) n))
 (define (check ok?) (unless ok? (amb)))
 (define ∘ℬ ∘)
+(define (list->amb v*) (for/amb ([v (in-list v*)]) v))
 (define pick-a (match-λ [(list l   h) (list (between l h)   h)]))
 (define pick-b (match-λ [(list a   h) (list a (between a h) h)]))
 (struct var ([name : Symbol]) #:type-name Var #:transparent)
@@ -79,6 +80,18 @@
 (run* () ⊥)]
 
 就算一个@tech{未知项}也不读，成功一次和一次也没成功，交出的列表仍然不同：第一行的 @racket['(())] 里有一行答案，行里有零个元素；第二行的 @racket['()] 里一行也没有。两张零列的表，用现有的包装就已经能翻出来。
+
+@xref["01:types-to-logic"]{第一章}检验过，@math{⊤} 是@tech{合取} @math{∧} 的@tech{单位}：@math{p ⇔ p ∧ ⊤ ⇔ ⊤ ∧ p}。这里也验一验：@racket[(∧)] 把空列表交给 @racket[(apply ∘ℬ ...)]，无参调用 @racket[∘ℬ]（也就是 @racket[∘]）交出的是 @racket[id]，即 @racket[(λ (s) s)]，正是 @racket[⊤]；把 @racket[⊤] 接在任意@tech{目标} @racket[g] 的前面或后面，复合上的都是 @racket[id]，@racket[(∧ g ⊤)] 与 @racket[(∧ ⊤ g)] 都还是 @racket[g]。
+
+@xref["01:types-to-logic"]{第一章}里，@math{⊥} 又是@tech{析取} @math{∨} 的@tech{单位}：一支也没有的联合就是 @math{⊥}，@math{p ⇔ p ∨ ⊥ ⇔ ⊥ ∨ p}。看这里的 @racket[⊥]：@racket[(λ (s) (amb))]。@racket[(amb)] 是零支的 @racket[amb]，不试任何支路、一次也不交；反过来，从零支退成多支，就是让收到的几条@tech{目标}各自从同一张@tech{代换} @racket[s] 出发、逐个试过去，照@xref["05:compose"]{「二元关系的复合」}里的记法，把各支路的表并起来。这就得到@tech{析取} @racket[∨]：
+
+@margin-note{@tech{目标}写成 ℒ 的箭头时，@tech{析取}是把几张@tech{代换}的列表接起来。}
+
+@examples[#:eval ev-comp #:no-result
+(: ∨ (→ Goal ... Goal))
+(define ((∨ . g*) s) ((list->amb g*) s))]
+
+不给任何参数时，@racket[(∨)] 把空列表交给 @racket[list->amb]，正是 @racket[(λ (s) (amb))]，也就是 @racket[⊥]；在任一侧并上 @racket[⊥]，@racket[⊥] 那一支不交出任何@tech{代换}，答案列表照旧。
 
 @section[#:tag "05:compose-o"]{藏起中间一列}
 
@@ -173,6 +186,7 @@
         [else (error 'value-of "~a 的值还不知道" (var-name t))]))
 (define (⊤ s) s)
 (define (⊥ s) (amb))
+(define ((∨ . g*) s) ((list->amb g*) s))
 (define (∧ . g*) (apply ∘ℬ (reverse g*)))
 (define-syntax-rule (∃ (x ...) g)
   (λ (s) (let ([x (var 'x)] ...) (g s))))
@@ -294,17 +308,9 @@
 
 @section[#:tag "05:equation"]{把两种情形并起来}
 
-有了 @racket[≡]、@racket[∧] 和 @racket[∃]，不借函数和@tech{谓词}，能不能直接写出一个递归的@tech{关系}？
+有了 @racket[≡]、@racket[∧]、@racket[∨] 和 @racket[∃]，不借函数和@tech{谓词}，能不能直接写出一个递归的@tech{关系}？
 
 @racket[append] 把两张列表接成一张。它是函数，只能从左边两张算出右边一张。照它的定义写一个三个位置的@tech{关系} @racket[(appendᵒ l t out)]：@racket[l] 是空的，@racket[out] 就等于 @racket[t]；或者 @racket[l] 有头一个元素 @racket[a] 和剩下的 @racket[d]，@racket[out] 的头一个元素也是 @racket[a]，剩下的部分 @racket[res] 是 @racket[d] 接上 @racket[t]。
-
-这里有两种情形，只要有一种成立就算走通。每条支路都从收到的那张@tech{代换}出发，@racket[list->amb] 会让每个@tech{目标}各运行一次；只看能走通的@tech{代换}对，就是把各@tech{目标}的表并起来（@xref["05:compose"]{「二元关系的复合」}里的取并随 @math{P(x)} 产生的中间值一份份地并，这里两份@tech{目标}已经写在眼前）。几个条件里只要有一个成立，叫@tech{析取}，照集合语言里的记号写成 @racket[∨]：
-
-@margin-note{@tech{目标}写成 ℒ 的箭头时，@tech{析取}是把几张@tech{代换}的列表接起来。}
-
-@examples[#:eval ev-unify #:no-result
-(: ∨ (→ Goal ... Goal))
-(define ((∨ . g*) s) ((list->amb g*) s))]
 
 两种情形用 @racket[∨] 并起来，每种情形里的几条等式用 @racket[∧] 连起来，中间用到的@tech{未知项} @racket[a]、@racket[d]、@racket[res] 用 @racket[∃] 造出。@racket[appendᵒ] 照上面那句话逐字写下来：
 
@@ -332,9 +338,7 @@
 
 四种拆法都找到了。定义 @racket[appendᵒ] 的时候，没有哪一行写过「拆」：每一行都是等式，没有哪个位置是输入，哪个是输出。这是@tech{关系}不分输入输出的样子。
 
-到这里，把条件接起来的 @racket[∧] 和把支路并起来的 @racket[∨] 都用上了。回头看它们的零参边界，会正好撞上本节开头由零列的表翻出来的那两个@tech{目标}：@racket[(∧)] 一步也不接，把原@tech{代换}原样交回一次，正是 @racket[⊤]，前后接上它，原@tech{目标}照走；@racket[(∨)] 造出一个没有支路可试的@tech{目标}，收到@tech{代换}后执行 @racket[(amb)]，一张也不交，正是 @racket[⊥]，在任一侧并上它，答案列表照旧。
-
-于是这门语言里的三种运算和它们的@tech{单位}都齐了：在@tech{代换}层，@tech{合取} @racket[∧] 的@tech{单位}是 @racket[⊤]，@tech{析取} @racket[∨] 的@tech{单位}是 @racket[⊥]；在@tech{关系}层，按外面两列的解看，@tech{二元关系}复合 @racket[∘ᵒ] 的@tech{单位}正是@tech{合一} @racket[≡]（@tech{合一}可能往@tech{代换}里添等式，@racket[⊤] 总是原样交回）。
+到这里，这门语言里的三种运算和它们的@tech{单位}都齐了：在@tech{代换}层，@tech{合取} @racket[∧] 的@tech{单位}是 @racket[⊤]，@tech{析取} @racket[∨] 的@tech{单位}是 @racket[⊥]；在@tech{关系}层，按外面两列的解看，@tech{二元关系}复合 @racket[∘ᵒ] 的@tech{单位}正是@tech{合一} @racket[≡]（@tech{合一}可能往@tech{代换}里添等式，@racket[⊤] 总是原样交回）。
 
 我们为了把@tech{关系}直接写下来，一步步添上了 @racket[≡]、@racket[∧]、@racket[∨]、@racket[∃] 和两个@tech{单位} @racket[⊤]、@racket[⊥]。整个语言只有这六样，实现不到一百行，它的骨架正是 microKanren，@defterm[#:en "relational programming"]{关系式编程}（@defterm[#:en "logic programming"]{逻辑式编程}的一个分支）语言 miniKanren 的极小内核。
 
