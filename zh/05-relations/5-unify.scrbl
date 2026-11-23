@@ -2,13 +2,15 @@
 
 @title[#:tag "05:5-unify"]{复合与合一}
 
-刚才，@racket[run*] 从每张走通的@tech{代换}里读出 @racket[a]、@racket[b]、@racket[c]，排成答案的一行。写进条件里的位置，哪些要出现在答案里？
+到这里，直角三角形的集合写法已经逐字翻成了能运行的程序。前面还用集合的语言写过不少别的表，把它们也一一翻进这门关系语言里，手头的这套写法够不够用？
 
 @section[#:tag "05:zero-ary"]{零列的表}
 
-把要读的位置减到零：如果一个位置也不读，走通的那一行还在吗？
+先从最简单的表开始。@xref["05:relation"]{「关系」}数过，零列的表只有两张，@math{{()}} 与 @math{{}}，对应两个零参@tech{谓词} @racket[(λ () #t)] 与 @racket[(λ () #f)]。照集合语言写成竖线两边的形式，左边是空元组 @math{()}，右边分别是恒真条件 @math{⊤} 与恒假条件 @math{⊥}：
 
-@xref["05:relation"]{「关系」}数过，零列的表只有两张，@math{{()}} 与 @math{{}}，对应两个零参@tech{谓词} @racket[(λ () #t)] 与 @racket[(λ () #f)]。用上一节刚写出的 @racket[predicate->relation] 把它们包装成@tech{关系}，再无参调用一次，交给不读任何位置的 @racket[(run* () ...)]：
+@mm{{() | ⊤} = {()} @hspace[4] {() | ⊥} = {}}
+
+用上一节刚写出的 @racket[predicate->relation] 把这两个零参@tech{谓词}包装成@tech{关系}，再无参调用一次，交给不读任何位置的 @racket[(run* () ...)]：
 
 @(define ev-comp (make-acf-eval))
 @examples[#:eval ev-comp #:hidden
@@ -48,7 +50,26 @@
 
 就算一个@tech{未知项}也不读，成功一次和一次也没成功，交出的列表仍然不同：第一行的 @racket['(())] 里有一行答案，行里有零个元素；第二行的 @racket['()] 里一行也没有。
 
-这两个零参@tech{谓词}都不用从传入的@tech{代换}里读值，所以对任意@tech{代换}，真版都原样交回一次，假版一次也不交。作为@tech{代换}之间的@tech{二元关系}，前者是@defterm[#:en "identity relation"]{恒等关系}，总成立、总是成功，记作 @racket[⊤]；后者是一行也没有的@defterm[#:en "empty relation"]{空关系}，总不成立、总是失败，记作 @racket[⊥]：
+把 @racket[predicate->relation] 和 @racket[check] 的定义展开，看看这两个无参调用交出的@tech{目标}到底是什么。先看 @racket[(λ () #t)]：
+
+@racketblock[
+  ((predicate->relation (λ () #t)))
+= (λ (s) (check (apply (λ () #t) '())) s)
+= (λ (s) (check #t) s)
+= (λ (s) (unless #t (amb)) s)
+= (λ (s) s)]
+
+再看 @racket[(λ () #f)]：
+
+@racketblock[
+  ((predicate->relation (λ () #f)))
+= (λ (s) (check (apply (λ () #f) '())) s)
+= (λ (s) (check #f) s)
+= (λ (s) (unless #f (amb)) s)
+= (λ (s) (amb) s)
+= (λ (s) (amb))]
+
+最后一步里，@racket[(amb)] 直接放弃当前分支，后面的 @racket[s] 永远走不到，所以它与 @racket[(λ (s) (amb))] 行为相同。作为@tech{代换}之间的@tech{二元关系}，前者把任意@tech{代换}原样交回一次，是@defterm[#:en "identity relation"]{恒等关系}，总成立、总是成功，记作 @racket[⊤]；后者一次也不交，是一行也没有的@defterm[#:en "empty relation"]{空关系}，总不成立、总是失败，记作 @racket[⊥]：
 
 @margin-note{前四章用 @racket[⊤] 与 @racket[⊥] 记单元类型与@tech{空类型}；这里借用同一对逻辑真假记号表示 @racket[Goal] 类型的值，一个是恒等@tech{目标}，一个是失败@tech{目标}。}
 
