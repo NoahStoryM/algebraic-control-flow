@@ -88,31 +88,32 @@
 
 @mm{Q ∘ P = {(x, z) | ∃y, (x, y) ∈ P ∧ (y, z) ∈ Q}}
 
-放到关系语言里，@math{(x, y) ∈ P} 与 @math{(y, z) ∈ Q} 已经有写法 @racket[(Pᵒ x y)]、@racket[(Qᵒ y z)]，「并且」也已经有 @racket[∧]，空下来的只有「存在这样的 @math{y}」。把 @racket[y] 与 @racket[z] 都写在 @racket[run*] 后面，能给两条条件共用一个 @racket[y]，答案却也会多出这一列；只写 @racket[z]，两条条件里又没有 @racket[y] 可用。需要一个只在内部用到的局部@tech{未知项}，借 @racket[run*] 造@tech{未知项}的那一步就能写出 @racket[∃]：
+直接把这条公式逐字翻成关系语言里的复合函数 @racket[∘ᵒ]：
+
+@racketblock[
+(: ∘ᵒ (→ (→ Term Term Goal) (→ Term Term Goal) (→ Term Term Goal)))
+(define ((∘ᵒ Qᵒ Pᵒ) x z)
+  (∃ (y) (∧ (Pᵒ x y) (Qᵒ y z))))]
+
+@defsym["Qᵒ ∘ᵒ Pᵒ" "关系语言里的复合：∃ 造出中间的未知项"]@racket[∘ᵒ] 和 @racket[∘] 一样从右往左写：右边的@tech{关系}说 @racket[x] 与 @racket[y]，左边的说 @racket[y] 与 @racket[z]。@racket[(Pᵒ x y)]、@racket[(Qᵒ y z)] 与 @racket[∧] 都已经有了，空下来的只有把 @racket[y] 藏在里面的 @racket[∃]。把 @racket[y] 与 @racket[z] 都写在 @racket[run*] 后面，能给两条条件共用一个 @racket[y]，答案却也会多出这一列；只写 @racket[z]，两条条件里又没有 @racket[y] 可用。需要一个只在内部用到的局部@tech{未知项}，借 @racket[run*] 造@tech{未知项}的那一步就能写出 @racket[∃]：
 
 @examples[#:eval ev-comp #:no-result
 (define-syntax-rule (∃ (x ...) g)
   (λ (s) (let ([x (var 'x)] ...) (g s))))]
 
-@racket[∃] 交出的也是@tech{目标}。它等收到@tech{代换}时才造@tech{未知项}，再运行里面的条件：每用一次，造出的都是新的。把 @racket[pick-a] 与 @racket[pick-b] 搬成@tech{关系}，藏起中间的 @racket[y]，只读最右一列 @racket[z]：
+@racket[∃] 交出的也是@tech{目标}。它等收到@tech{代换}时才造@tech{未知项}，再运行里面的条件：每用一次，造出的都是新的。把 @racket[pick-a] 与 @racket[pick-b] 搬成@tech{关系}，用 @racket[∘ᵒ] 把它们接起来，只读最右一列 @racket[z]：
 
 @margin-note{每组外面多了一层括号：@racket[run*] 只读了一个@tech{未知项} @racket[z]，一组答案是只有一个元素的列表。}
 
+@examples[#:eval ev-comp #:hidden
+(define ((∘ᵒ Qᵒ Pᵒ) x z)
+  (∃ (y) (∧ (Pᵒ x y) (Qᵒ y z))))]
 @examples[#:eval ev-comp #:label #f
 (define pick-aᵒ (function->relation pick-a))
 (define pick-bᵒ (function->relation pick-b))
-(run* (z) (∃ (y) (∧ (pick-aᵒ '(1 2) y) (pick-bᵒ y z))))]
+(run* (z) ((∘ᵒ pick-bᵒ pick-aᵒ) '(1 2) z))]
 
 正是@xref["05:compose"]{「二元关系的复合」}三列表最右一列的那三行：@racket[(1 1 2)]、@racket[(1 2 2)]、@racket[(2 2 2)]。这里由 @racket[pick-aᵒ] 交出中间值 @racket[y]，@racket[pick-bᵒ] 接着用；如果只靠两个只会检查给定值的@tech{谓词}，仍然缺了提供候选的那一步。
-
-把这段两步复合提成函数 @racket[∘ᵒ]：
-
-@examples[#:eval ev-comp #:no-result
-(: ∘ᵒ (→ (→ Term Term Goal) (→ Term Term Goal) (→ Term Term Goal)))
-(define ((∘ᵒ Qᵒ Pᵒ) x z)
-  (∃ (y) (∧ (Pᵒ x y) (Qᵒ y z))))]
-
-@defsym["Qᵒ ∘ᵒ Pᵒ" "关系语言里的复合：∃ 造出中间的未知项"]@racket[∘ᵒ] 和 @racket[∘] 一样从右往左写：右边的@tech{关系}说 @racket[x] 与 @racket[y]，左边的说 @racket[y] 与 @racket[z]，中间的 @racket[y] 由 @racket[∃] 藏在里面。
 
 @bold{练习}：上面的 @racket[∘ᵒ] 一次只接两个@tech{关系}。把它扩充成可以接收一个或多个@tech{二元关系}的版本：只给一个时原样交出，给多个时从右往左依次用二元复合接起来（@xref["05:appendix"]{附录}里收有完整定义）。
 
