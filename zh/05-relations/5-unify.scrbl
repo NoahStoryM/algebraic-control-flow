@@ -315,8 +315,10 @@
 
 @margin-note{如果答案里还留着未绑定的未知项（比如 @racket[(run* (x y) (≡ x y))] 或 @racket[(run* (x y) (appendᵒ '(1) x y))]），@racket[value-of] 读不出来；另外，像 @racket[(≡ x (cons 1 x))] 这样的循环等式也需要在添等式前拦截。@xref["05:appendix"]{附录}的完整库代码补上了这两步：用 @racket[walk*] 与 @racket[reify] 把未绑定未知项打印成 @tt{_.0}、@tt{_.1}，并用 @racket[occurs?] 与 @racket[ext-s] 做循环检查。}
 
-到这里，这门语言里三种运算和它们的单位都齐了：在代换层，合取 @racket[∧] 的单位是 @racket[⊤]，析取 @racket[∨] 的单位是 @racket[⊥]；在关系层，按外面两列的解看，二元关系复合 @racket[∘ᵒ] 的单位正是合一 @racket[≡]。两个谓词能核对给定的 @racket[y]，却没有给出寻找见证的通用办法，因为缺少 @racket[∃]；按输入求值的包装要求左列已知，所以函数的 @racket[id] 当不了关系的单位；@racket[∃] 与 @racket[≡] 正好补齐了这两样。
+到这里，这门语言里的三种运算和它们的单位都齐了：在代换层，合取 @racket[∧] 的单位是 @racket[⊤]，析取 @racket[∨] 的单位是 @racket[⊥]；在关系层，按外面两列的解看，二元关系复合 @racket[∘ᵒ] 的单位正是合一 @racket[≡]。
 
 @margin-note{和常见的实现相比，还有几处不同：未知项按身份区分，不编号；合取是直接复合，何时推迟一步计算、怎样取用答案，写法也不一样，交出答案的顺序因此可能不同。}
 
-整个小语言只有等式 @racket[≡]、@racket[∧]、@racket[∨]、@racket[∃] 和两个单位 @racket[⊤]、@racket[⊥]，实现不到一百行。它的骨架就是 microKanren，@defterm[#:en "relational programming"]{关系式编程}（@defterm[#:en "logic programming"]{逻辑式编程}的一个分支）语言 miniKanren 的一个极小内核。在那里，未知项叫@defterm[#:en "logic variable"]{逻辑变量}，这六个记号常写作 @racket[==]、@racket[conj]、@racket[disj]、@racket[fresh]、@racket[succeed]、@racket[fail]，而 @racket[run*] 与 @racket[fresh] 也常添上一层语法糖，把多行目标自动包进 @racket[conj]。常见的实现用流来回溯：目标交出一串代换，合取与析取都要自己写出怎样接、怎样并。这里用 @racket[amb] 回溯，@racket[∧] 就是 ℬ 的复合，@racket[∨] 就是 @racket[amb]，这两样都是现成的；剩下要写的，主要是合一。
+我们为了把关系直接写下来，一步步添上了 @racket[≡]、@racket[∧]、@racket[∨]、@racket[∃] 和两个单位 @racket[⊤]、@racket[⊥]。整个语言只有这六样，实现不到一百行，它的骨架正是 microKanren，@defterm[#:en "relational programming"]{关系式编程}（@defterm[#:en "logic programming"]{逻辑式编程}的一个分支）语言 miniKanren 的极小内核。
+
+在那里，未知项叫@defterm[#:en "logic variable"]{逻辑变量}，这六个记号常写作 @racket[==]、@racket[conj]、@racket[disj]、@racket[fresh]、@racket[succeed]、@racket[fail]，@racket[run*] 与 @racket[fresh] 也常添上一层语法糖，把多条目标自动包进 @racket[conj]。常见的实现用流来回溯，目标交出一串代换，合取与析取都要自己写出怎样接、怎样并。这里用 @racket[amb] 回溯，@racket[∧] 就是 ℬ 的复合，@racket[∨] 就是 @racket[amb]，这两样都是现成的；剩下要写的，主要是合一。
