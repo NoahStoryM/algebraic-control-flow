@@ -130,9 +130,23 @@
 
 @section[#:tag "05:unify-step"]{合一}
 
-@xref["05:relation"]{「关系」}写过纯函数对应的表 @math{{(a, b) | b = f(a)}}。把 @math{f} 换成恒等函数 @racket[id]，得到一张每个值都和自己配成一行的表：接在任一端，新增的中间值必须等于对应的外列值，遮掉中间一列后外两列照旧。
+@xref["05:relation"]{「关系」}写过纯函数对应的表 @math{{(a, b) | b = f(a)}}。把 @math{f} 换成恒等函数 @racket[id]，得到一张每个值都和自己配成一行的表：接在任一端，新增的中间值必须等于对应的外列值，遮掉中间一列后外两列照旧。照着这个式子，用 @racket[function->relation] 包装 @racket[id]：
 
-前面包装零参@tech{谓词}时一点值也不用读，直接就翻成了@tech{目标}。现在看看手头的两个包装各能做到哪一步。先试二元@tech{谓词} @racket[equal?]：
+@examples[#:eval ev-comp #:label #f
+(define idᵒ (function->relation id))
+(run* (y) (idᵒ 5 y))
+(eval:error (run* (x) (idᵒ x 5)))]
+
+左边已知、右边未知时行得通，换到右边已知、左边未知就报错。哪怕写成两条简单的等式，@racket[x] 等于 @racket[y]、@racket[y] 等于 5，第一步还是会卡住：
+
+@examples[#:eval ev-comp #:label #f
+(eval:error (run* (x y) (∧ (idᵒ x y) (idᵒ y 5))))]
+
+@racket[id] 分输入输出，把原式化简再看：
+
+@mm{{(a, b) | b = id(a)} = {(a, b) | b = a}}
+
+这张表其实只是在说两列相等。试着改用 @racket[predicate->relation] 包装二元@tech{谓词} @racket[equal?]：
 
 @examples[#:eval ev-comp #:label #f
 (define equalᵒ (predicate->relation equal?))
@@ -140,19 +154,7 @@
 (eval:error (run* (y) (equalᵒ 5 y)))
 (eval:error (run* (x) (equalᵒ x 5)))]
 
-两边都必须先知道，哪一头换成@tech{未知项}都会报错。再试从函数出发，包装 @racket[id]：
-
-@examples[#:eval ev-comp #:label #f
-(define idᵒ (function->relation id))
-(run* (y) (idᵒ 5 y))
-(eval:error (run* (x) (idᵒ x 5)))]
-
-这一次少读一边，左边已知、右边未知时行得通，换到右边已知、左边未知又报错。哪怕写成两条简单的等式，@racket[x] 等于 @racket[y]、@racket[y] 等于 5，第一步还是会卡住：
-
-@examples[#:eval ev-comp #:label #f
-(eval:error (run* (x y) (∧ (idᵒ x y) (idᵒ y 5))))]
-
-毛病出在同一处：两个包装都先用 @racket[value-of] 读出宿主要用的参数，借来的函数与@tech{谓词}骨子里仍然分输入和输出，只能算已经知道的值。同样的限制也挡在把 @racket[pythᵒ] 挪到 @racket[right-triangles] 最前面、或者倒过来问边界的时候。无论借函数还是借@tech{谓词}，都造不出真正对称的@tech{单位}：两个位置相等，两边都可以暂时不知道，这得在关系语言里自己做。
+这一次干脆两边都必须先知道，哪一头换成@tech{未知项}都会报错。毛病出在同一处：两个包装都先用 @racket[value-of] 读出宿主要用的参数，借来的函数与@tech{谓词}骨子里只能算已经知道的值。同样的限制也挡在把 @racket[pythᵒ] 挪到 @racket[right-triangles] 最前面、或者倒过来问边界的时候。无论借函数还是借@tech{谓词}，都造不出真正对称的@tech{单位}：两个位置相等，两边都可以暂时不知道，这得在关系语言里自己做。
 
 不借 @racket[id] 和 @racket[equal?]，照前面往@tech{代换}里添记录的办法，直接把刚才卡住的那两条等式记进表里：@racket[x] 等于 @racket[y]，@racket[y] 等于 5。然后问 @racket[x] 的值：
 
