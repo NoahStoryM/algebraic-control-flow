@@ -108,17 +108,9 @@
 
 @margin-note{不用 @racket[amb]、直接按 @racket[(→ℒ Substitution Substitution)] 写成纯函数也可以，接起来用的换成 @racket[∘ℒ]；两种写法之间，正是 @racket[gather] 与 @racket[scatter]。}
 
-在 @racket[(run* (x ...) g)] 里，@racket[g] 是 @racket[Goal] 类型的表达式。开头的伪代码里，填在这个位置的是 @racket[∧]，所以@tech{合取} @racket[∧] 的返回类型就是 @racket[Goal]；它把几条同类的条件合成一条，参数类型与返回类型一致，因此每个参数也都是 @racket[Goal]。
+在 @racket[(run* (x ...) g)] 里，@racket[g] 是 @racket[Goal] 类型的表达式。开头的伪代码里，填在这个位置的是 @racket[∧]，所以@tech{合取} @racket[∧] 的返回类型就是 @racket[Goal]；它把几条同类的条件合成一条，参数类型与返回类型一致，因此每个参数也都是 @racket[Goal]，类型是 @racket[(→ Goal ... Goal)]。
 
-几个@tech{目标}怎样接？@racket[(betweenᵒ a h b)] 要读 @racket[a] 的值，收到的得是前一个@tech{目标} @racket[(betweenᵒ l h a)] 交出的@tech{代换}；它给@tech{代换}添上 @racket[b] 的值，再交给下一个@tech{目标} @racket[(betweenᵒ b h c)]。前一个@tech{目标}交出的@tech{代换}交给后一个：@xref["05:compose-l"]{「列表箭头的复合」}里，@racket[let*] 中先后两次调用写成了 @racket[∘ℬ]；这里接起前后两个@tech{目标}，用的也是 @racket[∘ℬ]：
-
-@examples[#:eval ev-goals #:no-result
-(: ∧ (→ Goal ... Goal))
-(define (∧ . g*) (apply ∘ℬ (reverse g*)))]
-
-@racket[∧] 照写的顺序接：先写的先运行，和 @racket[let*] 一样，所以交给 @racket[∘ℬ] 之前要倒过来。
-
-@racket[∧] 的参数都是 @racket[Goal]，传给它的 @racket[(betweenᵒ l h a)] 和 @racket[(pythᵒ a b c)] 也就都得交出 @racket[Goal]。而它们收下的参数可以含有@tech{未知项}，类型是 @racket[Term]。带 ᵒ 后缀的@tech{关系}，类型于是顺势逼了出来：参数是 @racket[Term]，返回值是 @racket[Goal]。拿 @racket[pyth?] 与 @racket[pythᵒ] 并排对照：
+@racket[∧] 的参数都是 @racket[Goal]，传给它的 @racket[(betweenᵒ l h a)] 和 @racket[(pythᵒ a b c)] 也就都得交出 @racket[Goal]；而它们收下的参数可以含有@tech{未知项}，类型是 @racket[Term]。带 ᵒ 后缀的@tech{关系}，类型于是顺势逼了出来：参数是 @racket[Term]，返回值是 @racket[Goal]。拿 @racket[pyth?] 与 @racket[pythᵒ] 并排对照：
 
 @racketblock[
 (: pyth? (→ ℕ⁺   ℕ⁺   ℕ⁺   Boolean))
@@ -128,7 +120,7 @@
 
 @section[#:tag "05:run"]{跑起来}
 
-两头和中间都有了，@racket[run*] 可以写下来：造出@tech{未知项}，从一张空的@tech{代换}开始运行@tech{目标} @racket[g]，再读出那几个@tech{未知项}的值。走通的每条时间线交出一组取值，由 @racket[in-amb] 收齐。
+类型都定好了，先写出外层的 @racket[run*]：造出@tech{未知项}，从一张空的@tech{代换}开始运行@tech{目标} @racket[g]，再读出那几个@tech{未知项}的值。走通的每条时间线交出一组取值，由 @racket[in-amb] 收齐。
 
 @examples[#:eval ev-goals #:no-result
 (define-syntax-rule (run* (x ...) g)
@@ -137,7 +129,7 @@
      (let ([s (g '())])
        (list (value-of x s) ...)))))]
 
-@racket[run*] 写好了，还缺一个会给 @racket[a] 添值的@tech{目标}。@racket[let*] 的一行 @racket[[a (between 1 3)]]，往 Racket 的记录表里添了一个名字；@racket[(betweenᵒ 1 3 a)] 该交出的@tech{目标}，就往@tech{代换}里添一条记录。先手写一个，从空的@tech{代换}开始运行：
+@racket[run*] 写好了，先手写一个给 @racket[a] 添值的@tech{目标}试试看。@racket[let*] 的一行 @racket[[a (between 1 3)]]，往 Racket 的记录表里添了一个名字；@racket[(betweenᵒ 1 3 a)] 该交出的@tech{目标}，就往@tech{代换}里添一条记录。从空的@tech{代换}开始运行它：
 
 @examples[#:eval ev-goals #:label #f
 (define g (λ (s) (cons (cons a (between 1 3)) s)))
@@ -150,6 +142,14 @@
   (λ (s) (cons (cons a (between 1 3)) s)))]
 
 三张@tech{代换}，读出来是三组答案。
+
+单个@tech{目标}跑通了，几个@tech{目标}怎样用 @racket[∧] 接起来？@racket[(betweenᵒ a h b)] 要读 @racket[a] 的值，收到的得是前一个@tech{目标} @racket[(betweenᵒ l h a)] 交出的@tech{代换}；它给@tech{代换}添上 @racket[b] 的值，再交给下一个@tech{目标} @racket[(betweenᵒ b h c)]。前一个@tech{目标}交出的@tech{代换}交给后一个：@xref["05:compose-l"]{「列表箭头的复合」}里，@racket[let*] 中先后两次调用写成了 @racket[∘ℬ]；这里接起前后两个@tech{目标}，用的也是 @racket[∘ℬ]：
+
+@examples[#:eval ev-goals #:no-result
+(: ∧ (→ Goal ... Goal))
+(define (∧ . g*) (apply ∘ℬ (reverse g*)))]
+
+@racket[∧] 照写的顺序接：先写的先运行，和 @racket[let*] 一样，所以交给 @racket[∘ℬ] 之前要倒过来。
 
 一般的 @racket[(betweenᵒ l h a)] 里，@racket[l]、@racket[h] 可能是@tech{未知项}，要先用 @racket[value-of] 读出值，再交给 @racket[between]；@racket[between] 交出的数，照 @racket[g] 的样子记在最后一个位置上（前三条条件里，最后一个位置都是还没有值的@tech{未知项}，往@tech{代换}里添一条记录就够了）。@racket[(pythᵒ a b c)] 的三个位置都是给 @racket[pyth?] 的，全要读出值；@tech{谓词}的是与否，成了@tech{目标}的两种回答：成立就原样交回@tech{代换}，不成立就一张也不交。
 
