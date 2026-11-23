@@ -2,7 +2,7 @@
 
 记录正文现在怎么走，不记论证，不抄代码。每节只写三样：回应什么问题，造了什么、认出了什么，第一次出现的名字。改叙事的 PR 先改这里，再改正文；只改措辞的 PR 不用动它。
 
-> **现状（11/22 定稿，正文、附录与 code.rkt 已按此版同步）**：全章分为上下两半。上半部（1–3 节）从搜索表出发，经 `amb` 走到 `𝒞`、`ℬ`、`ℒ` 三个世界，在 3.2 以 `flat-map = (curry append-map)` 和 `𝒞 ──inj──→ ℬ ⇄ ℒ ──flat-map──→ 𝒞` 方形图表收尾（外圈绕回 `map`），为第六章抽象通用结构铺路。下半部（4–5 节）进入「关系式编程」：4.2 按 `∧ → ⊤ → ⊥ → ∨` 收齐代换层运算与单位；5.1 先讲二元复合 `∘ᵒ`（多参数留作练习，附录给完整版），再通过尝试 `(function->relation id)` 与 `(predicate->relation equal?)` 双双碰壁统一揭示借来函数与谓词的单向限制，引出 5.2 合一 `≡`（复合的单位）；5.3 一气呵成写 `appendᵒ`（正反问），收束三大运算与单位、揭晓 microKanren / miniKanren（`walk*`/`reify` 与 `occurs?`/`ext-s` 移入附录，旁注说明）。
+> **现状（11/22 定稿，正文、附录与 code.rkt 已按此版同步）**：全章分为上下两半。上半部（1–3 节）从搜索表出发，经 `amb` 走到 `𝒞`、`ℬ`、`ℒ` 三个世界，在 3.2 以 `flat-map`（`(flip choose/k)`） 和 `𝒞 ──inj──→ ℬ ⇄ ℒ ──flat-map──→ 𝒞` 方形图表收尾（外圈绕回 `map`），为第六章抽象通用结构铺路。下半部（4–5 节）进入「关系式编程」：4.2 按 `∧ → ⊤ → ⊥ → ∨` 收齐代换层运算与单位；5.1 先讲二元复合 `∘ᵒ`（多参数留作练习，附录给完整版），再通过尝试 `(function->relation id)` 与 `(predicate->relation equal?)` 双双碰壁统一揭示借来函数与谓词的单向限制，引出 5.2 合一 `≡`（复合的单位）；5.3 一气呵成写 `appendᵒ`（正反问），收束三大运算与单位、揭晓 microKanren / miniKanren（`walk*`/`reify` 与 `occurs?`/`ext-s` 移入附录，旁注说明）。
 
 标题：歧路何从：表里的平行世界
 
@@ -43,9 +43,9 @@
 - 问题：谓词只能检查一行在不在表里，读不出数据；要按键查表。
 - 造：自己写 `dict-ref`（`for/first`）与 `dict-ref*`（`for/list`）；`dictionary->function` 与 `table->relation`；在 `rows` 上试。
 - 认：`(table->relation rows)` 的类型正是 `right-triangles` 的类型；摊开与收拢来回转换。
-- 认：二元关系 $R ⊆ A × B$ 与函数 $A → P(B)$ 一一对应；程序里用列表代替集合，只能表示每个输入的行能有限列出的关系；字典与表来回转换但不是同构（`(1 4)` 这条「已查过但无答案」的记录，PR #151）。
+- 认：二元关系 $R ⊆ A × B$ 与函数 $A → 𝒫(B)$ 一一对应；程序里用列表代替集合，只能表示每个输入的行能有限列出的关系；字典与表来回转换但不是同构（`(1 4)` 这条「已查过但无答案」的记录，PR #151）。
 - 认：表可能有无穷多行，程序只需问到哪行算哪行；**惰性**；在程序里表示关系靠函数。
-- 名字：**幂集**（power set）$P(B)$、`table->relation`、**惰性**（lazy）。
+- 名字：**幂集**（power set）$𝒫(B)$、`table->relation`、**惰性**（lazy）。
 
 ## 2 循环里的时间线
 
@@ -96,7 +96,7 @@
 - 认：来回一趟回到原处，两种箭头同构（比的是列表，先后与重复算在内）；`inclusive-range = (gather between)`、`between = (scatter inclusive-range)`。
 - 造：借同构把 ℬ 的复合搬过来定义 `∘ℒ`（回指第二篇借道逆否箭头搬运运算律）；两步情形逐行化简，依次经过本篇出现过的四种写法，到 `(append-map g (f x))`；不经 ℬ 直接在 𝒞 里定义 `∘ℒ`（`foldr append-map`；附录与 `code.rkt` 支持零支，一元上给出 `(λ (x) (list x))`）。
 - 认：纯宿主里，二元关系是交出列表的函数，用 `append-map` 接起来，正是上一节取并的式子；`let*` 是 `∘ℬ`，`for*/list` 是 `∘ℒ`，两种箭头各有一种绑定写法。
-- 造与认：将 `append-map` 柯里化得到 `(: flat-map (∀ (p q) (→ (→ℒ p q) (→𝒞 (Listof p) (Listof q)))))`（`(define flat-map (curry append-map))`），把 ℒ 的箭头搬回纯宿主 𝒞：`(∘ℒ g f) = (∘ (flat-map g) f)`，`(flat-map (∘ℒ g f)) = (∘ (flat-map g) (flat-map f))`，`(flat-map (λ (x) (list x))) = id`。
+- 造与认：交换 `choose/k` 的两层参数顺序得到 `(: flat-map (∀ (p q) (→ (→ℒ p q) (→𝒞 (Listof p) (Listof q)))))`（`(define ((flat-map g) p*) (append-map g p*))`，即 `(flip choose/k)`），把 ℒ 的箭头搬回纯宿主 𝒞：`(∘ℒ g f) = (∘ (flat-map g) f)`，`(flat-map (∘ℒ g f)) = (∘ (flat-map g) (flat-map f))`，`(flat-map (λ (x) (list x))) = id`。
 - 练习：验证 `list->amb` 与 `choose` 是同一个函数。
 - 认（上半部收尾）：画出 𝒞、ℬ、ℒ 的方形图表（`𝒞 ──inj──→ ℬ ⇄ ℒ ──flat-map──→ 𝒞`），指出 ℬ 与 ℒ 之间是**交换图表**；纯函数 `f` 沿外圈经 `inj`、`gather`、`flat-map` 绕回 𝒞 正好得到 `(λ (xs) (map f xs))`。
 - 名字：ℬ、ℒ、`→ℬ`、`→ℒ`、`inj`、`∘ℬ`、`∘ℒ`、`list->amb`、`scatter`、`gather`、`flat-map`、同构、图表、交换图表。
@@ -178,5 +178,5 @@
 
 - 收正文造出的库代码，不收例子（直角三角形、`appendᵒ`）：
   - `amb` 一族：`choose`、`amb`、`for/amb`、`for*/amb`、`in-amb`、`check`；
-  - 关系的两种写法：`→𝒞`、`→ℬ`、`→ℒ`、`inj`、`∘ℬ`、`list->amb`、`scatter`、`gather`、`∘ℒ`、`flat-map`（`(curry append-map)`）；
+  - 关系的两种写法：`→𝒞`、`→ℬ`、`→ℒ`、`inj`、`∘ℬ`、`list->amb`、`scatter`、`gather`、`∘ℒ`、`flat-map`；
   - 关系语言：`var`、`Literal`、`Data`、`Term`、`Substitution`、`Goal`、`walk`、`walk*`、`occurs?`、`ext-s`、`unify`、`value-of`、`reify`、`⊤`、`⊥`、`≡`、`∧`、`∨`、`∃`、`run*`、`function->relation`、`predicate->relation`、`idᵒ`、`∘ᵒ`（多参数 `case-λ` 版）。
