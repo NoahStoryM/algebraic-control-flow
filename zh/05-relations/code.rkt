@@ -1850,6 +1850,12 @@
   ;; 〔正文·交互〕一行关系交出的目标与手写的一样
   (check-equal? (let ([a (var 'a)]) (in-amb ((betweenᵒ 1 3 a) '())))
                 (list (list (cons (var 'a) 1)) (list (cons (var 'a) 2)) (list (cons (var 'a) 3))))
+  ;; 〔正文·交互〕4.3：零参谓词经 predicate->relation 无参调用，正好是 ⊤ 与 ⊥
+  (check-equal? (run* () ((predicate->relation (λ () #t)))) '(()))
+  (check-equal? (run* () ((predicate->relation (λ () #f)))) '())
+  (let* ([a (var 'a)] [s (list (cons a 1))])
+    (check-equal? (in-amb (((predicate->relation (λ () #t))) s)) (list s))
+    (check-equal? (in-amb (((predicate->relation (λ () #f))) s)) '()))
   ;; 〔正文·交互〕4.3 极简包装的两处单向限制
   (check-equal? (run* (a) (∧ (betweenᵒ 1 2 a) (betweenᵒ 2 3 a))) '((2) (3) (2) (3)))
   (check-equal? (in-amb ((betweenᵒ 1 3 2) '())) '(((2 . 1)) ((2 . 2)) ((2 . 3))))
