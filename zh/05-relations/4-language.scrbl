@@ -129,17 +129,16 @@
      (let ([s (g '())])
        (list (value-of x s) ...)))))]
 
-@racket[run*] 写好了，先手写一个给 @racket[a] 添值的@tech{目标}试试看。@racket[let*] 的一行 @racket[[a (between 1 3)]]，往 Racket 的记录表里添了一个名字；@racket[(betweenᵒ 1 3 a)] 该交出的@tech{目标}，就往@tech{代换}里添一条记录。从空的@tech{代换}开始运行它：
+@racket[run*] 写好了，先手写一个简版的 @racket[betweenᵒ] 试试看。@racket[let*] 的一行 @racket[[a (between 1 3)]]，往 Racket 的记录表里添了一个名字；@racket[(betweenᵒ 1 3 a)] 交出的@tech{目标}，就往@tech{代换}里添一条记录。先假设 @racket[l]、@racket[h] 都是已知的数，从空的@tech{代换}开始运行：
 
 @examples[#:eval ev-goals #:label #f
-(define g (λ (s) (cons (cons a (between 1 3)) s)))
-(in-amb (g '()))]
+(define ((betweenᵒ l h a) s) `([,a . ,(between l h)] . ,s))
+(in-amb ((betweenᵒ 1 3 a) '()))]
 
-@racket[g] 写出来是个普通的函数，收一张@tech{代换}，交出一张。可 @racket[between] 返回了三次，@racket[g] 也就交出了三张，各记着 @racket[a] 等于其中一个数。把它交给 @racket[run*]：
+@racket[(betweenᵒ 1 3 a)] 交出的是个普通的函数，收一张@tech{代换}，交出一张。可 @racket[between] 返回了三次，它也就交出了三张，各记着 @racket[a] 等于其中一个数。把它交给 @racket[run*]：
 
 @examples[#:eval ev-goals #:label #f
-(run* (a)
-  (λ (s) (cons (cons a (between 1 3)) s)))]
+(run* (a) (betweenᵒ 1 3 a))]
 
 三张@tech{代换}，读出来是三组答案。
 
@@ -151,7 +150,7 @@
 
 @racket[∧] 照写的顺序接：先写的先运行，和 @racket[let*] 一样，所以交给 @racket[∘ℬ] 之前要倒过来。
 
-一般的 @racket[(betweenᵒ l h a)] 里，@racket[l]、@racket[h] 可能是@tech{未知项}，要先用 @racket[value-of] 读出值，再交给 @racket[between]；@racket[between] 交出的数，照 @racket[g] 的样子记在最后一个位置上（前三条条件里，最后一个位置都是还没有值的@tech{未知项}，往@tech{代换}里添一条记录就够了）。@racket[(pythᵒ a b c)] 的三个位置都是给 @racket[pyth?] 的，全要读出值；@tech{谓词}的是与否，成了@tech{目标}的两种回答：成立就原样交回@tech{代换}，不成立就一张也不交。
+一般的 @racket[(betweenᵒ l h a)] 里，@racket[l]、@racket[h] 可能是@tech{未知项}，要先用 @racket[value-of] 读出值，再交给 @racket[between]；@racket[between] 交出的数，照刚才手写 @racket[betweenᵒ] 的样子记在最后一个位置上（前三条条件里，最后一个位置都是还没有值的@tech{未知项}，往@tech{代换}里添一条记录就够了）。@racket[(pythᵒ a b c)] 的三个位置都是给 @racket[pyth?] 的，全要读出值；@tech{谓词}的是与否，成了@tech{目标}的两种回答：成立就原样交回@tech{代换}，不成立就一张也不交。
 
 @examples[#:eval ev-goals #:no-result
 (: function->relation (∀ (a ... b) (→ (→ℬ a ... b) (→ Term ... Term Goal))))

@@ -140,7 +140,7 @@
 
 @section[#:tag "05:unify-step"]{合一}
 
-不借 @racket[id] 和 @racket[equal?]，照手写 @racket[g] 的办法，直接把这两行等式记进表里：@racket[x] 等于 @racket[y]，@racket[y] 等于 5。然后问 @racket[x] 的值：
+不借 @racket[id] 和 @racket[equal?]，照前面往@tech{代换}里添记录的办法，直接把这两行等式记进表里：@racket[x] 等于 @racket[y]，@racket[y] 等于 5。然后问 @racket[x] 的值：
 
 @(define ev-unify (make-acf-eval))
 @examples[#:eval ev-unify #:hidden

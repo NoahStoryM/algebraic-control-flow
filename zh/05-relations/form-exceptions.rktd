@@ -1,3 +1,5 @@
 (((define ((∘ℒ g* ... f) . x*)
   (foldr append-map (apply f x*) g*))
-"参数表 g* ... f 是示意写法，Racket 的剩余参数只能放在最后；code.rkt 用 split-at-right 取出最右边的箭头"))
+"参数表 g* ... f 是示意写法，Racket 的剩余参数只能放在最后；code.rkt 用 split-at-right 取出最右边的箭头")
+ ((define ((betweenᵒ l h a) s) `([,a . ,(between l h)] . ,s))
+"5.4.3 过渡用的手写简版，随后由 (function->relation between) 取代"))
