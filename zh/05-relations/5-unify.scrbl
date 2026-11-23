@@ -334,7 +334,7 @@
 
 到这里，把条件接起来的 @racket[∧] 和把支路并起来的 @racket[∨] 都用上了。回头看它们的零参边界，会正好撞上本节开头由零列的表翻出来的那两个@tech{目标}：@racket[(∧)] 一步也不接，把原@tech{代换}原样交回一次，正是 @racket[⊤]，前后接上它，原@tech{目标}照走；@racket[(∨)] 造出一个没有支路可试的@tech{目标}，收到@tech{代换}后执行 @racket[(amb)]，一张也不交，正是 @racket[⊥]，在任一侧并上它，答案列表照旧。
 
-于是这门语言里的三种运算和它们的@tech{单位}都齐了：在@tech{代换}层，@tech{合取} @racket[∧] 的@tech{单位}是 @racket[⊤]，@racket[∨] 的@tech{单位}是 @racket[⊥]；在@tech{关系}层，按外面两列的解看，@tech{二元关系}复合 @racket[∘ᵒ] 的@tech{单位}正是@tech{合一} @racket[≡]（@tech{合一}可能往@tech{代换}里添等式，@racket[⊤] 总是原样交回）。
+于是这门语言里的三种运算和它们的@tech{单位}都齐了：在@tech{代换}层，@tech{合取} @racket[∧] 的@tech{单位}是 @racket[⊤]，@tech{析取} @racket[∨] 的@tech{单位}是 @racket[⊥]；在@tech{关系}层，按外面两列的解看，@tech{二元关系}复合 @racket[∘ᵒ] 的@tech{单位}正是@tech{合一} @racket[≡]（@tech{合一}可能往@tech{代换}里添等式，@racket[⊤] 总是原样交回）。
 
 我们为了把@tech{关系}直接写下来，一步步添上了 @racket[≡]、@racket[∧]、@racket[∨]、@racket[∃] 和两个@tech{单位} @racket[⊤]、@racket[⊥]。整个语言只有这六样，实现不到一百行，它的骨架正是 microKanren，@defterm[#:en "relational programming"]{关系式编程}（@defterm[#:en "logic programming"]{逻辑式编程}的一个分支）语言 miniKanren 的极小内核。
 
