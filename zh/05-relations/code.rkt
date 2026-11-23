@@ -1245,14 +1245,19 @@
 (define ((gather g) . x*) (in-amb (apply g x*)))
 
 (: flat-map (∀ (p q) (→ (→ℒ p q) (→𝒞 (Listof p) (Listof q)))))
-(define flat-map (curry append-map))
+(define ((flat-map g) p*) (append-map g p*))
 (let ([f (λ (x) (list x (+ x 1)))]
       [g (λ (x) (list (* x 2) (* x 3)))]
+      [h (λ (x) (if (even? x) (list x (* x 10)) '()))]
       [xs '(1 2 3)])
   (check-equal? ((∘ℒ g f) 2) ((∘ (flat-map g) f) 2))
   (check-equal? ((flat-map (∘ℒ g f)) xs) ((∘ (flat-map g) (flat-map f)) xs))
   (check-equal? ((flat-map (λ (x) (list x))) xs) (id xs))
-  (check-equal? ((flat-map (gather (inj add1))) xs) (map add1 xs)))
+  (check-equal? ((flat-map (gather (inj add1))) xs) (map add1 xs))
+  ;; 3.2：flat-map = (flip choose/k)（空列表、重复项与零结果分支）
+  (for* ([fn (list f g h)]
+         [p* (list '() '(1 1 2) xs)])
+    (check-equal? ((flat-map fn) p*) ((choose/k p*) fn))))
 
 ;; between 与 inclusive-range 互为对方搬过来的样子
 (for* ([lo (in-range 1 5)] [hi (in-range 0 7)])
