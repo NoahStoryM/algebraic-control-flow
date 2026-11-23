@@ -126,11 +126,11 @@
 
 第一行每走通一次交出一个 @racket[z]，第二行把这些 @racket[z] 收成一张列表，第三行的 @racket[x] 与 @racket[z] 都是@tech{关系}的位置，调用交出的是@tech{目标}。三种都是复合，中间的 @racket[y] 在前两行由绑定命名，在第三行由 @racket[∃] 造出。
 
-有了复合，自然要问：接上一张什么样的表，遮住中间一列后会把原来的表完整留下？这就是 @racket[∘ᵒ] 的@defterm[#:en "unit"]{单位}，正如函数的复合 @racket[∘] 有恒等函数 @racket[id]，@racket[∘ℒ] 有 @racket[(λ (x) (list x))]。
+有了复合，自然要问它的@tech{单位}。@xref["05:compose"]{「二元关系的复合」}里，这张@tech{单位}表已经有了两种现成的宿主写法：恒等函数 @racket[id] 与二元@tech{谓词} @racket[equal?]。把它们翻进关系语言，手头的两个包装够不够用？
 
 @section[#:tag "05:unify-step"]{合一}
 
-@xref["05:relation"]{「关系」}写过纯函数对应的表 @math{{(a, b) | b = f(a)}}。把 @math{f} 换成恒等函数 @racket[id]，得到一张每个值都和自己配成一行的表：接在任一端，新增的中间值必须等于对应的外列值，遮掉中间一列后外两列照旧。照着这个式子，用 @racket[function->relation] 包装 @racket[id]：
+先试从函数出发，用 @racket[function->relation] 包装 @racket[id]：
 
 @examples[#:eval ev-comp #:label #f
 (define idᵒ (function->relation id))
@@ -142,11 +142,7 @@
 @examples[#:eval ev-comp #:label #f
 (eval:error (run* (x y) (∧ (idᵒ x y) (idᵒ y 5))))]
 
-@racket[id] 分输入输出，把原式化简再看：
-
-@mm{{(a, b) | b = id(a)} = {(a, b) | b = a}}
-
-这张表其实只是在说两列相等。试着改用 @racket[predicate->relation] 包装二元@tech{谓词} @racket[equal?]：
+再试它对应的@tech{谓词}，用 @racket[predicate->relation] 包装 @racket[equal?]：
 
 @examples[#:eval ev-comp #:label #f
 (define equalᵒ (predicate->relation equal?))
