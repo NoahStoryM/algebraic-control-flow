@@ -27,6 +27,7 @@
 (define ∘ℬ ∘)
 (define (list->amb v*) (for/amb ([v (in-list v*)]) v))
 (struct var ([name : Symbol]) #:type-name Var #:transparent)
+(define (var=? u v) (eq? u v))
 (define empty-s '())
 (define (size-s s) (length s))
 (define (ext-s x t s) (cons (cons x t) s))
@@ -35,7 +36,7 @@
   (if p (walk (cdr p) s) t))
 (define (unify u v s)
   (let ([u (walk u s)] [v (walk v s)])
-    (cond [(and (var? u) (eq? u v)) s]
+    (cond [(and (var? u) (var? v) (var=? u v)) s]
           [(var? u) (ext-s u v s)]
           [(var? v) (ext-s v u s)]
           [(and (pair? u) (pair? v))

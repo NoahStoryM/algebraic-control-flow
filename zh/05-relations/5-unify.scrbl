@@ -45,6 +45,7 @@
 (define pick-a (match-λ [(list l   h) (list (between l h)   h)]))
 (define pick-b (match-λ [(list a   h) (list a (between a h) h)]))
 (struct var ([name : Symbol]) #:type-name Var #:transparent)
+(define (var=? u v) (eq? u v))
 (define empty-s '())
 (define (ext-s x t s) (cons (cons x t) s))
 (define (value-of t s)
@@ -177,6 +178,7 @@
 (define ∘ℬ ∘)
 (define (list->amb v*) (for/amb ([v (in-list v*)]) v))
 (struct var ([name : Symbol]) #:type-name Var #:transparent)
+(define (var=? u v) (eq? u v))
 (define empty-s '())
 (define (ext-s x t s) (cons (cons x t) s))
 (define (value-of t s)
@@ -219,7 +221,7 @@
 (: unify (→ Term Term Substitution Substitution))
 (define (unify u v s)
   (let ([u (walk u s)] [v (walk v s)])
-    (cond [(and (var? u) (eq? u v)) s]
+    (cond [(and (var? u) (var? v) (var=? u v)) s]
           [(var? u) (ext-s u v s)]
           [(var? v) (ext-s v u s)]
           [(and (pair? u) (pair? v))

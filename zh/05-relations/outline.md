@@ -121,10 +121,10 @@
 
 - 问题：回答 4.1 结尾的两个问题，从类型的角度把语言核心逼出来。
 - 造与认：
-  - **未知项**：`var`（带 `#:type-name Var`），演示按身份区分（`eq?`）。
+  - **未知项**：`var`（带 `#:type-name Var`）与 `var=?`，演示按身份区分。
   - **项、代换与查表**：`Literal`、`Data`、`Term`、`Substitution`（`(Dictionary Var Term)`）、`empty-s`、`size-s`、`ext-s`（默认键为尚未绑定的 `Var`）；只查一次表的 `(: value-of (→ Term Substitution Term))`（用 `assq` 按身份查键），运行成功与报错两例。
   - **目标、`run*` 与关系类型**：从 `run*` 两头先认出中间是 `→ℒ`（代换之间的二元关系），换用同构的 `→ℬ` 定义 `(define-type Goal (→ℬ Substitution Substitution))`（旁注：纯 `→ℒ` 与 `∘ℒ` 写法），直接写出 `run*` 宏；由 `(run* (x ...) g)` 里 `g : Goal` 推出 `∧ : (→ Goal ... Goal)`，进而逼出带 `ᵒ` 后缀的关系类型为 `(→ Term ... Goal)`，与谓词 `(→ Data ... Boolean)` 并排对照（谓词等一行填齐才检查，关系可以先收下含未知项的项、交出目标逐步扩充代换）。
-- 名字：**未知项**、`Data`、**项**（term）、**代换**（substitution）、`empty-s`、`size-s`、`ext-s`、**目标**（goal）、`value-of`。
+- 名字：**未知项**、`var=?`、`Data`、**项**（term）、**代换**（substitution）、`empty-s`、`size-s`、`ext-s`、**目标**（goal）、`value-of`。
 
 ### 4.3 跑起来
 
@@ -195,4 +195,4 @@
 - 收正文造出的库代码，不收例子（直角三角形、`appendᵒ`）：
   - `amb` 一族：`choose`、`amb`、`for/amb`、`for*/amb`、`in-amb`、`check`；
   - 关系的两种写法：`→𝒞`、`→ℬ`、`→ℒ`、`inj`、`∘ℬ`、`list->amb`、`scatter`、`gather`、`∘ℒ`、`flat-map`；
-  - 关系语言：`var`、`Literal`、`Data`、`Term`、`Substitution`、`Goal`、`empty-s`、`size-s`、`walk`、`walk*`、`occurs?`、`ext-s`、`unify`、`value-of`、`reify`、`⊤`、`⊥`、`≡`、`∧`、`∨`、`∃`、`run`、`run*`、`fresh`、`condᵉ`、`function->relation`、`predicate->relation`、`idᵒ`、`∘ᵒ`（多参数 `case-λ` 版）。
+  - 关系语言：`var`、`var=?`、`Literal`、`Data`、`Term`、`Substitution`、`Goal`、`empty-s`、`size-s`、`walk`、`walk*`、`occurs?`、`ext-s`、`unify`、`value-of`、`reify`、`⊤`、`⊥`、`≡`、`∧`、`∨`、`∃`、`run`、`run*`、`fresh`、`condᵉ`、`function->relation`、`predicate->relation`、`idᵒ`、`∘ᵒ`（多参数 `case-λ` 版）。

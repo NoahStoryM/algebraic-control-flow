@@ -63,6 +63,8 @@
 
 (define-type (Dictionary k v) (Listof (Pair k v)))
 (struct var ([name : Symbol]) #:type-name Var #:transparent)
+(: var=? (→ Var Var Boolean))
+(define (var=? u v) (eq? u v))
 (define-type Literal (∪ Boolean Number Char Bytes String Keyword Null Symbol))
 (define-type Data (∪ Literal (Pair Data Data)))
 (define-type Term (∪ Literal Var (Pair Term Term)))
@@ -88,7 +90,7 @@
 (: occurs? (→ Var Term Substitution Boolean))
 (define (occurs? x t s)
   (let ([t (walk t s)])
-    (cond [(var? t) (eq? x t)]
+    (cond [(var? t) (var=? x t)]
           [(pair? t) (or (occurs? x (car t) s) (occurs? x (cdr t) s))]
           [else #f])))
 
@@ -100,7 +102,7 @@
 (: unify (→ Term Term Substitution Substitution))
 (define (unify u v s)
   (let ([u (walk u s)] [v (walk v s)])
-    (cond [(and (var? u) (eq? u v)) s]
+    (cond [(and (var? u) (var? v) (var=? u v)) s]
           [(var? u) (ext-s u v s)]
           [(var? v) (ext-s v u s)]
           [(and (pair? u) (pair? v))

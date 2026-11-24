@@ -1,6 +1,20 @@
 (((define ((∘ℒ g* ... f) . x*)
   (foldr append-map (apply f x*) g*))
 "参数表 g* ... f 是示意写法，Racket 的剩余参数只能放在最后；code.rkt 用 split-at-right 取出最右边的箭头")
+ ((: var=? (→ Var Var Boolean))
+"4.2 与附录参考 microKanren 引入 var=? 判断未知项身份相等")
+ ((define (var=? u v) (eq? u v))
+"4.2 与附录参考 microKanren 引入 var=? 判断未知项身份相等")
+ ((define (unify u v s)
+  (let ([u (walk u s)] [v (walk v s)])
+    (cond [(and (var? u) (var? v) (var=? u v)) s]
+          [(var? u) (ext-s u v s)]
+          [(var? v) (ext-s v u s)]
+          [(and (pair? u) (pair? v))
+           (unify (cdr u) (cdr v) (unify (car u) (car v) s))]
+          [(equal? u v) s]
+          [else (amb)])))
+"5.3 与附录的 unify 使用 var=? 判断两未知项相同")
  ((: empty-s Substitution)
 "4.2 与附录用 empty-s 表示空代换，避免正文裸写 '()")
  ((define empty-s '())

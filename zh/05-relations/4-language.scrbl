@@ -62,14 +62,17 @@
 (define-type (→ℬ p ... q) (→ p ... q))
 (define ∘ℬ ∘)]
 @examples[#:eval ev-goals #:no-result
-(struct var ([name : Symbol]) #:type-name Var #:transparent)]
+(struct var ([name : Symbol]) #:type-name Var #:transparent)
 
-@racket[var] 里的符号只用来打印，分辨@tech{未知项}靠的是身份。两次调用 @racket[(var 'a)] 印出来一模一样，却是两个不同的@tech{未知项}；只有同一次造出的才是同一个：
+(: var=? (→ Var Var Boolean))
+(define (var=? u v) (eq? u v))]
+
+@racket[var] 里的符号只用来打印，分辨@tech{未知项}靠的是身份（@racket[var=?]）。两次调用 @racket[(var 'a)] 印出来一模一样，却是两个不同的@tech{未知项}；只有同一次造出的才是同一个：
 
 @examples[#:eval ev-goals #:label #f
 (define a (var 'a))
-(eq? (var 'a) (var 'a))
-(eq? a a)]
+(var=? (var 'a) (var 'a))
+(var=? a a)]
 
 不含@tech{未知项}的值由数这样的字面量和序对组成，记作 @racket[Data]；添上@tech{未知项} @racket[Var]，合起来叫@defterm[#:en "term"]{项}。@tech{未知项}的值，Racket 不再替我们记，得自己记一张字典：键是@tech{未知项}，值是它对应的@tech{项}（眼下记的都是数）。照着这张字典可以把@tech{未知项}换成它的值，所以叫@defterm[#:en "substitution"]{代换}：
 
