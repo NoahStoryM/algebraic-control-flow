@@ -66,9 +66,10 @@
 (: occurs? (→ Var Term Substitution Boolean))
 (define (occurs? x t s)
   (let ([t (walk t s)])
-    (cond [(var? t) (var=? x t)]
-          [(pair? t) (or (occurs? x (car t) s) (occurs? x (cdr t) s))]
-          [else #f])))
+    (cond
+      [(var? t) (var=? x t)]
+      [(pair? t) (or (occurs? x (car t) s) (occurs? x (cdr t) s))]
+      [else #f])))
 
 (: ext-s (→ Var Term Substitution Substitution))
 (define (ext-s x t s)
@@ -78,13 +79,14 @@
 (: unify (→ Term Term Substitution Substitution))
 (define (unify u v s)
   (let ([u (walk u s)] [v (walk v s)])
-    (cond [(and (var? u) (var? v) (var=? u v)) s]
-          [(var? u) (ext-s u v s)]
-          [(var? v) (ext-s v u s)]
-          [(and (pair? u) (pair? v))
-           (unify (cdr u) (cdr v) (unify (car u) (car v) s))]
-          [(equal? u v) s]
-          [else (amb)])))
+    (cond
+      [(and (var? u) (var? v) (var=? u v)) s]
+      [(var? u) (ext-s u v s)]
+      [(var? v) (ext-s v u s)]
+      [(and (pair? u) (pair? v))
+       (unify (cdr u) (cdr v) (unify (car u) (car v) s))]
+      [(equal? u v) s]
+      [else (amb)])))
 
 (: reify-name (→ Natural Symbol))
 (define (reify-name n)

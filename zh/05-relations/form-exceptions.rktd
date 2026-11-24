@@ -34,9 +34,9 @@
 "6.3 与附录为 ⊥ 提供 miniKanren 常用表面名字 fail")
  ((define (appendᵒ l t out)
   (condᵉ
-   [(≡ l '()) (≡ t out)]
-   [(fresh (a d res)
-      (≡ l (cons a d))
-      (≡ out (cons a res))
-      (appendᵒ d t res))]))
+    [(≡ l '()) (≡ t out)]
+    [(fresh (a d res)
+       (≡ l (cons a d))
+       (≡ out (cons a res))
+       (appendᵒ d t res))]))
 "6.3 用 run/fresh/condᵉ 重写 appendᵒ 展示表面语法"))
