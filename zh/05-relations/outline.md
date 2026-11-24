@@ -182,7 +182,7 @@
 - 认（揭晓）：六个记号（`≡`、`∧`、`∨`、`∃`、`⊤`、`⊥`）与不到一百行的骨架正是 **microKanren**，加上 `run`、`fresh`、`condᵉ` 三层语法正是**关系式编程**（**逻辑式编程**的一个分支）语言 **miniKanren** 的极小内核，未知项在那里叫**逻辑变量**（旁注：与常见流实现的差异）。
 - 名字：`run`、`fresh`、`condᵉ`、`succeed`、`fail`、**关系式编程**（relational programming）、**逻辑式编程**（logic programming）、**逻辑变量**（logic variable）、microKanren、miniKanren。
 
-## 7 结论（`8-conclusion.scrbl`）
+## 7 结论（`7-conclusion.scrbl`）
 
 - 复盘整章路线：表 → `amb`（ℬ）与 `append-map`（ℒ）→ 关系式编程（用 ℬ 的箭头造出的语言，但描述的东西不再是函数）。
 - 点题「平行世界」：搜索里同时展开的许多条时间线，也是 ℬ、ℒ 与关系语言这几种写法。
@@ -190,7 +190,7 @@
   1. 1.1 缓存的 `set!` 与本章未知项按身份区分的新名字都超出了纯函数范围，纯宿主里状态和新身份从哪里来？
   2. 第二章的 `𝒟`/`𝒦` 与本章的 `ℬ`/`ℒ` 走的是同一条路（换箭头、配复合、配绑定写法），背后是否藏着同一个结构？
 
-## 附录：库代码（`9-appendix.scrbl`）
+## 附录：库代码（`8-appendix.scrbl`）
 
 - 分为两部分，只收核心库代码（不收例子与过渡用宿主包装）：
   - **amb**：`choose`、`amb`、`for/amb`、`for*/amb`、`in-amb`、`check`、`list->amb`；

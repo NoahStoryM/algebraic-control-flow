@@ -19,5 +19,5 @@
 @include-section["4-language.scrbl"]
 @include-section["5-unify.scrbl"]
 @include-section["6-append.scrbl"]
-@include-section["8-conclusion.scrbl"]
-@include-section["9-appendix.scrbl"]
+@include-section["7-conclusion.scrbl"]
+@include-section["8-appendix.scrbl"]
