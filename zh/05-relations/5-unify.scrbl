@@ -215,7 +215,7 @@
 @examples[#:eval ev-unify #:label #f
 (walk x s)]
 
-添一行也不能照旧了。比如表里已经记着 @racket[x] 等于 5，再来一行等式说 @racket[x] 等于 6，直接添上，@racket[x] 就占了两行；等式要是写成 6 等于 @racket[x]，键还成了一个数。添之前，两边都要先顺着表查到底，再对称地比：有一边是@tech{未知项}，就添上一行；两边都是序对，逐个去对；否则相等才走得通：
+添一行也不能照旧了。比如表里已经记着 @racket[x] 等于 5，再来一行等式说 @racket[x] 等于 6，直接添上，@racket[x] 就占了两行；等式要是写成 6 等于 @racket[x]，键还成了一个数。添之前，两边都要先顺着表查到底，再对称地比：是同一个@tech{未知项}就原样交回；有一边是@tech{未知项}，就添上一行；否则两边按这版 @racket[Term] 的定义都是完整的 @racket[Data]，用 @racket[equal?] 相等才走得通：
 
 @examples[#:eval ev-unify #:no-result
 (: unify (→ Term Term Substitution Substitution))
@@ -224,21 +224,17 @@
     (cond [(and (var? u) (var? v) (var=? u v)) s]
           [(var? u) (ext-s u v s)]
           [(var? v) (ext-s v u s)]
-          [(and (pair? u) (pair? v))
-           (unify (cdr u) (cdr v) (unify (car u) (car v) s))]
           [(equal? u v) s]
           [else (amb)])))]
 
 试三组不同的情况：
 
 @examples[#:eval ev-unify #:label #f
-(define a (var 'a))
-(define b (var 'b))
 (in-amb (unify x y empty-s))
-(in-amb (unify (list a 2) (list 1 b) empty-s))
+(in-amb (unify 5 x empty-s))
 (in-amb (unify 6 x (ext-s x 5 empty-s)))]
 
-头一例两边都不知道，添的一行记着 @racket[x] 等于 @racket[y]。第二例是两张各缺一个元素的列表，逐个去对，@racket[a] 对上 1，@racket[b] 对上 2：两边都从对面得到了自己缺的那个值。把它和前面用过的 @racket[match-λ] 对照：那里用一个带空位的模式去匹配给定的值；这里两边都能留空位，任一边遇到还没绑定的@tech{未知项}，都用 @racket[ext-s] 把它和对面那一项记成等式，相当于双向的模式匹配。第三例里 @racket[x] 查到 5，与 6 对不上，这条时间线走不通，@racket[in-amb] 一张@tech{代换}也没有收到。
+头一例两边都不知道，添的一行记着 @racket[x] 等于 @racket[y]。第二例把数写在左边、@tech{未知项}写在右边，照样添上 @racket[x] 等于 5。第三例里 @racket[x] 查到 5，与 6 对不上，这条时间线走不通，@racket[in-amb] 一张@tech{代换}也没有收到。
 
 让两个项相等，必要时往@tech{代换}里添一行，这件事叫@defterm[#:en "unification"]{合一}。添之前先用 @racket[walk] 查到底，交给 @racket[ext-s] 的总是一个还没在表里的@tech{未知项}，所以键不会重复。@tech{代换}也跟着变了样：一行记的不再是某个@tech{未知项}的值，而是一条等式。
 
@@ -248,15 +244,15 @@
 (: ≡ (→ Term Term Goal))
 (define ((≡ u v) s) (unify u v s))]
 
-@racket[value-of] 也改成顺着查，遇到序对就两边各读；走到头还剩@tech{未知项}就报错，所以它交出的都是不含@tech{未知项}的 @racket[Data]：
+@racket[value-of] 也改成顺着查：查到底还是@tech{未知项}就报错；按这版 @racket[Term] 的定义，不是@tech{未知项}就已经是完整的 @racket[Data]，可以直接交回：
 
 @examples[#:eval ev-unify #:no-result
 (: value-of (→ Term Substitution Data))
 (define (value-of t s)
   (let ([t (walk t s)])
-    (cond [(var? t) (error 'value-of "~a 的值还不知道" (var-name t))]
-          [(pair? t) (cons (value-of (car t) s) (value-of (cdr t) s))]
-          [else t])))]
+    (if (var? t)
+        (error 'value-of "~a 的值还不知道" (var-name t))
+        t)))]
 
 重跑刚才卡住的等式，再顺带试两组：
 

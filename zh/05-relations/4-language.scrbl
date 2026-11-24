@@ -74,12 +74,12 @@
 (var=? (var 'a) (var 'a))
 (var=? a a)]
 
-不含@tech{未知项}的值由数这样的字面量和序对组成，记作 @racket[Data]；添上@tech{未知项} @racket[Var]，合起来叫@defterm[#:en "term"]{项}。@tech{未知项}的值，Racket 不再替我们记，得自己记一张字典：键是@tech{未知项}，值是它对应的@tech{项}（眼下记的都是数）。照着这张字典可以把@tech{未知项}换成它的值，所以叫@defterm[#:en "substitution"]{代换}：
+不含@tech{未知项}的值由数这样的字面量和序对组成，记作 @racket[Data]；一个@defterm[#:en "term"]{项}眼下要么是已经完整的值 @racket[Data]，要么是一个@tech{未知项} @racket[Var]。@tech{未知项}的值，Racket 不再替我们记，得自己记一张字典：键是@tech{未知项}，值是它对应的@tech{项}。照着这张字典可以把@tech{未知项}换成它的值，所以叫@defterm[#:en "substitution"]{代换}：
 
 @examples[#:eval ev-goals #:no-result
 (define-type Literal (∪ Boolean Number Char Bytes String Keyword Null Symbol))
 (define-type Data (∪ Literal (Pair Data Data)))
-(define-type Term (∪ Literal Var (Pair Term Term)))
+(define-type Term (∪ Data Var))
 (define-type Substitution (Dictionary Var Term))]
 
 什么都还不知道时，手里是一张空的@tech{代换} @racket[empty-s]；数清@tech{代换}里记了多少条记录用 @racket[size-s]；给@tech{代换}添一条记录用 @racket[ext-s]，它只负责往表头添上一项，前提是键 @racket[x] 是尚未绑定的@tech{未知项}。读值用 @racket[value-of]：不是@tech{未知项}就原样交回；是@tech{未知项}，就用按身份比较的 @racket[assq] 去表里查，查不到就报错。
