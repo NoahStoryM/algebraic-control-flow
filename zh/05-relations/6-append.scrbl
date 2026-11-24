@@ -208,6 +208,8 @@
 
 到这里，这门语言里的三种运算和它们的@tech{单位}都齐了：在@tech{代换}层，@tech{合取} @racket[∧] 的@tech{单位}是 @racket[⊤]，@tech{析取} @racket[∨] 的@tech{单位}是 @racket[⊥]；在@tech{关系}层，按外面两列的解看，@tech{二元关系}复合 @racket[∘ᵒ] 的@tech{单位}正是@tech{合一} @racket[≡]（@tech{合一}可能往@tech{代换}里添等式，@racket[⊤] 总是原样交回）。
 
-@margin-note{常见的 miniKanren 实现不用 @racket[amb]，而是把备选结果写成惰性流并交替推进（interleaving），从而能处理无穷多个答案；这里借 @racket[amb] 搭建的内核保留了相同的六记号骨架，也直白地对应到全篇的非确定性计算。}
+我们为了把@tech{关系}直接写下来，一步步添上了 @racket[≡]、@racket[∧]、@racket[∨]、@racket[∃] 和两个@tech{单位} @racket[⊤]、@racket[⊥]，再包上 @racket[run]、@racket[fresh]、@racket[condᵉ] 这层语法。整个语言实现不到一百行，这就是本章用有限搜索搭出来的一个 microKanren 内核，上面那层语法正是@defterm[#:en "relational programming"]{关系式编程}（@defterm[#:en "logic programming"]{逻辑式编程}的一个分支）语言 miniKanren 的极小内核。
 
-这六个记号 @racket[≡]、@racket[∧]、@racket[∨]、@racket[∃]、@racket[⊤]、@racket[⊥] 与不到一百行的骨架，正是 @defterm{microKanren}；在它上面添上 @racket[run]、@racket[fresh]、@racket[condᵉ] 三层语法，就是@defterm[#:en "relational programming"]{关系式编程}（@defterm[#:en "logic programming"]{逻辑式编程}的一个分支）语言 @defterm{miniKanren} 的极小内核，前面叫@tech{未知项}的东西在那里叫@defterm[#:en "logic variable"]{逻辑变量}。它不是凭空发明的魔法，只是把这一章写过的不确定计算 @racket[amb]、字典@tech{代换}与@tech{合一}拼在一起，就能让一段关系描述既能正算、也能反查，还能答出还没完全定下来的结果。
+@margin-note{和常见的实现相比，还有几处不同：@tech{未知项}按身份区分，不编号；@tech{合取}是直接复合，何时推迟一步计算、怎样取用答案，写法也不一样，交出答案的顺序因此可能不同。}
+
+在那里，@tech{未知项}叫@defterm[#:en "logic variable"]{逻辑变量}，底层的六个记号常写作 @racket[==]、@racket[conj]、@racket[disj]、@racket[fresh]、@racket[succeed]、@racket[fail]。常见的实现用流来@tech{回溯}，@tech{目标}交出一串@tech{代换}，@tech{合取}与@tech{析取}都要自己写出怎样接、怎样并。这里用 @racket[amb] @tech{回溯}，@racket[∧] 就是 ℬ 的复合，@racket[∨] 就是 @racket[amb]，这两样都是现成的；剩下要写的，主要是@tech{合一}。
