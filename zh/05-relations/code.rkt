@@ -1780,7 +1780,7 @@
   (struct var ([name : Symbol]) #:type-name Var #:transparent)          ; 未知项：按身份区分，名字只用来打印
   (define-type Literal (∪ Boolean Number Char Bytes String Keyword Null Symbol))
   (define-type Data (∪ Literal (Pair Data Data)))
-  (define-type Term (∪ Literal Var (Pair Term Term)))
+  (define-type Term (∪ Data Var))
   (define-type Substitution (Dictionary Var Term))
 
   (: var=? (→ Var Var Boolean))
@@ -1915,7 +1915,37 @@
   (define equalᵒ (predicate->relation equal?))
   (check-equal? (run* () (equalᵒ 5 5)) '(()))
   (check-exn #rx"y 的值还不知道" (λ () (run* (y) (equalᵒ 5 y))))
-  (check-exn #rx"x 的值还不知道" (λ () (run* (x) (equalᵒ x 5)))))
+  (check-exn #rx"x 的值还不知道" (λ () (run* (x) (equalᵒ x 5))))
+  ;; 5.3 平坦项阶段的 walk、unify 与 value-of（6.1 写 appendᵒ 时再扩成递归 Term）
+  (let ()
+    (: walk (→ Term Substitution Term))
+    (define (walk t s)
+      (define p (and (var? t) (assq t s)))
+      (if p (walk (cdr p) s) t))
+    (: unify (→ Term Term Substitution Substitution))
+    (define (unify u v s)
+      (let ([u (walk u s)] [v (walk v s)])
+        (cond [(and (var? u) (var? v) (var=? u v)) s]
+              [(var? u) (ext-s u v s)]
+              [(var? v) (ext-s v u s)]
+              [(equal? u v) s]
+              [else (amb)])))
+    (: value-of (→ Term Substitution Data))
+    (define (value-of t s)
+      (let ([t (walk t s)])
+        (if (var? t)
+            (error 'value-of "~a 的值还不知道" (var-name t))
+            t)))
+    (define x (var 'x))
+    (define y (var 'y))
+    (define a (var 'a))
+    (define d (var 'd))
+    (check-equal? (in-amb (unify x y empty-s)) (list (list (cons (var 'x) (var 'y)))))
+    (check-equal? (in-amb (unify 5 x empty-s)) (list (list (cons (var 'x) 5))))
+    (check-equal? (in-amb (unify 6 x (ext-s x 5 empty-s))) '())
+    (check-equal? (in-amb (unify '(1 2) (cons a d) empty-s)) '())
+    (check-equal? (value-of x (ext-s x y (ext-s y 5 empty-s))) 5)
+    (check-exn #rx"x 的值还不知道" (λ () (value-of x empty-s)))))
 
 ;;; ═══════════════════════════════════════════════════════════════════
 ;;; §10 后半（11/21 改线）：未知项、代换与目标；合一；关系的世界 ℛ
@@ -1996,8 +2026,11 @@
             [else (amb)])))
 
   ;; 〔正文·交互〕合一：两边各从对面得到缺的一项；对不上就走不通
+  (check-equal? (let ([a (var 'a)] [d (var 'd)])
+                  (in-amb (unify '(1 2) (cons a d) empty-s)))
+                (list (list (cons (var 'd) '(2)) (cons (var 'a) 1))))
   (check-equal? (let ([a (var 'a)] [b (var 'b)])
-                  (in-amb (unify (list a 2) (list 1 b) '())))
+                  (in-amb (unify (list a 2) (list 1 b) empty-s)))
                 (list (list (cons (var 'b) 2) (cons (var 'a) 1))))
   (check-equal? (let ([a (var 'a)]) (in-amb (unify (list a 2) (list 1 3) '()))) '())
 
