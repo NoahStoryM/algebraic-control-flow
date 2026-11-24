@@ -148,7 +148,7 @@
 (define-syntax-rule (fresh (x ...) g ...)
   (∃ (x ...) (∧ g ...)))
 
-(define-syntax-rule (conde [g ...] ...)
+(define-syntax-rule (condᵉ [g ...] ...)
   (∨ (∧ g ...) ...))
 
 (: function->relation (∀ (a ... b) (→ (→ℬ a ... b) (→ Term ... Term Goal))))

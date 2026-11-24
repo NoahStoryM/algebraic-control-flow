@@ -18,17 +18,17 @@
         (in-amb (reify (walk* (list x ...) ((∧ g ...) '())))))
       (if limit (take ans* (min limit (length ans*))) ans*))))
 "6.3 与附录引入标准 (run n ...) 表面语法")
- ((define-syntax-rule (conde [g ...] ...)
+ ((define-syntax-rule (condᵉ [g ...] ...)
   (∨ (∧ g ...) ...))
 "6.3 与附录展示 miniKanren 表面语法糖")
  ((define-syntax-rule (fresh (x ...) g ...)
   (∃ (x ...) (∧ g ...)))
 "6.3 与附录借 ∃ 定义自动合取的 fresh 语法糖")
  ((define (appendᵒ l t out)
-  (conde
+  (condᵉ
    [(≡ l '()) (≡ t out)]
    [(fresh (a d res)
       (≡ l (cons a d))
       (≡ out (cons a res))
       (appendᵒ d t res))]))
-"6.3 用 run/fresh/conde 重写 appendᵒ 展示表面语法"))
+"6.3 用 run/fresh/condᵉ 重写 appendᵒ 展示表面语法"))
