@@ -38,12 +38,11 @@
   (if p (walk (cdr p) s) t))
 (define (unify u v s)
   (let ([u (walk u s)] [v (walk v s)])
-    (cond
-      [(and (var? u) (var? v) (var=? u v)) s]
-      [(var? u) (ext-s u v s)]
-      [(var? v) (ext-s v u s)]
-      [(equal? u v) s]
-      [else (amb)])))
+    (cond [(and (var? u) (var? v) (var=? u v)) s]
+          [(var? u) (ext-s u v s)]
+          [(var? v) (ext-s v u s)]
+          [(equal? u v) s]
+          [else (amb)])))
 (define (value-of t s)
   (let ([t (walk t s)])
     (if (var? t)
@@ -78,14 +77,13 @@
 (: unify (→ Term Term Substitution Substitution))
 (define (unify u v s)
   (let ([u (walk u s)] [v (walk v s)])
-    (cond
-      [(and (var? u) (var? v) (var=? u v)) s]
-      [(var? u) (ext-s u v s)]
-      [(var? v) (ext-s v u s)]
-      [(and (pair? u) (pair? v))
-       (unify (cdr u) (cdr v) (unify (car u) (car v) s))]
-      [(equal? u v) s]
-      [else (amb)])))]
+    (cond [(and (var? u) (var? v) (var=? u v)) s]
+          [(var? u) (ext-s u v s)]
+          [(var? v) (ext-s v u s)]
+          [(and (pair? u) (pair? v))
+           (unify (cdr u) (cdr v) (unify (car u) (car v) s))]
+          [(equal? u v) s]
+          [else (amb)])))]
 
 再试一次，顺带拿两张各缺一个元素的列表试一试：
 
@@ -118,10 +116,9 @@
 (: value-of (→ Term Substitution Data))
 (define (value-of t s)
   (let ([t (walk t s)])
-    (cond
-      [(var? t) (error 'value-of "~a 的值还不知道" (var-name t))]
-      [(pair? t) (cons (value-of (car t) s) (value-of (cdr t) s))]
-      [else t])))]
+    (cond [(var? t) (error 'value-of "~a 的值还不知道" (var-name t))]
+          [(pair? t) (cons (value-of (car t) s) (value-of (cdr t) s))]
+          [else t])))]
 
 再正着问，就和 @racket[append] 一样了：
 
@@ -146,17 +143,36 @@
 
 之前的 @racket[walk] 顺着@tech{代换}走到头时，遇到未绑定的@tech{未知项}本来就已经原样交回、不再报错；只是序对内部还可能藏着@tech{未知项}。再写一层 @racket[walk*]，顺着@tech{代换}递归展开每个序对，保留还自由的@tech{未知项}：
 
-@margin-note{这里假设项里没有循环；像 @racket[(≡ x (cons 1 x))] 这样的循环等式需要在添等式前拦截，@xref["05:appendix"]{附录}里的 @racket[occurs?] 与 @racket[ext-s] 补上了这一步。}
-
 @examples[#:eval ev-append #:no-result
 (: walk* (→ Term Substitution Term))
 (define (walk* t s)
   (let ([t (walk t s)])
     (if (pair? t) (cons (walk* (car t) s) (walk* (cdr t) s)) t)))]
 
-最后还需要 @racket[reify]（实现细节见@xref["05:appendix"]{附录}）：@racket[(reify v)] 收下要读出的整行项 @racket[v]（例如 @racket[(list x ...)]），交出一个从@tech{代换}读出答案的函数；它内部先用 @racket[walk*] 展开 @racket[v]，再按出现顺序把还自由的@tech{未知项}统一写成 @tt{_.0}、@tt{_.1}，既不泄露内部身份，又能保住同一未知项在不同位置上的共享关系。把整行一起交出去看结果：
+@racket[walk*] 会顺着@tech{代换}一直往序对里面展开。要是表里记进一条循环等式，比如 @racket[(≡ x (cons 1 x))]，@racket[walk*] 展开 @racket[x] 时就会停不下来。避免循环的办法是在 @racket[ext-s] 添记录前先查一遍 @racket[x] 有没有已经出现在 @racket[t] 里，有就放弃当前支路：
 
-@examples[#:eval ev-append #:hidden
+@examples[#:eval ev-append #:no-result
+(: occurs? (→ Var Term Substitution Boolean))
+(define (occurs? x t s)
+  (let ([t (walk t s)])
+    (cond [(var? t) (var=? x t)]
+          [(pair? t) (or (occurs? x (car t) s) (occurs? x (cdr t) s))]
+          [else #f])))
+
+(: ext-s (→ Var Term Substitution Substitution))
+(define (ext-s x t s)
+  (when (occurs? x t s) (amb))
+  (cons (cons x t) s))]
+
+试一下循环等式，这条支路在添进@tech{代换}前就被拦住了：
+
+@examples[#:eval ev-append #:label #f
+(let ([x (var 'x)])
+  (in-amb ((≡ x (cons 1 x)) empty-s)))]
+
+最后还需要 @racket[reify]：@racket[(reify v)] 收下要读出的整行项 @racket[v]（例如 @racket[(list x ...)]），交出一个从@tech{代换}读出答案的函数。它内部先用 @racket[walk*] 把能展开的都展开，再用同一套@tech{代换}机制走一遍 @racket[reify-s]，借 @racket[size-s] 按出现顺序把还自由的@tech{未知项}依次记成 @tt{_.0}、@tt{_.1}，最后再做一次 @racket[walk*] 替换掉，既不泄露内部身份，又能保住同一未知项在不同位置上的共享关系：
+
+@examples[#:eval ev-append #:no-result
 (: reify-name (→ Natural Symbol))
 (define (reify-name n)
   (string->symbol (format "_.~a" n)))
@@ -174,6 +190,8 @@
   (let* ([v (walk* v s)]
          [r (reify-s v empty-s)])
     (walk* v r)))]
+
+把整行一起交出去看结果：
 @examples[#:eval ev-append #:label #f
 (let ([x (var 'x)] [y (var 'y)])
   (in-amb ((reify (list x y)) ((appendᵒ '(1) x y) empty-s))))
