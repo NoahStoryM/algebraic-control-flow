@@ -242,7 +242,7 @@
 
 让两个项相等，必要时往@tech{代换}里添一行，这件事叫@defterm[#:en "unification"]{合一}。添之前先用 @racket[walk] 查到底，交给 @racket[ext-s] 的总是一个还没在表里的@tech{未知项}，所以键不会重复。@tech{代换}也跟着变了样：一行记的不再是某个@tech{未知项}的值，而是一条等式。
 
-把@tech{合一}本身做成一个@tech{关系}：@racket[(≡ u v)] 说的是两个项相等，交出的@tech{目标}让它们@tech{合一}。
+把@tech{合一}本身柯里化成@tech{关系}：@racket[unify] 收两个@tech{项}和一张@tech{代换}，交出新的@tech{代换}；把@tech{代换}留到后面收，得到的 @racket[(≡ u v)] 说的是两个项相等，交出的@tech{目标}让它们@tech{合一}。
 
 @examples[#:eval ev-unify #:no-result
 (: ≡ (→ Term Term Goal))
@@ -292,7 +292,7 @@
 
 头一例里 3 明明不在 1 到 2 之间，却跟着出来了，2 还出了两次：第二行直接把新的一行盖在了前面。第二例更怪，@tech{代换}的键成了数 2。
 
-像上一节那样先手写 @racket[betweenᵒ]，把原先的直接添一行换成与交出的值@tech{合一}：没有值就添一行，有值就成了核对：
+像上一节那样先手写 @racket[betweenᵒ]，只需把原先的 @racket[ext-s] 换成 @racket[unify]：没有值就添一行，有值就成了核对：
 
 @examples[#:eval ev-unify #:no-result
 (define ((betweenᵒ l h a) s)
@@ -305,7 +305,7 @@
 (run* () (betweenᵒ 1 3 2))
 (run* () (betweenᵒ 1 3 5))]
 
-把这一步放进 @racket[function->relation]：
+把这一步放进 @racket[function->relation]，两版之间同样只差把 @racket[ext-s] 换成 @racket[unify]：输入端继续用 @racket[value-of] 读出宿主函数要用的值，输出端交给 @racket[unify] 既能添记录也能核对。对照前面，极简版 @racket[(function->relation id)] 展开后不过是对输入先做 @racket[value-of]、再把 @racket[ext-s] 柯里化成@tech{目标}；拿掉 @racket[value-of]，再把单向的 @racket[ext-s] 升级成双向的 @racket[unify] 柯里化，就得到了真正对称的 @racket[≡]：
 
 @examples[#:eval ev-unify #:no-result
 (: function->relation (∀ (a ... b) (→ (→ℬ a ... b) (→ Term ... Term Goal))))
