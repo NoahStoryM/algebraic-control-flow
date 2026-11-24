@@ -151,25 +151,33 @@
   (let ([t (walk t s)])
     (if (pair? t) (cons (walk* (car t) s) (walk* (cdr t) s)) t)))]
 
-最后还需要 @racket[reify]（实现细节见@xref["05:appendix"]{附录}）：它收下 @racket[walk*] 展开后的整行结果 @racket[(walk* (list x ...) s)]，按出现顺序把还自由的@tech{未知项}统一写成 @tt{_.0}、@tt{_.1}，既不泄露内部身份，又能保住同一未知项在不同位置上的共享关系。把整行一起交出去看结果：
+最后还需要 @racket[reify]（实现细节见@xref["05:appendix"]{附录}）：@racket[(reify v)] 收下要读出的整行项 @racket[v]（例如 @racket[(list x ...)]），交出一个从@tech{代换}读出答案的函数；它内部先用 @racket[walk*] 展开 @racket[v]，再按出现顺序把还自由的@tech{未知项}统一写成 @tt{_.0}、@tt{_.1}，既不泄露内部身份，又能保住同一未知项在不同位置上的共享关系。把整行一起交出去看结果：
 
 @examples[#:eval ev-append #:hidden
-(: reify (→ Term Data))
-(define (reify t)
-  (define (name-unknowns t s)
-    (let ([t (walk t s)])
-      (cond [(var? t)
-             (cons (cons t (string->symbol (format "_.~a" (size-s s)))) s)]
-            [(pair? t) (name-unknowns (cdr t) (name-unknowns (car t) s))]
-            [else s])))
-  (walk* t (name-unknowns t empty-s)))]
+(: reify-name (→ Natural Symbol))
+(define (reify-name n)
+  (string->symbol (format "_.~a" n)))
+
+(: reify-s (→ Term Substitution Substitution))
+(define (reify-s v r)
+  (let ([v (walk v r)])
+    (cond
+      [(var? v) (ext-s v (reify-name (size-s r)) r)]
+      [(pair? v) (reify-s (cdr v) (reify-s (car v) r))]
+      [else r])))
+
+(: reify (→ Term (→ Substitution Term)))
+(define ((reify v) s)
+  (let* ([v (walk* v s)]
+         [r (reify-s v empty-s)])
+    (walk* v r)))]
 @examples[#:eval ev-append #:label #f
 (let ([x (var 'x)] [y (var 'y)])
-  (in-amb (reify (walk* (list x y) ((appendᵒ '(1) x y) empty-s)))))
+  (in-amb ((reify (list x y)) ((appendᵒ '(1) x y) empty-s))))
 (let ([x (var 'x)] [y (var 'y)])
-  (in-amb (reify (walk* (list x y) ((≡ x y) empty-s)))))]
+  (in-amb ((reify (list x y)) ((≡ x y) empty-s))))]
 
-第一行交出的 @racket['((_.0 (1 . _.0)))]，表示只要第二个位置是在第一个位置前面加上 @racket[1]，任何值都成立；第二行交出的 @racket['((_.0 _.0))]，正是两个自由却必须相等的位置。宿主包装里的 @racket[value-of] 仍负责读出函数与@tech{谓词}必须拿到的具体实参，出口处读答案的工作则可以完全交给 @racket[walk*] 与 @racket[reify]。
+第一行交出的 @racket['((_.0 (1 . _.0)))]，表示只要第二个位置是在第一个位置前面加上 @racket[1]，任何值都成立；第二行交出的 @racket['((_.0 _.0))]，正是两个自由却必须相等的位置。宿主包装里的 @racket[value-of] 仍负责读出函数与@tech{谓词}必须拿到的具体实参，出口处读答案的工作则可以完全交给 @racket[reify]。
 
 @section[#:tag "05:minikanren"]{语法糖与内核}
 
@@ -182,7 +190,7 @@
   (let ([limit n])
     (let ([x (var 'x)] ...)
       (define ans*
-        (in-amb (reify (walk* (list x ...) ((∧ g ...) empty-s)))))
+        (in-amb ((reify (list x ...)) ((∧ g ...) empty-s))))
       (if limit (take ans* (min limit (length ans*))) ans*))))
 
 (define-syntax-rule (fresh (x ...) g ...)

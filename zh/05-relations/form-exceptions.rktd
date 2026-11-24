@@ -15,7 +15,7 @@
   (let ([limit n])
     (let ([x (var 'x)] ...)
       (define ans*
-        (in-amb (reify (walk* (list x ...) ((∧ g ...) empty-s)))))
+        (in-amb ((reify (list x ...)) ((∧ g ...) empty-s))))
       (if limit (take ans* (min limit (length ans*))) ans*))))
 "6.3 与附录引入标准 (run n ...) 表面语法")
  ((define-syntax-rule (condᵉ [g ...] ...)

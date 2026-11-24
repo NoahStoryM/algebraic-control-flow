@@ -86,15 +86,23 @@
           [(equal? u v) s]
           [else (amb)])))
 
-(: reify (→ Term Data))
-(define (reify t)
-  (define (name-unknowns t s)
-    (let ([t (walk t s)])
-      (cond [(var? t)
-             (cons (cons t (string->symbol (format "_.~a" (size-s s)))) s)]
-            [(pair? t) (name-unknowns (cdr t) (name-unknowns (car t) s))]
-            [else s])))
-  (walk* t (name-unknowns t empty-s)))
+(: reify-name (→ Natural Symbol))
+(define (reify-name n)
+  (string->symbol (format "_.~a" n)))
+
+(: reify-s (→ Term Substitution Substitution))
+(define (reify-s v r)
+  (let ([v (walk v r)])
+    (cond
+      [(var? v) (ext-s v (reify-name (size-s r)) r)]
+      [(pair? v) (reify-s (cdr v) (reify-s (car v) r))]
+      [else r])))
+
+(: reify (→ Term (→ Substitution Term)))
+(define ((reify v) s)
+  (let* ([v (walk* v s)]
+         [r (reify-s v empty-s)])
+    (walk* v r)))
 
 ;; 核心组合子
 
@@ -120,7 +128,7 @@
   (let ([limit n])
     (let ([x (var 'x)] ...)
       (define ans*
-        (in-amb (reify (walk* (list x ...) ((∧ g ...) empty-s)))))
+        (in-amb ((reify (list x ...)) ((∧ g ...) empty-s))))
       (if limit (take ans* (min limit (length ans*))) ans*))))
 
 (define-syntax-rule (run* (x ...) g ...)

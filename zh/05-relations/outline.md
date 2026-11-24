@@ -172,7 +172,7 @@
 ### 6.2 未定下来的答案
 
 - 问题：只给左表 `(run* (x y) (appendᵒ '(1) x y))`，旧 `run*` 在 `value-of` 处报错；这一支其实走通了，代换记着 `y = (cons 1 x)`，只是还没把 `x` 填定。回指 4.2 的类型对照，部分确定的答案也应该读得出来。
-- 造与认：写出递归展开序对的 `walk*`（旁注：循环检查 `occurs?` / `ext-s` 在附录），说明 `reify` 把整行结果 `(walk* (list x ...) s)` 里的自由未知项统一重命名为 `_.0`、`_.1`（细节见附录）；实测 `appendᵒ` 与 `(≡ x y)` 得出 `((_.0 (1 . _.0)))` 与 `((_.0 _.0))`。
+- 造与认：写出递归展开序对的 `walk*`（旁注：循环检查 `occurs?` / `ext-s` 在附录），说明 `(reify v)` 内部先 `walk*` 再用 `reify-s`/`reify-name` 把自由未知项统一重命名为 `_.0`、`_.1`（细节见附录）；实测 `appendᵒ` 与 `(≡ x y)` 得出 `((_.0 (1 . _.0)))` 与 `((_.0 _.0))`。
 - 名字：`walk*`、`reify`。
 
 ### 6.3 语法糖与内核
@@ -194,4 +194,4 @@
 
 - 分为两部分，只收核心库代码（不收例子与过渡用宿主包装）：
   - **amb**：`choose`、`amb`、`for/amb`、`for*/amb`、`in-amb`、`check`、`list->amb`；
-  - **miniKanren**：`var`、`var=?`、`Literal`、`Data`、`Term`、`Substitution`、`Goal`、`empty-s`、`size-s`、`walk`、`walk*`、`occurs?`、`ext-s`、`unify`、`reify`、`⊤`、`⊥`、`≡`、`∧`、`∨`、`∃`、`run`、`run*`、`fresh`、`condᵉ`、`succeed`、`fail`。
+  - **miniKanren**：`var`、`var=?`、`Literal`、`Data`、`Term`、`Substitution`、`Goal`、`empty-s`、`size-s`、`walk`、`walk*`、`occurs?`、`ext-s`、`unify`、`reify-name`、`reify-s`、`reify`、`⊤`、`⊥`、`≡`、`∧`、`∨`、`∃`、`run`、`run*`、`fresh`、`condᵉ`、`succeed`、`fail`。
