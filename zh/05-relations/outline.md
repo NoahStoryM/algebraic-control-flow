@@ -147,7 +147,7 @@
 ### 5.2 藏起中间一列
 
 - 问题：另一个方向：让中间一列只参与求解、不出现在答案里（回指 3.1 `pick-a` / `pick-b` 的三列表与集合复合公式 `{(x, z) | ∃y, (x, y) ∈ P ∧ (y, z) ∈ Q}`）。
-- 造：先写出二元关系复合 `(: ∘ᵒ (→ (→ Term Term Goal) (→ Term Term Goal) (→ Term Term Goal)))`（多参数版本留作练习与附录），再造出局部未知项宏 `(∃ (x ...) g)`，跑 `(run* (z) ((∘ᵒ pick-bᵒ pick-aᵒ) '(1 2) z))` 找回原三列表最右一列的三行。
+- 造：先写出二元关系复合 `(: ∘ᵒ (→ (→ Term Term Goal) (→ Term Term Goal) (→ Term Term Goal)))`（多参数版本留作练习），再造出局部未知项宏 `(∃ (x ...) g)`，跑 `(run* (z) ((∘ᵒ pick-bᵒ pick-aᵒ) '(1 2) z))` 找回原三列表最右一列的三行。
 - 认：并排三种箭头的复合与绑定写法（`let*`/`∘ℬ`、`for*/list`/`∘ℒ`、`∃`+`∧`/`∘ᵒ`）；提出 `∘ᵒ` 的单位问题（3.2 里 ℬ 复合的单位是 `id` 与 `equal?`，放在关系语言里是什么）。
 - 名字：`∃`、`∘ᵒ`。
 
@@ -194,4 +194,4 @@
 
 - 分为两部分，只收核心库代码（不收例子与过渡用宿主包装）：
   - **amb**：`choose`、`amb`、`for/amb`、`for*/amb`、`in-amb`、`check`、`list->amb`；
-  - **miniKanren**：`var`、`var=?`、`Literal`、`Data`、`Term`、`Substitution`、`Goal`、`empty-s`、`size-s`、`walk`、`walk*`、`occurs?`、`ext-s`、`unify`、`reify`、`⊤`、`⊥`、`≡`、`∧`、`∨`、`∃`、`run`、`run*`、`fresh`、`condᵉ`、`succeed`、`fail`、`idᵒ`、`∘ᵒ`（多参数 `case-λ` 版）。
+  - **miniKanren**：`var`、`var=?`、`Literal`、`Data`、`Term`、`Substitution`、`Goal`、`empty-s`、`size-s`、`walk`、`walk*`、`occurs?`、`ext-s`、`unify`、`reify`、`⊤`、`⊥`、`≡`、`∧`、`∨`、`∃`、`run`、`run*`、`fresh`、`condᵉ`、`succeed`、`fail`。

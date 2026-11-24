@@ -4,7 +4,7 @@
 
 这里把这一章造出的两块核心代码分别收在一起：第一部分是@tech{不确定运算符} @racket[amb]，第二部分是建在它之上的 @racket[miniKanren] 核心（补上了添等式前检查循环的 @racket[occurs?] 与 @racket[ext-s]，见@xref["05:reify"]{「未定下来的答案」}的旁注，并把 @racket[run*] 定义为 @racket[run] 的语法糖；@tt{_.0} 是沿用惯例的显示记号，若项里本来就含有符号 @racket['_.0]，读出后会撞名）。直角三角形、@racket[appendᵒ] 以及过渡用的宿主包装函数都不收在这里。
 
-@section[#:tag "05:appendix-amb"]{amb}
+第一部分是 @racket[amb]（保存为 @tt{amb.rkt}）：
 
 @codeblock|{
 #lang typed/racket/no-check
@@ -29,9 +29,7 @@
 (define (list->amb v*) (for/amb ([v (in-list v*)]) v))
 }|
 
-@section[#:tag "05:appendix-minikanren"]{miniKanren}
-
-下面的核心假设已引入上面的 @racket[amb] 模块：
+第二部分是建在它之上的 @racket[miniKanren] 核心（引入上面的 @tt{amb.rkt}）：
 
 @codeblock|{
 #lang typed/racket/no-check
@@ -138,20 +136,6 @@
 (: fail Goal)
 (define succeed ⊤)
 (define fail ⊥)
-
-;; 关系的复合与单位
-
-(: idᵒ (→ Term Term Goal))
-(define idᵒ ≡)
-
-(: ∘ᵒ (→ (→ Term Term Goal) ... (→ Term Term Goal)))
-(define ∘ᵒ
-  (case-λ
-    [() idᵒ]
-    [(Pᵒ) Pᵒ]
-    [(Qᵒ . Pᵒ*)
-     (define Pᵒ (apply ∘ᵒ Pᵒ*))
-     (λ (x z) (∃ (y) (∧ (Pᵒ x y) (Qᵒ y z))))]))
 }|
 
 本章的 @racket[in-amb] 一次算完并交出整张列表，只处理有限搜索；如果想在 Racket 里使用带@tech{惰性}序列与公平搜索的完整实现，可以参考 @hyperlink["https://github.com/NoahStoryM/amb"]{amb}（提供@tech{惰性}的 @racket[in-amb] 与可暂停的搜索）以及建在它之上的 @hyperlink["https://github.com/NoahStoryM/ambKanren"]{ambKanren}。
