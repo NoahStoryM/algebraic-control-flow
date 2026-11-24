@@ -27,14 +27,16 @@
 (define ∘ℬ ∘)
 (define (list->amb v*) (for/amb ([v (in-list v*)]) v))
 (struct var ([name : Symbol]) #:type-name Var #:transparent)
+(define empty-s '())
+(define (ext-s x t s) (cons (cons x t) s))
 (define (walk t s)
   (define p (and (var? t) (assq t s)))
   (if p (walk (cdr p) s) t))
 (define (unify u v s)
   (let ([u (walk u s)] [v (walk v s)])
     (cond [(and (var? u) (eq? u v)) s]
-          [(var? u) (cons (cons u v) s)]
-          [(var? v) (cons (cons v u) s)]
+          [(var? u) (ext-s u v s)]
+          [(var? v) (ext-s v u s)]
           [(and (pair? u) (pair? v))
            (unify (cdr u) (cdr v) (unify (car u) (car v) s))]
           [(equal? u v) s]
@@ -54,7 +56,7 @@
 (define-syntax-rule (run* (x ...) g)
   (let ([x (var 'x)] ...)
     (in-amb
-     (let ([s (g '())])
+     (let ([s (g empty-s)])
        (list (value-of x s) ...)))))]
 @examples[#:eval ev-append #:no-result
 (define (appendᵒ l t out)
@@ -78,14 +80,14 @@
 
 四种拆法都找到了。定义 @racket[appendᵒ] 的时候，没有哪一行写过「拆」：每一行都是等式，没有哪个位置是输入，哪个是输出。这是@tech{关系}不分输入输出的样子。
 
-@section[#:tag "05:reify"]{开放世界与未定下来的答案}
+@section[#:tag "05:reify"]{未定下来的答案}
 
 如果只给左边这一张 @racket['(1)]，另外两个位置能看出什么？用现在的 @racket[run*] 问一下：
 
 @examples[#:eval ev-append #:label #f
 (eval:error (run* (x y) (appendᵒ '(1) x y)))]
 
-程序又停在了 @racket[value-of] 那里。@racket[⊥] 一张@tech{代换}也没交出来；这次这一支已经走通了，我们已经有了一张@tech{代换}，知道 @racket[y] 必须等于 @racket[(cons 1 x)]，但 @racket[x] 仍然可以取不同的值。这样的答案也应该读得出来。
+程序又停在了 @racket[value-of] 那里。@racket[⊥] 一张@tech{代换}也没交出来；这次这一支已经走通了，我们已经有了一张@tech{代换}，知道 @racket[y] 必须等于 @racket[(cons 1 x)]，但 @racket[x] 仍然可以取不同的值。一开始的@tech{谓词}要等一行填好才检查；现在我们虽还没把 @racket[x] 填定，却已经知道 @racket[y] 的尾部就是 @racket[x]，这样的答案也应该读得出来。
 
 之前的 @racket[walk] 顺着@tech{代换}走到头时，遇到未绑定的@tech{未知项}本来就已经原样交回、不再报错；只是序对内部还可能藏着@tech{未知项}。再写一层 @racket[walk*]，顺着@tech{代换}递归展开每个序对，保留还自由的@tech{未知项}：
 
@@ -111,9 +113,9 @@
   (walk* t (name-unknowns t '())))]
 @examples[#:eval ev-append #:label #f
 (let ([x (var 'x)] [y (var 'y)])
-  (in-amb (reify (walk* (list x y) ((appendᵒ '(1) x y) '())))))
+  (in-amb (reify (walk* (list x y) ((appendᵒ '(1) x y) empty-s)))))
 (let ([x (var 'x)] [y (var 'y)])
-  (in-amb (reify (walk* (list x y) ((≡ x y) '())))))]
+  (in-amb (reify (walk* (list x y) ((≡ x y) empty-s)))))]
 
 第一行交出的 @racket['((_.0 (1 . _.0)))]，表示只要第二个位置是在第一个位置前面加上 @racket[1]，任何值都成立；第二行交出的 @racket['((_.0 _.0))]，正是两个自由却必须相等的位置。宿主包装里的 @racket[value-of] 仍负责读出函数与@tech{谓词}必须拿到的具体实参，出口处读答案的工作则可以完全交给 @racket[walk*] 与 @racket[reify]。
 
@@ -128,7 +130,7 @@
   (let ([limit n])
     (let ([x (var 'x)] ...)
       (define ans*
-        (in-amb (reify (walk* (list x ...) ((∧ g ...) '())))))
+        (in-amb (reify (walk* (list x ...) ((∧ g ...) empty-s)))))
       (if limit (take ans* (min limit (length ans*))) ans*))))
 
 (define-syntax-rule (fresh (x ...) g ...)

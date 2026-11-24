@@ -45,6 +45,8 @@
 (define pick-a (match-λ [(list l   h) (list (between l h)   h)]))
 (define pick-b (match-λ [(list a   h) (list a (between a h) h)]))
 (struct var ([name : Symbol]) #:type-name Var #:transparent)
+(define empty-s '())
+(define (ext-s x t s) (cons (cons x t) s))
 (define (value-of t s)
   (cond [(not (var? t)) t]
         [(assq t s) => cdr]
@@ -52,14 +54,14 @@
 (define (∧ . g*) (apply ∘ℬ (reverse g*)))
 (define (((function->relation f) . t*) s)
   (define-values (in* out*) (split-at-right t* 1))
-  (cons (cons (car out*) (apply f (for/list ([t in*]) (value-of t s)))) s))
+  (ext-s (car out*) (apply f (for/list ([t in*]) (value-of t s))) s))
 (define (((predicate->relation p?) . t*) s)
   (check (apply p? (for/list ([t t*]) (value-of t s))))
   s)
 (define-syntax-rule (run* (x ...) g)
   (let ([x (var 'x)] ...)
     (in-amb
-     (let ([s (g '())])
+     (let ([s (g empty-s)])
        (list (value-of x s) ...)))))]
 @examples[#:eval ev-comp #:no-result
 (: ⊤ Goal)
@@ -175,6 +177,8 @@
 (define ∘ℬ ∘)
 (define (list->amb v*) (for/amb ([v (in-list v*)]) v))
 (struct var ([name : Symbol]) #:type-name Var #:transparent)
+(define empty-s '())
+(define (ext-s x t s) (cons (cons x t) s))
 (define (value-of t s)
   (cond [(not (var? t)) t]
         [(assq t s) => cdr]
@@ -188,12 +192,12 @@
 (define-syntax-rule (run* (x ...) g)
   (let ([x (var 'x)] ...)
     (in-amb
-     (let ([s (g '())])
+     (let ([s (g empty-s)])
        (list (value-of x s) ...)))))]
 @examples[#:eval ev-unify #:label #f
 (define x (var 'x))
 (define y (var 'y))
-(define s (list (cons x y) (cons y 5)))
+(define s (ext-s x y (ext-s y 5 empty-s)))
 (value-of x s)]
 
 表记下来了，值却读不对。@racket[x] 对着 @racket[y]，@racket[value-of] 只查了一次，交出的是一个@tech{未知项}；可 @racket[y] 的值，表里明明有。值可以是另一个@tech{未知项}的时候，查表要顺着查下去，查到一个不在表里的项为止：
@@ -216,8 +220,8 @@
 (define (unify u v s)
   (let ([u (walk u s)] [v (walk v s)])
     (cond [(and (var? u) (eq? u v)) s]
-          [(var? u) (cons (cons u v) s)]
-          [(var? v) (cons (cons v u) s)]
+          [(var? u) (ext-s u v s)]
+          [(var? v) (ext-s v u s)]
           [(and (pair? u) (pair? v))
            (unify (cdr u) (cdr v) (unify (car u) (car v) s))]
           [(equal? u v) s]
@@ -228,13 +232,13 @@
 @examples[#:eval ev-unify #:label #f
 (define a (var 'a))
 (define b (var 'b))
-(in-amb (unify x y '()))
-(in-amb (unify (list a 2) (list 1 b) '()))
-(in-amb (unify 6 x (list (cons x 5))))]
+(in-amb (unify x y empty-s))
+(in-amb (unify (list a 2) (list 1 b) empty-s))
+(in-amb (unify 6 x (ext-s x 5 empty-s)))]
 
-头一例两边都不知道，添的一行记着 @racket[x] 等于 @racket[y]。第二例是两张各缺一个元素的列表，逐个去对，@racket[a] 对上 1，@racket[b] 对上 2：两边都从对面得到了自己缺的那个值。第三例里 @racket[x] 查到 5，与 6 对不上，这条时间线走不通，@racket[in-amb] 一张@tech{代换}也没有收到。
+头一例两边都不知道，添的一行记着 @racket[x] 等于 @racket[y]。第二例是两张各缺一个元素的列表，逐个去对，@racket[a] 对上 1，@racket[b] 对上 2：两边都从对面得到了自己缺的那个值。把它和前面用过的 @racket[match-λ] 对照：那里用一个带空位的模式去匹配给定的值；这里两边都能留空位，任一边遇到还没绑定的@tech{未知项}，都用 @racket[ext-s] 把它和对面那一项记成等式，相当于双向的模式匹配。第三例里 @racket[x] 查到 5，与 6 对不上，这条时间线走不通，@racket[in-amb] 一张@tech{代换}也没有收到。
 
-让两个项相等，必要时往@tech{代换}里添一行，这件事叫@defterm[#:en "unification"]{合一}。添的总是一个还没在表里的@tech{未知项}，所以键不会重复。@tech{代换}也跟着变了样：一行记的不再是某个@tech{未知项}的值，而是一条等式。
+让两个项相等，必要时往@tech{代换}里添一行，这件事叫@defterm[#:en "unification"]{合一}。添之前先用 @racket[walk] 查到底，交给 @racket[ext-s] 的总是一个还没在表里的@tech{未知项}，所以键不会重复。@tech{代换}也跟着变了样：一行记的不再是某个@tech{未知项}的值，而是一条等式。
 
 把@tech{合一}本身做成一个@tech{关系}：@racket[(≡ u v)] 说的是两个项相等，交出的@tech{目标}让它们@tech{合一}。
 
@@ -273,16 +277,16 @@
 
 把相等接在 @racket[Pᵒ] 的后面，条件是「存在 @racket[y]，@racket[(Pᵒ x y)] 成立，而且 @racket[y] 等于 @racket[z]」，遮掉中间一列恰好就是 @racket[(Pᵒ x z)]；接在前面同理。只看外面两列允许哪些取值，@racket[≡] 就是@tech{二元关系}复合的@tech{单位}。实际求解还要照书写顺序运行，借来的@tech{谓词}仍然要求参数先有值。
 
-顺手回头修好 @racket[function->relation]：它原先默认最后一个位置永远是还没值的@tech{未知项}，直接往@tech{代换}里添一行。要是同一个@tech{未知项}出现在两行的最后一列，比如找同时在 1 到 2 之间、又在 2 到 3 之间的数，或者干脆在最后一列填进一个已知的数，直接添一行就坏了：
+顺手回头修好 @racket[function->relation]：它原先靠调用者保证最后一个位置永远是尚未绑定的@tech{未知项}，直接交给 @racket[ext-s] 添一行。要是同一个@tech{未知项}出现在两行的最后一列（比如找同时在 1 到 2 之间、又在 2 到 3 之间的数），或者干脆在最后一列填进一个已知的数，就越过了 @racket[ext-s] 的前提，直接添一行就坏了：
 
 @examples[#:eval ev-unify #:hidden
 (define (((function->relation f) . t*) s)
   (define-values (in* out*) (split-at-right t* 1))
-  (cons (cons (car out*) (apply f (for/list ([t in*]) (value-of t s)))) s))
+  (ext-s (car out*) (apply f (for/list ([t in*]) (value-of t s))) s))
 (define betweenᵒ (function->relation between))]
 @examples[#:eval ev-unify #:label #f
 (run* (a) (∧ (betweenᵒ 1 2 a) (betweenᵒ 2 3 a)))
-(in-amb ((betweenᵒ 1 3 2) '()))]
+(in-amb ((betweenᵒ 1 3 2) empty-s))]
 
 头一例里 3 明明不在 1 到 2 之间，却跟着出来了，2 还出了两次：第二行直接把新的一行盖在了前面。第二例更怪，@tech{代换}的键成了数 2。
 

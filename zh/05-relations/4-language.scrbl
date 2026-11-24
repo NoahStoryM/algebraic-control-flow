@@ -79,9 +79,15 @@
 (define-type Term (∪ Literal Var (Pair Term Term)))
 (define-type Substitution (Dictionary Var Term))]
 
-用 @racket[value-of] 从@tech{代换}里读出一个@tech{项}的值：不是@tech{未知项}，原样交回；是@tech{未知项}，就用按身份比较的 @racket[assq] 去表里查，查不到就报错。
+什么都还不知道时，手里是一张空的@tech{代换} @racket[empty-s]。给@tech{代换}添一条记录用 @racket[ext-s]：它只负责往表头添上一项，前提是键 @racket[x] 是尚未绑定的@tech{未知项}。读值用 @racket[value-of]：不是@tech{未知项}就原样交回；是@tech{未知项}，就用按身份比较的 @racket[assq] 去表里查，查不到就报错。
 
 @examples[#:eval ev-goals #:no-result
+(: empty-s Substitution)
+(define empty-s '())
+
+(: ext-s (→ Var Term Substitution Substitution))
+(define (ext-s x t s) (cons (cons x t) s))
+
 (: value-of (→ Term Substitution Term))
 (define (value-of t s)
   (cond [(not (var? t)) t]
@@ -92,7 +98,7 @@
 
 @examples[#:eval ev-goals #:label #f
 (define b (var 'b))
-(define s (list (cons a 3)))
+(define s (ext-s a 3 empty-s))
 (value-of 5 s)
 (value-of a s)
 (eval:error (value-of b s))]
@@ -114,7 +120,7 @@
 (define-syntax-rule (run* (x ...) g)
   (let ([x (var 'x)] ...)
     (in-amb
-     (let ([s (g '())])
+     (let ([s (g empty-s)])
        (list (value-of x s) ...)))))]
 
 在 @racket[(run* (x ...) g)] 里，@racket[g] 是 @racket[Goal] 类型的表达式。开头的伪代码里，填在这个位置的是 @racket[∧]，所以@tech{合取} @racket[∧] 的返回类型就是 @racket[Goal]；它把几条同类的条件合成一条，参数类型与返回类型一致，因此每个参数也都是 @racket[Goal]，类型是 @racket[(→ Goal ... Goal)]。
@@ -125,7 +131,7 @@
 (: pyth? (→ ℕ⁺   ℕ⁺   ℕ⁺   Boolean))
 (: pythᵒ (→ Term Term Term Goal))]
 
-一般地，@tech{谓词}（也就是@tech{特征函数}）的类型是 @racket[(→ Data ... Boolean)]，收下数据，回答是或否；这门语言里的@tech{关系}类型是 @racket[(→ Term ... Goal)]，收下@tech{项}，交出一个@tech{目标}，回答的是「从收到的@tech{代换}出发，哪些@tech{代换}走得通」。为免混淆，下文的「关系」专指 @racket[betweenᵒ]、@racket[pythᵒ] 这一种，说的是数据之间的事；@tech{代换}之间的那一种就叫@tech{目标}。
+一般地，@tech{谓词}（也就是@tech{特征函数}）的类型是 @racket[(→ Data ... Boolean)]，等一行的值都给齐了才检查；这门语言里的@tech{关系}类型是 @racket[(→ Term ... Goal)]，可以先收下含@tech{未知项}的@tech{项}，交出的@tech{目标}再从已有@tech{代换}出发，把求得的信息交给下一步。为免混淆，下文的「关系」专指 @racket[betweenᵒ]、@racket[pythᵒ] 这一种，说的是数据之间的事；@tech{代换}之间的那一种就叫@tech{目标}。
 
 @section[#:tag "05:run"]{跑起来}
 
@@ -133,7 +139,7 @@
 
 @examples[#:eval ev-goals #:no-result
 (define ((betweenᵒ l h a) s)
-  `([,a . ,(between (value-of l s) (value-of h s))] . ,s))
+  (ext-s a (between (value-of l s) (value-of h s)) s))
 
 (define ((pythᵒ a b c) s)
   (check (pyth? (value-of a s) (value-of b s) (value-of c s)))
@@ -142,7 +148,7 @@
 先单独试一试 @racket[betweenᵒ]，从空的@tech{代换}开始运行：
 
 @examples[#:eval ev-goals #:label #f
-(in-amb ((betweenᵒ 1 3 a) '()))]
+(in-amb ((betweenᵒ 1 3 a) empty-s))]
 
 @racket[(betweenᵒ 1 3 a)] 交出的是个普通的函数，收一张@tech{代换}，交出一张。可 @racket[between] 返回了三次，它也就交出了三张，各记着 @racket[a] 等于其中一个数。把它交给 @racket[run*]：
 
@@ -182,7 +188,7 @@
 (: function->relation (∀ (a ... b) (→ (→ℬ a ... b) (→ Term ... Term Goal))))
 (define (((function->relation f) . t*) s)
   (define-values (in* out*) (split-at-right t* 1))
-  (cons (cons (car out*) (apply f (for/list ([t in*]) (value-of t s)))) s))
+  (ext-s (car out*) (apply f (for/list ([t in*]) (value-of t s))) s))
 
 (: predicate->relation (∀ (a ...) (→ (→ a ... Boolean) (→ Term ... Goal))))
 (define (((predicate->relation p?) . t*) s)
