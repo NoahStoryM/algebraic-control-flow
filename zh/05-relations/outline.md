@@ -2,7 +2,7 @@
 
 记录正文现在怎么走，不记论证，不抄代码。每节只写三样：回应什么问题，造了什么、认出了什么，第一次出现的名字。改叙事的 PR 先改这里，再改正文；只改措辞的 PR 不用动它。
 
-> **现状（11/24 定稿，正文、附录与 code.rkt 已按此版同步）**：全章分为上下两半。上半部（1–3 节）从搜索表出发，经 `amb` 走到 `𝒞`、`ℬ`、`ℒ` 三种箭头，在 3.4 以 `flat-map`（`(flip choose/k)`） 和 `𝒞 ──inj──→ ℬ ⇄ ℒ ──flat-map──→ 𝒞` 方形图表收尾（外圈绕回 `map`），为第六章抽象通用结构铺路。下半部（4–6 节）进入「关系式编程」：4.2 建未知项、平坦版 `Term`（`(∪ Data Var)`）、代换（`empty-s`/`size-s`/`ext-s`/`value-of`）与目标，类型对照处埋下「谓词等一行填齐才检查、关系先收下含未知项的项」伏笔；4.3 用 `∧`、`run*` 与两个包装跑通开头伪代码；5.1 从 `run* ()` 切入零列的表 `{()}`/`{}` 认出 `⊤`/`⊥` 并由 `⊥` 反推 `∨`；5.2 藏起 3.1 三列表的中间列引出 `∘ᵒ` 与 `∃`；5.3 借 `id` 与 `equal?` 碰壁引出平坦版合一 `≡` 与读值并修好 `function->relation`；6 独立成节，6.1 写 `appendᵒ` 时按需扩充递归版 `Term`、序对合一（对照 `match-λ` 点出双向模式匹配）与递归读值，6.2 由未定下来的答案引出 `walk*`/`reify` 并回指 4.2，6.3 补全 `run`/`fresh`/`condᵉ` 收束三大运算与单位，揭晓 microKanren / miniKanren。
+> **现状（11/24 定稿，正文、附录与 code.rkt 已按此版同步）**：全章分为上下两半。上半部（1–3 节）从搜索表出发，经 `amb` 走到 `𝒞`、`ℬ`、`ℒ` 三种箭头，在 3.4 以 `flat-map`（`(flip choose/k)`） 和 `𝒞 ──inj──→ ℬ ⇄ ℒ ──flat-map──→ 𝒞` 方形图表收尾（外圈绕回 `map`），为第六章抽象通用结构铺路。下半部（4–6 节）进入「关系式编程」：4.2 建未知项、平坦版 `Term`（`(∪ Data Var)`）、代换（`empty-s`/`size-s`/`ext-s`/`value-of`）与目标，类型对照处埋下「谓词等一行填齐才检查、关系先收下含未知项的项」伏笔；4.3 用 `∧`、`run*` 与两个包装跑通开头伪代码；5.1 从 `run* ()` 切入零列的表 `{()}`/`{}` 认出 `⊤`/`⊥` 并由 `⊥` 反推 `∨`；5.2 藏起 3.1 三列表的中间列引出 `∘ᵒ` 与 `∃`；5.3 借 `id` 与 `equal?` 碰壁引出平坦版合一 `≡` 与读值并修好 `function->relation`；6 独立成节，6.1 写 `appendᵒ` 时按需扩充递归版 `Term`、序对合一（对照 `match-λ` 点出双向模式匹配）与递归读值，6.2 由未定下来的答案引出 `walk*`/`reify` 并回指 4.2，6.3 补全 `run`/`fresh`/`condᵉ`/`succeed`/`fail` 收束三大运算与单位，揭晓 microKanren / miniKanren。
 
 标题：歧路何从：表里的平行世界
 
@@ -147,7 +147,7 @@
 ### 5.2 藏起中间一列
 
 - 问题：另一个方向：让中间一列只参与求解、不出现在答案里（回指 3.1 `pick-a` / `pick-b` 的三列表与集合复合公式 `{(x, z) | ∃y, (x, y) ∈ P ∧ (y, z) ∈ Q}`）。
-- 造：先写出二元关系复合 `(: ∘ᵒ (→ (→ Term Term Goal) (→ Term Term Goal) (→ Term Term Goal)))`（多参数版本留作练习与附录），再造出局部未知项宏 `(∃ (x ...) g)`，跑 `(run* (z) ((∘ᵒ pick-bᵒ pick-aᵒ) '(1 2) z))` 找回原三列表最右一列的三行。
+- 造：先写出二元关系复合 `(: ∘ᵒ (→ (→ Term Term Goal) (→ Term Term Goal) (→ Term Term Goal)))`（多参数版本留作练习），再造出局部未知项宏 `(∃ (x ...) g)`，跑 `(run* (z) ((∘ᵒ pick-bᵒ pick-aᵒ) '(1 2) z))` 找回原三列表最右一列的三行。
 - 认：并排三种箭头的复合与绑定写法（`let*`/`∘ℬ`、`for*/list`/`∘ℒ`、`∃`+`∧`/`∘ᵒ`）；提出 `∘ᵒ` 的单位问题（3.2 里 ℬ 复合的单位是 `id` 与 `equal?`，放在关系语言里是什么）。
 - 名字：`∃`、`∘ᵒ`。
 
@@ -172,17 +172,17 @@
 ### 6.2 未定下来的答案
 
 - 问题：只给左表 `(run* (x y) (appendᵒ '(1) x y))`，旧 `run*` 在 `value-of` 处报错；这一支其实走通了，代换记着 `y = (cons 1 x)`，只是还没把 `x` 填定。回指 4.2 的类型对照，部分确定的答案也应该读得出来。
-- 造与认：写出递归展开序对的 `walk*`（旁注：循环检查 `occurs?` / `ext-s` 在附录），说明 `reify` 把整行结果 `(walk* (list x ...) s)` 里的自由未知项统一重命名为 `_.0`、`_.1`（细节见附录）；实测 `appendᵒ` 与 `(≡ x y)` 得出 `((_.0 (1 . _.0)))` 与 `((_.0 _.0))`。
-- 名字：`walk*`、`reify`。
+- 造与认：写出递归展开序对的 `walk*`；为防 `(≡ x (cons 1 x))` 让 `walk*` 死循环，补上 `occurs?` 与带检查的 `ext-s`；再写出 `reify-name`、`reify-s` 与 `(reify v)`（用同一套代换与 `size-s` 把自由未知项按序重命名为 `_.0`、`_.1`）；实测 `appendᵒ` 与 `(≡ x y)` 得出 `((_.0 (1 . _.0)))` 与 `((_.0 _.0))`。
+- 名字：`walk*`、`occurs?`、`reify-name`、`reify-s`、`reify`。
 
 ### 6.3 语法糖与内核
 
-- 造：结合 5.4 的多条条件与 `appendᵒ` 里的重复 `∧`，引入标准 `(run n (x ...) g ...)`（收进 `reify`、`walk*` 与自动合取，避免重定义 `run*`；附录补上 `run*` 语法糖）、`fresh` 和 `condᵉ`，重写 `appendᵒ` 并试跑 `run 2` / `run #f`。
+- 造：结合 5.4 的多条条件与 `appendᵒ` 里的重复 `∧`，引入标准 `(run n (x ...) g ...)`（收进 `reify`、`walk*` 与自动合取，避免重定义 `run*`；附录补上 `run*` 语法糖）、`fresh`、`condᵉ` 与 `succeed`/`fail`，重写 `appendᵒ` 并试跑 `run 2` / `run #f`。
 - 认：合拢代换层（`∧`/`⊤`、`∨`/`⊥`）与关系层（`∘ᵒ`/`≡`）的三对运算与单位（点明 `⊤` 原样交回、`≡` 可添等式）。
 - 认（揭晓）：六个记号（`≡`、`∧`、`∨`、`∃`、`⊤`、`⊥`）与不到一百行的骨架正是 **microKanren**，加上 `run`、`fresh`、`condᵉ` 三层语法正是**关系式编程**（**逻辑式编程**的一个分支）语言 **miniKanren** 的极小内核，未知项在那里叫**逻辑变量**（旁注：与常见流实现的差异）。
-- 名字：`run`、`fresh`、`condᵉ`、**关系式编程**（relational programming）、**逻辑式编程**（logic programming）、**逻辑变量**（logic variable）、microKanren、miniKanren。
+- 名字：`run`、`fresh`、`condᵉ`、`succeed`、`fail`、**关系式编程**（relational programming）、**逻辑式编程**（logic programming）、**逻辑变量**（logic variable）、microKanren、miniKanren。
 
-## 7 结论（`8-conclusion.scrbl`）
+## 7 结论（`7-conclusion.scrbl`）
 
 - 复盘整章路线：表 → `amb`（ℬ）与 `append-map`（ℒ）→ 关系式编程（用 ℬ 的箭头造出的语言，但描述的东西不再是函数）。
 - 点题「平行世界」：搜索里同时展开的许多条时间线，也是 ℬ、ℒ 与关系语言这几种写法。
@@ -190,9 +190,8 @@
   1. 1.1 缓存的 `set!` 与本章未知项按身份区分的新名字都超出了纯函数范围，纯宿主里状态和新身份从哪里来？
   2. 第二章的 `𝒟`/`𝒦` 与本章的 `ℬ`/`ℒ` 走的是同一条路（换箭头、配复合、配绑定写法），背后是否藏着同一个结构？
 
-## 附录：库代码（`9-appendix.scrbl`）
+## 附录：库代码（`8-appendix.scrbl`）
 
-- 收正文造出的库代码，不收例子（直角三角形、`appendᵒ`）：
-  - `amb` 一族：`choose`、`amb`、`for/amb`、`for*/amb`、`in-amb`、`check`；
-  - 关系的两种写法：`→𝒞`、`→ℬ`、`→ℒ`、`inj`、`∘ℬ`、`list->amb`、`scatter`、`gather`、`∘ℒ`、`flat-map`；
-  - 关系语言：`var`、`var=?`、`Literal`、`Data`、`Term`、`Substitution`、`Goal`、`empty-s`、`size-s`、`walk`、`walk*`、`occurs?`、`ext-s`、`unify`、`value-of`、`reify`、`⊤`、`⊥`、`≡`、`∧`、`∨`、`∃`、`run`、`run*`、`fresh`、`condᵉ`、`function->relation`、`predicate->relation`、`idᵒ`、`∘ᵒ`（多参数 `case-λ` 版）。
+- 分为两部分，只收核心库代码（不收例子与过渡用宿主包装）：
+  - **amb**：`choose`、`amb`、`for/amb`、`for*/amb`、`in-amb`、`check`、`list->amb`；
+  - **miniKanren**：`var`、`var=?`、`Literal`、`Data`、`Term`、`Substitution`、`Goal`、`empty-s`、`size-s`、`walk`、`walk*`、`occurs?`、`ext-s`、`unify`、`reify-name`、`reify-s`、`reify`、`⊤`、`⊥`、`≡`、`∧`、`∨`、`∃`、`run`、`run*`、`fresh`、`condᵉ`、`succeed`、`fail`。

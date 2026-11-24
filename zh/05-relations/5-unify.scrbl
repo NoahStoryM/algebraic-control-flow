@@ -49,9 +49,10 @@
 (define empty-s '())
 (define (ext-s x t s) (cons (cons x t) s))
 (define (value-of t s)
-  (cond [(not (var? t)) t]
-        [(assq t s) => cdr]
-        [else (error 'value-of "~a 的值还不知道" (var-name t))]))
+  (cond
+    [(not (var? t)) t]
+    [(assq t s) => cdr]
+    [else (error 'value-of "~a 的值还不知道" (var-name t))]))
 (define (∧ . g*) (apply ∘ℬ (reverse g*)))
 (define (((function->relation f) . t*) s)
   (define-values (in* out*) (split-at-right t* 1))
@@ -126,7 +127,7 @@
 
 正是@xref["05:compose"]{「二元关系的复合」}三列表最右一列的那三行：@racket[(1 1 2)]、@racket[(1 2 2)]、@racket[(2 2 2)]。这里由 @racket[pick-aᵒ] 交出中间值 @racket[y]，@racket[pick-bᵒ] 接着用；如果只靠两个只会检查给定值的@tech{谓词}，仍然缺了提供候选的那一步。
 
-@bold{练习}：上面的 @racket[∘ᵒ] 一次只接两个@tech{关系}。把它扩充成可以接收一个或多个@tech{二元关系}的版本：只给一个时原样交出，给多个时从右往左依次用二元复合接起来（@xref["05:appendix"]{附录}里收有完整定义）。
+@bold{练习}：上面的 @racket[∘ᵒ] 一次只接两个@tech{关系}。把它扩充成可以接收一个或多个@tech{二元关系}的版本：只给一个时原样交出，给多个时从右往左依次用二元复合接起来。
 
 到这里，复合的写法有了三种。@xref["05:compose-l"]{「列表箭头的复合」}并排写过两行，这里添上第三行：
 
@@ -182,9 +183,10 @@
 (define empty-s '())
 (define (ext-s x t s) (cons (cons x t) s))
 (define (value-of t s)
-  (cond [(not (var? t)) t]
-        [(assq t s) => cdr]
-        [else (error 'value-of "~a 的值还不知道" (var-name t))]))
+  (cond
+    [(not (var? t)) t]
+    [(assq t s) => cdr]
+    [else (error 'value-of "~a 的值还不知道" (var-name t))]))
 (define (⊤ s) s)
 (define (⊥ s) (amb))
 (define ((∨ . g*) s) ((list->amb g*) s))
@@ -221,11 +223,12 @@
 (: unify (→ Term Term Substitution Substitution))
 (define (unify u v s)
   (let ([u (walk u s)] [v (walk v s)])
-    (cond [(and (var? u) (var? v) (var=? u v)) s]
-          [(var? u) (ext-s u v s)]
-          [(var? v) (ext-s v u s)]
-          [(equal? u v) s]
-          [else (amb)])))]
+    (cond
+      [(and (var? u) (var? v) (var=? u v)) s]
+      [(var? u) (ext-s u v s)]
+      [(var? v) (ext-s v u s)]
+      [(equal? u v) s]
+      [else (amb)])))]
 
 试三组不同的情况：
 

@@ -15,7 +15,7 @@
   (let ([limit n])
     (let ([x (var 'x)] ...)
       (define ans*
-        (in-amb (reify (walk* (list x ...) ((∧ g ...) empty-s)))))
+        (in-amb ((reify (list x ...)) ((∧ g ...) empty-s))))
       (if limit (take ans* (min limit (length ans*))) ans*))))
 "6.3 与附录引入标准 (run n ...) 表面语法")
  ((define-syntax-rule (condᵉ [g ...] ...)
@@ -24,11 +24,19 @@
  ((define-syntax-rule (fresh (x ...) g ...)
   (∃ (x ...) (∧ g ...)))
 "6.3 与附录借 ∃ 定义自动合取的 fresh 语法糖")
+ ((: succeed Goal)
+"6.3 与附录为 ⊤ 提供 miniKanren 常用表面名字 succeed")
+ ((: fail Goal)
+"6.3 与附录为 ⊥ 提供 miniKanren 常用表面名字 fail")
+ ((define succeed ⊤)
+"6.3 与附录为 ⊤ 提供 miniKanren 常用表面名字 succeed")
+ ((define fail ⊥)
+"6.3 与附录为 ⊥ 提供 miniKanren 常用表面名字 fail")
  ((define (appendᵒ l t out)
   (condᵉ
-   [(≡ l '()) (≡ t out)]
-   [(fresh (a d res)
-      (≡ l (cons a d))
-      (≡ out (cons a res))
-      (appendᵒ d t res))]))
+    [(≡ l '()) (≡ t out)]
+    [(fresh (a d res)
+       (≡ l (cons a d))
+       (≡ out (cons a res))
+       (appendᵒ d t res))]))
 "6.3 用 run/fresh/condᵉ 重写 appendᵒ 展示表面语法"))
