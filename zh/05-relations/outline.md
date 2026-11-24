@@ -2,7 +2,7 @@
 
 记录正文现在怎么走，不记论证，不抄代码。每节只写三样：回应什么问题，造了什么、认出了什么，第一次出现的名字。改叙事的 PR 先改这里，再改正文；只改措辞的 PR 不用动它。
 
-> **现状（11/24 定稿，正文、附录与 code.rkt 已按此版同步）**：全章分为上下两半。上半部（1–3 节）从搜索表出发，经 `amb` 走到 `𝒞`、`ℬ`、`ℒ` 三种箭头，在 3.4 以 `flat-map`（`(flip choose/k)`） 和 `𝒞 ──inj──→ ℬ ⇄ ℒ ──flat-map──→ 𝒞` 方形图表收尾（外圈绕回 `map`），为第六章抽象通用结构铺路。下半部（4–6 节）进入「关系式编程」：4.2 建未知项、平坦版 `Term`（`(∪ Data Var)`）、代换（`empty-s`/`size-s`/`ext-s`/`value-of`）与目标，类型对照处埋下「谓词等一行填齐才检查、关系先收下含未知项的项」伏笔；4.3 用 `∧`、`run*` 与两个包装跑通开头伪代码；5.1 从 `run* ()` 切入零列的表 `{()}`/`{}` 认出 `⊤`/`⊥` 并由 `⊥` 反推 `∨`；5.2 藏起 3.1 三列表的中间列引出 `∘ᵒ` 与 `∃`；5.3 借 `id` 与 `equal?` 碰壁引出平坦版合一 `≡` 与读值并修好 `function->relation`；6 独立成节，6.1 写 `appendᵒ` 时按需扩充递归版 `Term`、序对合一（对照 `match-λ` 点出双向模式匹配）与递归读值，6.2 由未定下来的答案引出 `walk*`/`reify` 并回指 4.2，6.3 补全 `run`/`fresh`/`condᵉ` 收束三大运算与单位，揭晓 microKanren / miniKanren。
+> **现状（11/24 定稿，正文、附录与 code.rkt 已按此版同步）**：全章分为上下两半。上半部（1–3 节）从搜索表出发，经 `amb` 走到 `𝒞`、`ℬ`、`ℒ` 三种箭头，在 3.4 以 `flat-map`（`(flip choose/k)`） 和 `𝒞 ──inj──→ ℬ ⇄ ℒ ──flat-map──→ 𝒞` 方形图表收尾（外圈绕回 `map`），为第六章抽象通用结构铺路。下半部（4–6 节）进入「关系式编程」：4.2 建未知项、平坦版 `Term`（`(∪ Data Var)`）、代换（`empty-s`/`size-s`/`ext-s`/`value-of`）与目标，类型对照处埋下「谓词等一行填齐才检查、关系先收下含未知项的项」伏笔；4.3 用 `∧`、`run*` 与两个包装跑通开头伪代码；5.1 从 `run* ()` 切入零列的表 `{()}`/`{}` 认出 `⊤`/`⊥` 并由 `⊥` 反推 `∨`；5.2 藏起 3.1 三列表的中间列引出 `∘ᵒ` 与 `∃`；5.3 借 `id` 与 `equal?` 碰壁引出平坦版合一 `≡` 与读值并修好 `function->relation`；6 独立成节，6.1 写 `appendᵒ` 时按需扩充递归版 `Term`、序对合一（对照 `match-λ` 点出双向模式匹配）与递归读值，6.2 由未定下来的答案引出 `walk*`/`reify` 并回指 4.2，6.3 补全 `run`/`fresh`/`condᵉ`/`succeed`/`fail` 收束三大运算与单位，揭晓 microKanren / miniKanren。
 
 标题：歧路何从：表里的平行世界
 
@@ -177,10 +177,10 @@
 
 ### 6.3 语法糖与内核
 
-- 造：结合 5.4 的多条条件与 `appendᵒ` 里的重复 `∧`，引入标准 `(run n (x ...) g ...)`（收进 `reify`、`walk*` 与自动合取，避免重定义 `run*`；附录补上 `run*` 语法糖）、`fresh` 和 `condᵉ`，重写 `appendᵒ` 并试跑 `run 2` / `run #f`。
+- 造：结合 5.4 的多条条件与 `appendᵒ` 里的重复 `∧`，引入标准 `(run n (x ...) g ...)`（收进 `reify`、`walk*` 与自动合取，避免重定义 `run*`；附录补上 `run*` 语法糖）、`fresh`、`condᵉ` 与 `succeed`/`fail`，重写 `appendᵒ` 并试跑 `run 2` / `run #f`。
 - 认：合拢代换层（`∧`/`⊤`、`∨`/`⊥`）与关系层（`∘ᵒ`/`≡`）的三对运算与单位（点明 `⊤` 原样交回、`≡` 可添等式）。
 - 认（揭晓）：六个记号（`≡`、`∧`、`∨`、`∃`、`⊤`、`⊥`）与不到一百行的骨架正是 **microKanren**，加上 `run`、`fresh`、`condᵉ` 三层语法正是**关系式编程**（**逻辑式编程**的一个分支）语言 **miniKanren** 的极小内核，未知项在那里叫**逻辑变量**（旁注：与常见流实现的差异）。
-- 名字：`run`、`fresh`、`condᵉ`、**关系式编程**（relational programming）、**逻辑式编程**（logic programming）、**逻辑变量**（logic variable）、microKanren、miniKanren。
+- 名字：`run`、`fresh`、`condᵉ`、`succeed`、`fail`、**关系式编程**（relational programming）、**逻辑式编程**（logic programming）、**逻辑变量**（logic variable）、microKanren、miniKanren。
 
 ## 7 结论（`8-conclusion.scrbl`）
 
@@ -195,4 +195,4 @@
 - 收正文造出的库代码，不收例子（直角三角形、`appendᵒ`）：
   - `amb` 一族：`choose`、`amb`、`for/amb`、`for*/amb`、`in-amb`、`check`；
   - 关系的两种写法：`→𝒞`、`→ℬ`、`→ℒ`、`inj`、`∘ℬ`、`list->amb`、`scatter`、`gather`、`∘ℒ`、`flat-map`；
-  - 关系语言：`var`、`var=?`、`Literal`、`Data`、`Term`、`Substitution`、`Goal`、`empty-s`、`size-s`、`walk`、`walk*`、`occurs?`、`ext-s`、`unify`、`value-of`、`reify`、`⊤`、`⊥`、`≡`、`∧`、`∨`、`∃`、`run`、`run*`、`fresh`、`condᵉ`、`function->relation`、`predicate->relation`、`idᵒ`、`∘ᵒ`（多参数 `case-λ` 版）。
+  - 关系语言：`var`、`var=?`、`Literal`、`Data`、`Term`、`Substitution`、`Goal`、`empty-s`、`size-s`、`walk`、`walk*`、`occurs?`、`ext-s`、`unify`、`value-of`、`reify`、`⊤`、`⊥`、`≡`、`∧`、`∨`、`∃`、`run`、`run*`、`fresh`、`condᵉ`、`succeed`、`fail`、`function->relation`、`predicate->relation`、`idᵒ`、`∘ᵒ`（多参数 `case-λ` 版）。

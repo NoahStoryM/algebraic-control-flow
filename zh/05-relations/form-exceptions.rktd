@@ -24,6 +24,14 @@
  ((define-syntax-rule (fresh (x ...) g ...)
   (∃ (x ...) (∧ g ...)))
 "6.3 与附录借 ∃ 定义自动合取的 fresh 语法糖")
+ ((: succeed Goal)
+"6.3 与附录为 ⊤ 提供 miniKanren 常用表面名字 succeed")
+ ((: fail Goal)
+"6.3 与附录为 ⊥ 提供 miniKanren 常用表面名字 fail")
+ ((define succeed ⊤)
+"6.3 与附录为 ⊤ 提供 miniKanren 常用表面名字 succeed")
+ ((define fail ⊥)
+"6.3 与附录为 ⊥ 提供 miniKanren 常用表面名字 fail")
  ((define (appendᵒ l t out)
   (condᵉ
    [(≡ l '()) (≡ t out)]

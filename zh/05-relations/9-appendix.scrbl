@@ -159,6 +159,11 @@
 (define-syntax-rule (condᵉ [g ...] ...)
   (∨ (∧ g ...) ...))
 
+(: succeed Goal)
+(: fail Goal)
+(define succeed ⊤)
+(define fail ⊥)
+
 (: function->relation (∀ (a ... b) (→ (→ℬ a ... b) (→ Term ... Term Goal))))
 (define (((function->relation f) . t*) s)
   (define-values (in* out*) (split-at-right t* 1))
