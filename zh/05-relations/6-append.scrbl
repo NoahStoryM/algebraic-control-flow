@@ -85,7 +85,7 @@
 @examples[#:eval ev-append #:label #f
 (eval:error (run* (x y) (appendᵒ '(1) x y)))]
 
-程序又停在了 @racket[value-of] 那里。其实这一支已经走通了，@tech{代换}里记下了 @racket[y] 等于 @racket[(cons 1 x)]，只是条件还不够把 @racket[x] 定死。与开篇一张@tech{代换}也不交的 @racket[⊥] 不同，在开放世界里，@bold{我们不确定是真的情况，不一定是假，只不过条件还不够}。既然约束已经满足，答案里就应该允许留着还自由的@tech{未知项}。
+程序又停在了 @racket[value-of] 那里。@racket[⊥] 一张@tech{代换}也没交出来；这次这一支已经走通了，我们已经有了一张@tech{代换}，知道 @racket[y] 必须等于 @racket[(cons 1 x)]，但 @racket[x] 仍然可以取不同的值。这样的答案也应该读得出来。
 
 之前的 @racket[walk] 顺着@tech{代换}走到头时，遇到未绑定的@tech{未知项}本来就已经原样交回、不再报错；只是序对内部还可能藏着@tech{未知项}。再写一层 @racket[walk*]，顺着@tech{代换}递归展开每个序对，保留还自由的@tech{未知项}：
 
@@ -119,16 +119,17 @@
 
 @section[#:tag "05:minikanren"]{语法糖与内核}
 
-写 @racket[appendᵒ] 时，@racket[∃] 和 @racket[∨] 的每一支里面都套了一层 @racket[∧]；回看@xref["05:wanted"]{「想要的写法」}，最外层的查询也常常同时接上几条用 @racket[∧] 连起的条件。把自动@tech{合取}包成 @racket[fresh] 和 @racket[conde]，再把 @racket[reify] 读出、自动@tech{合取}以及「最多取前几组答案」的限制收进标准的 @racket[run]（第一个参数写个数，写 @racket[#f] 表示全部）：
+写 @racket[appendᵒ] 时，@racket[∃] 和 @racket[∨] 的每一支里面都套了一层 @racket[∧]；回看@xref["05:wanted"]{「想要的写法」}，最外层的查询也常常同时接上几条用 @racket[∧] 连起的条件。把自动@tech{合取}包成 @racket[fresh] 和 @racket[conde]，再把 @racket[reify] 读出、自动@tech{合取}以及「最多取前几组答案」的限制收进标准的 @racket[run]（第一个参数写个数，写 @racket[#f] 表示全部；本章的 @racket[in-amb] 会先收齐有限搜索的答案，@racket[run] 再取前 @racket[n] 行）：
 
 @margin-note{直接定义带限制参数的 @racket[run]，可以避免重定义前面只收单个@tech{目标}的 @racket[run*]；在@xref["05:appendix"]{附录}的完整库里，@racket[run*] 就是 @racket[(run #f (x ...) g ...)] 这层语法糖。}
 
 @examples[#:eval ev-append #:no-result
 (define-syntax-rule (run n (x ...) g ...)
-  (let ([x (var 'x)] ...)
-    (define ans*
-      (in-amb (reify (walk* (list x ...) ((∧ g ...) '())))))
-    (if n (take ans* (min n (length ans*))) ans*)))
+  (let ([limit n])
+    (let ([x (var 'x)] ...)
+      (define ans*
+        (in-amb (reify (walk* (list x ...) ((∧ g ...) '())))))
+      (if limit (take ans* (min limit (length ans*))) ans*))))
 
 (define-syntax-rule (fresh (x ...) g ...)
   (∃ (x ...) (∧ g ...)))

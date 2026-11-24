@@ -12,10 +12,11 @@
   (unify a (between (value-of l s) (value-of h s)) s))
 "5.5.3 先手写基于合一的 betweenᵒ 与旧版对比，随后再抽象为 function->relation")
  ((define-syntax-rule (run n (x ...) g ...)
-  (let ([x (var 'x)] ...)
-    (define ans*
-      (in-amb (reify (walk* (list x ...) ((∧ g ...) '())))))
-    (if n (take ans* (min n (length ans*))) ans*)))
+  (let ([limit n])
+    (let ([x (var 'x)] ...)
+      (define ans*
+        (in-amb (reify (walk* (list x ...) ((∧ g ...) '())))))
+      (if limit (take ans* (min limit (length ans*))) ans*))))
 "6.3 与附录引入标准 (run n ...) 表面语法")
  ((define-syntax-rule (conde [g ...] ...)
   (∨ (∧ g ...) ...))

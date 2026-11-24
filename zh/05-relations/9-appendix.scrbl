@@ -136,10 +136,11 @@
   (λ (s) (let ([x (var 'x)] ...) (g s))))
 
 (define-syntax-rule (run n (x ...) g ...)
-  (let ([x (var 'x)] ...)
-    (define ans*
-      (in-amb (reify (walk* (list x ...) ((∧ g ...) '())))))
-    (if n (take ans* (min n (length ans*))) ans*)))
+  (let ([limit n])
+    (let ([x (var 'x)] ...)
+      (define ans*
+        (in-amb (reify (walk* (list x ...) ((∧ g ...) '())))))
+      (if limit (take ans* (min limit (length ans*))) ans*))))
 
 (define-syntax-rule (run* (x ...) g ...)
   (run #f (x ...) g ...))
