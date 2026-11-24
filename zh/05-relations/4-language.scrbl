@@ -82,14 +82,11 @@
 (define-type Term (∪ Data Var))
 (define-type Substitution (Dictionary Var Term))]
 
-什么都还不知道时，手里是一张空的@tech{代换} @racket[empty-s]；数清@tech{代换}里记了多少条记录用 @racket[size-s]；给@tech{代换}添一条记录用 @racket[ext-s]，它只负责往表头添上一项，前提是键 @racket[x] 是尚未绑定的@tech{未知项}。读值用 @racket[value-of]：不是@tech{未知项}就原样交回；是@tech{未知项}，就用按身份比较的 @racket[assq] 去表里查，查不到就报错。
+什么都还不知道时，手里是一张空的@tech{代换} @racket[empty-s]。给@tech{代换}添一条记录用 @racket[ext-s]，它往表头添上一项，前提是键 @racket[x] 是尚未绑定的@tech{未知项}。读值用 @racket[value-of]：不是@tech{未知项}就原样交回；是@tech{未知项}，就用按身份比较的 @racket[assq] 去表里查，查不到就报错。
 
 @examples[#:eval ev-goals #:no-result
 (: empty-s Substitution)
 (define empty-s '())
-
-(: size-s (→ Substitution Natural))
-(define (size-s s) (length s))
 
 (: ext-s (→ Var Term Substitution Substitution))
 (define (ext-s x t s) (cons (cons x t) s))

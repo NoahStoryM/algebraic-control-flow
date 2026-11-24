@@ -31,7 +31,6 @@
 (define-type Data (∪ Literal (Pair Data Data)))
 (define (var=? u v) (eq? u v))
 (define empty-s '())
-(define (size-s s) (length s))
 (define (ext-s x t s) (cons (cons x t) s))
 (define (walk t s)
   (define p (and (var? t) (assq t s)))
@@ -152,7 +151,13 @@
   (let ([t (walk t s)])
     (if (pair? t) (cons (walk* (car t) s) (walk* (cdr t) s)) t)))]
 
-@racket[walk*] 会顺着@tech{代换}一直往序对里面展开。要是表里记进一条循环等式，比如 @racket[(≡ x (cons 1 x))]，@racket[walk*] 展开 @racket[x] 时就会停不下来。避免循环的办法是在 @racket[ext-s] 添记录前先查一遍 @racket[x] 有没有已经出现在 @racket[t] 里，有就放弃当前支路：
+用 @racket[walk*] 读出刚才那条走通的@tech{代换}：
+
+@examples[#:eval ev-append #:label #f
+(let ([x (var 'x)] [y (var 'y)])
+  (in-amb (walk* (list x y) ((appendᵒ '(1) x y) empty-s))))]
+
+答案读出来了，不过还有两件事要收尾。第一件是循环：@racket[walk*] 会顺着@tech{代换}一直往序对里面展开。要是表里记进一条循环等式，比如 @racket[(≡ x (cons 1 x))]，@racket[walk*] 展开 @racket[x] 时就会停不下来。避免循环的办法是在 @racket[ext-s] 添记录前先查一遍 @racket[x] 有没有已经出现在 @racket[t] 里，有就放弃当前支路：
 
 @examples[#:eval ev-append #:no-result
 (: occurs? (→ Var Term Substitution Boolean))
@@ -174,9 +179,14 @@
 (let ([x (var 'x)])
   (in-amb ((≡ x (cons 1 x)) empty-s)))]
 
-最后还需要 @racket[reify]：@racket[(reify v)] 收下要读出的整行项 @racket[v]（例如 @racket[(list x ...)]），交出一个从@tech{代换}读出答案的函数。它内部先用 @racket[walk*] 把能展开的都展开，再用同一套@tech{代换}机制走一遍 @racket[reify-s]，借 @racket[size-s] 按出现顺序把还自由的@tech{未知项}依次记成 @tt{_.0}、@tt{_.1}，最后再做一次 @racket[walk*] 替换掉，既不泄露内部身份，又能保住同一未知项在不同位置上的共享关系：
+第二件是读出来的样子。刚才 @racket[walk*] 交出的结果里直接露出了内部的 @racket[var] 结构体；要是两个不同的自由@tech{未知项}恰好都叫 @racket['x]，印出来还会一模一样。把自由@tech{未知项}按出现顺序统一换成 @tt{_.0}、@tt{_.1}，既不泄露内部身份，又能保住同一个@tech{未知项}在不同位置上的共享关系。
+
+先给@tech{代换}添一个数记录条数的 @racket[size-s]，用来生成下一个编号；再用同一套@tech{代换}机制写 @racket[reify-s]，把每个还没见过的自由@tech{未知项}依次记成 @tt{_.0}、@tt{_.1}。@racket[(reify v)] 收下要读出的整行项 @racket[v]，先用 @racket[walk*] 展开，再用 @racket[reify-s] 建一张重命名的@tech{代换}，最后再做一次 @racket[walk*] 替换掉：
 
 @examples[#:eval ev-append #:no-result
+(: size-s (→ Substitution Natural))
+(define (size-s s) (length s))
+
 (: reify-name (→ Natural Symbol))
 (define (reify-name n)
   (string->symbol (format "_.~a" n)))
@@ -206,9 +216,9 @@
 
 @section[#:tag "05:minikanren"]{语法糖与内核}
 
-写 @racket[appendᵒ] 时，@racket[∃] 和 @racket[∨] 的每一支里面都套了一层 @racket[∧]；回看@xref["05:wanted"]{「想要的写法」}，最外层的查询也常常同时接上几条用 @racket[∧] 连起的条件。把自动@tech{合取}包成 @racket[fresh] 和 @racket[condᵉ]，给两个零元@tech{目标}分别起上常用的名字 @racket[succeed] 和 @racket[fail]，再把 @racket[reify] 读出、自动@tech{合取}以及「最多取前几组答案」的限制收进标准的 @racket[run]（第一个参数写个数，写 @racket[#f] 表示全部；本章的 @racket[in-amb] 会先收齐有限搜索的答案，@racket[run] 再取前 @racket[n] 行）：
+写 @racket[appendᵒ] 时，@racket[∃] 和 @racket[∨] 的每一支里面都套了一层 @racket[∧]；最外层的查询也常常同时接上几条条件。把自动@tech{合取}分别包进 @racket[fresh] 和 @racket[condᵉ]，再把 @racket[reify] 读出、自动@tech{合取}以及「最多取前 @racket[n] 组答案」的限制收进 @racket[run]：第一个参数写个数，写 @racket[#f] 表示全部。两个零元@tech{目标} @racket[⊤] 与 @racket[⊥] 也各自起上常用的名字 @racket[succeed] 和 @racket[fail]：
 
-@margin-note{直接定义带限制参数的 @racket[run]，可以避免重定义前面只收单个@tech{目标}的 @racket[run*]；在@xref["05:appendix"]{附录}的完整库里，@racket[run*] 就是 @racket[(run #f (x ...) g ...)] 这层语法糖。}
+@margin-note{本章的 @racket[in-amb] 会先收齐有限搜索的全部答案，@racket[run] 再取前 @racket[n] 行。这里直接定义带限制参数的 @racket[run]，不重定义前面只收单个@tech{目标}的 @racket[run*]；在@xref["05:appendix"]{附录}的完整库里，@racket[run*] 就是 @racket[(run #f (x ...) g ...)]。}
 
 @examples[#:eval ev-append #:no-result
 (define-syntax-rule (run n (x ...) g ...)
@@ -229,7 +239,7 @@
 (define succeed ⊤)
 (define fail ⊥)]
 
-用这三样重写 @racket[appendᵒ]，试跑取前两组、取全部拆法，以及刚才未定下来的查询：
+用 @racket[condᵉ] 和 @racket[fresh] 重写 @racket[appendᵒ]，再拿 @racket[run] 试跑取前两组、取全部拆法，以及刚才未定下来的查询：
 
 @examples[#:eval ev-append #:label #f
 (define (appendᵒ l t out)
@@ -244,9 +254,9 @@
 (run #f (x y) (appendᵒ x y '(1 2 3)))
 (run #f (x y) (appendᵒ '(1) x y))]
 
-到这里，这门语言里的三种运算和它们的@tech{单位}都齐了：在@tech{代换}层，@tech{合取} @racket[∧] 的@tech{单位}是 @racket[⊤]，@tech{析取} @racket[∨] 的@tech{单位}是 @racket[⊥]；在@tech{关系}层，按外面两列的解看，@tech{二元关系}复合 @racket[∘ᵒ] 的@tech{单位}正是@tech{合一} @racket[≡]（@tech{合一}可能往@tech{代换}里添等式，@racket[⊤] 总是原样交回）。
+回头看这门语言里的三种复合与它们的@tech{单位}：在@tech{代换}层，@tech{合取} @racket[∧] 的@tech{单位}是 @racket[⊤]，@tech{析取} @racket[∨] 的@tech{单位}是 @racket[⊥]；在@tech{关系}层，@tech{二元关系}复合 @racket[∘ᵒ] 的@tech{单位}是@tech{合一} @racket[≡]。@racket[⊤] 总是把@tech{代换}原样交回，@racket[≡] 则会按需要往@tech{代换}里添等式。
 
-我们为了把@tech{关系}直接写下来，一步步添上了 @racket[≡]、@racket[∧]、@racket[∨]、@racket[∃] 和两个@tech{单位} @racket[⊤]、@racket[⊥]，再包上 @racket[run]、@racket[fresh]、@racket[condᵉ]、@racket[succeed]、@racket[fail] 这层表面语法。整个语言实现不到一百行，这就是本章用有限搜索搭出来的一个 microKanren 内核，上面那层语法正是@defterm[#:en "relational programming"]{关系式编程}（@defterm[#:en "logic programming"]{逻辑式编程}的一个分支）语言 miniKanren 的极小内核。
+为了把@tech{关系}直接写下来，我们一步步添上了 @racket[≡]、@racket[∧]、@racket[∨]、@racket[∃] 与两个@tech{单位} @racket[⊤]、@racket[⊥]，再包上 @racket[run]、@racket[fresh]、@racket[condᵉ]、@racket[succeed]、@racket[fail] 这层表面语法。整个实现不到一百行，这正是@defterm[#:en "relational programming"]{关系式编程}（@defterm[#:en "logic programming"]{逻辑式编程}的一个分支）语言 miniKanren 的极小内核，底层对应的那几个原语就是 microKanren。
 
 @margin-note{和常见的实现相比，还有几处不同：@tech{未知项}按身份区分，不编号；@tech{合取}是直接复合，何时推迟一步计算、怎样取用答案，写法也不一样，交出答案的顺序因此可能不同。}
 

@@ -2,7 +2,9 @@
 
 @title[#:tag "05:appendix"]{附录：库代码}
 
-这里把这一章造出的两块核心代码分别收在一起：第一部分是@tech{不确定运算符} @racket[amb]，第二部分是建在它之上的 @racket[miniKanren] 核心（把 @racket[run*] 定义为 @racket[run] 的语法糖；@tt{_.0} 是沿用惯例的显示记号，若项里本来就含有符号 @racket['_.0]，读出后会撞名）。直角三角形、@racket[appendᵒ] 以及过渡用的宿主包装函数都不收在这里。
+@margin-note{这里把 @racket[run*] 定义为 @racket[run] 的语法糖。@tt{_.0} 是沿用惯例的显示记号，若项里本来就含有符号 @racket['_.0]，读出后会撞名。}
+
+这里把这一章造出的两块核心代码收在一起：第一部分是@tech{不确定运算符} @racket[amb]，第二部分是建在它之上的 @racket[miniKanren] 核心。直角三角形、@racket[appendᵒ] 以及过渡用的宿主包装函数都不收在这里。
 
 第一部分是 @racket[amb]（保存为 @tt{amb.rkt}）：
 
