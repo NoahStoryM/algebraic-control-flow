@@ -2,7 +2,7 @@
 
 记录正文现在怎么走，不记论证，不抄代码。每节只写三样：回应什么问题，造了什么、认出了什么，第一次出现的名字。改叙事的 PR 先改这里，再改正文；只改措辞的 PR 不用动它。
 
-> **现状（11/23 定稿，正文、附录与 code.rkt 已按此版同步）**：全章分为上下两半。上半部（1–3 节）从搜索表出发，经 `amb` 走到 `𝒞`、`ℬ`、`ℒ` 三种箭头，在 3.4 以 `flat-map`（`(flip choose/k)`） 和 `𝒞 ──inj──→ ℬ ⇄ ℒ ──flat-map──→ 𝒞` 方形图表收尾（外圈绕回 `map`），为第六章抽象通用结构铺路。下半部（4–6 节）进入「关系式编程」：4.2 建未知项、代换（`empty-s`/`size-s`/`ext-s`/`value-of`）与目标，类型对照处埋下「谓词等一行填齐才检查、关系先收下含未知项的项」伏笔；4.3 用 `∧`、`run*` 与两个包装跑通开头伪代码；5.1 从 `run* ()` 切入零列的表 `{()}`/`{}` 认出 `⊤`/`⊥` 并由 `⊥` 反推 `∨`；5.2 藏起 3.1 三列表的中间列引出 `∘ᵒ` 与 `∃`；5.3 借 `id` 与 `equal?` 碰壁引出合一 `≡`（对照 `match-λ` 点出双向模式匹配）并修好 `function->relation`；6 独立成节写 `appendᵒ`、由未定下来的答案引出 `walk*`/`reify` 并回指 4.2，再补全 `run`/`fresh`/`condᵉ` 收束三大运算与单位，揭晓 microKanren / miniKanren。
+> **现状（11/24 定稿，正文、附录与 code.rkt 已按此版同步）**：全章分为上下两半。上半部（1–3 节）从搜索表出发，经 `amb` 走到 `𝒞`、`ℬ`、`ℒ` 三种箭头，在 3.4 以 `flat-map`（`(flip choose/k)`） 和 `𝒞 ──inj──→ ℬ ⇄ ℒ ──flat-map──→ 𝒞` 方形图表收尾（外圈绕回 `map`），为第六章抽象通用结构铺路。下半部（4–6 节）进入「关系式编程」：4.2 建未知项、平坦版 `Term`（`(∪ Data Var)`）、代换（`empty-s`/`size-s`/`ext-s`/`value-of`）与目标，类型对照处埋下「谓词等一行填齐才检查、关系先收下含未知项的项」伏笔；4.3 用 `∧`、`run*` 与两个包装跑通开头伪代码；5.1 从 `run* ()` 切入零列的表 `{()}`/`{}` 认出 `⊤`/`⊥` 并由 `⊥` 反推 `∨`；5.2 藏起 3.1 三列表的中间列引出 `∘ᵒ` 与 `∃`；5.3 借 `id` 与 `equal?` 碰壁引出平坦版合一 `≡` 与读值并修好 `function->relation`；6 独立成节，6.1 写 `appendᵒ` 时按需扩充递归版 `Term`、序对合一（对照 `match-λ` 点出双向模式匹配）与递归读值，6.2 由未定下来的答案引出 `walk*`/`reify` 并回指 4.2，6.3 补全 `run`/`fresh`/`condᵉ` 收束三大运算与单位，揭晓 microKanren / miniKanren。
 
 标题：歧路何从：表里的平行世界
 
@@ -122,7 +122,7 @@
 - 问题：回答 4.1 结尾的两个问题，从类型的角度把语言核心逼出来。
 - 造与认：
   - **未知项**：`var`（带 `#:type-name Var`）与 `var=?`，演示按身份区分。
-  - **项、代换与查表**：`Literal`、`Data`、`Term`、`Substitution`（`(Dictionary Var Term)`）、`empty-s`、`size-s`、`ext-s`（默认键为尚未绑定的 `Var`）；只查一次表的 `(: value-of (→ Term Substitution Term))`（用 `assq` 按身份查键），运行成功与报错两例。
+  - **项、代换与查表**：`Literal`、`Data`、平坦版 `Term`（`(∪ Data Var)`）、`Substitution`（`(Dictionary Var Term)`）、`empty-s`、`size-s`、`ext-s`（默认键为尚未绑定的 `Var`）；只查一次表的 `(: value-of (→ Term Substitution Term))`（用 `assq` 按身份查键），运行成功与报错两例。
   - **目标、`run*` 与关系类型**：从 `run*` 两头先认出中间是 `→ℒ`（代换之间的二元关系），换用同构的 `→ℬ` 定义 `(define-type Goal (→ℬ Substitution Substitution))`（旁注：纯 `→ℒ` 与 `∘ℒ` 写法），直接写出 `run*` 宏；由 `(run* (x ...) g)` 里 `g : Goal` 推出 `∧ : (→ Goal ... Goal)`，进而逼出带 `ᵒ` 后缀的关系类型为 `(→ Term ... Goal)`，与谓词 `(→ Data ... Boolean)` 并排对照（谓词等一行填齐才检查，关系可以先收下含未知项的项、交出目标逐步扩充代换）。
 - 名字：**未知项**、`var=?`、`Data`、**项**（term）、**代换**（substitution）、`empty-s`、`size-s`、`ext-s`、**目标**（goal）、`value-of`。
 
@@ -156,8 +156,8 @@
 - 问题：接 5.2 的单位问题，试 `(define idᵒ (function->relation id))` 与 `(define equalᵒ (predicate->relation equal?))` 双双在未知项处碰壁，落到 `(∧ (idᵒ x y) (idᵒ y 5))` 卡住。
 - 造与认：
   - **顺着查表 `walk`**：把 `x = y`、`y = 5` 直接记进代换，`value-of` 只查一次读出未知项 `y`；造出 `walk` 顺着查到底。
-  - **合一 `unify`**：两边先各自 `walk` 到底再对称比对（含序对逐个去对），实测三例后对照 `match-λ` 点出「双向模式匹配」，命名**合一**（unification）。代换的一行从「未知项的值」变成「一条等式」。
-  - 造出 `(≡ u v)`；升级 `(: value-of (→ Term Substitution Data))` 为顺着查并递归读序对；重跑 `x = y, y = 5` 与另两例。
+  - **平坦版合一 `unify`**：两边先各自 `walk` 到底再对称比对（`var=?`、`var? u`、`var? v`、`equal?`、失败），实测三例后命名**合一**（unification）。代换的一行从「未知项的值」变成「一条等式」。
+  - 造出 `(≡ u v)`；升级 `(: value-of (→ Term Substitution Data))` 为顺着查（按平坦版 `Term`，非 `Var` 即 `Data`）；重跑 `x = y, y = 5` 与另两例。
   - 认出 `∘ᵒ` 的单位正是合一：`(: idᵒ (→ Term Term Goal)) (define idᵒ ≡)`，按外列解集核对左右单位律，并验证 `(idᵒ q 5)` 与 `(idᵒ 5 q)` 双向可问。
   - 现抓现修 `function->relation`：先展示直接添一行在 `(∧ (betweenᵒ 1 2 a) (betweenᵒ 2 3 a))` 与 `(betweenᵒ 1 3 2)` 上出错，手写基于 `unify` 的 `betweenᵒ` 对照跑通，再把这一做法推广回 `function->relation` 与 `(betweenᵒ 1 3 5)`。
 - 名字：`idᵒ`、`equalᵒ`、`walk`、`unify`、**合一**（unification）、`≡`。
@@ -166,8 +166,8 @@
 
 ### 6.1 用关系写出 appendᵒ
 
-- 问题：从 3.3 的 `append-map` 切入，`append` 本身只做 `'()` 与 `cons` 的构造和解构，正适合用 `≡` 描述，但作为宿主函数只能正向拼接、无法反向拆解 `'(1 2 3)`。不用宿主函数，直接用 `≡`、`∧`、`∨` 和 `∃` 写出递归的关系 `appendᵒ`。
-- 造与认：一气呵成写出三元关系 `appendᵒ`（说明 `∃` 推迟未知项构造，正反两问各有有限列表逐层消耗 `cons`）；正着问与 `append` 一样，反着问 `(run* (x y) (appendᵒ x y '(1 2 3)))` 拆出全部四种分法，展示关系不分输入输出。
+- 问题：从 3.3 的 `append-map` 切入，`append` 本身只做 `'()` 与 `cons` 的构造和解构，但作为宿主函数只能正向拼接、无法反向拆解 `'(1 2 3)`。写 `(≡ l (cons a d))` 时未知项进了序对内部，逼出递归版 `Term`（`(∪ Literal Var (Pair Term Term))`）。
+- 造与认：展示平坦版 `unify` 在 `'(1 2)` 与 `(cons a d)` 上失败，补上序对分支并用 `(list a 2)` 与 `(list 1 b)` 对照 `match-λ` 点出「双向模式匹配」；写出三元关系 `appendᵒ`（说明 `∃` 推迟未知项构造），正问暴露出平坦版 `value-of` 进不到序对内部，补上序对递归后正反两问全通，展示关系不分输入输出。
 
 ### 6.2 未定下来的答案
 
