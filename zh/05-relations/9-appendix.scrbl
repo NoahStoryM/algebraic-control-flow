@@ -38,12 +38,15 @@
 (provide (all-defined-out))
 
 (define-type (Dictionary k v) (Listof (Pair k v)))
+
 (struct var ([name : Symbol]) #:type-name Var #:transparent)
 (: var=? (→ Var Var Boolean))
 (define (var=? u v) (eq? u v))
+
 (define-type Literal (∪ Boolean Number Char Bytes String Keyword Null Symbol))
 (define-type Data (∪ Literal (Pair Data Data)))
 (define-type Term (∪ Literal Var (Pair Term Term)))
+
 (define-type Substitution (Dictionary Var Term))
 (define-type Goal (→ Substitution Substitution))
 
@@ -66,25 +69,29 @@
 (: occurs? (→ Var Term Substitution Boolean))
 (define (occurs? x t s)
   (let ([t (walk t s)])
-    (cond [(var? t) (var=? x t)]
-          [(pair? t) (or (occurs? x (car t) s) (occurs? x (cdr t) s))]
-          [else #f])))
+    (cond
+      [(var? t) (var=? x t)]
+      [(pair? t) (or (occurs? x (car t) s) (occurs? x (cdr t) s))]
+      [else #f])))
 
 (: ext-s (→ Var Term Substitution Substitution))
 (define (ext-s x t s)
   (when (occurs? x t s) (amb))
   (cons (cons x t) s))
 
+
 (: unify (→ Term Term Substitution Substitution))
 (define (unify u v s)
   (let ([u (walk u s)] [v (walk v s)])
-    (cond [(and (var? u) (var? v) (var=? u v)) s]
-          [(var? u) (ext-s u v s)]
-          [(var? v) (ext-s v u s)]
-          [(and (pair? u) (pair? v))
-           (unify (cdr u) (cdr v) (unify (car u) (car v) s))]
-          [(equal? u v) s]
-          [else (amb)])))
+    (cond
+      [(and (var? u) (var? v) (var=? u v)) s]
+      [(var? u) (ext-s u v s)]
+      [(var? v) (ext-s v u s)]
+      [(and (pair? u) (pair? v))
+       (unify (cdr u) (cdr v) (unify (car u) (car v) s))]
+      [(equal? u v) s]
+      [else (amb)])))
+
 
 (: reify-name (→ Natural Symbol))
 (define (reify-name n)

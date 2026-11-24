@@ -2126,15 +2126,23 @@
     (let ([t (walk t s)])
       (if (pair? t) (cons (walk* (car t) s) (walk* (cdr t) s)) t)))
 
-  (: reify (→ Term Data))
-  (define (reify t)
-    (define (name-unknowns t s)
-      (let ([t (walk t s)])
-        (cond [(var? t)
-               (cons (cons t (string->symbol (format "_.~a" (size-s s)))) s)]
-              [(pair? t) (name-unknowns (cdr t) (name-unknowns (car t) s))]
-              [else s])))
-    (walk* t (name-unknowns t empty-s)))
+  (: reify-name (→ Natural Symbol))
+  (define (reify-name n)
+    (string->symbol (format "_.~a" n)))
+
+  (: reify-s (→ Term Substitution Substitution))
+  (define (reify-s v r)
+    (let ([v (walk v r)])
+      (cond
+        [(var? v) (ext-s v (reify-name (size-s r)) r)]
+        [(pair? v) (reify-s (cdr v) (reify-s (car v) r))]
+        [else r])))
+
+  (: reify (→ Term (→ Substitution Term)))
+  (define ((reify v) s)
+    (let* ([v (walk* v s)]
+           [r (reify-s v empty-s)])
+      (walk* v r)))
 
   (module+ v2
     ;; 附录最终内核：补上列表代换版 occurs? / ext-s，并让本阶段的 unify、≡、function->relation、appendᵒ 全部走带检查的版本
@@ -2179,7 +2187,7 @@
     ;; run* 的第二版：整个查询元组一起读出，还不知道的项写成 _.0、_.1……
     (define-syntax-rule (run* (x ...) g)
       (let ([x (var 'x)] ...)
-        (in-amb (reify (walk* (list x ...) (g empty-s))))))
+        (in-amb ((reify (list x ...)) (g empty-s)))))
     (check-equal? (run* (x y) (≡ x y)) '((_.0 _.0)))
     (check-equal? (run* (x y) ⊤) '((_.0 _.1)))
     (check-equal? (run* (x y) (appendᵒ x y '(1 2))) '((() (1 2)) ((1) (2)) ((1 2) ())))

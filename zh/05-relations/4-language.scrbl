@@ -96,9 +96,10 @@
 
 (: value-of (→ Term Substitution Term))
 (define (value-of t s)
-  (cond [(not (var? t)) t]
-        [(assq t s) => cdr]
-        [else (error 'value-of "~a 的值还不知道" (var-name t))]))]
+  (cond
+    [(not (var? t)) t]
+    [(assq t s) => cdr]
+    [else (error 'value-of "~a 的值还不知道" (var-name t))]))]
 
 试一试查得到和查不到的情形：
 

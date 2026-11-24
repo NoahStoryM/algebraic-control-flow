@@ -38,11 +38,12 @@
   (if p (walk (cdr p) s) t))
 (define (unify u v s)
   (let ([u (walk u s)] [v (walk v s)])
-    (cond [(and (var? u) (var? v) (var=? u v)) s]
-          [(var? u) (ext-s u v s)]
-          [(var? v) (ext-s v u s)]
-          [(equal? u v) s]
-          [else (amb)])))
+    (cond
+      [(and (var? u) (var? v) (var=? u v)) s]
+      [(var? u) (ext-s u v s)]
+      [(var? v) (ext-s v u s)]
+      [(equal? u v) s]
+      [else (amb)])))
 (define (value-of t s)
   (let ([t (walk t s)])
     (if (var? t)
@@ -77,13 +78,14 @@
 (: unify (→ Term Term Substitution Substitution))
 (define (unify u v s)
   (let ([u (walk u s)] [v (walk v s)])
-    (cond [(and (var? u) (var? v) (var=? u v)) s]
-          [(var? u) (ext-s u v s)]
-          [(var? v) (ext-s v u s)]
-          [(and (pair? u) (pair? v))
-           (unify (cdr u) (cdr v) (unify (car u) (car v) s))]
-          [(equal? u v) s]
-          [else (amb)])))]
+    (cond
+      [(and (var? u) (var? v) (var=? u v)) s]
+      [(var? u) (ext-s u v s)]
+      [(var? v) (ext-s v u s)]
+      [(and (pair? u) (pair? v))
+       (unify (cdr u) (cdr v) (unify (car u) (car v) s))]
+      [(equal? u v) s]
+      [else (amb)])))]
 
 再试一次，顺带拿两张各缺一个元素的列表试一试：
 
@@ -116,9 +118,10 @@
 (: value-of (→ Term Substitution Data))
 (define (value-of t s)
   (let ([t (walk t s)])
-    (cond [(var? t) (error 'value-of "~a 的值还不知道" (var-name t))]
-          [(pair? t) (cons (value-of (car t) s) (value-of (cdr t) s))]
-          [else t])))]
+    (cond
+      [(var? t) (error 'value-of "~a 的值还不知道" (var-name t))]
+      [(pair? t) (cons (value-of (car t) s) (value-of (cdr t) s))]
+      [else t])))]
 
 再正着问，就和 @racket[append] 一样了：
 

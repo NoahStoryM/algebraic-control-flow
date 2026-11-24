@@ -49,9 +49,10 @@
 (define empty-s '())
 (define (ext-s x t s) (cons (cons x t) s))
 (define (value-of t s)
-  (cond [(not (var? t)) t]
-        [(assq t s) => cdr]
-        [else (error 'value-of "~a 的值还不知道" (var-name t))]))
+  (cond
+    [(not (var? t)) t]
+    [(assq t s) => cdr]
+    [else (error 'value-of "~a 的值还不知道" (var-name t))]))
 (define (∧ . g*) (apply ∘ℬ (reverse g*)))
 (define (((function->relation f) . t*) s)
   (define-values (in* out*) (split-at-right t* 1))
@@ -182,9 +183,10 @@
 (define empty-s '())
 (define (ext-s x t s) (cons (cons x t) s))
 (define (value-of t s)
-  (cond [(not (var? t)) t]
-        [(assq t s) => cdr]
-        [else (error 'value-of "~a 的值还不知道" (var-name t))]))
+  (cond
+    [(not (var? t)) t]
+    [(assq t s) => cdr]
+    [else (error 'value-of "~a 的值还不知道" (var-name t))]))
 (define (⊤ s) s)
 (define (⊥ s) (amb))
 (define ((∨ . g*) s) ((list->amb g*) s))
@@ -221,11 +223,12 @@
 (: unify (→ Term Term Substitution Substitution))
 (define (unify u v s)
   (let ([u (walk u s)] [v (walk v s)])
-    (cond [(and (var? u) (var? v) (var=? u v)) s]
-          [(var? u) (ext-s u v s)]
-          [(var? v) (ext-s v u s)]
-          [(equal? u v) s]
-          [else (amb)])))]
+    (cond
+      [(and (var? u) (var? v) (var=? u v)) s]
+      [(var? u) (ext-s u v s)]
+      [(var? v) (ext-s v u s)]
+      [(equal? u v) s]
+      [else (amb)])))]
 
 试三组不同的情况：
 
