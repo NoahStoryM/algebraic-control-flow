@@ -305,10 +305,12 @@
 (run* () (betweenᵒ 1 3 2))
 (run* () (betweenᵒ 1 3 5))]
 
-把这一步放进 @racket[function->relation]，两版之间同样只差把 @racket[ext-s] 换成 @racket[unify]：输入端继续用 @racket[value-of] 读出宿主函数要用的值，输出端交给 @racket[unify] 既能添记录也能核对。对照前面，极简版 @racket[(function->relation id)] 展开后不过是对输入先做 @racket[value-of]、再把 @racket[ext-s] 柯里化成@tech{目标}；拿掉 @racket[value-of]，再把单向的 @racket[ext-s] 升级成双向的 @racket[unify] 柯里化，就得到了真正对称的 @racket[≡]：
+把这一步放进 @racket[function->relation]，两版之间同样只差把 @racket[ext-s] 换成 @racket[unify]：输入端继续用 @racket[value-of] 读出宿主函数要用的值，输出端交给 @racket[unify] 既能添记录也能核对：
 
 @examples[#:eval ev-unify #:no-result
 (: function->relation (∀ (a ... b) (→ (→ℬ a ... b) (→ Term ... Term Goal))))
 (define (((function->relation f) . t*) s)
   (define-values (in* out*) (split-at-right t* 1))
   (unify (car out*) (apply f (for/list ([t in*]) (value-of t s))) s))]
+
+对照前面，旧版 @racket[(function->relation id)] 展开后是对输入先做 @racket[value-of]、再把 @racket[ext-s] 柯里化成@tech{目标}；当输入也允许保留@tech{未知项}、不再先调 @racket[value-of]，同时把单向的 @racket[ext-s] 换成双向的 @racket[unify] 柯里化，就回到了前面真正对称的 @racket[≡]。
