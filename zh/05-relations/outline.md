@@ -195,4 +195,4 @@
 - 收正文造出的库代码，不收例子（直角三角形、`appendᵒ`）：
   - `amb` 一族：`choose`、`amb`、`for/amb`、`for*/amb`、`in-amb`、`check`；
   - 关系的两种写法：`→𝒞`、`→ℬ`、`→ℒ`、`inj`、`∘ℬ`、`list->amb`、`scatter`、`gather`、`∘ℒ`、`flat-map`；
-  - 关系语言：`var`、`Literal`、`Data`、`Term`、`Substitution`、`Goal`、`empty-s`、`walk`、`walk*`、`occurs?`、`ext-s`、`unify`、`value-of`、`reify`、`⊤`、`⊥`、`≡`、`∧`、`∨`、`∃`、`run`、`run*`、`fresh`、`condᵉ`、`function->relation`、`predicate->relation`、`idᵒ`、`∘ᵒ`（多参数 `case-λ` 版）。
+  - 关系语言：`var`、`Literal`、`Data`、`Term`、`Substitution`、`Goal`、`empty-s`、`size-s`、`walk`、`walk*`、`occurs?`、`ext-s`、`unify`、`value-of`、`reify`、`⊤`、`⊥`、`≡`、`∧`、`∨`、`∃`、`run`、`run*`、`fresh`、`condᵉ`、`function->relation`、`predicate->relation`、`idᵒ`、`∘ᵒ`（多参数 `case-λ` 版）。

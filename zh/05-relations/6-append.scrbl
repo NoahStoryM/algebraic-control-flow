@@ -28,6 +28,7 @@
 (define (list->amb v*) (for/amb ([v (in-list v*)]) v))
 (struct var ([name : Symbol]) #:type-name Var #:transparent)
 (define empty-s '())
+(define (size-s s) (length s))
 (define (ext-s x t s) (cons (cons x t) s))
 (define (walk t s)
   (define p (and (var? t) (assq t s)))
@@ -107,10 +108,10 @@
   (define (name-unknowns t s)
     (let ([t (walk t s)])
       (cond [(var? t)
-             (cons (cons t (string->symbol (format "_.~a" (length s)))) s)]
+             (cons (cons t (string->symbol (format "_.~a" (size-s s)))) s)]
             [(pair? t) (name-unknowns (cdr t) (name-unknowns (car t) s))]
             [else s])))
-  (walk* t (name-unknowns t '())))]
+  (walk* t (name-unknowns t empty-s)))]
 @examples[#:eval ev-append #:label #f
 (let ([x (var 'x)] [y (var 'y)])
   (in-amb (reify (walk* (list x y) ((appendᵒ '(1) x y) empty-s)))))

@@ -72,6 +72,9 @@
 (: empty-s Substitution)
 (define empty-s '())
 
+(: size-s (→ Substitution Natural))
+(define (size-s s) (length s))
+
 (: walk (→ Term Substitution Term))
 (define (walk t s)
   (define p (and (var? t) (assq t s)))
@@ -117,10 +120,10 @@
   (define (name-unknowns t s)
     (let ([t (walk t s)])
       (cond [(var? t)
-             (cons (cons t (string->symbol (format "_.~a" (length s)))) s)]
+             (cons (cons t (string->symbol (format "_.~a" (size-s s)))) s)]
             [(pair? t) (name-unknowns (cdr t) (name-unknowns (car t) s))]
             [else s])))
-  (walk* t (name-unknowns t '())))
+  (walk* t (name-unknowns t empty-s)))
 
 (: ⊤ Goal)
 (: ⊥ Goal)
