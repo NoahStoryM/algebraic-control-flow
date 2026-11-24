@@ -1783,6 +1783,18 @@
   (define-type Term (∪ Literal Var (Pair Term Term)))
   (define-type Substitution (Dictionary Var Term))
 
+  (: var=? (→ Var Var Boolean))
+  (define (var=? u v) (eq? u v))
+
+  (: empty-s Substitution)
+  (define empty-s '())
+
+  (: ext-s (→ Var Term Substitution Substitution))
+  (define (ext-s x t s) (cons (cons x t) s))
+
+  (: size-s (→ Substitution Natural))
+  (define (size-s s) (length s))
+
   (: value-of (→ Term Substitution Term))
   (define (value-of t s)
     (cond [(not (var? t)) t]
@@ -1794,15 +1806,17 @@
     (define a (var 'a))
     (define b (var 'b))
     (define c (var 'c))
-    (define s (list (cons a 3)))
-    (define g (λ (s) (cons (cons a (between 1 3)) s)))
+    (define s (ext-s a 3 empty-s))
+    (define g (λ (s) (ext-s a (between 1 3) s)))
     (check-equal? (format "~v" (var 'a)) "(var 'a)")
-    (check-false (eq? (var 'a) (var 'a)))
-    (check-true (eq? a a))
+    (check-false (var=? (var 'a) (var 'a)))
+    (check-true (var=? a a))
+    (check-equal? (size-s empty-s) 0)
+    (check-equal? (size-s s) 1)
     (check-equal? (value-of 5 s) 5)
     (check-equal? (value-of a s) 3)
     (check-exn #rx"b 的值还不知道" (λ () (value-of b s)))
-    (check-equal? (in-amb (g '()))
+    (check-equal? (in-amb (g empty-s))
                   (list (list (cons (var 'a) 1)) (list (cons (var 'a) 2)) (list (cons (var 'a) 3))))
     (void c))
 
@@ -1814,7 +1828,7 @@
   (: function->relation (∀ (a ... b) (→ (→ℬ a ... b) (→ Term ... Term Goal))))
   (define (((function->relation f) . t*) s)             ; 最后一个位置默认是还没有值的未知项，直接添一行
     (define-values (in* out*) (split-at-right t* 1))
-    (cons (cons (car out*) (apply f (for/list ([t in*]) (value-of t s)))) s))
+    (ext-s (car out*) (apply f (for/list ([t in*]) (value-of t s))) s))
 
   (: predicate->relation (∀ (a ...) (→ (→ a ... Boolean) (→ Term ... Goal))))
   (define (((predicate->relation p?) . t*) s)
@@ -1824,7 +1838,7 @@
   (define-syntax-rule (run* (x ...) g)
     (let ([x (var 'x)] ...)
       (in-amb
-       (let ([s (g '())])
+       (let ([s (g empty-s)])
          (list (value-of x s) ...)))))
 
   (: betweenᵒ (→ Term Term Term Goal))                  ; 关系：收下项，交出目标
@@ -1919,6 +1933,18 @@
   (define-type Term (∪ Literal Var (Pair Term Term)))
   (define-type Substitution (Dictionary Var Term))
 
+  (: var=? (→ Var Var Boolean))
+  (define (var=? u v) (eq? u v))
+
+  (: empty-s Substitution)
+  (define empty-s '())
+
+  (: ext-s (→ Var Term Substitution Substitution))
+  (define (ext-s x t s) (cons (cons x t) s))
+
+  (: size-s (→ Substitution Natural))
+  (define (size-s s) (length s))
+
   (: walk (→ Term Substitution Term))
   (define (walk t s)
     (define p (and (var? t) (assq t s)))
@@ -1961,9 +1987,9 @@
   (: unify (→ Term Term Substitution Substitution))
   (define (unify u v s)
     (let ([u (walk u s)] [v (walk v s)])
-      (cond [(and (var? u) (eq? u v)) s]
-            [(var? u) (cons (cons u v) s)]
-            [(var? v) (cons (cons v u) s)]
+      (cond [(and (var? u) (var? v) (var=? u v)) s]
+            [(var? u) (ext-s u v s)]
+            [(var? v) (ext-s v u s)]
             [(and (pair? u) (pair? v))
              (unify (cdr u) (cdr v) (unify (car u) (car v) s))]
             [(equal? u v) s]
@@ -1995,7 +2021,7 @@
   (define-syntax-rule (run* (x ...) g)                   ; 4.2 的写法，5.1 沿用
     (let ([x (var 'x)] ...)
       (in-amb
-       (let ([s (g '())])
+       (let ([s (g empty-s)])
          (list (value-of x s) ...)))))
 
   (define betweenᵒ (function->relation  between))
@@ -2028,7 +2054,7 @@
   (let ()
     (define x (var 'x))
     (define y (var 'y))
-    (define s (list (cons x y) (cons y 5)))
+    (define s (ext-s x y (ext-s y 5 empty-s)))
     (check-equal? (cdr (assq x s)) y)
     (check-equal? (walk x s) 5))
   (check-equal? (let ([x (var 'x)] [y (var 'y)]) (in-amb (unify x y '())))
@@ -2071,17 +2097,18 @@
   (define (reify t)
     (define (name-unknowns t s)
       (let ([t (walk t s)])
-        (cond [(var? t) (cons (cons t (string->symbol (format "_.~a" (length s)))) s)]
+        (cond [(var? t)
+               (cons (cons t (string->symbol (format "_.~a" (size-s s)))) s)]
               [(pair? t) (name-unknowns (cdr t) (name-unknowns (car t) s))]
               [else s])))
-    (walk* t (name-unknowns t '())))
+    (walk* t (name-unknowns t empty-s)))
 
   (module+ v2
     ;; 附录最终内核：补上列表代换版 occurs? / ext-s，并让本阶段的 unify、≡、function->relation、appendᵒ 全部走带检查的版本
     (: occurs? (→ Var Term Substitution Boolean))
     (define (occurs? x t s)
       (let ([t (walk t s)])
-        (cond [(var? t) (eq? x t)]
+        (cond [(var? t) (var=? x t)]
               [(pair? t) (or (occurs? x (car t) s) (occurs? x (cdr t) s))]
               [else #f])))
 
@@ -2093,7 +2120,7 @@
     (: unify (→ Term Term Substitution Substitution))
     (define (unify u v s)
       (let ([u (walk u s)] [v (walk v s)])
-        (cond [(and (var? u) (eq? u v)) s]
+        (cond [(and (var? u) (var? v) (var=? u v)) s]
               [(var? u) (ext-s u v s)]
               [(var? v) (ext-s v u s)]
               [(and (pair? u) (pair? v))
@@ -2119,7 +2146,7 @@
     ;; run* 的第二版：整个查询元组一起读出，还不知道的项写成 _.0、_.1……
     (define-syntax-rule (run* (x ...) g)
       (let ([x (var 'x)] ...)
-        (in-amb (reify (walk* (list x ...) (g '()))))))
+        (in-amb (reify (walk* (list x ...) (g empty-s))))))
     (check-equal? (run* (x y) (≡ x y)) '((_.0 _.0)))
     (check-equal? (run* (x y) ⊤) '((_.0 _.1)))
     (check-equal? (run* (x y) (appendᵒ x y '(1 2))) '((() (1 2)) ((1) (2)) ((1 2) ())))

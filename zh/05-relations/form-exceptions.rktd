@@ -2,7 +2,7 @@
   (foldr append-map (apply f x*) g*))
 "参数表 g* ... f 是示意写法，Racket 的剩余参数只能放在最后；code.rkt 用 split-at-right 取出最右边的箭头")
  ((define ((betweenᵒ l h a) s)
-  `([,a . ,(between (value-of l s) (value-of h s))] . ,s))
+  (ext-s a (between (value-of l s) (value-of h s)) s))
 "5.4.3 先手写具体版本，随后抽象为 (function->relation between)")
  ((define ((pythᵒ a b c) s)
   (check (pyth? (value-of a s) (value-of b s) (value-of c s)))
@@ -15,7 +15,7 @@
   (let ([limit n])
     (let ([x (var 'x)] ...)
       (define ans*
-        (in-amb (reify (walk* (list x ...) ((∧ g ...) '())))))
+        (in-amb (reify (walk* (list x ...) ((∧ g ...) empty-s)))))
       (if limit (take ans* (min limit (length ans*))) ans*))))
 "6.3 与附录引入标准 (run n ...) 表面语法")
  ((define-syntax-rule (condᵉ [g ...] ...)
