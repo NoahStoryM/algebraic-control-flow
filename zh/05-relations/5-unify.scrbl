@@ -80,9 +80,9 @@
 
 就算一个@tech{未知项}也不读，成功一次和一次也没成功，交出的列表仍然不同：第一行的 @racket['(())] 里有一行答案，行里有零个元素；第二行的 @racket['()] 里一行也没有。两张零列的表，用现有的包装就已经能翻出来。
 
-@racket[⊤] 还是@tech{合取} @racket[∧] 的@tech{单位}：不给任何参数时，@racket[(∧)] 把空列表交给 @racket[(apply ∘ℬ ...)]，无参调用 @racket[∘ℬ]（也就是 @racket[∘]）交出 @racket[id]，即 @racket[(λ (s) s)]，正是 @racket[⊤]；把 @racket[⊤] 接在任意@tech{目标} @racket[g] 的前面或后面，复合上的都是 @racket[id]，@racket[(∧ g ⊤)] 与 @racket[(∧ ⊤ g)] 都还是 @racket[g]。
+@racket[⊤] 还是@tech{合取} @racket[∧] 的@tech{单位}。不给任何参数时，@racket[(∧)] 无参调用 @racket[∘ℬ]，交出 @racket[id]，也就是 @racket[(λ (s) s)]，正是 @racket[⊤]。把 @racket[⊤] 接在任意@tech{目标} @racket[g] 的前面或后面，复合上的都是 @racket[id]，@racket[(∧ g ⊤)] 与 @racket[(∧ ⊤ g)] 都还是 @racket[g]。
 
-再看 @racket[⊥]：@racket[(λ (s) (amb))]。@racket[(amb)] 是零支的 @racket[amb]，不试任何支路、一次也不交；与@tech{合取}相对的@tech{析取} @racket[∨] 把它放成多支，让收到的几条@tech{目标}各自从同一张@tech{代换} @racket[s] 出发、逐个试过去，照@xref["05:compose"]{「二元关系的复合」}里的记法把各支路的表并起来：
+再看 @racket[⊥]：@racket[(λ (s) (amb))]。@racket[(amb)] 是零支的 @racket[amb]，不试任何支路，一张@tech{代换}也不交。与@tech{合取}相对的@tech{析取} @racket[∨] 把它放成多支：收到的几条@tech{目标}各自从同一张@tech{代换} @racket[s] 出发，逐个试过去，把各支路的结果并起来：
 
 @margin-note{@tech{目标}写成 ℒ 的箭头时，@tech{析取}是把几张@tech{代换}的列表接起来。}
 
@@ -90,7 +90,7 @@
 (: ∨ (→ Goal ... Goal))
 (define ((∨ . g*) s) ((list->amb g*) s))]
 
-不给任何参数时，@racket[(∨)] 先交出一个@tech{目标}；这个@tech{目标}收到@tech{代换}后，才用 @racket[list->amb] 从空列表里选，因此一张@tech{代换}也不交，正是 @racket[⊥]；在任一侧并上 @racket[⊥]，@racket[⊥] 那一支不交出任何@tech{代换}，答案列表照旧。
+不给任何参数时，@racket[(∨)] 交出的@tech{目标}收到@tech{代换}后，用 @racket[list->amb] 从空列表里选，一张@tech{代换}也不交，正是 @racket[⊥]。在任一侧并上 @racket[⊥]，那一支不交出任何@tech{代换}，结果照旧。
 
 @section[#:tag "05:compose-o"]{藏起中间一列}
 
@@ -162,7 +162,7 @@
 (eval:error (run* (y) (equalᵒ 5 y)))
 (eval:error (run* (x) (equalᵒ x 5)))]
 
-这一次干脆两边都必须先知道，哪一头换成@tech{未知项}都会报错。毛病出在同一处：两个包装都先用 @racket[value-of] 读出宿主要用的参数，借来的函数与@tech{谓词}骨子里只能算已经知道的值。同样的限制也挡在把 @racket[pythᵒ] 挪到 @racket[right-triangles] 最前面、或者倒过来问边界的时候。无论借函数还是借@tech{谓词}，都造不出真正对称的@tech{单位}：两个位置相等，两边都可以暂时不知道，这得在关系语言里自己做。
+这一次两边都必须先知道，哪一头换成@tech{未知项}都会报错。毛病出在同一处：两个包装都先用 @racket[value-of] 读出参数，借来的函数与@tech{谓词}只能算已经知道的值。把 @racket[pythᵒ] 挪到 @racket[right-triangles] 最前面，或者倒过来问边界，挡在面前的也是同一件事。无论借函数还是借@tech{谓词}，都造不出对称的@tech{单位}：两个位置相等，两边都可以暂时不知道，这得在关系语言里自己做。
 
 不借 @racket[id] 和 @racket[equal?]，照前面往@tech{代换}里添记录的办法，直接把刚才卡住的那两条等式记进表里：@racket[x] 等于 @racket[y]，@racket[y] 等于 5。然后问 @racket[x] 的值：
 
@@ -217,7 +217,7 @@
 @examples[#:eval ev-unify #:label #f
 (walk x s)]
 
-添一行也不能照旧了。比如表里已经记着 @racket[x] 等于 5，再来一行等式说 @racket[x] 等于 6，直接添上，@racket[x] 就占了两行；等式要是写成 6 等于 @racket[x]，键还成了一个数。添之前，两边都要先顺着表查到底，再对称地比：是同一个@tech{未知项}就原样交回；有一边是@tech{未知项}，就添上一行；否则两边按这版 @racket[Term] 的定义都是完整的 @racket[Data]，用 @racket[equal?] 相等才走得通：
+添一行也不能照旧了。表里已经记着 @racket[x] 等于 5，再来一条等式说 @racket[x] 等于 6，直接添上，@racket[x] 就占了两行；等式要是写成 6 等于 @racket[x]，键还成了一个数。添之前，两边都要先顺着表查到底，再对称地比：是同一个@tech{未知项}就原样交回；有一边是@tech{未知项}，就添上一行；两边都不是@tech{未知项}，它们都是完整的 @racket[Data]，用 @racket[equal?] 相等才走得通：
 
 @examples[#:eval ev-unify #:no-result
 (: unify (→ Term Term Substitution Substitution))
@@ -247,7 +247,7 @@
 (: ≡ (→ Term Term Goal))
 (define ((≡ u v) s) (unify u v s))]
 
-@racket[value-of] 也改成顺着查：查到底还是@tech{未知项}就报错；按这版 @racket[Term] 的定义，不是@tech{未知项}就已经是完整的 @racket[Data]，可以直接交回：
+@racket[value-of] 也改成顺着查：查到底还是@tech{未知项}就报错；否则它已经是完整的 @racket[Data]，直接交回：
 
 @examples[#:eval ev-unify #:no-result
 (: value-of (→ Term Substitution Data))
@@ -276,9 +276,9 @@
 (run* (q) (idᵒ q 5))
 (run* (q) (idᵒ 5 q))]
 
-把相等接在 @racket[Pᵒ] 的后面，条件是「存在 @racket[y]，@racket[(Pᵒ x y)] 成立，而且 @racket[y] 等于 @racket[z]」，遮掉中间一列恰好就是 @racket[(Pᵒ x z)]；接在前面同理。只看外面两列允许哪些取值，@racket[≡] 就是@tech{二元关系}复合的@tech{单位}。实际求解还要照书写顺序运行，借来的@tech{谓词}仍然要求参数先有值。
+把相等接在 @racket[Pᵒ] 的后面，条件是「存在 @racket[y]，@racket[(Pᵒ x y)] 成立，而且 @racket[y] 等于 @racket[z]」，遮掉中间一列就是 @racket[(Pᵒ x z)]；接在前面同理。就表里的行而言，@racket[≡] 是@tech{二元关系}复合的@tech{单位}；借来的@tech{谓词}仍要求参数先有值，那是宿主的限制。
 
-顺手回头修好 @racket[function->relation]：它原先靠调用者保证最后一个位置永远是尚未绑定的@tech{未知项}，直接交给 @racket[ext-s] 添一行。要是同一个@tech{未知项}出现在两行的最后一列（比如找同时在 1 到 2 之间、又在 2 到 3 之间的数），或者干脆在最后一列填进一个已知的数，就越过了 @racket[ext-s] 的前提，直接添一行就坏了：
+有了@tech{合一}，@racket[function->relation] 原先的隐患也能一起解决。它之前假设最后一个位置永远是尚未绑定的@tech{未知项}，直接交给 @racket[ext-s] 添一行。要是同一个@tech{未知项}出现在两行的最后一列，比如找同时在 1 到 2 之间、又在 2 到 3 之间的数，或者干脆在最后一列填进一个已知的数，直接添一行就坏了：
 
 @examples[#:eval ev-unify #:hidden
 (define (((function->relation f) . t*) s)
@@ -312,4 +312,4 @@
   (define-values (in* out*) (split-at-right t* 1))
   (unify (car out*) (apply f (for/list ([t in*]) (value-of t s))) s))]
 
-对照前面，旧版 @racket[(function->relation id)] 展开后是对输入先做 @racket[value-of]、再把 @racket[ext-s] 柯里化成@tech{目标}；当输入也允许保留@tech{未知项}、不再先调 @racket[value-of]，同时把单向的 @racket[ext-s] 换成双向的 @racket[unify] 柯里化，就回到了前面真正对称的 @racket[≡]。
+回头看前面试过的 @racket[(function->relation id)]：旧版先对输入做 @racket[value-of]，再把 @racket[ext-s] 柯里化成@tech{目标}；放开输入的 @racket[value-of]，再把单向的 @racket[ext-s] 换成双向的 @racket[unify]，得到的正是 @racket[≡]。
