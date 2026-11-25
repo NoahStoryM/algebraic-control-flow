@@ -24,7 +24,7 @@
 = (λ (s) (check #f) s)
 = (λ (s) (amb))]
 
-@racket[check] 收到 @racket[#f] 时调用 @racket[(amb)] 放弃当前分支，后面的 @racket[s] 永远走不到。作为@tech{代换}之间的@tech{二元关系}，前者把任意@tech{代换}原样交回一次，是@defterm[#:en "identity relation"]{恒等关系}，总成立、总是成功，记作 @racket[⊤]；后者一次也不交，是一行也没有的@defterm[#:en "empty relation"]{空关系}，总不成立、总是失败，记作 @racket[⊥]：
+@racket[check] 收到 @racket[#f] 时调用 @racket[(amb)] 放弃当前分支，后面的 @racket[s] 永远走不到。作为@tech{目标}，前者把任意@tech{代换}原样交回一次，对应@tech{代换}上的@defterm[#:en "identity relation"]{恒等关系}，总成立、总是成功，记作 @racket[⊤]；后者一次也不交，对应一行也没有的@defterm[#:en "empty relation"]{空关系}，总不成立、总是失败，记作 @racket[⊥]：
 
 @margin-note{前四章用 @racket[⊤] 与 @racket[⊥] 记单元类型与@tech{空类型}；这里借用同一对逻辑真假记号表示 @racket[Goal] 类型的值，一个是恒等@tech{目标}，一个是失败@tech{目标}。}
 
@@ -289,7 +289,7 @@
 (run* (a) (∧ (betweenᵒ 1 2 a) (betweenᵒ 2 3 a)))
 (in-amb ((betweenᵒ 1 3 2) empty-s))]
 
-头一例里 3 明明不在 1 到 2 之间，却跟着出来了，2 还出了两次：第二行直接把新的一行盖在了前面。第二例更怪，@tech{代换}的键成了数 2。
+头一例里 3 明明不在 1 到 2 之间，却跟着出来了，2 和 3 还各出了两次：第一行先裂出 @racket[a] 等于 1 与 2 两条支路，第二行在两条支路上各自直接把新的一行盖在了前面。第二例更怪，@tech{代换}的键成了数 2。
 
 像上一节那样先手写 @racket[betweenᵒ]，只需把原先的 @racket[ext-s] 换成 @racket[unify]：没有值就添一行，有值就成了核对：
 

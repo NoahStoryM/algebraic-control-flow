@@ -104,7 +104,7 @@
           (≡ out (cons a res))
           (appendᵒ d t res)))))]
 
-@racket[appendᵒ] 在第二支里调用自己。要是 @racket[∃] 一上来就运行里面的条件，构造@tech{目标}时就会一层层调用下去，停不下来；等到收到@tech{代换}才运行，正向的例子每层消耗左表的一个 @racket[cons]，反向的例子每层消耗结果表的一个 @racket[cons]，列表有限，递归就会停下。
+@racket[appendᵒ] 在第二支里调用自己。@racket[∧] 与 @racket[∨] 都是普通函数，如果一上来就求值里面的递归，构造@tech{目标}时就会停不下来；这里靠 @racket[∃] 展开出的 @racket[(λ (s) ...)] 把递归调用包住，等到收到@tech{代换}才运行。正向的例子每层消耗左表的一个 @racket[cons]，反向的例子每层消耗结果表的一个 @racket[cons]，列表有限，递归就会停下。
 
 正着问一下：
 
@@ -141,7 +141,7 @@
 @examples[#:eval ev-append #:label #f
 (eval:error (run* (x y) (appendᵒ '(1) x y)))]
 
-程序又停在了 @racket[value-of] 那里。@racket[⊥] 一张@tech{代换}也没交出来；这次这一支已经走通了，我们已经有了一张@tech{代换}，知道 @racket[y] 必须等于 @racket[(cons 1 x)]，但 @racket[x] 仍然可以取不同的值。一开始的@tech{谓词}要等一行填好才检查；现在我们虽还没把 @racket[x] 填定，却已经知道 @racket[y] 的尾部就是 @racket[x]，这样的答案也应该读得出来。
+程序又停在了 @racket[value-of] 那里。不同于 @racket[⊥] 一张@tech{代换}也没交出来的失败，这次这一支已经走通了：我们已经有了一张@tech{代换}，知道 @racket[y] 必须等于 @racket[(cons 1 x)]，只是 @racket[x] 仍然可以取不同的值。一开始的@tech{谓词}要等一行填好才检查；现在我们虽还没把 @racket[x] 填定，却已经知道 @racket[y] 的尾部就是 @racket[x]，这样的答案也应该读得出来。
 
 之前的 @racket[walk] 顺着@tech{代换}走到头时，遇到未绑定的@tech{未知项}本来就已经原样交回、不再报错；只是序对内部还可能藏着@tech{未知项}。再写一层 @racket[walk*]，顺着@tech{代换}递归展开每个序对，保留还自由的@tech{未知项}：
 
@@ -157,7 +157,7 @@
 (let ([x (var 'x)] [y (var 'y)])
   (in-amb (walk* (list x y) ((appendᵒ '(1) x y) empty-s))))]
 
-答案读出来了，不过还有两件事要收尾。第一件是循环：@racket[walk*] 会顺着@tech{代换}一直往序对里面展开。要是表里记进一条循环等式，比如 @racket[(≡ x (cons 1 x))]，@racket[walk*] 展开 @racket[x] 时就会停不下来。避免循环的办法是在 @racket[ext-s] 添记录前先查一遍 @racket[x] 有没有已经出现在 @racket[t] 里，有就放弃当前支路：
+只走通了一条支路，交出的一行却代表了无穷多组具体取值：只要第二个位置是在第一个位置前面加上 1，任何值都成立。不过顺着 @racket[walk*] 往下看，立刻会碰到两个问题。第一个是循环：@racket[walk*] 会顺着@tech{代换}一直往序对里面展开，要是表里记进一条循环等式，比如 @racket[(≡ x (cons 1 x))]，展开 @racket[x] 时就会停不下来。避免循环的办法是在 @racket[ext-s] 添记录前先查一遍 @racket[x] 有没有已经出现在 @racket[t] 里，有就放弃当前支路：
 
 @examples[#:eval ev-append #:no-result
 (: occurs? (→ Var Term Substitution Boolean))
@@ -179,7 +179,7 @@
 (let ([x (var 'x)])
   (in-amb ((≡ x (cons 1 x)) empty-s)))]
 
-第二件是读出来的样子。刚才 @racket[walk*] 交出的结果里直接露出了内部的 @racket[var] 结构体；要是两个不同的自由@tech{未知项}恰好都叫 @racket['x]，印出来还会一模一样。把自由@tech{未知项}按出现顺序统一换成 @tt{_.0}、@tt{_.1}，既不泄露内部身份，又能保住同一个@tech{未知项}在不同位置上的共享关系。
+第二个问题是读出来的样子。刚才 @racket[walk*] 交出的结果里直接露出了内部的 @racket[var] 结构体；要是两个不同的自由@tech{未知项}恰好都叫 @racket['x]，印出来还会一模一样。把自由@tech{未知项}按出现顺序统一换成 @tt{_.0}、@tt{_.1}，既不泄露内部身份，又能保住同一个@tech{未知项}在不同位置上的共享关系。
 
 先给@tech{代换}添一个数记录条数的 @racket[size-s]，用来生成下一个编号；再用同一套@tech{代换}机制写 @racket[reify-s]，把每个还没见过的自由@tech{未知项}依次记成 @tt{_.0}、@tt{_.1}。@racket[(reify v)] 收下要读出的整行项 @racket[v]，先用 @racket[walk*] 展开，再用 @racket[reify-s] 建一张重命名的@tech{代换}，最后再做一次 @racket[walk*] 替换掉：
 
@@ -212,13 +212,13 @@
 (let ([x (var 'x)] [y (var 'y)])
   (in-amb ((reify (list x y)) ((≡ x y) empty-s))))]
 
-第一行交出的 @racket['((_.0 (1 . _.0)))]，表示只要第二个位置是在第一个位置前面加上 @racket[1]，任何值都成立；第二行交出的 @racket['((_.0 _.0))]，正是两个自由却必须相等的位置。宿主包装里的 @racket[value-of] 仍负责读出函数与@tech{谓词}必须拿到的具体实参，出口处读答案的工作则可以完全交给 @racket[reify]。
+第一行交出的 @tt{'((_.0 (1 . _.0)))}，表示只要第二个位置是在第一个位置前面加上 @racket[1]，任何值都成立；第二行交出的 @tt{'((_.0 _.0))}，正是两个自由却必须相等的位置。宿主包装里的 @racket[value-of] 仍负责读出函数与@tech{谓词}必须拿到的具体实参，出口处读答案的工作则可以完全交给 @racket[reify]。
 
 @section[#:tag "05:minikanren"]{语法糖与内核}
 
-写 @racket[appendᵒ] 时，@racket[∃] 和 @racket[∨] 的每一支里面都套了一层 @racket[∧]；最外层的查询也常常同时接上几条条件。把自动@tech{合取}分别包进 @racket[fresh] 和 @racket[condᵉ]，再把 @racket[reify] 读出、自动@tech{合取}以及「最多取前 @racket[n] 组答案」的限制收进 @racket[run]：第一个参数写个数，写 @racket[#f] 表示全部。两个零元@tech{目标} @racket[⊤] 与 @racket[⊥] 也各自起上常用的名字 @racket[succeed] 和 @racket[fail]：
+写 @racket[appendᵒ] 时，@racket[∃] 和 @racket[∨] 的每一支里面都套了一层 @racket[∧]；最外层的查询也常常同时接上几条条件。把自动@tech{合取}分别包进 @racket[fresh] 和 @racket[condᵉ]（上标 ᵉ 取自 @italic{every}，表示每条支路都会走到），再把 @racket[reify] 读出、自动@tech{合取}以及「最多取前 @racket[n] 组答案」的限制收进 @racket[run]：第一个参数写个数，写 @racket[#f] 表示全部。两个零元@tech{目标} @racket[⊤] 与 @racket[⊥] 也各自起上常用的名字 @racket[succeed] 和 @racket[fail]：
 
-@margin-note{本章的 @racket[in-amb] 会先收齐有限搜索的全部答案，@racket[run] 再取前 @racket[n] 行。这里直接定义带限制参数的 @racket[run]，不重定义前面只收单个@tech{目标}的 @racket[run*]；在@xref["05:appendix"]{附录}的完整库里，@racket[run*] 就是 @racket[(run #f (x ...) g ...)]。}
+@margin-note{本章的 @racket[in-amb] 会先收齐有限搜索的全部答案，@racket[run] 再取前 @racket[n] 行；在@xref["05:appendix"]{附录}的完整库里，@racket[run*] 定义为 @racket[(run #f (x ...) g ...)]。}
 
 @examples[#:eval ev-append #:no-result
 (define-syntax-rule (run n (x ...) g ...)
@@ -254,10 +254,10 @@
 (run #f (x y) (appendᵒ x y '(1 2 3)))
 (run #f (x y) (appendᵒ '(1) x y))]
 
-回头看这门语言里的三种复合与它们的@tech{单位}：在@tech{代换}层，@tech{合取} @racket[∧] 的@tech{单位}是 @racket[⊤]，@tech{析取} @racket[∨] 的@tech{单位}是 @racket[⊥]；在@tech{关系}层，@tech{二元关系}复合 @racket[∘ᵒ] 的@tech{单位}是@tech{合一} @racket[≡]。@racket[⊤] 总是把@tech{代换}原样交回，@racket[≡] 则会按需要往@tech{代换}里添等式。
+回头看这门语言里的三种运算与它们的@tech{单位}：在@tech{代换}层，@tech{合取} @racket[∧] 的@tech{单位}是 @racket[⊤]，@tech{析取} @racket[∨] 的@tech{单位}是 @racket[⊥]；在@tech{关系}层，@tech{二元关系}复合 @racket[∘ᵒ] 的@tech{单位}是@tech{合一} @racket[≡]。@racket[⊤] 总是把@tech{代换}原样交回，@racket[≡] 则会按需要往@tech{代换}里添等式。
 
-为了把@tech{关系}直接写下来，我们一步步添上了 @racket[≡]、@racket[∧]、@racket[∨]、@racket[∃] 与两个@tech{单位} @racket[⊤]、@racket[⊥]，再包上 @racket[run]、@racket[fresh]、@racket[condᵉ]、@racket[succeed]、@racket[fail] 这层表面语法。整个实现不到一百行，这正是@defterm[#:en "relational programming"]{关系式编程}（@defterm[#:en "logic programming"]{逻辑式编程}的一个分支）语言 miniKanren 的极小内核，底层对应的那几个原语就是 microKanren。
+为了把@tech{关系}直接写下来，我们一步步添上了 @racket[≡]、@racket[∧]、@racket[∨]、@racket[∃] 与两个@tech{单位} @racket[⊤]、@racket[⊥]，再包上 @racket[run]、@racket[fresh]、@racket[condᵉ]、@racket[succeed]、@racket[fail] 这层表面语法。整个实现不到一百行，这正是@defterm[#:en "logic programming"]{逻辑式编程}的一支，@defterm[#:en "relational programming"]{关系式编程}语言 miniKanren 的极小内核，底层对应的那几个原语就是 microKanren。
 
-@margin-note{和常见的实现相比，还有几处不同：@tech{未知项}按身份区分，不编号；@tech{合取}是直接复合，何时推迟一步计算、怎样取用答案，写法也不一样，交出答案的顺序因此可能不同。}
+@margin-note{和常见的流式实现相比，这里的@tech{未知项}按身份区分而不编号，搜索按深度优先一次性收齐，交出答案的顺序因此可能不同。}
 
 在那里，@tech{未知项}叫@defterm[#:en "logic variable"]{逻辑变量}，底层的六个记号常写作 @racket[==]、@racket[conj]、@racket[disj]、@racket[fresh]、@racket[succeed]、@racket[fail]。常见的实现用流来@tech{回溯}，@tech{目标}交出一串@tech{代换}，@tech{合取}与@tech{析取}都要自己写出怎样接、怎样并。这里用 @racket[amb] @tech{回溯}，@racket[∧] 就是 ℬ 的复合，@racket[∨] 就是 @racket[amb]，这两样都是现成的；剩下要写的，主要是@tech{合一}。
